@@ -480,6 +480,8 @@ function setQ(v){Q=v;render();}
 function setSort(v){SM=v;render();}
 
 window.addEventListener("load",function(){
+  // Clear any old Drive URL from previous version
+  try{localStorage.removeItem("cpc_drive_url");}catch(e){}
   var c=loadC();
   if(c){restoreC(c);document.getElementById("msg").className="cache";document.getElementById("msg").textContent="Today's data loaded (0 tokens)";
     document.getElementById("rfbtn").classList.add("done");document.getElementById("rlbl").textContent="Loaded today";}
