@@ -182,11 +182,7 @@ async function doLoad() {
     setP(60);
     var j = await r.json();
     setP(90);
-    if (j.test) {
-      msg.className = "err";
-      msg.textContent = "No real data yet — run fetchAndPushToGitHub in Apps Script first.";
-      btn.disabled = false; setP(100); return;
-    }
+    // Load whatever data is available
     var raw = j.data || {}, res = {};
     Object.keys(raw).forEach(function(a) {
       var d = raw[a];
