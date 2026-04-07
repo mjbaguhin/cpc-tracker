@@ -1,0 +1,455 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+<title>SKU Rating Tracker - CPC Brands</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:#f1f5f9;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;color:#0f172a;font-size:13px}
+@keyframes spin{to{transform:rotate(360deg)}}
+#top{background:#0f172a;padding:12px 20px;display:flex;align-items:center;gap:12px;flex-wrap:wrap}
+.title{font-size:15px;font-weight:800;color:#fff}
+.sub{font-size:10px;color:#475569;margin-top:1px}
+#topstats{display:flex;gap:6px;margin-left:auto;flex-wrap:wrap}
+.ts{background:#1e293b;border:1px solid #334155;border-radius:8px;padding:6px 12px;text-align:center;min-width:64px}
+.tv{font-size:18px;font-weight:900;line-height:1.1}
+.tl{font-size:8px;color:#64748b;letter-spacing:.07em;text-transform:uppercase;margin-top:2px}
+#banner{display:none;padding:9px 20px;border-bottom:2px solid}
+.brow{display:flex;align-items:center;gap:7px;flex-wrap:wrap}
+.blbl{font-size:11px;font-weight:700;white-space:nowrap}
+.chip{display:inline-flex;align-items:center;gap:4px;padding:3px 9px;border-radius:20px;font-size:11px;font-weight:700;cursor:pointer;border:1.5px solid}
+.chip-dn{background:#fee2e2;border-color:#fca5a5;color:#b91c1c}
+.chip-up{background:#dcfce7;border-color:#86efac;color:#15803d}
+.cff{font-size:11px;opacity:.6;font-family:monospace}
+.car{font-size:14px}.cto{font-size:12px;font-family:monospace}
+.cnm{font-size:10px;opacity:.7;max-width:110px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+#ctrl{background:#fff;border-bottom:1px solid #e2e8f0;padding:8px 20px;display:flex;align-items:center;gap:6px;flex-wrap:wrap;position:sticky;top:0;z-index:50;box-shadow:0 2px 6px rgba(0,0,0,.05)}
+#ctrl2{background:#fff;border-bottom:2px solid #e2e8f0;padding:6px 20px;display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+#rfbtn{padding:7px 16px;border-radius:8px;border:none;font-size:12px;font-weight:700;cursor:pointer;display:inline-flex;align-items:center;gap:5px;white-space:nowrap;background:#2563eb;color:#fff;box-shadow:0 2px 6px rgba(37,99,235,.3);transition:all .15s}
+#rfbtn:hover{background:#1d4ed8}
+#rfbtn:disabled{background:#94a3b8;cursor:not-allowed;box-shadow:none}
+#admBtn{padding:5px 10px;border-radius:6px;border:1.5px solid #fca5a5;background:#fff;color:#dc2626;font-size:10px;font-weight:700;cursor:pointer;display:none}
+.spin{animation:spin 1s linear infinite;display:inline-block}
+#msg{font-size:11px;padding:3px 8px;border-radius:5px;white-space:nowrap;max-width:500px;white-space:normal}
+#msg.ok{color:#15803d;background:#dcfce7}#msg.err{color:#dc2626;background:#fee2e2}#msg.inf{color:#475569;background:#f1f5f9}#msg.cache{color:#15803d;background:#dcfce7}
+.dv{width:1px;height:20px;background:#e2e8f0;flex-shrink:0}
+.fp{padding:4px 11px;border-radius:6px;border:1.5px solid #e2e8f0;background:#fff;color:#64748b;font-size:11px;font-weight:600;cursor:pointer;white-space:nowrap;transition:all .12s}
+.fp.on{border-color:#2563eb;background:#eff6ff;color:#2563eb}
+.tbb{display:flex;gap:3px;align-items:center}
+.tbl2{font-size:9px;color:#94a3b8;font-weight:700;letter-spacing:.07em;white-space:nowrap;margin-right:2px}
+.tbtn{padding:2px 8px;border-radius:4px;border:1.5px solid #e2e8f0;background:#fff;color:#64748b;font-size:10px;font-weight:800;cursor:pointer;font-family:monospace;transition:all .12s}
+.tbtn.on{border-color:#2563eb;background:#eff6ff;color:#2563eb}
+#lup{font-size:10px;color:#94a3b8;margin-left:auto;white-space:nowrap}
+.flbl{font-size:9px;color:#94a3b8;font-weight:700;letter-spacing:.07em;text-transform:uppercase;white-space:nowrap}
+#parent-search{padding:4px 10px;border-radius:6px;border:1.5px solid #e2e8f0;font-size:11px;outline:none;width:200px}
+#parent-search:focus{border-color:#2563eb}
+#parent-list{display:none;position:absolute;top:100%;left:0;width:240px;max-height:220px;overflow-y:auto;background:#fff;border:1.5px solid #e2e8f0;border-radius:8px;box-shadow:0 4px 16px rgba(0,0,0,.12);z-index:200;margin-top:3px}
+#srch{flex:1;min-width:150px;max-width:240px;padding:5px 10px;border-radius:6px;border:1.5px solid #e2e8f0;font-size:11px;outline:none}
+#srch:focus{border-color:#2563eb}
+#srt{padding:5px 8px;border-radius:6px;border:1.5px solid #e2e8f0;background:#fff;color:#64748b;font-size:11px;outline:none;cursor:pointer}
+#shown{font-size:10px;color:#94a3b8;margin-left:auto;white-space:nowrap}
+#pb-w{height:3px;background:#e2e8f0;display:none}
+#pb{height:100%;background:#2563eb;transition:width .3s;width:0}
+#wrap{padding:12px 20px 24px}
+.box{background:#fff;border-radius:12px;overflow:hidden;box-shadow:0 1px 4px rgba(0,0,0,.06)}
+table{width:100%;border-collapse:collapse}
+thead tr{background:#0f172a}
+thead th{padding:9px 8px;font-size:9px;font-weight:700;color:#64748b;letter-spacing:.08em;text-transform:uppercase;white-space:nowrap;text-align:center}
+thead th.left{text-align:left}
+thead th.h1{background:#14532d;color:#86efac}
+thead th.h2{background:#1e3a5f;color:#93c5fd}
+thead th.h3{background:#312e81;color:#c4b5fd}
+thead th.h4{background:#3b1a1a;color:#fca5a5}
+tbody tr{border-bottom:1px solid #f1f5f9;transition:background .1s}
+tbody tr:hover{background:#f8fafc}
+tbody tr:last-child{border:none}
+tbody tr.DN{background:#fff1f2 !important;border-left:5px solid #dc2626}
+tbody tr.DN2{background:#fffbeb !important;border-left:5px solid #f59e0b}
+tbody tr.UP{background:#f0fdf4 !important;border-left:5px solid #16a34a}
+tbody tr.FL{border-left:5px solid #e2e8f0}
+tbody tr.ND{border-left:5px solid #f1f5f9}
+td{padding:7px 8px;vertical-align:middle;text-align:center}
+td.left{text-align:left}
+.nn{font-size:12px;font-weight:700;color:#0f172a;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:200px}
+.ns{font-size:9px;color:#94a3b8;font-family:monospace;margin-top:1px}
+.np{font-size:9px;color:#6366f1;margin-top:1px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:200px}
+.bd{width:6px;height:6px;border-radius:50%;display:inline-block;margin-right:5px;flex-shrink:0}
+.tb{padding:1px 6px;border-radius:4px;font-size:9px;font-weight:800;font-family:monospace}
+.mv{display:inline-flex;align-items:center;gap:4px;padding:4px 9px;border-radius:7px;font-family:monospace;font-weight:700;border:1.5px solid;white-space:nowrap;font-size:12px}
+.mv.DN{background:#fee2e2;border-color:#fca5a5;color:#b91c1c}
+.mv.UP{background:#dcfce7;border-color:#86efac;color:#15803d}
+.mv.FL{background:#f8fafc;border-color:#e2e8f0;color:#94a3b8}
+.mv.ND{background:#f8fafc;border-color:#f1f5f9;color:#cbd5e1;font-weight:400;font-size:11px}
+.mv .fr{opacity:.55}.mv .ar{font-size:14px}
+.spark{display:block}
+.empty{text-align:center;padding:48px;color:#94a3b8;font-size:13px;line-height:2.2}
+</style>
+</head>
+<body>
+<div id="top">
+  <div>
+    <div class="title">SKU Rating Tracker - CPC Brands</div>
+    <div class="sub">Barnyard Designs (126) · Seedboy (50) · 176 active ASINs · Auto-updated 6:30 AM PHT via Apps Script</div>
+  </div>
+  <div id="topstats">
+    <div class="ts"><div class="tv" id="s-avg" style="color:#fbbf24">--</div><div class="tl">Avg Rating</div></div>
+    <div class="ts"><div class="tv" id="s-crit" style="color:#f87171">0</div><div class="tl">Below 4.0★</div></div>
+    <div class="ts"><div class="tv" id="s-dec" style="color:#fb923c">0</div><div class="tl">Declining 30D</div></div>
+    <div class="ts"><div class="tv" id="s-cov" style="color:#60a5fa">0/0</div><div class="tl">ASINs Tracked</div></div>
+  </div>
+</div>
+<div id="banner"><div class="brow" id="bchips"></div></div>
+<div id="ctrl">
+  <button id="rfbtn" onclick="doLoad()">&#8635; <span id="rlbl">Load Today's Data</span></button>
+  <button id="admBtn" onclick="doEmergency()">⚠ Emergency Fetch</button>
+  <span id="msg" class="inf">Ready — click Load Today's Data</span>
+  <div class="dv"></div>
+  <button class="fp on" onclick="setBrand('All',this)">All</button>
+  <button class="fp" onclick="setBrand('Barnyard Designs',this)">🏠 Barnyard</button>
+  <button class="fp" onclick="setBrand('Seedboy',this)">🌿 Seedboy</button>
+  <div class="dv"></div>
+  <div class="tbb">
+    <span class="tbl2">Tier</span>
+    <button class="tbtn on" onclick="setTier('All',this)">All</button>
+    <button class="tbtn" onclick="setTier('A',this)">A</button>
+    <button class="tbtn" onclick="setTier('B',this)">B</button>
+    <button class="tbtn" onclick="setTier('C',this)">C</button>
+    <button class="tbtn" onclick="setTier('X',this)">X</button>
+    <button class="tbtn" onclick="setTier('N',this)">N</button>
+  </div>
+  <span id="lup"></span>
+</div>
+<div id="ctrl2">
+  <span class="flbl">Parent ASIN</span>
+  <div style="position:relative">
+    <input id="parent-search" type="text" placeholder="Search parent..." autocomplete="off"
+      oninput="filterPL(this.value)" onfocus="showPL()" onblur="setTimeout(hidePL,200)"/>
+    <div id="parent-list"></div>
+  </div>
+  <div class="dv"></div>
+  <input id="srch" type="text" placeholder="Search SKU, name, ASIN..." oninput="setQ(this.value)"/>
+  <select id="srt" onchange="setSort(this.value)">
+    <option value="drop-today">Dropped Today First</option>
+    <option value="rise-today">Rose Today First</option>
+    <option value="drop-30">30D Biggest Drop</option>
+    <option value="rating-lo">Rating Low→High</option>
+    <option value="rating-hi">Rating High→Low</option>
+    <option value="name">Name A→Z</option>
+  </select>
+  <span id="shown"></span>
+</div>
+<div id="pb-w"><div id="pb"></div></div>
+<div id="wrap">
+  <div class="box">
+    <table>
+      <thead>
+        <tr>
+          <th style="width:5px;padding:0"></th>
+          <th class="left">Product</th>
+          <th>Tier</th>
+          <th>30D Trend</th>
+          <th class="h1">Yesterday → Today</th>
+          <th class="h2">30 Days → Today</th>
+          <th class="h3">90 Days → Today</th>
+          <th class="h4">180 Days → Today</th>
+          <th style="text-align:right">Reviews</th>
+          <th style="text-align:right">BSR</th>
+        </tr>
+      </thead>
+      <tbody id="tbody">
+        <tr class="ND"><td></td><td colspan="9" class="empty">
+          Click <strong>Load Today's Data</strong> to load ratings<br>
+          <small>Data is pushed to GitHub automatically at 6:30 AM PHT — 0 tokens from your browser</small>
+        </td></tr>
+      </tbody>
+    </table>
+  </div>
+</div>
+<script>
+const CATALOG=[{"sku": "FM17C0721", "brand": "Barnyard Designs", "name": "Little Things 3-Panel Hanging Sign", "asin": "B07BJZZCDS", "tier": "X", "parent": "Paneled Signs"}, {"sku": "FM18C0196", "brand": "Barnyard Designs", "name": "Stay Humble Box Sign", "asin": "B07F2BJQ3G", "tier": "X", "parent": "Inspiration Box Signs"}, {"sku": "FM18R0078", "brand": "Barnyard Designs", "name": "Heaven Box Sign", "asin": "B07F25Q32C", "tier": "X", "parent": "Heaven Box Sign"}, {"sku": "FM14G01331", "brand": "Barnyard Designs", "name": "Every Love Story Is Beautiful Box Sign", "asin": "B071LHK8WB", "tier": "X", "parent": "Love Box Signs"}, {"sku": "FM18C0230", "brand": "Barnyard Designs", "name": "EAT Wood Sign, White/Black", "asin": "B07F286MJY", "tier": "X", "parent": "EAT Wood Sign, White/Black"}, {"sku": "FM19C0027-L", "brand": "Barnyard Designs", "name": "16x48 Floor Mirror, Wood/Metal", "asin": "B07SV4C59T", "tier": "X", "parent": "Mid Length Mirror"}, {"sku": "FM18G0420", "brand": "Barnyard Designs", "name": "When Life Give You Lemons Tin Sign", "asin": "B07GGPFJDB", "tier": "X", "parent": "Pun Tin Sign"}, {"sku": "FM18R0117", "brand": "Barnyard Designs", "name": "Wash Your Hands Tin Sign", "asin": "B07GGDTS2J", "tier": "X", "parent": "Bathroom Signs"}, {"sku": "FM15G0377", "brand": "Barnyard Designs", "name": "Let Your Smile Change the World Box Sign", "asin": "B071LHM3YS", "tier": "X", "parent": "Positivity Signs"}, {"sku": "FM17C0783", "brand": "Barnyard Designs", "name": "Stay Positive Cat & Dog Box Sign", "asin": "B07D2MDZB6", "tier": "X", "parent": "Stay Positive Cat & Dog Box Sign"}, {"sku": "FM18J0129-A", "brand": "Barnyard Designs", "name": "13x13 Gather Framed Print", "asin": "B07GGSQX16", "tier": "X", "parent": "Home Frames"}, {"sku": "FM18Y0126", "brand": "Barnyard Designs", "name": "A Teacher Takes a Hand Box Sign, Black", "asin": "B07GGXFJHC", "tier": "X", "parent": "Positivity Signs"}, {"sku": "FM19C0314a", "brand": "Barnyard Designs", "name": "Farmhouse Napkin Holder, White", "asin": "B07WNSP2YV", "tier": "X", "parent": "Napkin Holder Farmhouse"}, {"sku": "HD303", "brand": "Barnyard Designs", "name": "S/3 Herb Pots, White", "asin": "B07D46QXG7", "tier": "B", "parent": "Herb Pots"}, {"sku": "FM19C0347a", "brand": "Barnyard Designs", "name": "Farmhouse Napkin Holder, White/Brown", "asin": "B07WVRVS3M", "tier": "X", "parent": "Napkin Holder Farmhouse"}, {"sku": "FM18G0327", "brand": "Barnyard Designs", "name": "Hanging Mail Holder", "asin": "B07JZY1DSQ", "tier": "X", "parent": "Mail Hanger"}, {"sku": "HD19B215-W", "brand": "Barnyard Designs", "name": "Wynona Silverware Holder, White", "asin": "B085LR77TZ", "tier": "C", "parent": "Wynona Silverware"}, {"sku": "HD19B235-G", "brand": "Barnyard Designs", "name": "Farmhouse Kitchen Utensil Holder, Taupe", "asin": "B085LRNC7F", "tier": "A", "parent": "Thick Utensil Holder"}, {"sku": "HD19B235-W", "brand": "Barnyard Designs", "name": "Farmhouse Kitchen Utensil Holder, White", "asin": "B085LRFK95", "tier": "A", "parent": "Thick Utensil Holder"}, {"sku": "FM19G0499", "brand": "Barnyard Designs", "name": "Herbs & Spices Framed Print", "asin": "B07KB9G7QJ", "tier": "X", "parent": "Herb Prints"}, {"sku": "HD19P254-W", "brand": "Barnyard Designs", "name": "Wynona Utensil Holder, White", "asin": "B085LRPRVZ", "tier": "C", "parent": "Wynona Utensil"}, {"sku": "FM20D0104", "brand": "Barnyard Designs", "name": "Square Tissue Box Cover, Wood/Metal", "asin": "B085RHWBKQ", "tier": "X", "parent": "Square Tissue Box Cover, Wood/Metal"}, {"sku": "FM20C0013", "brand": "Barnyard Designs", "name": "4x6 4-Picture Frame, Brown Wood", "asin": "B087D794LK", "tier": "X", "parent": "Multi Frame 4 Photo"}, {"sku": "FM20C0014", "brand": "Barnyard Designs", "name": "4x6 5-Picture Frame, Whitewash Wood", "asin": "B087D72MD6", "tier": "X", "parent": "Multi Frame 5 Photo"}, {"sku": "HD303-SoftMint", "brand": "Barnyard Designs", "name": "S/3 Herb Pots, Soft Mint", "asin": "B085K8PDCN", "tier": "B", "parent": "Herb Pots"}, {"sku": "FM20C0084", "brand": "Barnyard Designs", "name": "4x6 4-Picture Frame, Whitewash Wood", "asin": "B087CZKD11", "tier": "X", "parent": "Multi Frame 4 Photo"}, {"sku": "XT001-5", "brand": "Barnyard Designs", "name": "Home Sweet Home Doormat", "asin": "B08BPKBP5B", "tier": "B", "parent": "Poly Rectangle Doormats"}, {"sku": "XT001-7", "brand": "Barnyard Designs", "name": "Oh Hello, See Ya Doormat", "asin": "B08BPJ2P3N", "tier": "B", "parent": "Poly Rectangle Doormats"}, {"sku": "XT001-3", "brand": "Barnyard Designs", "name": "Welcome Doormat", "asin": "B08BPKZKXT", "tier": "C", "parent": "Poly Rectangle Doormats"}, {"sku": "XT001-2", "brand": "Barnyard Designs", "name": "Hello Doormat", "asin": "B08BPJTBGY", "tier": "A", "parent": "Poly Rectangle Doormats"}, {"sku": "LW9M1458", "brand": "Barnyard Designs", "name": "24\" Round Keyhole Metal Mirror", "asin": "B08BWYZ79S", "tier": "X", "parent": "Keyhole Mirror"}, {"sku": "HD304", "brand": "Barnyard Designs", "name": "S/3 Herb Pots, Galvanized Grey", "asin": "B08CRZG5ZX", "tier": "C", "parent": "Herb Pots"}, {"sku": "AK113-Mint", "brand": "Barnyard Designs", "name": "Mint Think Green Compost Bin", "asin": "B08GB7WHF4", "tier": "C", "parent": "Compost Bins"}, {"sku": "HD303-CoolGrey", "brand": "Barnyard Designs", "name": "S/3 Herb Pots, Light Grey", "asin": "B08GB6QX6R", "tier": "C", "parent": "Herb Pots"}, {"sku": "HD303-Black", "brand": "Barnyard Designs", "name": "S/3 Herb Pots, Black", "asin": "B08GB5CYMW", "tier": "C", "parent": "Herb Pots"}, {"sku": "HD19P021-W", "brand": "Barnyard Designs", "name": "Live Love Treat Canister, White", "asin": "B08L5KVGWK", "tier": "X", "parent": "Live Love Treat Canister"}, {"sku": "HD18P587-W", "brand": "Barnyard Designs", "name": "Bone Treat Canister, White", "asin": "B08L5KLGMC", "tier": "A", "parent": "Bone Treat Canister"}, {"sku": "HD19P254-BL", "brand": "Barnyard Designs", "name": "Wynona Utensil Holder, Black", "asin": "B08MB841FM", "tier": "C", "parent": "Wynona Utensil"}, {"sku": "HD19B215-R", "brand": "Barnyard Designs", "name": "Wynona Silverware Holder, Red", "asin": "B08MB98LQV", "tier": "X", "parent": "Wynona Silverware"}, {"sku": "HD19B235-R", "brand": "Barnyard Designs", "name": "Farmhouse Kitchen Utensil Holder,  Red", "asin": "B08MB3H3QP", "tier": "A", "parent": "Thick Utensil Holder"}, {"sku": "XT001-WTOH", "brand": "Barnyard Designs", "name": "Welcome To Our Home Doormat", "asin": "B08Q5MYC6X", "tier": "C", "parent": "Poly Rectangle Doormats"}, {"sku": "XT001-HSH", "brand": "Barnyard Designs", "name": "Home Sweet Home Script Doormat", "asin": "B08Q6531M5", "tier": "B", "parent": "Poly Rectangle Doormats"}, {"sku": "BY-017", "brand": "Barnyard Designs", "name": "Maribelle Stoneware Sugar & Creamer Set", "asin": "B08QXLK9CC", "tier": "X", "parent": "Maribelle Creamer"}, {"sku": "XT006-W", "brand": "Barnyard Designs", "name": "Welcome Half Moon Doormat", "asin": "B08Z6BV41T", "tier": "C", "parent": "Half Moon"}, {"sku": "XT006-HELLO", "brand": "Barnyard Designs", "name": "Hello Half Moon Doormat", "asin": "B08Z5YMMMX", "tier": "C", "parent": "Half Moon"}, {"sku": "CR102-S3C-W", "brand": "Barnyard Designs", "name": "S/3 Abby Canisters, White", "asin": "B093LLYHBH", "tier": "A", "parent": "s/3 Abby Canisters"}, {"sku": "CR102-FC-W", "brand": "Barnyard Designs", "name": "Abby Flour Canister, White", "asin": "B093LNQHL9", "tier": "C", "parent": "Abby Flour Canister"}, {"sku": "CR103-UWH-W", "brand": "Barnyard Designs", "name": "Rosie Utensil Holder, White", "asin": "B093LPWGX4", "tier": "C", "parent": "Farmhouse Utensil"}, {"sku": "HD303-Red", "brand": "Barnyard Designs", "name": "S/3 Herb Pots, Brick Red", "asin": "B092FYJ7WZ", "tier": "C", "parent": "Herb Pots"}, {"sku": "AK113-White", "brand": "Barnyard Designs", "name": "White Think Green Compost Bin", "asin": "B095J3SSST", "tier": "C", "parent": "Compost Bins"}, {"sku": "FM20A0007", "brand": "Barnyard Designs", "name": "24x36 Metal & Wood Mirror, Brown", "asin": "B09PVRG7GQ", "tier": "X", "parent": "24x36 Metal & Wood Mirror, Brown"}, {"sku": "FM21C0774", "brand": "Barnyard Designs", "name": "24x36 Harper Metal Mirror, Black", "asin": "B09PVRZKGK", "tier": "X", "parent": "24x36 Harper Metal Mirror, Black"}, {"sku": "FM19G0776-S2", "brand": "Barnyard Designs", "name": "S/2 Preston Brown & White Picture Frames, 4x6", "asin": "B09YJSQJX6", "tier": "X", "parent": "Preston Picture Frame"}, {"sku": "FM18Y0082-RL", "brand": "Barnyard Designs", "name": "No Mistakes Only Lessons Box Sign", "asin": "B0BL5Q4422", "tier": "X", "parent": "Positivity Signs"}, {"sku": "FM18Y0114-RL", "brand": "Barnyard Designs", "name": "You Are My Sunshine Box Sign", "asin": "B07GGDRWPY", "tier": "X", "parent": "Love Box Signs"}, {"sku": "FM17G0455-RL", "brand": "Barnyard Designs", "name": "Life Is Better At the Lake Box Sign", "asin": "B0BL4ZVPTJ", "tier": "X", "parent": "Life Is Better Box Sign"}, {"sku": "FM18R0125-RL", "brand": "Barnyard Designs", "name": "Between the Pages Box Sign", "asin": "B0BL51PXPZ", "tier": "X", "parent": "Books Box Signs"}, {"sku": "FM17G0642-RL", "brand": "Barnyard Designs", "name": "One Small Positive Thought Box Sign", "asin": "B078C7DBMT", "tier": "X", "parent": "Positivity Signs"}, {"sku": "FM17C0729-RL", "brand": "Barnyard Designs", "name": "Gangster Rap Box Sign", "asin": "B0BL5GCZSC", "tier": "X", "parent": "Coffee Signs"}, {"sku": "FM22C0587", "brand": "Barnyard Designs", "name": "20x30 Rectangle Rattan Mirror", "asin": "B0BYKG22SR", "tier": "X", "parent": "Rattan Mirrors"}, {"sku": "FM22A1326", "brand": "Barnyard Designs", "name": "25.5\" Round Rattan Mirror", "asin": "B0BYKHPHF7", "tier": "X", "parent": "Rattan Mirrors"}, {"sku": "FM22S0471", "brand": "Barnyard Designs", "name": "26\" Round Crown Mirror", "asin": "B0C7LMDLVG", "tier": "X", "parent": "Standard Crown Mirror"}, {"sku": "FM22C0587L", "brand": "Barnyard Designs", "name": "24\" x 36\" Rectangle Rattan Mirror", "asin": "B0CFN2RCNS", "tier": "X", "parent": "Rattan Mirrors"}, {"sku": "DMC-WELDB", "brand": "Barnyard Designs", "name": "Welcome Coir Mat", "asin": "B0CQ3R952L", "tier": "A", "parent": "Coir Doormat"}, {"sku": "DMC-DBOR", "brand": "Barnyard Designs", "name": "Border Coir Mat", "asin": "B0CQ42QR5B", "tier": "A", "parent": "Coir Doormat"}, {"sku": "DMC-YALL", "brand": "Barnyard Designs", "name": "Y'all Coir Mat", "asin": "B0CQ3RS233", "tier": "C", "parent": "Coir Doormat"}, {"sku": "DMC-PAWS", "brand": "Barnyard Designs", "name": "Paws Coir Mat", "asin": "B0CQ3Q92KN", "tier": "A", "parent": "Coir Doormat"}, {"sku": "DMC-WRHE", "brand": "Barnyard Designs", "name": "Hello Coir Mat", "asin": "B0CQ3WV831", "tier": "X", "parent": "Coir Doormat"}, {"sku": "DMC-PAWB", "brand": "Barnyard Designs", "name": "Welcome Paws Coir Mat", "asin": "B0CQ3VKSWH", "tier": "C", "parent": "Coir Doormat"}, {"sku": "DMC-CHAOS", "brand": "Barnyard Designs", "name": "Chaos Coir Mat", "asin": "B0CQ3WSQDK", "tier": "B", "parent": "Coir Doormat"}, {"sku": "DMC-BLANK", "brand": "Barnyard Designs", "name": "Blank Coir Mat", "asin": "B0CQ42NP71", "tier": "C", "parent": "Coir Doormat"}, {"sku": "XT006-HMW", "brand": "Barnyard Designs", "name": "Classic Welcome Half Moon Doormat", "asin": "B0CQKKCYFD", "tier": "X", "parent": "Half Moon"}, {"sku": "CR102-COF-W", "brand": "Barnyard Designs", "name": "Abby Coffee Canister, White", "asin": "B0CTNW674M", "tier": "C", "parent": "s/3 Abby Canisters"}, {"sku": "FM23A2149", "brand": "Barnyard Designs", "name": "25x30 Asymmetrical Rattan Mirror", "asin": "B0CTNNMJ52", "tier": "X", "parent": "Rattan Mirrors"}, {"sku": "FM22A1345", "brand": "Barnyard Designs", "name": "20\" X 30\" Oval Rattan Mirror", "asin": "B0CW2525FH", "tier": "X", "parent": "Rattan Mirrors"}, {"sku": "XT001-BLANK", "brand": "Barnyard Designs", "name": "Blank Rectangle Doormat", "asin": "B0CV84YS29", "tier": "C", "parent": "Poly Rectangle Doormats"}, {"sku": "FM24C0002", "brand": "Barnyard Designs", "name": "Ceramic Dog and Cat Treat Canister", "asin": "B0CYN3ZWJG", "tier": "X", "parent": "Ceramic Pet Treat Canisters"}, {"sku": "FM24C0003", "brand": "Barnyard Designs", "name": "Ceramic Cat Treat Canister", "asin": "B0CYNBS94X", "tier": "X", "parent": "Ceramic Pet Treat Canisters"}, {"sku": "HD18P587-BL", "brand": "Barnyard Designs", "name": "Bone Treat Canister, Black", "asin": "B0CXYY4VVM", "tier": "B", "parent": "Bone Treat Canister"}, {"sku": "HD19B235-BL", "brand": "Barnyard Designs", "name": "Farmhouse Kitchen Utensil Holder, Black", "asin": "B0CXYQHBX3", "tier": "A", "parent": "Thick Utensil Holder"}, {"sku": "SB-BASIL", "brand": "Seedboy", "name": "Organic Basil Packet (250 Seeds)", "asin": "B0D1KSSRBN", "tier": "C", "parent": "Herb Seed Packets"}, {"sku": "SB-THYME", "brand": "Seedboy", "name": "Organic Thyme Packet (250 Seeds)", "asin": "B0D1KV5D8T", "tier": "X", "parent": "Herb Seed Packets"}, {"sku": "DMC-WELB-30HM", "brand": "Barnyard Designs", "name": "Welcome Half Moon Coir Mat", "asin": "B0D365XWR1", "tier": "X", "parent": "Half Moon Coir Doormat"}, {"sku": "DMC-DBOR-36HM", "brand": "Barnyard Designs", "name": "Border 36\" Half Moon Coir Mat", "asin": "B0D366JJ27", "tier": "X", "parent": "Half Moon Coir Doormat"}, {"sku": "DMC-WELDB-36", "brand": "Barnyard Designs", "name": "Welcome 36\" Coir Mat", "asin": "B0D366G1FH", "tier": "A", "parent": "Coir Doormat"}, {"sku": "DMC-DBOR-36", "brand": "Barnyard Designs", "name": "Border 36\" Coir Mat", "asin": "B0D366LJZT", "tier": "A", "parent": "Coir Doormat"}, {"sku": "DMC-WRHE-36", "brand": "Barnyard Designs", "name": "Hello 36\" Coir Mat", "asin": "B0D366N552", "tier": "X", "parent": "Coir Doormat"}, {"sku": "DMC-YALL-36", "brand": "Barnyard Designs", "name": "Y'all 36\" Coir Mat", "asin": "B0D364R2HQ", "tier": "C", "parent": "Coir Doormat"}, {"sku": "DMC-WELDB-48", "brand": "Barnyard Designs", "name": "Welcome 48\" Coir Mat", "asin": "B0D365HVJN", "tier": "A", "parent": "Coir Doormat"}, {"sku": "DMC-DBOR-48", "brand": "Barnyard Designs", "name": "Border 48\" Coir Mat", "asin": "B0D3656XHK", "tier": "A", "parent": "Coir Doormat"}, {"sku": "DMC-WELDB-72", "brand": "Barnyard Designs", "name": "Welcome 72\" Coir Mat", "asin": "B0D36696MY", "tier": "A", "parent": "Coir Doormat"}, {"sku": "DMC-DBOR-72", "brand": "Barnyard Designs", "name": "Border 72\" Coir Mat", "asin": "B0D365TMXK", "tier": "A", "parent": "Coir Doormat"}, {"sku": "AK113-Black", "brand": "Barnyard Designs", "name": "Black Think Green Compost Bin", "asin": "B0D6SMV7LP", "tier": "C", "parent": "Compost Bins"}, {"sku": "DMC-SNOWF", "brand": "Barnyard Designs", "name": "Snowflake Coir Mat", "asin": "B0D7X78QRQ", "tier": "A", "parent": "Coir Doormat"}, {"sku": "DMC-FOREST", "brand": "Barnyard Designs", "name": "Forest Coir Mat", "asin": "B0D7X6Q3TR", "tier": "A", "parent": "Coir Doormat"}, {"sku": "IS-BLOCK-01", "brand": "Seedboy", "name": "InstaSoil - 10lb Block", "asin": "B0D9ZDCBBX", "tier": "X", "parent": "InstaSoil"}, {"sku": "SB-PEPPERMINT", "brand": "Seedboy", "name": "Organic Peppermint Packet (250 Seeds)", "asin": "B0DH8Y3N2B", "tier": "X", "parent": "Herb Seed Packets"}, {"sku": "SS-SALAD-8OZ", "brand": "Seedboy", "name": "Sprouting Seeds: Organic Salad Mix (8 oz)", "asin": "B0DL79BPQW", "tier": "A", "parent": "Sprouting Seeds"}, {"sku": "SB-ARUGULA", "brand": "Seedboy", "name": "Organic Arugula (1000 Seeds)", "asin": "B0DPLHXFZX", "tier": "C", "parent": "Herb Seed Packets"}, {"sku": "SS-SUPERF-8OZ", "brand": "Seedboy", "name": "Sprouting Seeds: Organic Superfood Blend (8 oz)", "asin": "B0DPLJ4X42", "tier": "B", "parent": "Sprouting Seeds"}, {"sku": "SS-BROCCO-8OZ", "brand": "Seedboy", "name": "Sprouting Seeds: Organic Broccoli (8 oz)", "asin": "B0DPLGJ3XG", "tier": "C", "parent": "Sprouting Seeds"}, {"sku": "SS-ALFALFA-8OZ", "brand": "Seedboy", "name": "Sprouting Seeds: Organic Alfalfa (8 oz)", "asin": "B0DPLJWMPN", "tier": "C", "parent": "Sprouting Seeds"}, {"sku": "SS-FENUGR-8OZ", "brand": "Seedboy", "name": "Sprouting Seeds: Organic Fenugreek (8 oz)", "asin": "B0DPLGWTWG", "tier": "X", "parent": "Sprouting Seeds"}, {"sku": "SS-WHEATG-8OZ", "brand": "Seedboy", "name": "Sprouting Seeds: Organic Wheatgrass (8 oz)", "asin": "B0DPLGVDR9", "tier": "C", "parent": "Grass Sprouting Seeds"}, {"sku": "SS-MUNGBE-8OZ", "brand": "Seedboy", "name": "Sprouting Seeds: Organic Mung Bean (8 oz)", "asin": "B0DPLHBYQ4", "tier": "C", "parent": "Sprouting Seeds"}, {"sku": "SS-CLOVER-8OZ", "brand": "Seedboy", "name": "Sprouting Seeds: Organic Clover (8 oz)", "asin": "B0DPLJGYJ9", "tier": "C", "parent": "Sprouting Seeds"}, {"sku": "SS-SUNFLO-8OZ", "brand": "Seedboy", "name": "Sprouting Seeds: Organic Sunflower (8 oz)", "asin": "B0DPLHVR1Y", "tier": "C", "parent": "Flower Sprouting Seeds"}, {"sku": "SS-RADISH-8OZ", "brand": "Seedboy", "name": "Sprouting Seeds: Organic Radish (8 oz)", "asin": "B0DPLHFRX8", "tier": "C", "parent": "Sprouting Seeds"}, {"sku": "SS-PROTEIN-8OZ", "brand": "Seedboy", "name": "Sprouting Seeds: Organic Protein Blend (8 oz)", "asin": "B0DPLGJJKQ", "tier": "C", "parent": "Sprouting Seeds"}, {"sku": "SB-DILL", "brand": "Seedboy", "name": "Organic Dill (850 Seeds)", "asin": "B0DPLHMVN8", "tier": "X", "parent": "Herb Seed Packets"}, {"sku": "SB-LETTUCE", "brand": "Seedboy", "name": "Organic Lettuce (500 Seeds)", "asin": "B0DPLHFNQY", "tier": "C", "parent": "Vegetable Seed Packets"}, {"sku": "SB-RADISH", "brand": "Seedboy", "name": "Organic Radish (500 Seeds)", "asin": "B0DPLHYLJT", "tier": "C", "parent": "Vegetable Seed Packets"}, {"sku": "DMC-BLANK-36", "brand": "Barnyard Designs", "name": "Blank 36\" Coir Mat", "asin": "B0DPNGPLM8", "tier": "B", "parent": "Coir Doormat"}, {"sku": "DMC-BLANK-48", "brand": "Barnyard Designs", "name": "Blank 48\" Coir Mat", "asin": "B0DPNC1S5Y", "tier": "B", "parent": "Coir Doormat"}, {"sku": "DMC-BLANK-72", "brand": "Barnyard Designs", "name": "Blank 72\" Coir Mat", "asin": "B0DPNDWR5B", "tier": "B", "parent": "Coir Doormat"}, {"sku": "DMC-PAWS-36", "brand": "Barnyard Designs", "name": "Paws 36\" Coir Mat", "asin": "B0DPNF8GPL", "tier": "B", "parent": "Coir Doormat"}, {"sku": "DMC-PAWS-48", "brand": "Barnyard Designs", "name": "Paws 48\" Coir Mat", "asin": "B0DPNGVH85", "tier": "B", "parent": "Coir Doormat"}, {"sku": "DMC-HELLO", "brand": "Barnyard Designs", "name": "Hello 30\" Coir Mat", "asin": "B0DPNFY6K7", "tier": "C", "parent": "Coir Doormat"}, {"sku": "DMC-HELLO-36", "brand": "Barnyard Designs", "name": "Hello 36\" Coir Mat", "asin": "B0DPNHC376", "tier": "C", "parent": "Coir Doormat"}, {"sku": "DMC-HSH", "brand": "Barnyard Designs", "name": "Home Sweet Home 30\" Coir Mat", "asin": "B0DPNF4XBG", "tier": "C", "parent": "Coir Doormat"}, {"sku": "DMC-HSH-36", "brand": "Barnyard Designs", "name": "Home Sweet Home 36\" Coir Mat", "asin": "B0DPNGQZ12", "tier": "B", "parent": "Coir Doormat"}, {"sku": "JAR-SALAD-8OZ", "brand": "Seedboy", "name": "Jar + Salad Blend 8 oz. Bag\n(8 oz. Salad Blend, Quart Jar, L", "asin": "B0DT2YGZNL", "tier": "C", "parent": "Sprouting Seeds"}, {"sku": "SS-SF-PRO-2PCK", "brand": "Seedboy", "name": "2 Pack Sprouting Seeds - Superfood & Protein", "asin": "B0DT2Q13RQ", "tier": "B", "parent": "Sprouting Seeds"}, {"sku": "XT001-BLANK-36", "brand": "Barnyard Designs", "name": "Blank 36\" Poly Mat", "asin": "B0DV7MS4KS", "tier": "C", "parent": "Poly Rectangle Doormats"}, {"sku": "XT001-2-36", "brand": "Barnyard Designs", "name": "Hello 36\" Poly Mat", "asin": "B0DV7C6C2M", "tier": "C", "parent": "Poly Rectangle Doormats"}, {"sku": "XT001-5-36", "brand": "Barnyard Designs", "name": "Home Sweet Home 36\" Poly Mat", "asin": "B0DV7TYBVC", "tier": "C", "parent": "Poly Rectangle Doormats"}, {"sku": "XT001-7-36", "brand": "Barnyard Designs", "name": "Oh Hello 36\" Poly Mat", "asin": "B0DV74ZJ2Z", "tier": "C", "parent": "Poly Rectangle Doormats"}, {"sku": "XT001-HSH-36", "brand": "Barnyard Designs", "name": "Home Sweet Home Script 36\" Poly Mat", "asin": "B0DV7TL912", "tier": "C", "parent": "Poly Rectangle Doormats"}, {"sku": "SB-DWARFSUN", "brand": "Seedboy", "name": "Teddy Bear Sunflower Seed Packet (50 Seeds)", "asin": "B0DVJB1NNX", "tier": "C", "parent": "Flower Seed Packets"}, {"sku": "SB-GIANTSUN", "brand": "Seedboy", "name": "Organic Giant Sunflower Seed Packet (75 Seeds)", "asin": "B0DVJ6GDFW", "tier": "X", "parent": "Flower Seed Packets"}, {"sku": "SB-HERB10VAR", "brand": "Seedboy", "name": "10-Pack: Basil, Cilantro, Mint, Oregano, Parsley, Thyme, Chi", "asin": "B0DVJT9GW1", "tier": "C", "parent": "Herb Seed Packets"}, {"sku": "SB-POLLIN-2OZ", "brand": "Seedboy", "name": "Wildflowers for Pollinators - 2 oz.", "asin": "B0F1GG4THG", "tier": "C", "parent": "Wildflower Seeds"}, {"sku": "SB-POLLIN-8OZ", "brand": "Seedboy", "name": "Wildflowers for Pollinators - 8 oz.", "asin": "B0F1GKJ2PW", "tier": "C", "parent": "Wildflower Seeds"}, {"sku": "SB-BEETS", "brand": "Seedboy", "name": "Organic Beets (330 Seeds)", "asin": "B0F1GMNFMG", "tier": "C", "parent": "Vegetable Seed Packets"}, {"sku": "SB-BELLPEP", "brand": "Seedboy", "name": "Organic Bell Pepper (95 Seeds)", "asin": "B0F1GHV733", "tier": "C", "parent": "Vegetable Seed Packets"}, {"sku": "SB-CARROT", "brand": "Seedboy", "name": "Organic Carrot (3000 Seeds)", "asin": "B0F1GHGYT6", "tier": "C", "parent": "Vegetable Seed Packets"}, {"sku": "SB-RAINCAR", "brand": "Seedboy", "name": "Organic Rainbow Carrot Blend (600 Seeds)", "asin": "B0F1H18QZS", "tier": "C", "parent": "Vegetable Seed Packets"}, {"sku": "SB-CUCUMBER", "brand": "Seedboy", "name": "Organic Cucumber (100 Seeds)", "asin": "B0F1GMWMLZ", "tier": "C", "parent": "Vegetable Seed Packets"}, {"sku": "SB-GHOSTPEP", "brand": "Seedboy", "name": "Ghost Pepper (50 Seeds)", "asin": "B0F1GMVH5Y", "tier": "X", "parent": "Vegetable Seed Packets"}, {"sku": "SB-GRBEAN", "brand": "Seedboy", "name": "Organic Green Beans (45 Seeds)", "asin": "B0F1GGS5Y5", "tier": "C", "parent": "Vegetable Seed Packets"}, {"sku": "SB-KALE", "brand": "Seedboy", "name": "Organic Kale (500 Seeds)", "asin": "B0F1GF89H3", "tier": "C", "parent": "Vegetable Seed Packets"}, {"sku": "SB-PEAS", "brand": "Seedboy", "name": "Organic Peas (55 Seeds)", "asin": "B0F1GD1F4T", "tier": "C", "parent": "Vegetable Seed Packets"}, {"sku": "SB-SUMSQUASH", "brand": "Seedboy", "name": "Organic Summer Squash (50 Seeds)", "asin": "B0F1GHWSVJ", "tier": "C", "parent": "Vegetable Seed Packets"}, {"sku": "SB-BEEFTOM", "brand": "Seedboy", "name": "Organic Beefsteak Tomato (60 Seeds)", "asin": "B0F1GGWMCT", "tier": "C", "parent": "Vegetable Seed Packets"}, {"sku": "SB-CHETOM", "brand": "Seedboy", "name": "Organic Cherry Tomato Blend (80 Seeds)", "asin": "B0F1GDQRMG", "tier": "C", "parent": "Vegetable Seed Packets"}, {"sku": "SB-WINSQUASH", "brand": "Seedboy", "name": "Organic Winter Squash (25 Seeds)", "asin": "B0F1GV4KYB", "tier": "C", "parent": "Vegetable Seed Packets"}, {"sku": "SB-ZUCCHINI", "brand": "Seedboy", "name": "Organic Zucchini (40 Seeds)", "asin": "B0F1GJ3HFX", "tier": "C", "parent": "Vegetable Seed Packets"}, {"sku": "SB-HERBGKIT", "brand": "Seedboy", "name": "10 Herb Garden Kit", "asin": "B0F1GHYFMS", "tier": "N", "parent": "Herb Seed Packets"}, {"sku": "DMC-FOREST-36", "brand": "Barnyard Designs", "name": "Forest 36\" Coir Mat", "asin": "B0F4YZY2FP", "tier": "B", "parent": "Coir Doormat"}, {"sku": "DMC-SNOWF-36", "brand": "Barnyard Designs", "name": "Snowflake 36\" Coir Mat", "asin": "B0F4ZFVXXT", "tier": "B", "parent": "Coir Doormat"}, {"sku": "SS-CATGRA-8OZ", "brand": "Seedboy", "name": "Cat Grass Seeds - 8 oz", "asin": "B0F85KHRBD", "tier": "C", "parent": "Grass Sprouting Seeds"}, {"sku": "SS-CATGRA-16OZ", "brand": "Seedboy", "name": "Cat Grass Seeds - 16 oz", "asin": "B0F85CTMR5", "tier": "C", "parent": "Grass Sprouting Seeds"}, {"sku": "XT005-BORD", "brand": "Barnyard Designs", "name": "Border 30\" Poly Doormat", "asin": "B0FBP72G46", "tier": "N", "parent": "Poly Rectangle Doormats"}, {"sku": "XT005-WELC", "brand": "Barnyard Designs", "name": "Cursive Welcome 30\" Poly Doormat", "asin": "B0FBNVG5SV", "tier": "N", "parent": "Poly Rectangle Doormats"}, {"sku": "XT005-BIGHE", "brand": "Barnyard Designs", "name": "Thick Hello 30\" Poly Doormat", "asin": "B0FBP82NGZ", "tier": "N", "parent": "Poly Rectangle Doormats"}, {"sku": "SS-GUT-8OZ", "brand": "Seedboy", "name": "Sprouting Seeds: Gut Health Digestive Blend (8 oz)", "asin": "B0FCPM1F8P", "tier": "C", "parent": "Sprouting Seeds"}, {"sku": "SS-IMMU-8OZ", "brand": "Seedboy", "name": "Sprouting Seeds: Immune System Booster Blend (8 oz)", "asin": "B0FCPD8RZ9", "tier": "C", "parent": "Sprouting Seeds"}, {"sku": "SS-LONG-8OZ", "brand": "Seedboy", "name": "Sprouting Seeds: Longevity Blend (8 oz)", "asin": "B0FCPCFJB5", "tier": "C", "parent": "Sprouting Seeds"}, {"sku": "SS-HORM-8OZ", "brand": "Seedboy", "name": "Sprouting Seeds: Hormone Balance Blend (8 oz)", "asin": "B0FCQ9DP3P", "tier": "C", "parent": "Sprouting Seeds"}, {"sku": "DMRUB-30", "brand": "Barnyard Designs", "name": "17\" x 30\" Rubber Mat", "asin": "B0FMHWS2GT", "tier": "N", "parent": "Rubber Floor Mat"}, {"sku": "DMRUB-30-S2", "brand": "Barnyard Designs", "name": "17\" x 30\" Rubber Mat (2-Pack)", "asin": "B0FMJCM33B", "tier": "N", "parent": "Rubber Floor Mat"}, {"sku": "DMRUB-36", "brand": "Barnyard Designs", "name": "24\" x 36\" Rubber Mat", "asin": "B0FMJ4G767", "tier": "N", "parent": "Rubber Floor Mat"}, {"sku": "DMRUB-36-S2", "brand": "Barnyard Designs", "name": "24\" x 36\" Rubber Mat (2 Pack)", "asin": "B0FMJCRWC8", "tier": "N", "parent": "Rubber Floor Mat"}, {"sku": "DMRUB-60", "brand": "Barnyard Designs", "name": "36\" x 60\" Rubber Mat", "asin": "B0FMHZ5NR5", "tier": "N", "parent": "Rubber Floor Mat"}, {"sku": "DMRUB-60-S2", "brand": "Barnyard Designs", "name": "36\" x 60\" Rubber Mat (2 Pack)", "asin": "B0FMJ7MKSR", "tier": "N", "parent": "Rubber Floor Mat"}, {"sku": "DMRUB-120", "brand": "Barnyard Designs", "name": "36\" x 120\" Rubber Mat", "asin": "B0FMJ9727C", "tier": "N", "parent": "Rubber Floor Mat"}, {"sku": "DMGR-30-S2", "brand": "Barnyard Designs", "name": "17\" x 30\" Doormat - Grey (2-Pack)", "asin": "B0FMJ6V691", "tier": "N", "parent": "Gray Crosshatch"}, {"sku": "DMGR-36-S2", "brand": "Barnyard Designs", "name": "24\" x 36\" Doormat - Grey (2-Pack)", "asin": "B0FMHVDS61", "tier": "N", "parent": "Gray Crosshatch"}, {"sku": "DMGR-48-S2", "brand": "Barnyard Designs", "name": "30\" x 48\" Doormat - Grey (2-Pack)", "asin": "B0FMJ4MT5S", "tier": "N", "parent": "Gray Crosshatch"}, {"sku": "DMC-BIRDS", "brand": "Barnyard Designs", "name": "Birds 30\" Coir Doormat", "asin": "B0FPHRRB17", "tier": "N", "parent": "Coir Doormat"}, {"sku": "RTNMIR-RD26", "brand": "Barnyard Designs", "name": "25.5\" Round Rattan Mirror", "asin": "B0FQCGWMDB", "tier": "N", "parent": "Indo Rattan Mirrors"}, {"sku": "RTNMIR-2030", "brand": "Barnyard Designs", "name": "20x30 Rectangle Rattan Mirror", "asin": "B0FQCCDT75", "tier": "N", "parent": "Indo Rattan Mirrors"}, {"sku": "RTNMIR-2436", "brand": "Barnyard Designs", "name": "24x36 Rectangle Rattan Mirror", "asin": "B0FQCG8Y7X", "tier": "N", "parent": "Indo Rattan Mirrors"}, {"sku": "SS-ESSE-4PCK", "brand": "Seedboy", "name": "Essential 4 Pack: Salad, Superfood, Broccoli, Gut Health", "asin": "B0FY4N1QZF", "tier": "N", "parent": "Sprouting Seeds"}, {"sku": "SS-EVERY-2PCK", "brand": "Seedboy", "name": "Everyday 2-Pack: Salad, Superfood", "asin": "B0FY4QB15N", "tier": "N", "parent": "Sprouting Seeds"}, {"sku": "SS-YOLK-8OZ", "brand": "Seedboy", "name": "Sprouting Seeds: Golden Yolk Blend Wheatgrass 50%, Sunflower", "asin": "B0GM8X33QM", "tier": "N", "parent": "Sprouting Seeds"}];
+const DATA_URL="https://raw.githubusercontent.com/mjbaguhin/cpc-tracker/main/data.json";
+const CK="bys_v15";
+const KE=21564000;
+const TC={A:{c:"#92400e",b:"#fef3c7",bc:"#f59e0b"},B:{c:"#1e40af",b:"#dbeafe",bc:"#93c5fd"},C:{c:"#374151",b:"#f3f4f6",bc:"#d1d5db"},X:{c:"#6b7280",b:"#f9fafb",bc:"#e5e7eb"},N:{c:"#5b21b6",b:"#ede9fe",bc:"#c4b5fd"}};
+let RD={},BF="All",TF="All",PF="",Q="",SM="drop-today",ALL_PARENTS=[];
+
+// ── PARENT DROPDOWN ──────────────────────────────────────────────────────────
+function buildPD(bf){
+  var f=CATALOG.filter(function(i){return i.parent&&(bf==="All"||i.brand===bf);});
+  var p=[];f.forEach(function(i){if(p.indexOf(i.parent)===-1)p.push(i.parent);});
+  p.sort();ALL_PARENTS=p;
+  if(PF&&p.indexOf(PF)===-1){PF="";document.getElementById("parent-search").value="";}
+  renderPL("");
+}
+function renderPL(q){
+  var list=document.getElementById("parent-list");list.innerHTML="";
+  var ai=document.createElement("div");ai.textContent="All parent ASINs";
+  ai.style.cssText="padding:7px 12px;cursor:pointer;font-size:11px;color:"+(PF===""?"#2563eb":"#64748b")+";font-weight:"+(PF===""?"700":"400")+";background:"+(PF===""?"#eff6ff":"#fff");
+  ai.onmousedown=function(){selP("","");};list.appendChild(ai);
+  var qq=q.toLowerCase();
+  ALL_PARENTS.filter(function(p){return!qq||p.toLowerCase().indexOf(qq)>-1;}).forEach(function(p){
+    var item=document.createElement("div");item.textContent=p;var ia=PF===p;
+    item.style.cssText="padding:7px 12px;cursor:pointer;font-size:11px;color:"+(ia?"#2563eb":"#0f172a")+";font-weight:"+(ia?"700":"400")+";background:"+(ia?"#eff6ff":"#fff");
+    item.onmousedown=function(){selP(p,p);};list.appendChild(item);
+  });
+}
+function selP(v,l){PF=v;document.getElementById("parent-search").value=l;hidePL();render();}
+function filterPL(q){renderPL(q);showPL();}
+function showPL(){renderPL(document.getElementById("parent-search").value);document.getElementById("parent-list").style.display="block";}
+function hidePL(){document.getElementById("parent-list").style.display="none";}
+buildPD("All");
+
+// ── CACHE ────────────────────────────────────────────────────────────────────
+function today(){var d=new Date();return d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0")+"-"+String(d.getDate()).padStart(2,"0");}
+function saveC(d){try{localStorage.setItem(CK,JSON.stringify({date:today(),data:d}));}catch(e){}}
+function loadC(){try{var r=localStorage.getItem(CK);if(!r)return null;var o=JSON.parse(r);return o.date===today()?o.data:null;}catch(e){return null;}}
+function clearC(){try{localStorage.removeItem(CK);}catch(e){}}
+function setP(p){var w=document.getElementById("pb-w"),b=document.getElementById("pb");if(p>=100){w.style.display="none";return;}w.style.display="block";b.style.width=p+"%";}
+
+// ── MAIN LOAD FROM GITHUB ────────────────────────────────────────────────────
+async function doLoad(){
+  var btn=document.getElementById("rfbtn"),msg=document.getElementById("msg");
+  // Check today's cache
+  var c=loadC();
+  if(c){
+    restoreC(c);
+    msg.className="cache";
+    msg.textContent="Loaded from cache — click again to force refresh";
+    return;
+  }
+  btn.disabled=true;
+  document.getElementById("rfbtn").querySelector("#rlbl")||document.getElementById("rlbl");
+  msg.className="inf";msg.textContent="Loading...";setP(20);
+  try{
+    var r=await fetch(DATA_URL+"?nc="+Date.now());
+    if(!r.ok)throw new Error("HTTP "+r.status);
+    setP(60);
+    var j=await r.json();
+    setP(90);
+    // Check if this is real rating data or just test data
+    if(j.test){
+      msg.className="err";
+      msg.textContent="No real data yet — run fetchAndPushToGitHub in Apps Script first, then try again.";
+      btn.disabled=false;setP(100);return;
+    }
+    var raw=j.data||{};
+    var res={};
+    Object.keys(raw).forEach(function(a){
+      var d=raw[a];
+      res[a]={cur:d.cur,r1:d.r1,r30:d.r30,r90:d.r90,r180:d.r180,
+        rev:d.rev,bsr:d.bsr||null,bsrCat:d.bsrCat||null,
+        rh:(d.rh||[]).map(function(x){return{d:new Date(x.d),v:x.v};})};
+    });
+    saveC(res);RD=res;setP(100);
+    var trk=Object.keys(RD).filter(function(a){return RD[a].cur!==null;}).length;
+    var fa=j.fetched_at_pht||j.fetched_at||"unknown";
+    msg.className="ok";msg.textContent=trk+" ASINs loaded · data from "+fa+" · 0 tokens";
+    document.getElementById("lup").textContent="Data from "+fa;
+  }catch(e){
+    setP(100);
+    msg.className="err";
+    msg.innerHTML="Could not load data: "+e.message+" — try Emergency Fetch if before 6:30 AM PHT";
+    document.getElementById("admBtn").style.display="inline-flex";
+  }
+  btn.disabled=false;
+  updateStats();render();
+}
+
+// ── EMERGENCY DIRECT KEEPA FETCH ─────────────────────────────────────────────
+async function doEmergency(){
+  if(!confirm("Fetch directly from Keepa? Costs ~176 tokens."))return;
+  var btn=document.getElementById("rfbtn"),msg=document.getElementById("msg");
+  clearC();btn.disabled=true;msg.className="inf";msg.textContent="Fetching from Keepa...";setP(5);
+  var API_KEY="224a0ejmihbtojiemu9rok65oagaqpdg4p1h1j62p77e0c1j41ee6m96hkt31msa";
+  try{
+    var asins=CATALOG.map(function(s){return s.asin;});
+    var batches=[];for(var i=0;i<asins.length;i+=100)batches.push(asins.slice(i,i+100));
+    var prods=[],tkn=null;
+    for(var bi=0;bi<batches.length;bi++){
+      msg.textContent="Batch "+(bi+1)+"/"+batches.length+"...";setP(10+(bi/batches.length)*78);
+      var r=await fetch("https://api.keepa.com/product?key="+API_KEY+"&domain=1&asin="+batches[bi].join(",")+"&history=1&rating=1");
+      if(!r.ok){if(r.status===429)throw new Error("TOKEN_LIMIT");throw new Error("HTTP "+r.status);}
+      var j=await r.json();
+      if(j.error){if(!j.tokensLeft||j.tokensLeft<10)throw new Error("TOKEN_LIMIT");throw new Error(j.error.message||"Keepa error");}
+      if(j.tokensLeft!==undefined&&j.tokensLeft<10)throw new Error("TOKEN_LIMIT");
+      if(j.tokensLeft!==undefined)tkn=j.tokensLeft;
+      if(j.products)prods=prods.concat(j.products);
+    }
+    setP(92);var res={};
+    prods.forEach(function(p){
+      if(!p||!p.asin)return;
+      var rh=parseArr(p.csv&&p.csv[16],true),vh=parseArr(p.csv&&p.csv[17],false),bh=parseArr(p.csv&&p.csv[3],false);
+      var cur=rh.length?rh[rh.length-1].v:null;
+      res[p.asin]={cur:cur,r1:ago(rh,1),r30:ago(rh,30),r90:ago(rh,90),r180:ago(rh,180),
+        rev:vh.length?vh[vh.length-1].v:null,bsr:bh.length?bh[bh.length-1].v:null,
+        bsrCat:p.salesRankReference||null,rh:rh};
+    });
+    saveC(res);RD=res;setP(100);
+    msg.className="ok";msg.textContent=Object.keys(RD).filter(function(a){return RD[a].cur!==null;}).length+" ASINs · "+(tkn||"?")+" tokens left";
+  }catch(e){
+    setP(100);
+    if(e.message==="TOKEN_LIMIT"){msg.className="err";msg.innerHTML="&#9888; Not enough tokens — wait ~35 min and try again";}
+    else{msg.className="err";msg.textContent="Error: "+e.message;}
+    btn.disabled=false;return;
+  }
+  btn.disabled=false;updateStats();render();
+}
+
+// ── KEEPA HELPERS ────────────────────────────────────────────────────────────
+function parseArr(a,div10){
+  if(!a||a.length<2)return[];
+  var o=[];for(var i=0;i<a.length-1;i+=2){if(a[i]<0||a[i+1]<0)continue;o.push({d:new Date((a[i]+KE)*60000),v:div10?a[i+1]/10:a[i+1]});}
+  return o.sort(function(a,b){return a.d-b.d;});
+}
+function ago(h,days){
+  if(!h||!h.length)return null;
+  var t=Date.now()-days*86400000,b=null;
+  for(var i=0;i<h.length;i++){if(h[i].d.getTime()<=t)b=h[i].v;else break;}
+  return b;
+}
+function restoreC(c){
+  RD={};
+  Object.keys(c).forEach(function(a){
+    var d=c[a];
+    RD[a]={cur:d.cur,r1:d.r1,r30:d.r30,r90:d.r90,r180:d.r180,rev:d.rev,bsr:d.bsr||null,bsrCat:d.bsrCat||null,
+      rh:(d.rh||[]).map(function(x){return{d:new Date(x.d),v:x.v};})};
+  });
+  document.getElementById("lup").textContent="From cache";
+  updateStats();render();
+}
+
+// ── STATS + BANNER ───────────────────────────────────────────────────────────
+function updateStats(){
+  var wd=CATALOG.filter(function(i){return RD[i.asin]&&RD[i.asin].cur!=null;});
+  var cs=wd.map(function(i){return RD[i.asin].cur;});
+  var avg=cs.length?(cs.reduce(function(a,b){return a+b;},0)/cs.length).toFixed(2):"--";
+  var crit=wd.filter(function(i){return RD[i.asin].cur<4.0;}).length;
+  var dec=wd.filter(function(i){var d=RD[i.asin];return d.r30!=null&&(d.cur-d.r30)<-0.05;}).length;
+  document.getElementById("s-avg").textContent=avg;
+  var ce=document.getElementById("s-crit");ce.textContent=crit;ce.style.color=crit>0?"#f87171":"#4ade80";
+  var de=document.getElementById("s-dec");de.textContent=dec;de.style.color=dec>0?"#fb923c":"#4ade80";
+  document.getElementById("s-cov").textContent=wd.length+"/"+CATALOG.length;
+  renderBanner(wd);
+}
+function renderBanner(wd){
+  var banner=document.getElementById("banner"),chips=document.getElementById("bchips");
+  var mv=wd.filter(function(i){var d=RD[i.asin];return d.r1!=null&&Math.abs(d.cur-d.r1)>0.005;});
+  if(!mv.length){banner.style.display="none";return;}
+  mv.sort(function(a,b){var da=RD[a.asin],db=RD[b.asin];return(da.cur-da.r1)-(db.cur-db.r1);});
+  var hasDrop=mv.some(function(i){return RD[i.asin].cur<RD[i.asin].r1;});
+  banner.style.display="block";banner.style.background=hasDrop?"#fff1f2":"#f0fdf4";banner.style.borderBottomColor=hasDrop?"#fca5a5":"#86efac";
+  chips.innerHTML="";
+  var lbl=document.createElement("span");lbl.className="blbl";lbl.style.color=hasDrop?"#b91c1c":"#15803d";lbl.textContent="Today's movements:";chips.appendChild(lbl);
+  mv.forEach(function(item){
+    var d=RD[item.asin],isUp=d.cur>d.r1;
+    var chip=document.createElement("div");chip.className="chip "+(isUp?"chip-up":"chip-dn");
+    chip.innerHTML='<span class="cff">'+d.r1.toFixed(1)+'★</span><span class="car">'+(isUp?"↑":"↓")+'</span><span class="cto">'+d.cur.toFixed(1)+'★</span><span class="cnm">'+item.name+"</span>";
+    chip.onclick=function(){Q=item.sku;document.getElementById("srch").value=item.sku;render();};
+    chips.appendChild(chip);
+  });
+}
+
+// ── RENDER TABLE ─────────────────────────────────────────────────────────────
+function mvHtml(from,to){
+  if(from==null||to==null)return '<div class="mv ND">--</div>';
+  var d=to-from,cls=d<-0.005?"DN":d>0.005?"UP":"FL";
+  var arrow=d<-0.005?"↓":d>0.005?"↑":"→";
+  return '<div class="mv '+cls+'"><span class="fr">'+from.toFixed(1)+'★</span><span class="ar">'+arrow+'</span><span class="to">'+to.toFixed(1)+'★</span></div>';
+}
+function rowCls(cur,yest){
+  if(cur==null||yest==null)return"ND";
+  var d=cur-yest;if(d<=-0.2)return"DN";if(d<-0.005)return"DN2";if(d>0.005)return"UP";return"FL";
+}
+function spark(canvas,hist,cls){
+  if(!canvas)return;
+  var colors={DN:"#dc2626",DN2:"#f59e0b",UP:"#16a34a",FL:"#94a3b8",ND:"#cbd5e1"};
+  var color=colors[cls]||"#94a3b8";
+  var w=canvas.offsetWidth||80,h=26;canvas.width=w;canvas.height=h;
+  var ctx=canvas.getContext("2d");ctx.clearRect(0,0,w,h);
+  if(!hist||hist.length<2){ctx.strokeStyle="#e2e8f0";ctx.setLineDash([3,3]);ctx.lineWidth=1;ctx.beginPath();ctx.moveTo(0,h/2);ctx.lineTo(w,h/2);ctx.stroke();return;}
+  var vs=hist.map(function(x){return x.v;}),mn=Math.min.apply(null,vs)-.1,mx=Math.max.apply(null,vs)+.1,rng=mx-mn||.5;
+  var px=function(i){return i/(hist.length-1||1)*w;};
+  var py=function(v){return h-((v-mn)/rng)*h*.82-h*.09;};
+  var g=ctx.createLinearGradient(0,0,0,h);g.addColorStop(0,color+"28");g.addColorStop(1,color+"04");
+  ctx.beginPath();hist.forEach(function(x,i){i===0?ctx.moveTo(px(i),py(x.v)):ctx.lineTo(px(i),py(x.v));});
+  ctx.lineTo(px(hist.length-1),h);ctx.lineTo(0,h);ctx.closePath();ctx.fillStyle=g;ctx.fill();
+  ctx.beginPath();ctx.strokeStyle=color;ctx.lineWidth=2;ctx.lineJoin="round";ctx.setLineDash([]);
+  hist.forEach(function(x,i){i===0?ctx.moveTo(px(i),py(x.v)):ctx.lineTo(px(i),py(x.v));});ctx.stroke();
+  var li=hist.length-1;
+  ctx.beginPath();ctx.arc(px(li),py(hist[li].v),3,0,Math.PI*2);ctx.fillStyle="#fff";ctx.fill();
+  ctx.beginPath();ctx.arc(px(li),py(hist[li].v),3,0,Math.PI*2);ctx.strokeStyle=color;ctx.lineWidth=2;ctx.stroke();
+}
+function getList(){
+  var list=CATALOG.slice();
+  if(BF!=="All")list=list.filter(function(i){return i.brand===BF;});
+  if(TF!=="All")list=list.filter(function(i){return i.tier===TF;});
+  if(PF)list=list.filter(function(i){return i.parent===PF;});
+  if(Q){var q=Q.toLowerCase();list=list.filter(function(i){return i.name.toLowerCase().indexOf(q)>-1||i.sku.toLowerCase().indexOf(q)>-1||i.asin.toLowerCase().indexOf(q)>-1||i.parent.toLowerCase().indexOf(q)>-1;});}
+  var daily=function(i){var d=RD[i.asin];return d&&d.cur!=null&&d.r1!=null?d.cur-d.r1:null;};
+  var d30=function(i){var d=RD[i.asin];return d&&d.cur!=null&&d.r30!=null?d.cur-d.r30:null;};
+  if(SM==="drop-today")list.sort(function(a,b){return(daily(a)!=null?daily(a):99)-(daily(b)!=null?daily(b):99);});
+  else if(SM==="rise-today")list.sort(function(a,b){return(daily(b)!=null?daily(b):-99)-(daily(a)!=null?daily(a):-99);});
+  else if(SM==="drop-30")list.sort(function(a,b){return(d30(a)!=null?d30(a):99)-(d30(b)!=null?d30(b):99);});
+  else if(SM==="rating-lo")list.sort(function(a,b){return(RD[a.asin]?RD[a.asin].cur||0:0)-(RD[b.asin]?RD[b.asin].cur||0:0);});
+  else if(SM==="rating-hi")list.sort(function(a,b){return(RD[b.asin]?RD[b.asin].cur||0:0)-(RD[a.asin]?RD[a.asin].cur||0:0);});
+  else list.sort(function(a,b){return a.name.localeCompare(b.name);});
+  return list;
+}
+function render(){
+  var list=getList();
+  document.getElementById("shown").textContent=list.length+" SKUs shown";
+  var tb=document.getElementById("tbody");tb.innerHTML="";
+  if(!list.length){tb.innerHTML='<tr class="ND"><td></td><td colspan="9" class="empty">No SKUs match your filters</td></tr>';return;}
+  list.forEach(function(item,idx){
+    var d=RD[item.asin]||{},cur=d.cur!=null?d.cur:null;
+    var tc=TC[item.tier]||{c:"#6b7280",b:"#f9fafb",bc:"#e5e7eb"};
+    var cc=item.brand==="Seedboy"?"#059669":"#2563eb";
+    var cls=rowCls(cur,d.r1),cid="sp"+idx;
+    var tr=document.createElement("tr");tr.className=cls;
+    tr.innerHTML=
+      '<td style="padding:0;width:5px"></td>'+
+      '<td class="left" style="padding:8px 10px"><div style="display:flex;align-items:center">'+
+        '<span class="bd" style="background:'+cc+'"></span><div>'+
+        '<div class="nn" title="'+item.name+'">'+item.name+'</div>'+
+        '<div class="ns"><a href="https://www.amazon.com/dp/'+item.asin+'" target="_blank" style="color:#94a3b8;text-decoration:none">'+item.sku+'</a> · '+
+        '<a href="https://www.amazon.com/dp/'+item.asin+'" target="_blank" style="color:#94a3b8;text-decoration:none">'+item.asin+'</a></div>'+
+        (item.parent?'<div class="np">↳ '+item.parent+'</div>':'')+
+        '</div></div></td>'+
+      '<td><span class="tb" style="background:'+tc.b+';color:'+tc.c+';border:1px solid '+tc.bc+'">'+item.tier+'</span></td>'+
+      '<td><canvas id="'+cid+'" class="spark" style="width:80px;height:26px"></canvas></td>'+
+      '<td style="padding:5px 6px">'+mvHtml(d.r1,cur)+'</td>'+
+      '<td style="padding:5px 6px">'+mvHtml(d.r30,cur)+'</td>'+
+      '<td style="padding:5px 6px">'+mvHtml(d.r90,cur)+'</td>'+
+      '<td style="padding:5px 6px">'+mvHtml(d.r180,cur)+'</td>'+
+      '<td style="text-align:right;font-size:11px;color:#64748b;padding:8px 10px">'+(d.rev!=null?d.rev.toLocaleString():"--")+'</td>'+
+      '<td style="text-align:right;padding:8px 10px">'+
+        (d.bsr!=null?'<div style="font-size:11px;font-weight:700;color:#0f172a">#'+d.bsr.toLocaleString()+'</div>'+(d.bsrCat?'<div style="font-size:9px;color:#94a3b8">'+d.bsrCat+'</div>':''):'<span style="color:#e2e8f0">--</span>')+
+      '</td>';
+    tb.appendChild(tr);
+    setTimeout((function(id,h,c){return function(){spark(document.getElementById(id),h,c);};})(cid,d.rh||[],cls),15);
+  });
+}
+
+function setBrand(b,el){BF=b;PF="";document.getElementById("parent-search").value="";document.querySelectorAll(".fp").forEach(function(p){p.classList.remove("on");});el.classList.add("on");buildPD(b);render();}
+function setTier(t,el){TF=t;document.querySelectorAll(".tbtn").forEach(function(b){b.classList.remove("on");});el.classList.add("on");render();}
+function setQ(v){Q=v;render();}
+function setSort(v){SM=v;render();}
+
+// ── ON LOAD ───────────────────────────────────────────────────────────────────
+window.addEventListener("load",function(){
+  // Clear ALL old cache keys from previous versions
+  try{
+    ["bys_v13","bys_v14","cpc_drive_url"].forEach(function(k){localStorage.removeItem(k);});
+  }catch(e){}
+  // Check today's cache with current key
+  var c=loadC();
+  if(c){
+    restoreC(c);
+    document.getElementById("msg").className="cache";
+    document.getElementById("msg").textContent="Today's data loaded — click Load to refresh";
+  }
+});
+</script>
+</body>
+</html>
