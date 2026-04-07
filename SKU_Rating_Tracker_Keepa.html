@@ -94,7 +94,7 @@ td.left{text-align:left}
 <div id="top">
   <div>
     <div class="title">SKU Rating Tracker - CPC Brands</div>
-    <div class="sub">Barnyard Designs (126) - Seedboy (50) - 176 active ASINs - Auto-refreshed daily at 6:30 AM PHT via Google Apps Script</div>
+    <div class="sub">Barnyard Designs (126) - Seedboy (50) - 176 active ASINs - Data auto-refreshed at 6:30 AM PHT via Apps Script → GitHub</div>
   </div>
   <div id="topstats">
     <div class="ts"><div class="tv" id="s-avg" style="color:#fbbf24">--</div><div class="tl">Avg Rating</div></div>
@@ -108,13 +108,7 @@ td.left{text-align:left}
   <button id="rfbtn" onclick="loadFromDrive()"><span id="rico">&#8635;</span> <span id="rlbl">Load Today's Data</span></button>
   <button id="admBtn" onclick="forceKeepa()" title="Emergency fallback only — costs ~176 tokens">&#9888; Emergency Fetch</button>
   <span id="msg" class="inf">Ready - click Load to get today's ratings</span>
-  <div id="drive-url-wrap">
-    <div>Paste the Google Drive direct download URL for <strong>keepa_ratings_latest.json</strong></div>
-    <div style="display:flex;align-items:center;margin-top:4px">
-      <input id="drive-url-input" type="text" placeholder="https://drive.google.com/uc?export=download&id=..."/>
-      <button id="drive-url-save" onclick="saveDriveUrl()">Save</button>
-    </div>
-  </div>
+
   <div class="dv"></div>
   <button class="fp on" onclick="setBrand('All',this)">All</button>
   <button class="fp" onclick="setBrand('Barnyard Designs',this)">&#127968; Barnyard</button>
@@ -169,7 +163,7 @@ td.left{text-align:left}
         </tr>
       </thead>
       <tbody id="tbody">
-        <tr class="ND"><td></td><td colspan="9" class="empty">Click <strong>Load Today's Data</strong> to load ratings from Google Drive<br><small>Data is fetched automatically every morning at 6:30 AM PHT via Google Apps Script - 0 tokens from your browser</small></td></tr>
+        <tr class="ND"><td></td><td colspan="9" class="empty">Click <strong>Load Today's Data</strong> to load today's ratings<br><small>Data is pushed to GitHub automatically at 6:30 AM PHT daily - 0 tokens from your browser</small></td></tr>
       </tbody>
     </table>
   </div>
@@ -182,10 +176,10 @@ const SB_COUNT=50;
 const TOTAL_SKUS=176;
 // Paste the direct download URL of keepa_ratings_latest.json from your shared Drive folder
 // Format: https://drive.google.com/uc?export=download&id=FILE_ID
-var DRIVE_JSON_URL = "PASTE_DRIVE_FILE_URL_HERE";
+var DATA_URL = "https://raw.githubusercontent.com/mjbaguhin/cpc-tracker/main/data.json";
 
 const CK="bys_v14",KE=21564000,DOM=1;
-const DRIVE_URL_KEY="cpc_drive_url";
+
 const TC={A:{c:"#92400e",b:"#fef3c7",bc:"#f59e0b"},B:{c:"#1e40af",b:"#dbeafe",bc:"#93c5fd"},C:{c:"#374151",b:"#f3f4f6",bc:"#d1d5db"},X:{c:"#6b7280",b:"#f9fafb",bc:"#e5e7eb"},N:{c:"#5b21b6",b:"#ede9fe",bc:"#c4b5fd"}};
 let RD={},BF="All",TF="All",PF="",Q="",SM="drop-today";
 
@@ -227,8 +221,8 @@ function hideParentList(){document.getElementById("parent-list").style.display="
 buildParentDropdown("All");
 
 // Drive URL management
-function getDriveUrl(){
-  try{return localStorage.getItem(DRIVE_URL_KEY)||DRIVE_JSON_URL;}catch(e){return DRIVE_JSON_URL;}
+function DATA_URL{
+  try{return localStorage.getItem(DRIVE_URL_KEY)||DATA_URL;}catch(e){return DATA_URL;}
 }
 function saveDriveUrl(){
   var url=document.getElementById("drive-url-input").value.trim();
@@ -253,7 +247,7 @@ async function loadFromDrive(){
   if(c){restoreC(c);msg.className="cache";msg.textContent="Today's data loaded (0 tokens)";
     btn.classList.add("done");btn.querySelector("#rlbl").textContent="Loaded today";return;}
 
-  var driveUrl=getDriveUrl();
+  var driveUrl=DATA_URL;
   if(!driveUrl||driveUrl==="PASTE_DRIVE_FILE_URL_HERE"){
     document.getElementById("drive-url-wrap").style.display="block";
     msg.className="err";msg.textContent="Drive URL not set - paste it below";return;
@@ -291,7 +285,7 @@ async function loadFromDrive(){
   }catch(e){
     setP(100);
     msg.className="err";
-    msg.innerHTML="Could not load from Drive. "+e.message+"<br><small>Make sure the file is shared publicly and the URL is correct.</small>";
+    msg.innerHTML="Could not load data. "+e.message+"<br><small>Data is pushed to GitHub at 6:30 AM PHT daily. If it's before that time, use Emergency Fetch.</small>";
     document.getElementById("admBtn").style.display="inline-flex";
     btn.disabled=false;
   }
@@ -490,7 +484,7 @@ window.addEventListener("load",function(){
   if(c){restoreC(c);document.getElementById("msg").className="cache";document.getElementById("msg").textContent="Today's data loaded (0 tokens)";
     document.getElementById("rfbtn").classList.add("done");document.getElementById("rlbl").textContent="Loaded today";}
   // Show emergency fetch button only if no Drive URL configured
-  var url=getDriveUrl();
+  var url=DATA_URL;
   if(!url||url==="PASTE_DRIVE_FILE_URL_HERE"){
     document.getElementById("admBtn").style.display="inline-flex";
     document.getElementById("msg").className="err";
