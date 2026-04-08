@@ -75,8 +75,8 @@ tbody tr.DN2{background:#fffbeb !important;border-left:5px solid #f59e0b}
 tbody tr.UP{background:#f0fdf4 !important;border-left:5px solid #16a34a}
 tbody tr.FL{border-left:5px solid #e2e8f0}
 tbody tr.ND{border-left:5px solid #f1f5f9}
-tbody tr.parent-row{background:#f8fafc;border-left:5px solid #7c3aed}
-tbody tr.parent-row td{font-weight:700;font-size:12px;color:#7c3aed;padding:6px 10px}
+tbody tr.parent-row{background:linear-gradient(90deg,#ede9fe,#f5f3ff);border-left:5px solid #7c3aed;border-top:2px solid #c4b5fd;border-bottom:1px solid #c4b5fd}
+tbody tr.parent-row td{font-weight:800;font-size:13px;color:#5b21b6;padding:10px 14px;letter-spacing:.01em}
 td{padding:7px 8px;vertical-align:middle;text-align:center}
 td.left{text-align:left}
 .nn{font-size:12px;font-weight:700;color:#0f172a;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:200px}
@@ -472,7 +472,20 @@ function render() {
       var pAsinLink = pAsin ?
         ' &nbsp;&middot;&nbsp; <a href="https://www.amazon.com/dp/'+pAsin+'" target="_blank" style="color:#a78bfa;text-decoration:none;font-family:monospace;font-size:11px">'+pAsin+'</a>' : '';
       var ptr = document.createElement("tr"); ptr.className = "parent-row";
-      ptr.innerHTML = '<td></td><td colspan="10">&#9660; ' + parent + pSkuStr + pAsinLink + ' &nbsp;&middot;&nbsp; <span style="font-weight:400;color:#94a3b8">' + groups[parent].length + ' SKUs</span></td>';
+      var skuCount = groups[parent].length;
+      var avgRat = "";
+      var ratedCount = 0, ratingSum = 0;
+      groups[parent].forEach(function(i) { if(RD[i.asin]&&RD[i.asin].cur!=null){ratingSum+=RD[i.asin].cur;ratedCount++;} });
+      if (ratedCount > 0) avgRat = ' &nbsp;<span style="background:#ede9fe;border:1px solid #c4b5fd;border-radius:5px;padding:1px 7px;font-size:11px;color:#5b21b6;font-family:monospace">' + (ratingSum/ratedCount).toFixed(1) + '&#9733; avg</span>';
+      ptr.innerHTML = '<td style="padding:0;width:5px;background:#7c3aed"></td><td colspan="10" style="padding:10px 14px">' +
+        '<div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">' +
+        '<span style="font-size:14px;font-weight:900;color:#5b21b6">&#9660; ' + parent + '</span>' +
+        avgRat +
+        (psku ? '<span style="font-size:10px;font-family:monospace;color:#94a3b8;background:#f1f0ff;border:1px solid #ddd6fe;padding:1px 6px;border-radius:4px">'+psku+'</span>' : '') +
+        (pAsin ? '<a href="https://www.amazon.com/dp/'+pAsin+'" target="_blank" style="font-size:10px;font-family:monospace;color:#6d28d9;text-decoration:none;background:#f1f0ff;border:1px solid #ddd6fe;padding:1px 6px;border-radius:4px">'+pAsin+'</a>' : '') +
+        '<span style="font-size:11px;color:#94a3b8;font-weight:400;margin-left:auto">' + skuCount + ' SKUs</span>' +
+        '</div>' +
+        '</td>';
       tb.appendChild(ptr);
       groups[parent].forEach(function(item, idx) { appendRow(tb, item, total++); });
     });
