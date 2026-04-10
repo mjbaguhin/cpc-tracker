@@ -331,7 +331,7 @@ async function doLoad(){
   } catch(e){
     setP(100);
     msg.className="err";
-    msg.textContent="❌ Could not load data — please contact your admin";
+    msg.textContent="❌ Could not load data — please contact the page creator";
     document.getElementById("admBtn").style.display="inline-flex";
   }
   btn.disabled=false; updateStats(); render();
@@ -432,7 +432,7 @@ function renderBanner(wd){
   mv.forEach(function(item){
     var d=RD[item.asin],isUp=d.cur>d.r1;
     var chip=document.createElement("div"); chip.className="chip "+(isUp?"chip-up":"chip-dn");
-    chip.innerHTML='<span style="opacity:.6;font-size:11px;font-family:monospace">'+d.r1.toFixed(1)+'&#9733;</span><span style="font-size:14px">'+(isUp?"&#8593;":"&#8595;")+'</span><span style="font-size:12px;font-family:monospace">'+d.cur.toFixed(1)+'&#9733;</span><span style="font-size:10px;opacity:.7;max-width:110px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+item.name+'</span>';
+    chip.innerHTML='<span style="opacity:.6;font-size:11px;font-family:monospace">'+d.r1.toFixed(1)+'&#9733;</span><span style="font-size:14px">'+(isUp?"&#8593;":"&#8595;")+'</span><span style="font-size:12px;font-family:monospace">'+d.cur.toFixed(1)+'&#9733;</span><span style="font-size:11px;font-family:monospace;font-weight:800;letter-spacing:.03em">'+item.sku+'</span>';
     chip.onclick=function(){Q=item.sku;document.getElementById("srch").value=item.sku;render();};
     chips.appendChild(chip);
   });
