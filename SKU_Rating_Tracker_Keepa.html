@@ -443,7 +443,7 @@ function renderBanner(wd){
   banner.style.background=hasDrop?"#fff1f2":"#f0fdf4";
   banner.style.borderBottomColor=hasDrop?"#fca5a5":"#86efac";
   chips.innerHTML="";
-  var lbl=document.createElement("span"); lbl.style.color=hasDrop?"#b91c1c":"#15803d"; lbl.textContent="Today&#39;s movements:"; chips.appendChild(lbl);
+  var lbl=document.createElement("span"); lbl.style.color=hasDrop?"#b91c1c":"#15803d"; lbl.innerHTML="Today&#39;s movements:"; chips.appendChild(lbl);
   mv.forEach(function(item){
     var d=RD[item.asin],isUp=d.cur>d.r1;
     var chip=document.createElement("div"); chip.className="chip "+(isUp?"chip-up":"chip-dn");
@@ -662,10 +662,31 @@ function appendRow(tb,item){
 
 function downloadCSV(){
   if(!CATALOG.length) return;
-  var rows=[["SKU","ASIN","Brand","Tier","Parent ASIN Name","Parent SKU","Parent ASIN","Product Name","Current Rating","Yesterday","30D Ago","90D Ago","180D Ago","Reviews","BSR"]];
-  CATALOG.forEach(function(item){
+  // Apply same filters as current view — mirrors render() logic exactly
+  var items=CATALOG.filter(function(i){
+    if(BF!=="All"&&i.brand!==BF) return false;
+    if(TF.length&&!TF.includes(i.tier)) return false;
+    if(PF&&i.parent!==PF) return false;
+    if(Q){var qq=Q.toLowerCase();if(i.sku.toLowerCase().indexOf(qq)<0&&i.name.toLowerCase().indexOf(qq)<0&&i.asin.toLowerCase().indexOf(qq)<0) return false;}
+    if(QF==="below40"){var d=RD[i.asin];if(!d||d.cur==null||d.cur>=4.0) return false;}
+    if(QF==="dec30"){var d=RD[i.asin];if(!d||d.r30==null||(d.cur-d.r30)>=-0.05) return false;}
+    if(SM==="drop-today"){var d=RD[i.asin];if(!d||d.cur==null||d.r1==null||d.cur>=d.r1) return false;}
+    if(SM==="rise-today"){var d=RD[i.asin];if(!d||d.cur==null||d.r1==null||d.cur<=d.r1) return false;}
+    return true;
+  });
+  // Apply same sort as current view
+  if(SM==="rating-hi") items.sort(function(a,b){var da=RD[a.asin],db=RD[b.asin];var va=da&&da.cur!=null?da.cur:-99,vb=db&&db.cur!=null?db.cur:-99;return vb-va;});
+  else if(SM==="rating-lo") items.sort(function(a,b){var da=RD[a.asin],db=RD[b.asin];var va=da&&da.cur!=null?da.cur:99,vb=db&&db.cur!=null?db.cur:99;return va-vb;});
+  else if(SM==="name") items.sort(function(a,b){return a.name.localeCompare(b.name);});
+  else if(SM==="drop-30") items.sort(function(a,b){var da=RD[a.asin],db=RD[b.asin];var va=da&&da.cur!=null&&da.r30!=null?da.cur-da.r30:1,vb=db&&db.cur!=null&&db.r30!=null?db.cur-db.r30:1;return va-vb;});
+  else if(SM==="reviews-hi") items.sort(function(a,b){var da=RD[a.asin],db=RD[b.asin];var va=da&&da.rev!=null?da.rev:-1,vb=db&&db.rev!=null?db.rev:-1;return vb-va;});
+  else if(SM==="bsr-lo") items.sort(function(a,b){var da=RD[a.asin],db=RD[b.asin];var va=da&&da.bsr!=null?da.bsr:999999,vb=db&&db.bsr!=null?db.bsr:999999;return va-vb;});
+  var rows=[["SKU","ASIN","Brand","Tier","Parent ASIN Name","Parent SKU","Parent ASIN (Plytix)","Keepa Parent ASIN","Parent Mismatch","Product Name","Current Rating","Yesterday","30D Ago","90D Ago","180D Ago","Reviews","BSR"]];
+  items.forEach(function(item){
     var d=RD[item.asin]||{};
-    rows.push([item.sku,item.asin,item.brand,item.tier,item.parent||"",item.psku||"",item.pasin||"",item.name,
+    var keepaParent=d.keepaParent||"";
+    var mismatch=(keepaParent&&item.pasin&&keepaParent!==item.pasin)?"YES":"";
+    rows.push([item.sku,item.asin,item.brand,item.tier,item.parent||"",item.psku||"",item.pasin||"",keepaParent,mismatch,item.name,
       d.cur!=null?d.cur:"",d.r1!=null?d.r1:"",d.r30!=null?d.r30:"",d.r90!=null?d.r90:"",d.r180!=null?d.r180:"",
       d.rev!=null?d.rev:"",d.bsr!=null?d.bsr:""
     ].map(function(c){return '"'+String(c).replace(/"/g,'""')+'"';}).join(","));
