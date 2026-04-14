@@ -104,6 +104,16 @@ td.left{text-align:left}
 .mv.FL{background:#f8fafc;border-color:#e2e8f0;color:#94a3b8}
 .mv.ND{background:#f8fafc;border-color:#f1f5f9;color:#cbd5e1;font-size:11px}
 .empty{text-align:center;padding:48px;color:#94a3b8;font-size:13px;line-height:2.2}
+#spark-tip{display:none;position:fixed;background:#1e293b;color:#f8fafc;border-radius:10px;padding:10px 14px;font-size:12px;box-shadow:0 4px 20px rgba(0,0,0,.3);z-index:9999;pointer-events:none;min-width:160px}
+#spark-tip .st-title{font-size:11px;color:#94a3b8;font-weight:700;letter-spacing:.06em;text-transform:uppercase;margin-bottom:6px}
+#spark-tip table{width:100%;border-collapse:collapse}
+#spark-tip td{padding:2px 0;font-family:monospace}
+#spark-tip td:first-child{color:#94a3b8;padding-right:10px;font-size:11px}
+#spark-tip td:last-child{font-weight:800;text-align:right}
+#spark-tip .up{color:#4ade80}
+#spark-tip .dn{color:#f87171}
+#spark-tip .fl{color:#94a3b8}
+canvas{cursor:pointer}
 </style>
 </head>
 <body>
@@ -169,6 +179,7 @@ td.left{text-align:left}
   <span id="shown"></span>
 </div>
 <div id="pb-w"><div id="pb"></div></div>
+<div id="spark-tip"></div>
 <div id="wrap"><div class="box"><table>
 <thead><tr>
   <th style="width:5px;padding:0"></th>
@@ -461,6 +472,71 @@ function spark(canvas,hist,cls){
   ctx.stroke();
 }
 
+function showSparkTip(e, item, rh){
+  var tip = document.getElementById("spark-tip");
+  var d = RD[item.asin]||{};
+  var now = Date.now();
+
+  function getVal(daysAgo){
+    if(!rh||!rh.length) return null;
+    var target = now - daysAgo*86400000;
+    var best = null, bestDiff = Infinity;
+    rh.forEach(function(p){
+      var diff = Math.abs(p.d.getTime() - target);
+      if(diff < bestDiff){ bestDiff = diff; best = p.v; }
+    });
+    return bestDiff <= 7*86400000 ? best : null;
+  }
+
+  function fmtVal(v, prev){
+    if(v==null) return '<span class="fl">--</span>';
+    var s = v.toFixed(1)+"★";
+    if(prev==null) return s;
+    var diff = v - prev;
+    if(diff > 0.005) return '<span class="up">'+s+' ▲</span>';
+    if(diff < -0.005) return '<span class="dn">'+s+' ▼</span>';
+    return '<span class="fl">'+s+'</span>';
+  }
+
+  function fmtDate(daysAgo){
+    var d = new Date(now - daysAgo*86400000);
+    return (d.getMonth()+1)+"/"+d.getDate();
+  }
+
+  var cur  = d.cur;
+  var v1   = d.r1;
+  var v7   = getVal(7);
+  var v14  = getVal(14);
+  var v30  = d.r30;
+
+  var rows = [
+    ["Today",       fmtVal(cur, v1)],
+    ["Yesterday",   fmtVal(v1, v7)],
+    ["7D ago ("+fmtDate(7)+")",  fmtVal(v7, v14)],
+    ["14D ago ("+fmtDate(14)+")", fmtVal(v14, v30)],
+    ["30D ago ("+fmtDate(30)+")", fmtVal(v30, null)],
+  ];
+
+  var html = '<div class="st-title">'+item.sku+' &mdash; 30D Trend</div><table>';
+  rows.forEach(function(r){
+    html += '<tr><td>'+r[0]+'</td><td>'+r[1]+'</td></tr>';
+  });
+  html += '</table>';
+
+  tip.innerHTML = html;
+  tip.style.display = "block";
+
+  var x = e.clientX + 14, y = e.clientY - 10;
+  if(x + 180 > window.innerWidth) x = e.clientX - 190;
+  if(y + 160 > window.innerHeight) y = e.clientY - 160;
+  tip.style.left = x+"px";
+  tip.style.top  = y+"px";
+}
+
+function hideSparkTip(){
+  document.getElementById("spark-tip").style.display = "none";
+}
+
 function render(){
   var tb=document.getElementById("tbody"); tb.innerHTML="";
   if(!CATALOG.length){
@@ -515,7 +591,13 @@ function render(){
   } else {
     items.forEach(function(item){ canvases.push(appendRow(tb,item)); });
   }
-  canvases.forEach(function(c){ if(c){spark(c.el,c.rh,c.cls);} });
+  canvases.forEach(function(c){
+    if(c){
+      spark(c.el, c.rh, c.cls);
+      c.el.addEventListener("click", function(e){ showSparkTip(e, c.item, c.rh); e.stopPropagation(); });
+      c.el.addEventListener("mouseleave", hideSparkTip);
+    }
+  });
 }
 
 function appendRow(tb,item){
@@ -550,7 +632,7 @@ function appendRow(tb,item){
     +'<td style="text-align:right">'+bsr+'</td>';
   tb.appendChild(tr);
   var cv=document.getElementById(cid);
-  return cv?{el:cv,rh:d.rh||[],cls:rc}:null;
+  return cv?{el:cv,rh:d.rh||[],cls:rc,item:item}:null;
 }
 
 function downloadCSV(){
@@ -584,6 +666,8 @@ window.addEventListener("load", function(){
     document.getElementById("stat-crit").classList.remove("af");
     render();
   };
+  // Close tooltip on outside click
+  document.addEventListener("click", hideSparkTip);
   // Auto-load fresh data on every page open
   doLoad();
 });
