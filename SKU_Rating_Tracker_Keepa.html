@@ -127,6 +127,7 @@ canvas{cursor:pointer}
     <div class="ts" id="stat-avg"><div class="tv" id="s-avg" style="color:#f59e0b">--</div><div class="tl">Avg Rating</div></div>
     <div class="ts" id="stat-crit"><div class="tv" id="s-crit" style="color:#f87171">0</div><div class="tl">Below 4.0&#9733;</div></div>
     <div class="ts" id="stat-dec"><div class="tv" id="s-dec" style="color:#fb923c">0</div><div class="tl">Declining 30D</div></div>
+    <div class="ts" id="stat-mis" style="border-color:#fbbf24"><div class="tv" id="s-mis" style="color:#f59e0b">0</div><div class="tl">&#9888; Parent Mismatch</div></div>
     <div class="ts" id="stat-cov"><div class="tv" id="s-cov" style="color:#60a5fa">0/0</div><div class="tl">ASINs Tracked</div></div>
   </div>
 </div>
@@ -333,7 +334,7 @@ async function doLoad(){
     var raw=j.data||{}, res={};
     Object.keys(raw).forEach(function(a){
       var d=raw[a];
-      res[a]={cur:d.cur,r1:d.r1,r30:d.r30,r90:d.r90,r180:d.r180,rev:d.rev,bsr:d.bsr||null,bsrCat:d.bsrCat||null,
+      res[a]={cur:d.cur,r1:d.r1,r30:d.r30,r90:d.r90,r180:d.r180,rev:d.rev,bsr:d.bsr||null,bsrCat:d.bsrCat||null,keepaParent:d.keepaParent||null,
         rh:(d.rh||[]).map(function(x){return{d:new Date(x.d),v:x.v};})};
     });
     RD=res; setP(100);
@@ -423,9 +424,11 @@ function updateStats(){
   var avg=cs.length?(cs.reduce(function(a,b){return a+b;},0)/cs.length).toFixed(2):"--";
   var crit=wd.filter(function(i){return RD[i.asin].cur<4.0;}).length;
   var dec=wd.filter(function(i){var d=RD[i.asin];return d.r30!=null&&(d.cur-d.r30)<-0.05;}).length;
+  var mismatch=wd.filter(function(i){var d=RD[i.asin];return d&&d.keepaParent&&i.pasin&&d.keepaParent!==i.pasin;}).length;
   document.getElementById("s-avg").textContent=avg;
   var ce=document.getElementById("s-crit"); ce.textContent=crit; ce.style.color=crit>0?"#f87171":"#4ade80";
   var de=document.getElementById("s-dec"); de.textContent=dec; de.style.color=dec>0?"#fb923c":"#4ade80";
+  var me=document.getElementById("s-mis"); if(me){ me.textContent=mismatch; me.style.color=mismatch>0?"#f59e0b":"#4ade80"; }
   document.getElementById("s-cov").textContent=wd.length+"/"+CATALOG.length;
   renderBanner(wd);
 }
@@ -598,6 +601,11 @@ function render(){
       c.el.addEventListener("mouseleave", hideSparkTip);
     }
   });
+  // Mismatch badge tooltips
+  tb.querySelectorAll(".mismatch-badge").forEach(function(b){
+    b.addEventListener("mouseenter", function(){b.querySelector(".mismatch-tip").style.display="block";});
+    b.addEventListener("mouseleave", function(){b.querySelector(".mismatch-tip").style.display="none";});
+  });
 }
 
 function appendRow(tb,item){
@@ -609,11 +617,28 @@ function appendRow(tb,item){
   var asinUrl="https://www.amazon.com/dp/"+item.asin;
   var t=item.tier||"N"; var ts=TC[t]||TC.N;
   var parentLine="";
+  var keepaParent = d.keepaParent || null;
+  var plytixParent = item.pasin || null;
+  var hasMismatch = keepaParent && plytixParent && keepaParent !== plytixParent;
+
   if(!item.standalone&&item.parent){
     parentLine='<div class="np">&#8627; '+item.parent+(item.psku?' &middot; <span style="font-family:monospace">'+item.psku+'</span>':'')+(item.pasin?' &middot; <a href="https://www.amazon.com/dp/'+item.pasin+'" target="_blank" style="color:#6366f1;font-family:monospace">'+item.pasin+'</a>':'')+'</div>';
+    if(hasMismatch){
+      parentLine+='<div class="mismatch-badge" style="display:inline-flex;align-items:center;gap:4px;margin-top:3px;padding:2px 8px;border-radius:4px;background:#fef3c7;border:1px solid #fbbf24;font-size:10px;font-weight:700;color:#92400e;cursor:default;position:relative">'
+        +'&#9888; Parent mismatch &mdash; Keepa shows <span style="font-family:monospace;margin:0 3px">'+keepaParent+'</span> &middot; verify in Seller Central'
+        +'<div class="mismatch-tip" style="display:none;position:absolute;top:calc(100% + 6px);left:0;background:#1e293b;color:#f8fafc;border-radius:10px;padding:10px 14px;font-size:12px;box-shadow:0 4px 20px rgba(0,0,0,.3);z-index:999;min-width:230px;white-space:nowrap">'
+        +'<div style="font-size:11px;color:#94a3b8;font-weight:700;text-transform:uppercase;letter-spacing:.06em;margin-bottom:8px">'+item.sku+' &mdash; Parent mismatch</div>'
+        +'<table style="width:100%;border-collapse:collapse;font-family:monospace"><tr><td style="color:#94a3b8;font-size:11px;padding:3px 12px 3px 0">Plytix parent</td><td style="font-weight:700">'+plytixParent+'</td></tr>'
+        +'<tr><td style="color:#94a3b8;font-size:11px;padding:3px 12px 3px 0">Keepa parent</td><td style="font-weight:700;color:#f87171">'+keepaParent+'</td></tr>'
+        +'<tr><td style="color:#94a3b8;font-size:11px;padding:3px 12px 3px 0">Action</td><td style="font-weight:700;color:#fbbf24">Verify in Seller Central</td></tr></table>'
+        +'</div></div>';
+    }
   } else if(item.standalone){
     parentLine='<div class="standalone-badge">&#9632; Standalone &mdash; not part of a variation family</div>';
   }
+
+  // Override row color for mismatch
+  if(hasMismatch && rc==="FL") rc="DN2";
   var bsr=d.bsr!=null?'<span style="font-size:12px;font-weight:700">#'+d.bsr.toLocaleString()+'</span>'+(d.bsrCat?'<br><span style="font-size:9px;color:#94a3b8">'+d.bsrCat+'</span>':''):'<span style="color:#cbd5e1">--</span>';
   var cid="cv_"+item.asin;
   tr.innerHTML='<td style="width:5px;padding:0"></td>'
