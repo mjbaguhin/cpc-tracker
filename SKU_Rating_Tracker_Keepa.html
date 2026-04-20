@@ -89,6 +89,12 @@ td.left{text-align:left}
 .ns-sku:hover{text-decoration:underline}
 .ns-asin{color:#059669;text-decoration:none;font-weight:600}
 .ns-asin:hover{text-decoration:underline}
+.copy-wrap{display:inline-flex;align-items:center;gap:5px;position:relative}
+.copy-btn{background:none;border:none;cursor:pointer;padding:0 2px;opacity:0;transition:opacity .15s;font-size:11px;color:#94a3b8;line-height:1}
+.copy-wrap:hover .copy-btn{opacity:1}
+.copy-btn:hover{color:#2563eb}
+.copy-toast{position:absolute;left:0;top:-20px;background:#0f172a;color:#fff;font-size:10px;padding:2px 7px;border-radius:4px;white-space:nowrap;pointer-events:none;opacity:0;transition:opacity .2s}
+.copy-toast.show{opacity:1}
 .np{font-size:10px;color:#6366f1;margin-top:3px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:260px}
 .standalone-badge{display:inline-flex;align-items:center;gap:4px;margin-top:3px;padding:2px 8px;border-radius:4px;font-size:10px;font-weight:700;background:#fff7ed;color:#c2410c;border:1px solid #fb923c;font-style:normal}
 .bd{width:8px;height:8px;border-radius:50%;display:inline-block;margin-right:6px;flex-shrink:0}
@@ -306,6 +312,7 @@ function resetAll(){
   var g=document.getElementById("grpbtn"); g.classList.remove("on"); g.innerHTML="&#9660; Group by Parent";
   document.getElementById("stat-crit").classList.remove("af");
   document.getElementById("stat-dec").classList.remove("af");
+  document.getElementById("stat-mis").classList.remove("af");
   document.getElementById("psearch").value=""; document.getElementById("psearch").placeholder="All parent ASINs";
   document.getElementById("srch").value="";
   document.getElementById("srt").value="all";
@@ -335,6 +342,7 @@ async function doLoad(){
     Object.keys(raw).forEach(function(a){
       var d=raw[a];
       res[a]={cur:d.cur,r1:d.r1,r30:d.r30,r90:d.r90,r180:d.r180,rev:d.rev,bsr:d.bsr||null,bsrCat:d.bsrCat||null,keepaParent:d.keepaParent||null,
+        available:d.available!=null?d.available:null,invHealth:d.invHealth||null,inbound:d.inbound!=null?d.inbound:null,days:d.days!=null?d.days:null,
         rh:(d.rh||[]).map(function(x){return{d:new Date(x.d),v:x.v};})};
     });
     RD=res; setP(100);
@@ -424,7 +432,7 @@ function updateStats(){
   var avg=cs.length?(cs.reduce(function(a,b){return a+b;},0)/cs.length).toFixed(2):"--";
   var crit=wd.filter(function(i){return RD[i.asin].cur<4.0;}).length;
   var dec=wd.filter(function(i){var d=RD[i.asin];return d.r30!=null&&(d.cur-d.r30)<-0.05;}).length;
-  var mismatch=wd.filter(function(i){var d=RD[i.asin];return d&&d.keepaParent&&i.pasin&&d.keepaParent!==i.pasin;}).length;
+  var mismatch=wd.filter(function(i){var d=RD[i.asin];if(i.standalone||!d||d.cur===null) return false; var kp=d.keepaParent||null; return !kp||(kp&&i.pasin&&kp!==i.pasin);}).length;
   document.getElementById("s-avg").textContent=avg;
   var ce=document.getElementById("s-crit"); ce.textContent=crit; ce.style.color=crit>0?"#f87171":"#4ade80";
   var de=document.getElementById("s-dec"); de.textContent=dec; de.style.color=dec>0?"#fb923c":"#4ade80";
@@ -540,6 +548,22 @@ function hideSparkTip(){
   document.getElementById("spark-tip").style.display = "none";
 }
 
+function copyText(text, el){
+  navigator.clipboard.writeText(text).then(function(){
+    var toast = el.parentNode.querySelector(".copy-toast");
+    if(toast){ toast.classList.add("show"); setTimeout(function(){ toast.classList.remove("show"); }, 1200); }
+  });
+}
+
+// Copy button event delegation
+document.addEventListener("click", function(e){
+  var btn = e.target.closest(".copy-btn");
+  if(btn && btn.dataset.copy){
+    e.stopPropagation();
+    copyText(btn.dataset.copy, btn);
+  }
+});
+
 function render(){
   var tb=document.getElementById("tbody"); tb.innerHTML="";
   if(!CATALOG.length){
@@ -554,6 +578,7 @@ function render(){
     if(Q){var qq=Q.toLowerCase();if(i.sku.toLowerCase().indexOf(qq)<0&&i.name.toLowerCase().indexOf(qq)<0&&i.asin.toLowerCase().indexOf(qq)<0) return false;}
     if(QF==="below40"){var d=RD[i.asin];if(!d||d.cur==null||d.cur>=4.0) return false;}
     if(QF==="dec30"){var d=RD[i.asin];if(!d||d.r30==null||(d.cur-d.r30)>=-0.05) return false;}
+    if(QF==="mismatch"){if(i.standalone) return false; var d=RD[i.asin]; if(!d||d.cur===null) return false; var kp=d.keepaParent||null; if(!(!kp||(kp&&i.pasin&&kp!==i.pasin))) return false;}
     return true;
   });
   var sm=SM;
@@ -619,17 +644,25 @@ function appendRow(tb,item){
   var parentLine="";
   var keepaParent = d.keepaParent || null;
   var plytixParent = item.pasin || null;
-  var hasMismatch = keepaParent && plytixParent && keepaParent !== plytixParent;
+  // Only check mismatch for variation listings (Amazon Variation = True)
+  // Standalone SKUs are never flagged regardless of what Keepa returns
+  var keepaHasData = d.cur !== null;
+  var hasMismatch = !item.standalone && keepaHasData && (
+    (keepaParent && plytixParent && keepaParent !== plytixParent) ||
+    (!keepaParent)
+  );
 
   if(!item.standalone&&item.parent){
     parentLine='<div class="np">&#8627; '+item.parent+(item.psku?' &middot; <span style="font-family:monospace">'+item.psku+'</span>':'')+(item.pasin?' &middot; <a href="https://www.amazon.com/dp/'+item.pasin+'" target="_blank" style="color:#6366f1;font-family:monospace">'+item.pasin+'</a>':'')+'</div>';
     if(hasMismatch){
+      var keepaParentDisplay = keepaParent || "null (not found)";
+      var mismatchLabel = keepaParent ? "Parent mismatch" : "Child may be detached from parent";
       parentLine+='<div class="mismatch-badge" style="display:inline-flex;align-items:center;gap:4px;margin-top:3px;padding:2px 8px;border-radius:4px;background:#fef3c7;border:1px solid #fbbf24;font-size:10px;font-weight:700;color:#92400e;cursor:default;position:relative">'
-        +'&#9888; Parent mismatch &mdash; Keepa shows <span style="font-family:monospace;margin:0 3px">'+keepaParent+'</span> &middot; verify in Seller Central'
+        +'&#9888; '+mismatchLabel+' &mdash; verify in Seller Central'
         +'<div class="mismatch-tip" style="display:none;position:absolute;top:calc(100% + 6px);left:0;background:#1e293b;color:#f8fafc;border-radius:10px;padding:10px 14px;font-size:12px;box-shadow:0 4px 20px rgba(0,0,0,.3);z-index:999;min-width:230px;white-space:nowrap">'
-        +'<div style="font-size:11px;color:#94a3b8;font-weight:700;text-transform:uppercase;letter-spacing:.06em;margin-bottom:8px">'+item.sku+' &mdash; Parent mismatch</div>'
+        +'<div style="font-size:11px;color:#94a3b8;font-weight:700;text-transform:uppercase;letter-spacing:.06em;margin-bottom:8px">'+item.sku+' &mdash; '+mismatchLabel+'</div>'
         +'<table style="width:100%;border-collapse:collapse;font-family:monospace"><tr><td style="color:#94a3b8;font-size:11px;padding:3px 12px 3px 0">Plytix parent</td><td style="font-weight:700">'+plytixParent+'</td></tr>'
-        +'<tr><td style="color:#94a3b8;font-size:11px;padding:3px 12px 3px 0">Keepa parent</td><td style="font-weight:700;color:#f87171">'+keepaParent+'</td></tr>'
+        +'<tr><td style="color:#94a3b8;font-size:11px;padding:3px 12px 3px 0">Keepa parent</td><td style="font-weight:700;color:#f87171">'+keepaParentDisplay+'</td></tr>'
         +'<tr><td style="color:#94a3b8;font-size:11px;padding:3px 12px 3px 0">Action</td><td style="font-weight:700;color:#fbbf24">Verify in Seller Central</td></tr></table>'
         +'</div></div>';
     }
@@ -640,11 +673,22 @@ function appendRow(tb,item){
   // Override row color for mismatch
   if(hasMismatch && rc==="FL") rc="DN2";
   var bsr=d.bsr!=null?'<span style="font-size:12px;font-weight:700">#'+d.bsr.toLocaleString()+'</span>'+(d.bsrCat?'<br><span style="font-size:9px;color:#94a3b8">'+d.bsrCat+'</span>':''):'<span style="color:#cbd5e1">--</span>';
+  // Inventory display
+  var invHtml='';
+  if(d.available!=null){
+    var hColor=d.invHealth==='Out of stock'?'#dc2626':d.invHealth==='Low stock'?'#f59e0b':'#16a34a';
+    var hIcon=d.invHealth==='Out of stock'?'✕':d.invHealth==='Low stock'?'⚠':'✓';
+    invHtml='<br><span style="font-size:10px;color:#64748b">📦 '+d.available.toLocaleString()+' units</span>'
+      +'<br><span style="font-size:9px;font-weight:700;color:'+hColor+'">'+hIcon+' '+(d.invHealth||'--')+'</span>';
+    if(d.inbound!=null&&d.inbound>0) invHtml+='<br><span style="font-size:9px;color:#6366f1">+'+d.inbound.toLocaleString()+' inbound</span>';
+  }
   var cid="cv_"+item.asin;
   tr.innerHTML='<td style="width:5px;padding:0"></td>'
     +'<td class="left"><div class="nn"><span class="bd" style="background:'+bdColor+'"></span>'+item.name+'</div>'
-    +'<div class="ns"><a href="'+skuUrl+'" target="_blank" class="ns-sku">SKU: '+item.sku+'</a>'
-    +'<a href="'+asinUrl+'" target="_blank" class="ns-asin">ASIN: '+item.asin+'</a></div>'
+    +'<div class="ns">'
+    +'<div class="copy-wrap"><a href="'+skuUrl+'" target="_blank" class="ns-sku">SKU: '+item.sku+'</a><button class="copy-btn" data-copy="'+item.sku+'" title="Copy SKU">&#x2398;</button><span class="copy-toast">Copied!</span></div>'
+    +'<div class="copy-wrap"><a href="'+asinUrl+'" target="_blank" class="ns-asin">ASIN: '+item.asin+'</a><button class="copy-btn" data-copy="'+item.asin+'" title="Copy ASIN">&#x2398;</button><span class="copy-toast">Copied!</span></div>'
+    +'</div>'
     +parentLine+'</td>'
     +'<td><span class="tb" style="color:'+ts.c+';background:'+ts.b+';border:1px solid '+ts.bc+'">'+t+'</span></td>'
     +'<td>'+ratBadge(d.cur)+'</td>'
@@ -654,7 +698,7 @@ function appendRow(tb,item){
     +'<td>'+mvHtml(d.r90,d.cur)+'</td>'
     +'<td>'+mvHtml(d.r180,d.cur)+'</td>'
     +'<td style="text-align:right;font-size:12px;font-weight:700">'+(d.rev!=null?d.rev.toLocaleString():'<span style="color:#cbd5e1">--</span>')+'</td>'
-    +'<td style="text-align:right">'+bsr+'</td>';
+    +'<td style="text-align:right">'+bsr+invHtml+'</td>';
   tb.appendChild(tr);
   var cv=document.getElementById(cid);
   return cv?{el:cv,rh:d.rh||[],cls:rc,item:item}:null;
@@ -670,6 +714,7 @@ function downloadCSV(){
     if(Q){var qq=Q.toLowerCase();if(i.sku.toLowerCase().indexOf(qq)<0&&i.name.toLowerCase().indexOf(qq)<0&&i.asin.toLowerCase().indexOf(qq)<0) return false;}
     if(QF==="below40"){var d=RD[i.asin];if(!d||d.cur==null||d.cur>=4.0) return false;}
     if(QF==="dec30"){var d=RD[i.asin];if(!d||d.r30==null||(d.cur-d.r30)>=-0.05) return false;}
+    if(QF==="mismatch"){if(i.standalone) return false; var d=RD[i.asin]; if(!d||d.cur===null) return false; var kp=d.keepaParent||null; if(!(!kp||(kp&&i.pasin&&kp!==i.pasin))) return false;}
     if(SM==="drop-today"){var d=RD[i.asin];if(!d||d.cur==null||d.r1==null||d.cur>=d.r1) return false;}
     if(SM==="rise-today"){var d=RD[i.asin];if(!d||d.cur==null||d.r1==null||d.cur<=d.r1) return false;}
     return true;
@@ -681,14 +726,15 @@ function downloadCSV(){
   else if(SM==="drop-30") items.sort(function(a,b){var da=RD[a.asin],db=RD[b.asin];var va=da&&da.cur!=null&&da.r30!=null?da.cur-da.r30:1,vb=db&&db.cur!=null&&db.r30!=null?db.cur-db.r30:1;return va-vb;});
   else if(SM==="reviews-hi") items.sort(function(a,b){var da=RD[a.asin],db=RD[b.asin];var va=da&&da.rev!=null?da.rev:-1,vb=db&&db.rev!=null?db.rev:-1;return vb-va;});
   else if(SM==="bsr-lo") items.sort(function(a,b){var da=RD[a.asin],db=RD[b.asin];var va=da&&da.bsr!=null?da.bsr:999999,vb=db&&db.bsr!=null?db.bsr:999999;return va-vb;});
-  var rows=[["SKU","ASIN","Brand","Tier","Parent ASIN Name","Parent SKU","Parent ASIN (Plytix)","Keepa Parent ASIN","Parent Mismatch","Product Name","Current Rating","Yesterday","30D Ago","90D Ago","180D Ago","Reviews","BSR"]];
+  var rows=[["SKU","ASIN","Brand","Tier","Parent ASIN Name","Parent SKU","Parent ASIN (Plytix)","Keepa Parent ASIN","Parent Mismatch","Product Name","Current Rating","Yesterday","30D Ago","90D Ago","180D Ago","Reviews","BSR","FBA Available","Inventory Health","Inbound"]];
   items.forEach(function(item){
     var d=RD[item.asin]||{};
     var keepaParent=d.keepaParent||"";
-    var mismatch=(keepaParent&&item.pasin&&keepaParent!==item.pasin)?"YES":"";
+    var mismatch=(!item.standalone&&d.cur!=null&&(!keepaParent||(keepaParent&&item.pasin&&keepaParent!==item.pasin)))?"YES":"";
     rows.push([item.sku,item.asin,item.brand,item.tier,item.parent||"",item.psku||"",item.pasin||"",keepaParent,mismatch,item.name,
       d.cur!=null?d.cur:"",d.r1!=null?d.r1:"",d.r30!=null?d.r30:"",d.r90!=null?d.r90:"",d.r180!=null?d.r180:"",
-      d.rev!=null?d.rev:"",d.bsr!=null?d.bsr:""
+      d.rev!=null?d.rev:"",d.bsr!=null?d.bsr:"",
+      d.available!=null?d.available:"",d.invHealth||"",d.inbound!=null?d.inbound:""
     ].map(function(c){return '"'+String(c).replace(/"/g,'""')+'"';}).join(","));
   });
   var blob=new Blob([rows.join("\n")],{type:"text/csv;charset=utf-8;"});
@@ -704,12 +750,23 @@ window.addEventListener("load", function(){
     QF = QF==="below40" ? "" : "below40";
     this.classList.toggle("af", QF==="below40");
     document.getElementById("stat-dec").classList.remove("af");
+    document.getElementById("stat-mis").classList.remove("af");
     render();
   };
   document.getElementById("stat-dec").onclick = function(){
     QF = QF==="dec30" ? "" : "dec30";
     this.classList.toggle("af", QF==="dec30");
     document.getElementById("stat-crit").classList.remove("af");
+    document.getElementById("stat-mis").classList.remove("af");
+    render();
+  };
+  document.getElementById("stat-mis").onclick = function(){
+    QF = QF==="mismatch" ? "" : "mismatch";
+    this.classList.toggle("af", QF==="mismatch");
+    document.getElementById("stat-crit").classList.remove("af");
+    document.getElementById("stat-dec").classList.remove("af");
+    GROUP = true;
+    var g=document.getElementById("grpbtn"); g.classList.add("on"); g.innerHTML="&#9650; Ungroup";
     render();
   };
   // Close tooltip on outside click
