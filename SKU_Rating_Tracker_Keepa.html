@@ -638,7 +638,7 @@ function appendRow(tb,item){
   var rc=rowCls(d.cur,d.r1);
   var tr=document.createElement("tr"); tr.className=rc;
   var bdColor=item.brand==="Barnyard Designs"?"#2563eb":"#16a34a";
-  var skuUrl="https://sellercentral.amazon.com/inventory?searchSKU="+encodeURIComponent(item.sku);
+  var skuUrl="https://sellercentral.amazon.com/myinventory/inventory?fulfilledBy=all&page=1&pageSize=25&searchField=all&searchTerm="+encodeURIComponent(item.sku);
   var asinUrl="https://www.amazon.com/dp/"+item.asin;
   var t=item.tier||"N"; var ts=TC[t]||TC.N;
   var parentLine="";
