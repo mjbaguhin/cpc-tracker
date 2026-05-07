@@ -1,0 +1,632 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Seedboy FBA Expiration Tracker</title>
+<style>
+:root {
+  --bg: #FFFFFF; --bg-soft: #FAFAFA; --bg-section: #F4F4F5;
+  --text: #18181B; --text-muted: #3F3F46; --text-subtle: #71717A; --text-faint: #A1A1AA;
+  --border: #E4E4E7; --border-strong: #D4D4D8;
+  --accent: #18181B; --link: #2563EB; --success: #15803D; --danger: #B91C1C;
+}
+* { box-sizing: border-box; }
+body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Inter, Arial, sans-serif; margin: 0; background: var(--bg); color: var(--text); line-height: 1.5; }
+.container { max-width: 1400px; margin: 0 auto; }
+.topbar { display: flex; justify-content: space-between; align-items: center; padding: 18px 24px 14px; border-bottom: 0.5px solid var(--border); margin-bottom: 24px; gap: 12px; flex-wrap: wrap; }
+.topbar .title { font-size: 18px; font-weight: 500; }
+.topbar .meta { font-size: 12px; color: var(--text-subtle); margin-top: 3px; }
+.topbar .actions { display: flex; gap: 8px; }
+.topbar button { background: transparent; border: 0.5px solid var(--border-strong); padding: 6px 12px; border-radius: 6px; font-size: 12px; color: var(--text-muted); cursor: pointer; font-family: inherit; }
+.topbar button:hover { background: var(--bg-soft); border-color: var(--text-subtle); }
+.topbar button.primary { background: var(--accent); color: white; border-color: var(--accent); }
+.topbar button.primary:hover { background: var(--text-muted); }
+.topbar button:disabled { opacity: 0.5; cursor: not-allowed; }
+.live-badge { background: #FEF3C7; color: #92400E; padding: 1px 8px; border-radius: 10px; font-size: 10px; font-weight: 600; margin-left: 8px; }
+.body-pad { padding: 0 24px 24px; }
+.hero { display: grid; grid-template-columns: 1fr 1fr; gap: 18px; margin-bottom: 28px; }
+.hero-action .big { font-size: 38px; font-weight: 500; line-height: 1; letter-spacing: -0.02em; }
+.hero-action .label { font-size: 12px; color: var(--text-subtle); margin-top: 5px; text-transform: uppercase; letter-spacing: 0.5px; }
+.hero-trend .delta-row { display: flex; align-items: baseline; gap: 8px; }
+.hero-trend .delta { font-size: 22px; font-weight: 500; color: var(--success); line-height: 1; }
+.hero-trend .delta.up { color: var(--danger); }
+.hero-trend .delta-label { font-size: 12px; color: var(--text-subtle); }
+.hero-trend svg { width: 100%; height: 36px; margin-top: 8px; }
+.hero-trend .trend-label { font-size: 11px; color: var(--text-faint); }
+.stats-strip { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; padding: 12px 0; border-top: 0.5px solid var(--border); border-bottom: 0.5px solid var(--border); margin-bottom: 28px; }
+.stat .v { font-size: 18px; font-weight: 500; line-height: 1.2; }
+.stat .l { font-size: 11px; color: var(--text-subtle); text-transform: uppercase; letter-spacing: 0.4px; margin-top: 2px; }
+.section-h { display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 12px; }
+.section-h h2 { font-size: 13px; font-weight: 500; margin: 0; text-transform: uppercase; letter-spacing: 0.4px; }
+.section-h .count { font-size: 12px; color: var(--text-subtle); }
+.ac-board { display: flex; flex-direction: column; gap: 8px; margin-bottom: 28px; }
+.ac-card { border: 0.5px solid var(--border); border-radius: 8px; padding: 14px 16px; background: var(--bg); }
+.ac-card.expanded { background: var(--bg-soft); }
+.ac-card.actioned { opacity: 0.5; }
+.ac-row { display: grid; grid-template-columns: 90px 1fr 140px 90px 24px; gap: 14px; align-items: center; cursor: pointer; }
+.pill { display: inline-block; padding: 2px 8px; border-radius: 10px; font-size: 10px; font-weight: 600; letter-spacing: 0.3px; text-align: center; }
+.pill-URGENT { background: #FEE2E2; color: #991B1B; }
+.pill-HIGH { background: #FEF3C7; color: #92400E; }
+.pill-CAUTION { background: #FED7AA; color: #9A3412; }
+.pill-WATCH { background: #FEF9C3; color: #854D0E; }
+.pill-HEALTHY { background: #DCFCE7; color: #14532D; }
+.ac-sku { font-family: "SF Mono", Menlo, Consolas, monospace; font-size: 13px; font-weight: 500; }
+.ac-title { font-size: 11px; color: var(--text-subtle); margin-top: 2px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 320px; }
+.ac-action { font-size: 12px; font-weight: 500; }
+.ac-spark { width: 90px; height: 28px; }
+.ac-chev { color: var(--text-faint); transition: transform 0.2s; font-size: 16px; }
+.ac-card.expanded .ac-chev { transform: rotate(90deg); }
+.ac-detail { display: none; padding-top: 14px; margin-top: 14px; border-top: 0.5px solid var(--border); }
+.ac-card.expanded .ac-detail { display: block; }
+.ac-detail h4 { font-size: 10px; font-weight: 500; color: var(--text-subtle); text-transform: uppercase; letter-spacing: 0.4px; margin: 0 0 6px; }
+.ac-detail-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 14px; }
+.ac-rationale { font-size: 12px; line-height: 1.6; color: var(--text-muted); }
+.ac-fee { display: flex; gap: 14px; margin-top: 10px; padding-top: 8px; border-top: 0.5px dashed var(--border); }
+.ac-fee div { font-size: 11px; color: var(--text-subtle); }
+.ac-fee div strong { color: var(--text); font-weight: 500; display: block; font-size: 13px; margin-top: 1px; }
+.age-hist { display: flex; height: 32px; gap: 1px; align-items: flex-end; }
+.age-hist > div { flex: 1; min-height: 2px; border-radius: 1px 1px 0 0; }
+.age-hist > div:hover { opacity: 0.8; }
+.age-labels { display: flex; gap: 1px; margin-top: 4px; font-size: 9px; color: var(--text-faint); }
+.age-labels > div { flex: 1; text-align: center; }
+.ac-velocity, .ac-prevention { background: var(--bg); border: 0.5px solid var(--border); border-radius: 6px; padding: 12px 14px; margin-bottom: 8px; }
+.ac-velocity .vt, .ac-prevention .ph { font-size: 10px; color: var(--text-subtle); text-transform: uppercase; letter-spacing: 0.4px; margin-bottom: 6px; }
+.ac-velocity .vh { font-size: 13px; font-weight: 500; margin-bottom: 6px; }
+.ac-velocity .vd { font-size: 12px; color: var(--text-muted); line-height: 1.6; }
+.ac-velocity.skip { background: var(--bg-soft); }
+.ac-velocity .vs { color: var(--text-subtle); font-style: italic; font-size: 12px; }
+.ac-prevention ul { list-style: none; padding: 0; margin: 0; }
+.ac-prevention li { font-size: 12px; padding: 3px 0; color: var(--text-muted); }
+.ac-prevention li::before { content: "\2610  "; color: var(--text-faint); margin-right: 4px; }
+.ac-buttons { display: flex; gap: 8px; margin-top: 12px; flex-wrap: wrap; }
+.ac-btn { background: var(--accent); color: white; border: none; padding: 6px 12px; border-radius: 6px; font-size: 12px; cursor: pointer; font-family: inherit; font-weight: 500; }
+.ac-btn:hover { background: var(--text-muted); }
+.ac-btn.secondary { background: var(--bg); color: var(--text-muted); border: 0.5px solid var(--border-strong); }
+.ac-btn.secondary:hover { background: var(--bg-soft); }
+.table-wrap { border: 0.5px solid var(--border); border-radius: 8px; overflow: hidden; }
+table { width: 100%; border-collapse: collapse; font-size: 12px; }
+thead th { background: var(--bg-soft); padding: 9px 12px; text-align: left; font-weight: 500; font-size: 10px; color: var(--text-subtle); text-transform: uppercase; letter-spacing: 0.4px; cursor: pointer; user-select: none; border-bottom: 0.5px solid var(--border); }
+thead th:hover { color: var(--text); }
+thead th.sortable::after { content: " \2195"; opacity: 0.3; }
+thead th.sort-asc::after { content: " \25B2"; opacity: 1; }
+thead th.sort-desc::after { content: " \25BC"; opacity: 1; }
+tbody tr { border-bottom: 0.5px solid #F4F4F5; }
+tbody tr:last-child { border-bottom: none; }
+tbody tr:hover { background: var(--bg-soft); }
+tbody td { padding: 8px 12px; vertical-align: middle; }
+tbody td.muted { color: var(--text-subtle); }
+tbody td.num { text-align: right; font-variant-numeric: tabular-nums; }
+tbody td.copy { cursor: pointer; font-family: "SF Mono", Menlo, Consolas, monospace; font-size: 11px; }
+tbody td.copy:hover { color: var(--link); }
+tbody td.copy.copied { color: var(--success); }
+tbody td.copy.copied::after { content: " \2713"; }
+.toggle-link { color: var(--link); cursor: pointer; font-size: 12px; user-select: none; }
+.toggle-link:hover { text-decoration: underline; }
+.controls { display: flex; gap: 10px; align-items: center; margin-bottom: 12px; flex-wrap: wrap; }
+.controls input { padding: 6px 10px; border: 0.5px solid var(--border-strong); border-radius: 6px; font-size: 12px; flex: 1; min-width: 220px; font-family: inherit; }
+.controls input:focus { outline: none; border-color: var(--text-subtle); }
+.chip { padding: 4px 10px; border-radius: 12px; border: 0.5px solid var(--border-strong); background: var(--bg); font-size: 11px; cursor: pointer; user-select: none; }
+.chip.active { background: var(--accent); color: white; border-color: var(--accent); }
+.chip:hover:not(.active) { background: var(--bg-soft); }
+.error { background: #FEF2F2; border: 0.5px solid #FCA5A5; color: #7F1D1D; padding: 12px 14px; border-radius: 6px; font-size: 12px; margin-bottom: 16px; }
+.error.warn { background: #FFFBEB; border-color: #FCD34D; color: #78350F; }
+.loading-state { padding: 60px 20px; text-align: center; color: var(--text-subtle); font-size: 13px; }
+.loading-state::after { content: ""; display: inline-block; width: 16px; height: 16px; margin-left: 10px; border: 2px solid #E4E4E7; border-top-color: var(--accent); border-radius: 50%; animation: spin 0.8s linear infinite; vertical-align: middle; }
+@keyframes spin { to { transform: rotate(360deg); } }
+.pb-panel { margin-top: 36px; border-top: 0.5px solid var(--border); padding-top: 24px; }
+.pb-banner { background: linear-gradient(180deg, var(--bg-soft) 0%, var(--bg) 100%); border: 0.5px solid var(--border); border-radius: 10px; padding: 16px 20px; margin-bottom: 14px; }
+.pb-banner h2 { font-size: 16px; font-weight: 500; margin: 0; }
+.pb-banner .pb-sub { font-size: 12px; color: var(--text-subtle); margin-top: 4px; }
+.pb-section { border-bottom: 0.5px solid var(--border); }
+.pb-section:last-child { border-bottom: none; }
+.pb-header { display: flex; justify-content: space-between; align-items: center; padding: 14px 6px; cursor: pointer; user-select: none; }
+.pb-header:hover { background: var(--bg-soft); }
+.pb-header .pb-num { font-size: 11px; color: var(--text-faint); font-family: "SF Mono", Menlo, Consolas, monospace; margin-right: 12px; min-width: 24px; }
+.pb-header .pb-title { flex: 1; font-size: 14px; font-weight: 500; }
+.pb-header .pb-chev { color: var(--text-faint); font-size: 16px; transition: transform 0.2s; }
+.pb-header.open .pb-chev { transform: rotate(90deg); }
+.pb-content { display: none; padding: 4px 36px 22px; font-size: 13px; color: var(--text-muted); line-height: 1.7; }
+.pb-section.open .pb-content { display: block; }
+.pb-content h5 { font-size: 11px; font-weight: 500; color: var(--text); text-transform: uppercase; letter-spacing: 0.4px; margin: 16px 0 8px; }
+.pb-content h5:first-child { margin-top: 0; }
+.pb-content p { margin: 0 0 10px; }
+.pb-content ul, .pb-content ol { padding-left: 22px; margin: 6px 0 12px; }
+.pb-content li { margin-bottom: 4px; }
+.pb-callout { background: #FFFBEB; border-left: 3px solid #F59E0B; padding: 10px 14px; border-radius: 4px; margin: 10px 0; font-size: 12px; color: #78350F; }
+.pb-callout strong { color: #451A03; font-weight: 500; }
+.pb-callout.danger { background: #FEF2F2; border-color: #DC2626; color: #7F1D1D; }
+.pb-callout.danger strong { color: #450A0A; }
+.pb-callout.success { background: #F0FDF4; border-color: #16A34A; color: #14532D; }
+.pb-callout.success strong { color: #052E16; }
+.pb-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin: 10px 0; }
+.pb-mini-card { border: 0.5px solid var(--border); border-radius: 6px; padding: 12px 14px; background: var(--bg); }
+.pb-mini-card .pb-icon { display: inline-block; width: 24px; height: 24px; border-radius: 4px; line-height: 24px; text-align: center; font-size: 12px; margin-right: 8px; vertical-align: middle; }
+.pb-mini-card .pb-mc-title { font-size: 13px; font-weight: 500; vertical-align: middle; }
+.pb-mini-card .pb-mc-body { font-size: 12px; color: var(--text-subtle); margin-top: 6px; }
+.pb-glossary { display: grid; grid-template-columns: 130px 1fr; gap: 8px 14px; font-size: 12px; }
+.pb-glossary dt { font-family: "SF Mono", Menlo, Consolas, monospace; font-weight: 500; color: var(--text); }
+.pb-glossary dd { color: var(--text-muted); margin: 0; }
+.pb-checklist { padding: 0; list-style: none; }
+.pb-checklist li { font-size: 12px; padding: 4px 0; color: var(--text-muted); }
+.pb-checklist li::before { content: "\2610  "; color: var(--text-subtle); margin-right: 4px; font-weight: 500; }
+@media (max-width: 700px) {
+  .hero { grid-template-columns: 1fr; }
+  .stats-strip { grid-template-columns: 1fr 1fr; }
+  .ac-row { grid-template-columns: 70px 1fr 100px 24px; }
+  .ac-spark { display: none; }
+  .ac-detail-grid { grid-template-columns: 1fr; }
+  .pb-grid { grid-template-columns: 1fr; }
+  .pb-glossary { grid-template-columns: 1fr; }
+}
+</style>
+</head>
+<body>
+<div class="container">
+<div class="topbar">
+  <div>
+    <div class="title">Seedboy FBA Expiration <span style="color:#A1A1AA;font-weight:400;font-size:14px;">· v3</span></div>
+    <div class="meta" id="meta-line">Loading…</div>
+  </div>
+  <div class="actions">
+    <button onclick="fba3JumpPlaybook()">📖 Playbook</button>
+    <button class="primary" id="refreshBtn" onclick="fba3Refresh()">↻ Refresh</button>
+  </div>
+</div>
+<div class="body-pad">
+<div id="errorBox"></div>
+<div id="content" class="loading-state">Loading inventory data</div>
+</div>
+</div>
+<script>"use strict";
+
+// === CONFIG ===
+const DATA_URL = "https://raw.githubusercontent.com/mjbaguhin/cpc-tracker/main/fba_aging.json";
+const HISTORY_URL = "https://raw.githubusercontent.com/mjbaguhin/cpc-tracker/main/fba_aging_history.json";
+// WEBAPP_URL: paste your Apps Script Web App deployment URL ending in /exec.
+// Leave empty string to fall back to GitHub-snapshot-only mode.
+const WEBAPP_URL = "https://script.google.com/macros/s/AKfycbxI12UV33kY__peKXfVsfxj1gMcpbs__xxGC9iTUZZxQRAj3QRURhzvqwDJFwkIRBgKYQ/exec";
+// ==============
+
+const PLAYBOOK = [
+  { id: "basics", num: "01", title: `The basics — why this dashboard exists`, body: `<h5>The simple version</h5><p>Seeds are a living product. They lose germination rate as they age. A 12-month-old packet sprouts fewer plants than a 1-month-old packet.</p><p>Amazon’s warehouses don’t rotate stock the way a grocery store does. When customers order our seeds, Amazon grabs whatever’s nearest in the warehouse — sometimes brand new, sometimes old.</p><h5>Why it matters</h5><p>When a customer gets old seed, they plant it, fewer than expected germinate, they leave a 1-star review, and they ask for a refund or replacement.</p><p>That’s bad for sales (low ratings hurt rankings), bad for margins (refund + replacement + ad spend to drown the bad review), and bad for the brand.</p><div class="pb-callout success"><strong>What this dashboard does:</strong> catches old stock BEFORE it ships. We make it boring and routine, not a fire-drill.</div>` },
+  { id: "risks", num: "02", title: `The 5 risk levels — plain English`, body: `<div class="pb-grid"><div class="pb-mini-card"><span class="pb-icon" style="background:#FEE2E2;color:#991B1B">🚨</span><span class="pb-mc-title">URGENT</span><div class="pb-mc-body">Has units 11+ months old. Auto-disposal kicks in around 50 days before expiry. Act today.</div></div><div class="pb-mini-card"><span class="pb-icon" style="background:#FEF3C7;color:#92400E">🔴</span><span class="pb-mc-title">HIGH</span><div class="pb-mc-body">Has 6-11 month-old units that won’t sell through naturally. Customers will receive aged stock.</div></div><div class="pb-mini-card"><span class="pb-icon" style="background:#FED7AA;color:#9A3412">🟠</span><span class="pb-mc-title">CAUTION</span><div class="pb-mc-body">Has aged units but they’ll clear quickly at current sales pace. Just monitor.</div></div><div class="pb-mini-card"><span class="pb-icon" style="background:#FEF9C3;color:#854D0E">🟡</span><span class="pb-mc-title">WATCH</span><div class="pb-mc-body">Stock is 3-6 months old, getting toward danger zone. One step from HIGH.</div></div></div><div class="pb-mini-card" style="margin-top:10px;background:#F0FDF4"><span class="pb-icon" style="background:#DCFCE7;color:#14532D">🟢</span><span class="pb-mc-title">HEALTHY</span><div class="pb-mc-body">All stock under 90 days old. No action needed — keep doing what you’re doing.</div></div>` },
+  { id: "daily", num: "03", title: `Your daily 5-minute routine`, body: `<p>Every morning when you sit down at your desk:</p><ol><li>Open this dashboard</li><li>Look at the big number at the top — that’s how many SKUs need action today</li><li>Read the Action Queue cards top-to-bottom (sorted by priority)</li><li>For each card, read the recommended action and the “Why this action” rationale</li><li>Decide: <strong>do it now</strong> (file removal, run coupon, pause inbound), <strong>mark as actioned</strong> (it greys out so you can track progress), or <strong>escalate to Sam</strong> if approval needed</li></ol><div class="pb-callout success">If the queue is empty, you’re done. Move on with your day. That’s the goal — boring, routine, fast.</div>` },
+  { id: "monthly", num: "04", title: `Your monthly 15-minute deep review`, body: `<p>First Monday of each month, do a deeper review:</p><ol><li>Open the dashboard</li><li>Click “Show table” at the bottom for the full SKU view</li><li>Sort by 181+ d column (descending)</li><li>For any SKU with 181+ days stock <strong>AND</strong> DoS &gt; 90: file a removal order with Kim</li><li>For any SKU with inbound + already-aged stock in FBA: pause the inbound</li><li>For 2-3 HIGH-risk SKUs in moderate-velocity range: launch a 15-25% coupon for 30 days</li><li>Send Sam a brief Slack: <em>“Monthly FBA review done. X removals filed, Y coupons launched, Z pauses.”</em></li></ol>` },
+  { id: "workflows", num: "05", title: `The 5 core workflows`, body: `<h5>A. Drip-feed inbound</h5><p>Don’t send 90+ days of supply to FBA at once. Send 30-45 days. Hold the rest at our 3PL.<br/><em>Why:</em> less risk of stock aging in FBA. More flexibility to redirect to other channels.</p><h5>B. Dual-FNSKU rotation (fast-moving SKUs only)</h5><p>Instead of one FNSKU per SKU, use two. New stock gets the new FNSKU. We rotate monthly.<br/><em>Why:</em> forces FIFO without depending on Amazon. Used for cat grass and sprouting blends.</p><h5>C. 60-day removal trigger</h5><p>Every month, automatically remove any 181+ day stock that won’t clear in 90 days at current velocity.<br/><em>Why:</em> predictable cadence beats reactive panic.</p><h5>D. Sticker every unit</h5><p>Every Seedboy package gets a “Best by MM-DD-YYYY” sticker before going to FBA. Visible from outside the box.<br/><em>Why:</em> customer can see the date when they unbox. Sets expectations, reduces complaints.</p><h5>E. Customer-side prep</h5><p>Listing-side hardening so even when aged stock does ship, the customer isn’t surprised. <em>See section 7 for the full checklist. A+ content updates flow through Jack (CRDO) since A+ creative direction is his domain.</em></p>` },
+  { id: "velocity", num: "06", title: `When to push velocity (vs. just remove)`, body: `<p>Sometimes a coupon + ad push clears aged stock faster than removal. The math has to work. Here’s when to use which:</p><h5>USE velocity push when ALL of these are true</h5><ul><li>T30 is between 50-150 (moderate mover)</li><li>Aged qty under 400 units (clearable in 60 days)</li><li>DoS under 300 (not catastrophically overstocked)</li><li>We’re in or approaching peak season for the product</li><li>Listing is healthy (not suppressed, not buried)</li></ul><h5>SKIP velocity push when ANY of these are true</h5><ul><li>T30 under 30 (something upstream is broken — fix that first)</li><li>DoS over 300 (too much stock, won’t clear via coupons alone)</li><li>Aged qty over 500 (just too big to clear via discount)</li><li>Past peak season (squash in August won’t move)</li><li>Listing has deep ranking issues</li></ul><h5>How to run a velocity push</h5><ol><li>Seller Central → Advertising → Coupons → Create 15-25% coupon for 30 days</li><li>Slack Sam (CEO/Head of Growth): “Running 20% coupon on [SKU] starting [date]. Can Haris bump PPC for 2 weeks?”</li><li>Track in dashboard: did T30 lift? Did aged_181 drop?</li><li>After 30 days: if working, extend. If not, remove.</li></ol><div class="pb-callout danger"><strong>Important pricing rule:</strong> DO NOT use Sale Price (strike-through) for velocity push. Our catalog is past the 45-day Typical Price recalculation threshold on 173 of 175 SKUs — more sale-price days will trigger Amazon to remove the strike-through entirely. Use COUPONS only — they don’t trigger the recalc.</div>` },
+  { id: "prevention", num: "07", title: `Customer complaint prevention`, body: `<p>Even with great rotation, some aged stock will reach customers sometimes. Goal: when it does, customer isn’t surprised, and if they complain, we resolve fast.</p><h5>Per-listing prevention checklist</h5><ul class="pb-checklist"><li>BP1 freshness disclosure (“Best when planted within 12 months”)</li><li>A+ content section: “How to store your Seedboy seeds” — <em>coordinate with Jack (CRDO)</em></li><li>Germination guarantee in bullets: “If seeds don’t germinate, contact us — free replacements”</li><li>Freshness card inside the package (printed insert)</li><li>Q&amp;A seeded with “How long do these stay viable?” answer</li><li>Subscribe &amp; Save enrolled (consumables only — sprouting seeds, cat grass, protein powders)</li></ul><h5>When a complaint comes in</h5><ol><li>Replacement-first response (don’t defend the original unit)</li><li>Send fresh batch from current production</li><li>Cross-reference the ASIN against this dashboard</li><li>If aged units are present for that ASIN: file removal order with Kim on the spot</li><li>Log NR via the NR tracker skill</li></ol>` },
+  { id: "channels", num: "08", title: `Cross-channel options for removed stock`, body: `<p>Removed FBA stock doesn’t have to be lost. Other places it can go:</p><h5>Shopify</h5><p>Better margin (no FBA fee, no platform commission). Email blast to existing customers. “Limited inventory” framing converts well. Best for aged-but-fresh stock still well within viability.</p><h5>Walmart (already in flight)</h5><p>Different shopper base, different velocity profile. A slow Amazon SKU sometimes moves on Walmart. Best for SKUs with healthy Walmart listings.</p><h5>Wholesale</h5><p>Regional garden centers for dead-stock squash/lettuce/radish. Ask Sam (CEO/Head of Growth) — wholesale relationships sit with Growth. Best for large-volume aged-but-viable lots.</p><h5>Donation</h5><p>Schools, community gardens, churches with garden ministries. Tax write-off if Cross Path Capital legal entity supports. Best for stock genuinely past viability but still useable.</p>` },
+  { id: "glossary", num: "09", title: `Glossary — terms in plain English`, body: `<dl class="pb-glossary"><dt>FBA</dt><dd>Fulfillment by Amazon — Amazon stores and ships our stock</dd><dt>SKU</dt><dd>Our internal product code (like SS-CATGRA-16OZ)</dd><dt>ASIN</dt><dd>Amazon’s product code (like B0F85CTMR5)</dd><dt>FNSKU</dt><dd>Amazon’s label for OUR specific version of a product</dd><dt>T30</dt><dd>Total units sold in the last 30 days</dd><dt>DoS</dt><dd>Days of Supply — how long current stock will last at T30 pace</dd><dt>Aged 181+</dt><dd>Units sitting in FBA more than 181 days</dd><dt>Removal order</dt><dd>Telling Amazon to ship aged stock back to our 3PL</dd><dt>Auto-disposal</dt><dd>Amazon throws stock away near expiry (unrecoverable)</dd><dt>Coupon</dt><dd>Green clippable badge on listing — discount when customer clicks</dd><dt>S&amp;S</dt><dd>Subscribe &amp; Save — automatic recurring orders</dd><dt>Strike-through</dt><dd>The “$X $Y” crossed-out pricing visual — DON’T use for velocity push (see section 6)</dd></dl>` },
+  { id: "contacts", num: "10", title: `Who to contact when`, body: `<h5>Kim — Supply Chain Manager</h5><p>File removal orders, pause inbound shipments, reroute to 3PL.<br/><em>Sample:</em> “Hey Kim, need to remove 450 units of SB-WINSQUASH from FBA, can you file the removal order today?”</p><h5>Sam — CEO / Head of Growth</h5><p>Approval for spend (coupon discounts, PPC bumps via Haris), escalations, strategy, wholesale relationships.<br/><em>Sample:</em> “Hey Sam, want to launch 20% coupons on 4 aged SKUs — quick approval?”</p><h5>Jack — CRDO</h5><p>Brand identity, A+ / creative direction, product positioning, trademark enforcement. A+ content updates, listing copy direction, brand-level concerns, freshness card design, package insert design.<br/><em>Sample:</em> “Hey Jack, drafting an A+ freshness section for Seedboy listings — got 5 mins to align on creative?”</p><h5>Haris — PPC Manager / Brand Manager (via Sam only)</h5><p>PPC campaign adjustments, ad spend tweaks. Don’t contact directly. Loop in via Sam: “Hey Sam, can Haris bump PPC on [SKU] for the coupon push?”</p><h5>Claude — me</h5><p>Dashboard issues, new analyses, skill execution. Direct anytime in this Project. Examples: <em>“Run the NR analysis for May”</em>, <em>“build the dashboard from this data”</em>.</p>` }
+];
+
+const CONSUMABLE_PREFIXES = ["SS-", "PP-"];
+const SEASONAL_LOOKUP = {
+  "SB-WINSQUASH": "Spring planting (Feb-Jun)",
+  "SB-SUMSQUASH": "Spring-summer planting",
+  "SB-BEEFTOM": "Tomato season Apr-Jun",
+  "SB-DWARFSUN": "Sunflower season Mar-Jul",
+  "SB-GIANTSUN": "Sunflower season Mar-Jul",
+  "SB-CUCUMBER": "Cucumber season Apr-Jul",
+  "SB-PEAS": "Cool-season Mar-May",
+  "SB-POLLIN-8OZ": "Pollinator season Mar-Jul",
+  "SB-POLLIN-2OZ": "Pollinator season Mar-Jul"
+};
+
+let DATA = null;
+let HISTORY_DATA = null;
+let isLiveData = false;
+let isLoading = false;
+let expandedSku = null;
+let actionedSet = new Set();
+let openPbSections = new Set(["basics"]);
+let searchQuery = "";
+let riskFilter = null;
+let showFullTable = false;
+let sortField = "aged_181_plus";
+let sortDir = "desc";
+
+const fmt = function(n) { return n == null || isNaN(n) ? "0" : Math.abs(n) >= 1000 ? Number(n).toLocaleString("en-US", {maximumFractionDigits:0}) : String(Math.round(n)); };
+const fmtDollar = function(n) { return n == null || isNaN(n) ? "$0" : "$" + Number(n).toLocaleString("en-US", {maximumFractionDigits:0}); };
+
+function isConsumable(sku) {
+  for (let i = 0; i < CONSUMABLE_PREFIXES.length; i++) {
+    if (sku.indexOf(CONSUMABLE_PREFIXES[i]) === 0) return true;
+  }
+  return false;
+}
+
+function calculatePrimary(s) {
+  const aged181 = s.aged_181_plus || 0;
+  const aged331 = s.aged_331_plus || 0;
+  const aged91 = s.aged_91_plus || 0;
+  const t30 = s.t30 || 0;
+  const inbound = s.inbound || 0;
+  if (s.risk === "URGENT") {
+    return { type:"REMOVE_NOW", qty:aged181, label:"Remove " + aged181 + " units now",
+      reason:"Has " + aged331 + " unit(s) in 331+ day bucket. Days from Amazon\u2019s auto-disposal threshold.",
+      fee:Math.round(aged181 * 0.97), priority:1 };
+  }
+  if (s.risk === "HIGH") {
+    const projected90 = t30 * 3;
+    const willClear = Math.min(projected90, aged181);
+    const excess = Math.max(0, aged181 - willClear);
+    if (excess >= 50) {
+      return { type:"REMOVE_PARTIAL", qty:excess, label:"Remove " + excess + " of " + aged181 + " aged units",
+        reason:"At T30=" + t30 + ", only ~" + Math.round(willClear) + " aged units will sell in 90 days. " + excess + " excess won\u2019t move.",
+        fee:Math.round(excess * 0.97), priority:2 };
+    }
+    return { type:"MONITOR", qty:0, label:"Monitor \u2014 will clear naturally",
+      reason:"Aged units will sell through in ~" + (t30 > 0 ? Math.round(aged181/t30*30) : "?") + " days at current pace.",
+      fee:0, priority:4 };
+  }
+  if (s.risk === "CAUTION") {
+    return { type:"MONITOR", qty:0, label:"Monitor \u2014 small qty",
+      reason:"Only " + aged181 + " aged unit(s). Will clear quickly.",
+      fee:0, priority:5 };
+  }
+  if (s.risk === "WATCH") {
+    if (inbound > 0) {
+      return { type:"PAUSE_INBOUND", qty:inbound, label:"Pause " + inbound + " inbound units",
+        reason:aged91 + " units in 91-180 day bucket already. Inbound will stack behind aged stock.",
+        fee:0, priority:3 };
+    }
+    return { type:"CALIBRATE", qty:0, label:"Reduce next inbound",
+      reason:"Has 91-180 day stock (" + aged91 + " units). Hold replenishment until ages further.",
+      fee:0, priority:6 };
+  }
+  return null;
+}
+
+function calculateVelocity(s) {
+  const aged181 = s.aged_181_plus || 0;
+  const t30 = s.t30 || 0;
+  const inbound = s.inbound || 0;
+  const consumable = isConsumable(s.sku);
+  const seasonName = SEASONAL_LOOKUP[s.sku];
+  const seasonal = !!seasonName;
+
+  if (s.risk === "URGENT") return { skip:true, reason:"Too late + qty too small. Just remove." };
+  if (s.risk === "HEALTHY") return null;
+  if (t30 >= 400 && aged181 > 100) {
+    let action = "";
+    if (consumable) action = "Also enroll in Subscribe & Save at 5-10% \u2014 captures repeat buyers, naturally rotates inventory.";
+    return { type:"DUAL_FNSKU", title:"Don\u2019t run a coupon \u2014 install dual-FNSKU",
+      detail:"This SKU is already a fast mover (T30=" + t30 + "). A coupon would just give margin away. Instead: install dual-FNSKU rotation BEFORE the next inbound arrives. New stock gets the new FNSKU = forced FIFO, no Amazon-side bin stacking.",
+      action:action };
+  }
+  if (t30 < 30) {
+    return { skip:true, reason:"T30=" + t30 + " is a velocity floor \u2014 coupons won\u2019t lift a broken listing. Audit listing health (PPC spend, BSR drift, suppressions, recent reviews) before any push." };
+  }
+  if (s.risk === "HIGH" && t30 >= 50 && t30 < 400 && aged181 < 800) {
+    const lift = t30 < 100 ? "20-25%" : "15-20%";
+    const newT30 = Math.round(t30 * (t30 < 100 ? 1.4 : 1.3));
+    const projected60 = newT30 * 2;
+    const willClear = Math.min(projected60, aged181);
+    let detail = "Run " + lift + " coupon for 30 days via Seller Central \u2192 Advertising \u2192 Coupons. Coordinate with Sam (CEO/Head of Growth) for PPC bump via Haris on this ASIN. Realistic T30 lift: ~" + newT30 + ". 60-day clearance: ~" + Math.round(willClear) + " of " + aged181 + " aged units.";
+    if (seasonal) detail += " Seasonality note: " + seasonName + ".";
+    if (consumable) detail += " Also enroll in Subscribe & Save (consumable category).";
+    return { type:"COUPON_PUSH", title:"Try " + lift + " coupon + PPC bump for 30 days", detail:detail,
+      action:"Re-evaluate in 30 days. If T30 lifted to " + newT30 + "+, extend campaign. If not, remove." };
+  }
+  if (s.risk === "WATCH" && inbound === 0) {
+    return { skip:true, reason:"No velocity push needed \u2014 just calibrate next inbound smaller (30-45 DoS, not 90+)." };
+  }
+  if (s.risk === "WATCH" && inbound > 0) {
+    return { skip:true, reason:"Don\u2019t push velocity \u2014 pausing inbound first prevents pile-up. Velocity push later if 91-180 bucket starts crossing into 181+." };
+  }
+  if (s.risk === "CAUTION") return { skip:true, reason:"Qty too small to warrant a campaign." };
+  return null;
+}
+
+function calculatePrevention(s) {
+  const items = [
+    { label:"BP1 freshness disclosure on listing", hint:"\u201cBest when planted within 12 months\u201d" },
+    { label:"In-package freshness card", hint:"Printed insert: plant-by date + storage tip" },
+    { label:"Germination guarantee in copy", hint:"\u201cIf they don\u2019t germinate, free replacement\u201d" },
+    { label:"A+ content storage section", hint:"Coordinate with Jack (CRDO)" }
+  ];
+  if (isConsumable(s.sku)) {
+    items.push({ label:"Subscribe & Save enrolled (consumable)", hint:"5-10% recurring discount" });
+  }
+  return items;
+}
+
+function calculateAction(s) {
+  return { primary:calculatePrimary(s), velocity:calculateVelocity(s), prevention:calculatePrevention(s) };
+}
+
+function getSkuHistory(sku) {
+  if (!HISTORY_DATA || !HISTORY_DATA.snapshots) return [];
+  const recent = HISTORY_DATA.snapshots.slice(-7);
+  return recent.map(function(snap) { return (snap.s && snap.s[sku] != null) ? snap.s[sku] : 0; });
+}
+
+function getTotalHistory() {
+  if (!HISTORY_DATA || !HISTORY_DATA.snapshots) return [];
+  return HISTORY_DATA.snapshots.slice(-7).map(function(s){ return s.total || 0; });
+}
+
+function sparkline(history, w, h) {
+  if (!history || history.length === 0 || history.every(function(v){return v === 0;})) return "";
+  w = w || 90; h = h || 28;
+  const max = Math.max.apply(null, history), min = Math.min.apply(null, history);
+  const range = max - min || 1;
+  const pts = history.map(function(v, i) {
+    const x = (i / (history.length - 1)) * w;
+    const y = h - ((v - min) / range) * (h - 4) - 2;
+    return x.toFixed(1) + "," + y.toFixed(1);
+  }).join(" ");
+  const last = history[history.length-1], first = history[0];
+  const trendColor = last < first ? "#15803D" : last > first ? "#B91C1C" : "#A1A1AA";
+  return "<svg class=\"ac-spark\" viewBox=\"0 0 " + w + " " + h + "\" preserveAspectRatio=\"none\"><polyline points=\"" + pts + "\" fill=\"none\" stroke=\"" + trendColor + "\" stroke-width=\"1.5\" stroke-linecap=\"round\" stroke-linejoin=\"round\"/></svg>";
+}
+
+function ageHistogram(buckets, total) {
+  if (!total) return "<div style=\"color:#A1A1AA;font-size:11px\">No inventory</div>";
+  const data = [
+    {v:buckets.age_0_30||0, label:"0-30", color:"#86EFAC"},
+    {v:buckets.age_31_60||0, label:"31-60", color:"#86EFAC"},
+    {v:buckets.age_61_90||0, label:"61-90", color:"#A8D08D"},
+    {v:buckets.age_91_180||0, label:"91-180", color:"#FDE68A"},
+    {v:buckets.age_181_330||0, label:"181-330", color:"#FCA5A5"},
+    {v:buckets.age_331_365||0, label:"331-365", color:"#DC2626"},
+    {v:buckets.age_366_455||0, label:"366-455", color:"#7F1D1D"},
+    {v:buckets.age_456_plus||0, label:"456+", color:"#450A0A"}
+  ];
+  const max = Math.max.apply(null, data.map(function(d){return d.v;})) || 1;
+  let bars = "<div class=\"age-hist\">";
+  let labels = "<div class=\"age-labels\">";
+  data.forEach(function(d) {
+    const pct = (d.v / max) * 100;
+    bars += "<div style=\"background:" + d.color + ";height:" + Math.max(2, pct) + "%\" title=\"" + d.label + " days: " + d.v + " units\"></div>";
+    labels += "<div>" + d.label + "</div>";
+  });
+  return bars + "</div>" + labels + "</div>";
+}
+
+function loadData(useLive) {
+  if (isLoading) return;
+  const content = document.getElementById("content");
+  document.getElementById("errorBox").innerHTML = "";
+
+  const wantsLive = useLive && !!WEBAPP_URL;
+  if (wantsLive) {
+    isLoading = true;
+    content.className = "loading-state";
+    content.textContent = "Fetching live data from Drive";
+    const btn = document.getElementById("refreshBtn");
+    if (btn) { btn.textContent = "Loading"; btn.disabled = true; }
+  }
+
+  const dataUrl = wantsLive ? WEBAPP_URL : (DATA_URL + "?t=" + Date.now());
+
+  Promise.all([
+    fetch(dataUrl, { redirect:"follow" }).then(function(r){ if (!r.ok) throw new Error("HTTP " + r.status); return r.json(); }),
+    fetch(HISTORY_URL + "?t=" + Date.now()).then(function(r){ return r.ok ? r.json() : { snapshots: [] }; }).catch(function(){ return { snapshots: [] }; })
+  ]).then(function(results) {
+    const data = results[0];
+    if (data && data.error) throw new Error(data.error);
+    DATA = data;
+    HISTORY_DATA = results[1];
+    isLiveData = wantsLive;
+    isLoading = false;
+    const btn = document.getElementById("refreshBtn");
+    if (btn) { btn.textContent = "\u21BB Refresh"; btn.disabled = false; }
+    render();
+  }).catch(function(err) {
+    isLoading = false;
+    const btn = document.getElementById("refreshBtn");
+    if (btn) { btn.textContent = "\u21BB Refresh"; btn.disabled = false; }
+    if (wantsLive) {
+      console.warn("Live fetch failed, falling back to GitHub:", err.message);
+      document.getElementById("errorBox").innerHTML = "<div class=\"error warn\">Live data unavailable (" + err.message + "). Showing last GitHub snapshot.</div>";
+      loadData(false);
+      return;
+    }
+    content.innerHTML = "";
+    document.getElementById("errorBox").innerHTML = "<div class=\"error\">Could not load data: " + err.message + ". Check that fba_aging.json exists at the repo root.</div>";
+  });
+}
+
+window.fba3Refresh = function() { loadData(true); };
+window.fba3Toggle = function(sku) { expandedSku = expandedSku === sku ? null : sku; render(); };
+window.fba3MarkActioned = function(e, sku) { e.stopPropagation(); if (actionedSet.has(sku)) actionedSet.delete(sku); else actionedSet.add(sku); render(); };
+window.fba3Search = function(v) { searchQuery = v; render(true); };
+window.fba3RiskFilter = function(r) { riskFilter = riskFilter === r ? null : r; render(); };
+window.fba3ToggleTable = function() { showFullTable = !showFullTable; render(); };
+window.fba3Sort = function(f) { if (sortField === f) sortDir = sortDir === "asc" ? "desc" : "asc"; else { sortField = f; sortDir = "desc"; } render(); };
+window.fba3TogglePb = function(id) { if (openPbSections.has(id)) openPbSections.delete(id); else openPbSections.add(id); render(); };
+window.fba3JumpPlaybook = function() { const el = document.getElementById("pb-anchor"); if (el) el.scrollIntoView({ behavior:"smooth", block:"start" }); };
+window.fba3Copy = function(text, el) {
+  if (navigator.clipboard) {
+    navigator.clipboard.writeText(text).then(function(){ el.classList.add("copied"); setTimeout(function(){ el.classList.remove("copied"); }, 1200); }).catch(function(){ el.classList.add("copied"); setTimeout(function(){ el.classList.remove("copied"); }, 1200); });
+  }
+};
+
+function renderPlaybook() {
+  let h = "<div class=\"pb-panel\" id=\"pb-anchor\">";
+  h += "<div class=\"pb-banner\"><h2>\uD83D\uDCD6 Seedboy FBA Expiration Playbook 2026</h2><div class=\"pb-sub\">How we keep aged seeds out of customer hands. Click any section to expand.</div></div>";
+  PLAYBOOK.forEach(function(s) {
+    const isOpen = openPbSections.has(s.id);
+    h += "<div class=\"pb-section " + (isOpen ? "open" : "") + "\">";
+    h += "<div class=\"pb-header " + (isOpen ? "open" : "") + "\" onclick=\"fba3TogglePb('" + s.id + "')\">";
+    h += "<span class=\"pb-num\">" + s.num + "</span>";
+    h += "<span class=\"pb-title\">" + s.title + "</span>";
+    h += "<span class=\"pb-chev\">\u203A</span>";
+    h += "</div>";
+    h += "<div class=\"pb-content\">" + s.body + "</div>";
+    h += "</div>";
+  });
+  h += "</div>";
+  return h;
+}
+
+function render(preserveFocus) {
+  if (!DATA) return;
+  const m = DATA.meta;
+  const skusWithAction = DATA.skus.map(function(s) {
+    const sCopy = Object.assign({}, s);
+    sCopy.action = calculateAction(s);
+    sCopy.history = getSkuHistory(s.sku);
+    return sCopy;
+  });
+  const actionable = skusWithAction.filter(function(s){ return s.action.primary && s.action.primary.priority <= 3; })
+    .sort(function(a,b){ return a.action.primary.priority - b.action.primary.priority || (b.aged_181_plus||0) - (a.aged_181_plus||0); });
+  const watchlist = skusWithAction.filter(function(s){ return s.action.primary && s.action.primary.priority > 3 && s.action.primary.priority < 6; });
+
+  const totalAged181 = m.aged_181_plus || 0;
+  const totalValue = m.value_at_risk || 0;
+  const totalRemovalFee = actionable.reduce(function(sum,s){return sum + (s.action.primary ? s.action.primary.fee : 0);}, 0);
+  const totalHistory = getTotalHistory();
+  const wowDelta = totalHistory.length >= 2 ? totalHistory[totalHistory.length-1] - totalHistory[0] : 0;
+  const remainingActionable = actionable.filter(function(s){return !actionedSet.has(s.sku);}).length;
+  const liveBadge = isLiveData ? "<span class=\"live-badge\">\u26A1 LIVE</span>" : "";
+  document.getElementById("meta-line").innerHTML = "Snapshot " + m.snapshot_date + " \u00B7 " + m.report_time + liveBadge + " \u00B7 " + m.total_skus + " Seedboy SKUs";
+
+  let html = "";
+  html += "<div class=\"hero\">";
+  html += "<div class=\"hero-action\"><div class=\"big\">" + remainingActionable + (actionedSet.size > 0 ? " <span style=\"color:#A1A1AA;font-size:24px\">/ " + actionable.length + "</span>" : "") + "</div><div class=\"label\">SKUs need action today</div></div>";
+  if (totalHistory.length >= 2) {
+    html += "<div class=\"hero-trend\"><div class=\"delta-row\"><div class=\"delta " + (wowDelta > 0 ? "up" : "") + "\">" + (wowDelta > 0 ? "\u2191" : "\u2193") + " " + Math.abs(wowDelta) + "</div><div class=\"delta-label\">aged units \u00B7 7 days</div></div>" + sparkline(totalHistory, 320, 36).replace("class=\"ac-spark\"", "style=\"width:100%;height:36px\"") + "<div class=\"trend-label\">" + totalHistory[0] + " \u2192 " + totalHistory[totalHistory.length-1] + " aged units</div></div>";
+  } else {
+    html += "<div class=\"hero-trend\"><div style=\"color:#A1A1AA;font-size:12px\">7-day trend will appear after the daily Apps Script has saved a few snapshots.</div></div>";
+  }
+  html += "</div>";
+
+  html += "<div class=\"stats-strip\">";
+  html += "<div class=\"stat\"><div class=\"v\">" + fmt(totalAged181) + "</div><div class=\"l\">Aged units (181+)</div></div>";
+  html += "<div class=\"stat\"><div class=\"v\">" + fmtDollar(totalValue) + "</div><div class=\"l\">Value at risk</div></div>";
+  html += "<div class=\"stat\"><div class=\"v\">" + fmtDollar(totalRemovalFee) + "</div><div class=\"l\">Est. removal fee</div></div>";
+  html += "<div class=\"stat\"><div class=\"v\">" + fmtDollar(totalValue - totalRemovalFee) + "</div><div class=\"l\">Net recoverable</div></div>";
+  html += "</div>";
+
+  html += "<div class=\"section-h\"><h2>Action queue</h2><div class=\"count\">" + remainingActionable + " open \u00B7 " + actionedSet.size + " done</div></div>";
+  html += "<div class=\"ac-board\">";
+  if (actionable.length === 0) {
+    html += "<div style=\"text-align:center;padding:24px;color:#71717A;font-size:13px\">All clear. No action needed today.</div>";
+  } else {
+    actionable.forEach(function(s) {
+      const isExpanded = expandedSku === s.sku;
+      const isActioned = actionedSet.has(s.sku);
+      const a = s.action;
+      const titleShort = (s.title || "").substring(0, 80);
+      html += "<div class=\"ac-card" + (isExpanded ? " expanded" : "") + (isActioned ? " actioned" : "") + "\">";
+      html += "<div class=\"ac-row\" onclick=\"fba3Toggle('" + s.sku + "')\">";
+      html += "<div><span class=\"pill pill-" + s.risk + "\">" + s.risk + "</span></div>";
+      html += "<div><div class=\"ac-sku\">" + s.sku + (isActioned ? " \u2713" : "") + "</div><div class=\"ac-title\">" + titleShort + "</div></div>";
+      html += "<div class=\"ac-action\">" + a.primary.label + "</div>";
+      html += "<div>" + sparkline(s.history) + "</div>";
+      html += "<div class=\"ac-chev\">\u203A</div>";
+      html += "</div>";
+      html += "<div class=\"ac-detail\">";
+      html += "<div class=\"ac-detail-grid\">";
+      html += "<div><h4>Why this action</h4><div class=\"ac-rationale\">" + a.primary.reason + "</div>";
+      html += "<div class=\"ac-fee\">";
+      if (a.primary.fee > 0) html += "<div>Removal fee<strong>" + fmtDollar(a.primary.fee) + "</strong></div>";
+      html += "<div>Value at risk<strong>" + fmtDollar(s.value_at_risk||0) + "</strong></div>";
+      html += "<div>Net recovered<strong>" + fmtDollar((s.value_at_risk||0) - a.primary.fee) + "</strong></div>";
+      html += "</div></div>";
+      html += "<div><h4>Age distribution</h4>" + ageHistogram(s.age_buckets, s.available) + "<div style=\"font-size:11px;color:#71717A;margin-top:8px\">" + fmt(s.available) + " avail \u00B7 T30 " + fmt(s.t30) + " \u00B7 DoS " + fmt(s.dos) + (s.inbound ? " \u00B7 " + fmt(s.inbound) + " inbound" : "") + "</div></div>";
+      html += "</div>";
+
+      if (a.velocity) {
+        html += "<div class=\"ac-velocity " + (a.velocity.skip ? "skip" : "") + "\">";
+        html += "<div class=\"vt\">Velocity alternative</div>";
+        if (a.velocity.skip) {
+          html += "<div class=\"vs\">" + a.velocity.reason + "</div>";
+        } else {
+          html += "<div class=\"vh\">" + a.velocity.title + "</div>";
+          html += "<div class=\"vd\">" + a.velocity.detail + "</div>";
+          if (a.velocity.action) html += "<div class=\"vd\" style=\"margin-top:6px;color:#71717A\"><em>" + a.velocity.action + "</em></div>";
+        }
+        html += "</div>";
+      }
+
+      html += "<div class=\"ac-prevention\">";
+      html += "<div class=\"ph\">Complaint prevention checklist</div>";
+      html += "<ul>";
+      a.prevention.forEach(function(p) {
+        html += "<li>" + p.label + " <span style=\"color:#A1A1AA;font-size:11px\">\u2014 " + p.hint + "</span></li>";
+      });
+      html += "</ul></div>";
+
+      html += "<div class=\"ac-buttons\">";
+      html += "<button class=\"ac-btn\" onclick=\"fba3MarkActioned(event, '" + s.sku + "')\">" + (isActioned ? "\u2713 Actioned (undo)" : "Mark as actioned") + "</button>";
+      html += "<a class=\"ac-btn secondary\" href=\"https://sellercentral.amazon.com/inventory/ref=xx_invmgr_dnav_xx?tbla_myitable=sort:%7B%22sortOrder%22%3A%22DESCENDING%22%2C%22sortedColumnId%22%3A%22date%22%7D;search:" + s.asin + "\" target=\"_blank\" style=\"text-decoration:none;\" onclick=\"event.stopPropagation()\">Seller Central</a>";
+      html += "</div>";
+      html += "</div></div>";
+    });
+  }
+  html += "</div>";
+
+  html += "<div class=\"section-h\"><h2>Watchlist <span style=\"color:#A1A1AA;font-weight:400\">\u00B7 " + watchlist.length + " trending</span></h2></div>";
+  html += "<div class=\"ac-board\" style=\"margin-bottom:28px\">";
+  if (watchlist.length === 0) {
+    html += "<div style=\"text-align:center;padding:16px;color:#71717A;font-size:12px\">No SKUs on the watchlist.</div>";
+  } else {
+    watchlist.slice(0, 5).forEach(function(s) {
+      const titleShort = (s.title || "").substring(0, 80);
+      html += "<div class=\"ac-card\" style=\"padding:10px 16px\"><div class=\"ac-row\" style=\"cursor:default\">";
+      html += "<div><span class=\"pill pill-" + s.risk + "\">" + s.risk + "</span></div>";
+      html += "<div><div class=\"ac-sku\">" + s.sku + "</div><div class=\"ac-title\">" + titleShort + "</div></div>";
+      html += "<div class=\"ac-action\" style=\"color:#71717A;font-weight:400\">" + s.action.primary.label + "</div>";
+      html += "<div>" + sparkline(s.history) + "</div><div></div></div></div>";
+    });
+  }
+  html += "</div>";
+
+  html += "<div class=\"section-h\"><h2>All inventory <span style=\"color:#A1A1AA;font-weight:400\">\u00B7 " + DATA.skus.length + " SKUs</span></h2><div class=\"toggle-link\" onclick=\"fba3ToggleTable()\">" + (showFullTable ? "Hide" : "Show") + " table</div></div>";
+
+  if (showFullTable) {
+    html += "<div class=\"controls\">";
+    html += "<input type=\"text\" id=\"searchBox\" placeholder=\"Search SKU, ASIN, or product...\" oninput=\"fba3Search(this.value)\" value=\"" + searchQuery + "\">";
+    ["URGENT","HIGH","CAUTION","WATCH","HEALTHY"].forEach(function(r) {
+      html += "<div class=\"chip " + (riskFilter === r ? "active" : "") + "\" onclick=\"fba3RiskFilter('" + r + "')\">" + r + "</div>";
+    });
+    html += "</div>";
+
+    let filtered = DATA.skus.slice();
+    if (searchQuery) {
+      const q = searchQuery.toLowerCase();
+      filtered = filtered.filter(function(s){ return s.sku.toLowerCase().indexOf(q) >= 0 || s.asin.toLowerCase().indexOf(q) >= 0 || (s.title||"").toLowerCase().indexOf(q) >= 0; });
+    }
+    if (riskFilter) filtered = filtered.filter(function(s){return s.risk === riskFilter;});
+    filtered.sort(function(a,b){ let av = a[sortField], bv = b[sortField]; if (typeof av === "string") av = av.toLowerCase(); if (typeof bv === "string") bv = bv.toLowerCase(); if (av < bv) return sortDir === "asc" ? -1 : 1; if (av > bv) return sortDir === "asc" ? 1 : -1; return 0; });
+
+    html += "<div class=\"table-wrap\"><table>";
+    const cols = [{f:"risk",t:"Risk"},{f:"sku",t:"SKU"},{f:"asin",t:"ASIN"},{f:"available",t:"Avail"},{f:"aged_181_plus",t:"181+"},{f:"t30",t:"T30"},{f:"dos",t:"DoS"},{f:"value_at_risk",t:"$ Risk"},{f:null,t:"Trend"}];
+    html += "<thead><tr>";
+    cols.forEach(function(c){ const cls = c.f && sortField === c.f ? (sortDir === "asc" ? "sort-asc" : "sort-desc") : (c.f ? "sortable" : ""); html += "<th class=\"" + cls + "\"" + (c.f ? " onclick=\"fba3Sort('" + c.f + "')\"" : "") + ">" + c.t + "</th>"; });
+    html += "</tr></thead><tbody>";
+    filtered.forEach(function(s) {
+      const history = getSkuHistory(s.sku);
+      html += "<tr><td><span class=\"pill pill-" + s.risk + "\">" + s.risk + "</span></td>";
+      html += "<td class=\"copy\" onclick=\"fba3Copy('" + s.sku + "', this)\">" + s.sku + "</td>";
+      html += "<td class=\"copy\" onclick=\"fba3Copy('" + s.asin + "', this)\">" + s.asin + "</td>";
+      html += "<td class=\"num\">" + fmt(s.available) + "</td>";
+      html += "<td class=\"num\"" + ((s.aged_181_plus||0) > 0 ? " style=\"color:#B91C1C;font-weight:500\"" : " class=\"muted\"") + ">" + fmt(s.aged_181_plus) + "</td>";
+      html += "<td class=\"num\">" + fmt(s.t30) + "</td>";
+      html += "<td class=\"num\"" + ((s.dos||0) > 180 ? " style=\"color:#B91C1C\"" : "") + ">" + fmt(s.dos) + "</td>";
+      html += "<td class=\"num\">" + ((s.value_at_risk||0) > 0 ? fmtDollar(s.value_at_risk) : "<span class=\"muted\">\u2014</span>") + "</td>";
+      html += "<td>" + sparkline(history, 60, 20) + "</td></tr>";
+    });
+    html += "</tbody></table></div>";
+  }
+
+  html += renderPlaybook();
+
+  document.getElementById("content").innerHTML = html;
+  document.getElementById("content").className = "";
+
+  if (preserveFocus) {
+    const sb = document.getElementById("searchBox");
+    if (sb) { sb.focus(); sb.setSelectionRange(sb.value.length, sb.value.length); }
+  }
+}
+
+window.addEventListener("DOMContentLoaded", function(){ loadData(false); });
+</script>
+</body>
+</html>
