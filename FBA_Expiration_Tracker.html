@@ -185,7 +185,7 @@ const DATA_URL = "https://raw.githubusercontent.com/mjbaguhin/cpc-tracker/main/f
 const HISTORY_URL = "https://raw.githubusercontent.com/mjbaguhin/cpc-tracker/main/fba_aging_history.json";
 // WEBAPP_URL: paste your Apps Script Web App deployment URL ending in /exec.
 // Leave empty string to fall back to GitHub-snapshot-only mode.
-const WEBAPP_URL = "https://script.google.com/macros/s/AKfycbxI12UV33kY__peKXfVsfxj1gMcpbs__xxGC9iTUZZxQRAj3QRURhzvqwDJFwkIRBgKYQ/exec";
+const WEBAPP_URL = "";
 // ==============
 
 const PLAYBOOK = [
@@ -388,23 +388,25 @@ function ageHistogram(buckets, total) {
 
 function loadData(useLive) {
   if (isLoading) return;
+  isLoading = true;
   const content = document.getElementById("content");
   document.getElementById("errorBox").innerHTML = "";
 
   const wantsLive = useLive && !!WEBAPP_URL;
-  if (wantsLive) {
-    isLoading = true;
-    content.className = "loading-state";
-    content.textContent = "Fetching live data from Drive";
-    const btn = document.getElementById("refreshBtn");
-    if (btn) { btn.textContent = "Loading"; btn.disabled = true; }
-  }
+  content.className = "loading-state";
+  content.textContent = wantsLive ? "Fetching live data from Drive" : "Loading inventory data";
+  const btn = document.getElementById("refreshBtn");
+  if (btn) { btn.textContent = "Loading"; btn.disabled = true; }
 
-  const dataUrl = wantsLive ? WEBAPP_URL : (DATA_URL + "?t=" + Date.now());
+  // On initial load (DATA is null) -> hit plain URLs so Fastly CDN serves cached copy fast.
+  // On Refresh (DATA already populated) -> add cache buster to force fresh fetch.
+  const buster = DATA ? ("?t=" + Date.now()) : "";
+  const dataUrl = wantsLive ? WEBAPP_URL : (DATA_URL + buster);
+  const histUrl = HISTORY_URL + buster;
 
   Promise.all([
     fetch(dataUrl, { redirect:"follow" }).then(function(r){ if (!r.ok) throw new Error("HTTP " + r.status); return r.json(); }),
-    fetch(HISTORY_URL + "?t=" + Date.now()).then(function(r){ return r.ok ? r.json() : { snapshots: [] }; }).catch(function(){ return { snapshots: [] }; })
+    fetch(histUrl).then(function(r){ return r.ok ? r.json() : { snapshots: [] }; }).catch(function(){ return { snapshots: [] }; })
   ]).then(function(results) {
     const data = results[0];
     if (data && data.error) throw new Error(data.error);
