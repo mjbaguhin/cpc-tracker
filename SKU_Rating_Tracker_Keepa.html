@@ -23,6 +23,35 @@ body{background:#f1f5f9;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',
 .chip{display:inline-flex;align-items:center;gap:4px;padding:3px 9px;border-radius:20px;font-size:11px;font-weight:700;cursor:pointer;border:1.5px solid}
 .chip-dn{background:#fee2e2;border-color:#fca5a5;color:#b91c1c}
 .chip-up{background:#dcfce7;border-color:#86efac;color:#15803d}
+#alert-banner{display:none;margin:0;padding:6px 16px 8px;background:#fef2f2;border-bottom:1px solid #fecaca}
+#alert-banner.has-alerts{display:block}
+#alert-banner.all-clear{display:block;background:#f0fdf4;border-bottom:1px solid #bbf7d0}
+.alert-title{font-size:11px;font-weight:700;color:#991b1b;text-transform:uppercase;letter-spacing:.06em;margin-bottom:5px}
+.alert-title.ok{color:#15803d}
+.alert-chip{display:inline-flex;align-items:center;gap:5px;padding:4px 10px;border-radius:5px;background:#fee2e2;border:1px solid #fca5a5;font-size:11px;font-weight:700;color:#7f1d1d;cursor:pointer;margin-right:6px;margin-top:3px;position:relative}
+.alert-chip:hover{background:#fecaca}
+.alert-tooltip{display:none;position:absolute;top:calc(100% + 6px);left:0;background:#1e293b;color:#f8fafc;border-radius:10px;padding:10px 14px;font-size:12px;box-shadow:0 4px 20px rgba(0,0,0,.35);z-index:9999;min-width:240px;white-space:nowrap;pointer-events:none}
+.alert-chip:hover .alert-tooltip{display:block}
+.alert-tooltip-title{font-size:10px;color:#94a3b8;font-weight:700;text-transform:uppercase;letter-spacing:.06em;margin-bottom:7px}
+.alert-tooltip table{width:100%;border-collapse:collapse}
+.alert-tooltip td{padding:2px 0;font-size:11px}
+.alert-tooltip td:first-child{color:#94a3b8;padding-right:12px}
+.alert-tooltip td:last-child{font-weight:700;font-family:monospace}
+.alert-hint{font-size:10px;color:#94a3b8;margin-top:5px;font-style:italic}
+#alert-popup-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.4);z-index:10000;align-items:center;justify-content:center}
+#alert-popup-overlay.show{display:flex}
+#alert-popup{background:#1e293b;color:#f8fafc;border-radius:12px;padding:16px 20px;min-width:300px;max-width:420px;position:relative;font-size:13px}
+#alert-popup-close{position:absolute;top:10px;right:14px;cursor:pointer;font-size:16px;color:#94a3b8;background:none;border:none;line-height:1}
+#alert-popup h3{font-size:13px;font-weight:700;margin-bottom:12px;color:#f8fafc}
+#alert-popup table{width:100%;border-collapse:collapse;margin-bottom:10px;background:#1e293b}
+#alert-popup td{padding:3px 0;font-size:12px;color:#f8fafc;background:#1e293b}
+#alert-popup td:first-child{color:#94a3b8;padding-right:14px;white-space:nowrap;background:#1e293b}
+#alert-popup td:last-child{font-weight:700;font-family:monospace;color:#f8fafc;background:#1e293b}
+.nr-row{font-size:11px;margin:2px 0;color:#cbd5e1}
+.nr-row span{color:#f87171;font-weight:700;margin-right:4px}
+#copy-alert-btn{margin-top:12px;width:100%;padding:7px;background:#334155;border:none;border-radius:6px;color:#f8fafc;font-size:12px;font-weight:700;cursor:pointer;transition:background .15s}
+#copy-alert-btn:hover{background:#475569}
+#copy-alert-btn.copied{background:#15803d}
 #ctrl{background:#fff;border-bottom:1px solid #e2e8f0;padding:8px 20px;display:flex;align-items:center;gap:6px;flex-wrap:wrap;position:sticky;top:0;z-index:50;box-shadow:0 2px 6px rgba(0,0,0,.05)}
 #ctrl2{background:#fff;border-bottom:2px solid #e2e8f0;padding:6px 20px;display:flex;align-items:center;gap:8px;flex-wrap:wrap}
 .btn-primary{padding:7px 16px;border-radius:8px;border:none;font-size:12px;font-weight:700;cursor:pointer;display:inline-flex;align-items:center;gap:5px;white-space:nowrap;background:#2563eb;color:#fff}
@@ -138,6 +167,19 @@ canvas{cursor:pointer}
   </div>
 </div>
 <div id="banner"><div class="brow" id="bchips"></div></div>
+<div id="alert-banner">
+  <div class="alert-title" id="alert-title">&#128680; Red Alerts</div>
+  <div id="alert-chips"></div>
+</div>
+<div id="alert-popup-overlay">
+  <div id="alert-popup">
+    <button id="alert-popup-close" onclick="closeAlertPopup()">&#10005;</button>
+    <h3 id="popup-title"></h3>
+    <table id="popup-table"></table>
+    <div id="popup-nrs"></div>
+    <button id="copy-alert-btn" onclick="copyAlertText()">&#x2398; Copy alert text</button>
+  </div>
+</div>
 <div id="ctrl">
   <button class="btn-primary" onclick="doLoad()">&#8635; Refresh Data</button>
   <button class="btn-sec" onclick="downloadCSV()">&#8595; Download CSV</button>
@@ -341,8 +383,9 @@ async function doLoad(){
     var raw=j.data||{}, res={};
     Object.keys(raw).forEach(function(a){
       var d=raw[a];
-      res[a]={cur:d.cur,r1:d.r1,r30:d.r30,r90:d.r90,r180:d.r180,rev:d.rev,bsr:d.bsr||null,bsrCat:d.bsrCat||null,keepaParent:d.keepaParent||null,
+      res[a]={cur:d.cur,r1:d.r1,r30:d.r30,r60:d.r60||null,r90:d.r90,r180:d.r180,rev:d.rev,bsr:d.bsr||null,bsrCat:d.bsrCat||null,keepaParent:d.keepaParent||null,
         available:d.available!=null?d.available:null,invHealth:d.invHealth||null,inbound:d.inbound!=null?d.inbound:null,days:d.days!=null?d.days:null,
+        nrCount30d:d.nrCount30d||0,nrSummary:d.nrSummary||[],
         rh:(d.rh||[]).map(function(x){return{d:new Date(x.d),v:x.v};})};
     });
     RD=res; setP(100);
@@ -363,7 +406,7 @@ async function doLoad(){
     msg.textContent="❌ Could not load data — please contact the page creator";
     document.getElementById("admBtn").style.display="inline-flex";
   }
-  btn.disabled=false; updateStats(); render();
+  btn.disabled=false; updateStats(); render(); renderAlertBanner();
 }
 
 async function doEmergency(){
@@ -395,7 +438,7 @@ async function doEmergency(){
     setP(100); msg.className="err";
     msg.textContent=e.message==="TOKEN_LIMIT"?"⚠ Not enough tokens — wait ~35 min":"Error: "+e.message;
   }
-  btn.disabled=false; updateStats(); render();
+  btn.disabled=false; updateStats(); render(); renderAlertBanner();
 }
 
 function pA(a,d10){
@@ -556,12 +599,169 @@ function copyText(text, el){
 }
 
 // Copy button event delegation
-document.addEventListener("click", function(e){
-  var btn = e.target.closest(".copy-btn");
-  if(btn && btn.dataset.copy){
-    e.stopPropagation();
-    copyText(btn.dataset.copy, btn);
+var CURRENT_ALERT_ITEM = null;
+
+function getRedAlerts(){
+  var alerts=[];
+  CATALOG.forEach(function(item){
+    var t=item.tier;
+    if(t==="X") return;
+    var d=RD[item.asin];
+    if(!d||d.cur===null) return;
+    var reasons=[];
+    if(d.cur<4.5 && (t==="A"||t==="B"||t==="N")) reasons.push("below 4.5★ (Tier "+t+")");
+    if(d.r60!==null&&(d.cur-d.r60)<=-0.4) reasons.push("dropped "+(d.cur-d.r60).toFixed(1)+"★ in 60D ("+d.r60.toFixed(1)+"★ \u2192 "+d.cur.toFixed(1)+"★)");
+    if(reasons.length) alerts.push({item:item,d:d,reasons:reasons});
+  });
+  return alerts;
+}
+
+function renderAlertBanner(){
+  var alerts=getRedAlerts();
+  var banner=document.getElementById("alert-banner");
+  var title=document.getElementById("alert-title");
+  var chipsEl=document.getElementById("alert-chips");
+  chipsEl.innerHTML="";
+
+  if(!alerts.length){
+    banner.className="all-clear";
+    title.className="alert-title ok";
+    title.innerHTML="&#10003; All clear &#8212; no rating alerts today";
+    return;
   }
+
+  banner.className="has-alerts";
+  title.className="alert-title";
+  title.innerHTML="&#128680; Red Alerts &#8212; "+alerts.length+" SKU"+(alerts.length>1?"s":"")+" need attention";
+
+  alerts.forEach(function(al){
+    var item=al.item, d=al.d;
+    var chip=document.createElement("div");
+    chip.className="alert-chip";
+
+    var nrText=d.nrCount30d>0?(d.nrCount30d+" NR"+(d.nrCount30d>1?"s":"")+" last 30D"):"No NRs last 30D";
+    var oos=d.available!==null&&d.available===0?"Yes":"No";
+    var multiAlert=al.reasons.length>1;
+
+    // Tooltip rows — numbered if multiple alerts
+    var tipRows="";
+    al.reasons.forEach(function(r,i){
+      var label=multiAlert?"&#9888; Alert "+(i+1):"&#9888; Alert";
+      tipRows+="<tr><td>"+label+"</td><td style='color:#f87171'>"+r+"</td></tr>";
+    });
+    tipRows+="<tr><td style='padding-top:6px'>Current</td><td style='padding-top:6px;color:#f87171'>"+d.cur.toFixed(1)+"&#9733;</td></tr>";
+    tipRows+="<tr><td>60D ago</td><td>"+(d.r60!==null?d.r60.toFixed(1)+"&#9733;":"--")+"</td></tr>";
+    tipRows+="<tr><td>Reviews</td><td>"+(d.rev||"--")+"</td></tr>";
+    tipRows+="<tr><td>OOS</td><td>"+oos+"</td></tr>";
+    tipRows+="<tr><td>NRs (30D)</td><td style='color:"+(d.nrCount30d>0?"#f87171":"#4ade80")+"'>"+nrText+"</td></tr>";
+
+    var nrPreview="";
+    if(d.nrSummary&&d.nrSummary.length){
+      d.nrSummary.slice(0,2).forEach(function(nr){
+        nrPreview+="<tr><td colspan='2' style='color:#94a3b8;font-size:10px;padding-top:3px'>"+nr.rating+"&#9733; &mdash; "+nr.cause+"</td></tr>";
+      });
+    }
+
+    // Chip label — show all reasons joined with · and badge if multiple
+    var reasonsLabel=al.reasons.join(" &nbsp;&#183;&nbsp; ");
+    var badge=multiAlert?"<span style='background:#7f1d1d;color:#fecaca;font-size:9px;font-weight:700;padding:1px 5px;border-radius:3px;margin-left:4px'>"+al.reasons.length+" alerts</span>":"";
+
+    chip.innerHTML=
+      "<span>&#128308;</span>"+
+      "<span style='font-family:monospace'>"+item.sku+"</span>"+
+      "<span style='opacity:.7'>Tier "+item.tier+"</span>"+
+      "<span style='font-family:monospace'>"+d.cur.toFixed(1)+"&#9733;</span>"+
+      "<span style='opacity:.8'>"+reasonsLabel+"</span>"+badge+
+      "<div class='alert-tooltip'>"+
+        "<div class='alert-tooltip-title'>"+item.sku+(multiAlert?" &mdash; "+al.reasons.length+" alerts":"")+"</div>"+
+        "<table>"+tipRows+nrPreview+"</table>"+
+        "<div class='alert-hint'>Click to view full details</div>"+
+      "</div>";
+
+    chip.addEventListener("click", function(e){
+      e.stopPropagation();
+      openAlertPopup(item, d, al.reasons);
+    });
+    chipsEl.appendChild(chip);
+  });
+}
+
+function openAlertPopup(item, d, reasons){
+  CURRENT_ALERT_ITEM={item:item,d:d,reasons:reasons};
+  var multiAlert=reasons.length>1;
+  var titleEl=document.getElementById("popup-title");
+  titleEl.innerHTML=item.sku+" &mdash; "+item.name.substring(0,40)+(item.name.length>40?"...":"")
+    +(multiAlert?" <span style='background:#7f1d1d;color:#fecaca;font-size:10px;font-weight:700;padding:2px 7px;border-radius:3px;margin-left:4px'>"+reasons.length+" alerts</span>":"");
+  var oos=d.available!==null&&d.available===0?"Yes ("+d.available+" units)":"No"+(d.available!==null?" ("+d.available+" units)":"");
+  var rows=[
+    ["ASIN", item.asin],
+    ["Tier", item.tier],
+    ["Current rating", d.cur.toFixed(1)+"★"],
+    ["30D ago", d.r30!==null?d.r30.toFixed(1)+"★":"--"],
+    ["60D ago", d.r60!==null?d.r60.toFixed(1)+"★":"--"],
+    ["Drop (30D)", d.r30!==null?((d.cur-d.r30).toFixed(1)+"★"):"--"],
+    ["Drop (60D)", d.r60!==null?((d.cur-d.r60).toFixed(1)+"★"):"--"],
+    ["Reviews", d.rev||"--"],
+    ["OOS", oos],
+    ["NRs last 30D", d.nrCount30d||0]
+  ];
+  var tbl="";
+  rows.forEach(function(r){ tbl+="<tr><td>"+r[0]+"</td><td>"+r[1]+"</td></tr>"; });
+  // Alert rows with dark red background
+  tbl+="<tr><td colspan='2' style='padding-top:6px'></td></tr>";
+  reasons.forEach(function(r,i){
+    var label=multiAlert?"&#9888; Alert "+(i+1):"&#9888; Alert";
+    tbl+="<tr><td style='background:#2d1515;color:#94a3b8;padding:3px 14px 3px 0'>"+label+"</td>"
+        +"<td style='background:#2d1515;color:#f87171;font-weight:700;font-family:monospace'>"+r+"</td></tr>";
+  });
+  document.getElementById("popup-table").innerHTML=tbl;
+
+  var nrHtml="";
+  if(d.nrSummary&&d.nrSummary.length){
+    nrHtml="<div style='border-top:1px solid #334155;margin-top:8px;padding-top:8px;font-size:11px;color:#94a3b8;font-weight:700;text-transform:uppercase;letter-spacing:.06em;margin-bottom:5px'>NRs last 30D</div>";
+    d.nrSummary.forEach(function(nr){
+      nrHtml+="<div class='nr-row'><span>"+nr.rating+"&#9733;</span>"+nr.date+" &mdash; "+nr.cause+"</div>";
+    });
+  }
+  document.getElementById("popup-nrs").innerHTML=nrHtml;
+  document.getElementById("copy-alert-btn").textContent="⎘ Copy alert text";
+  document.getElementById("copy-alert-btn").className="";
+  document.getElementById("copy-alert-btn").id="copy-alert-btn";
+  document.getElementById("alert-popup-overlay").className="show";
+}
+
+function closeAlertPopup(){
+  document.getElementById("alert-popup-overlay").className="";
+  CURRENT_ALERT_ITEM=null;
+}
+
+function copyAlertText(){
+  if(!CURRENT_ALERT_ITEM) return;
+  var item=CURRENT_ALERT_ITEM.item, d=CURRENT_ALERT_ITEM.d, reasons=CURRENT_ALERT_ITEM.reasons;
+  var txt="🚨 Rating Alert — "+item.sku+"\n";
+  txt+="ASIN: "+item.asin+" | Tier: "+item.tier+"\n";
+  txt+="Rating: "+(d.r30!==null?d.r30.toFixed(1)+"★ → ":"--★ → ")+d.cur.toFixed(1)+"★\n";
+  if(d.r60!==null) txt+="60D ago: "+d.r60.toFixed(1)+"★ | Drop (60D): "+(d.cur-d.r60).toFixed(1)+"★\n";
+  txt+="Alerts ("+reasons.length+"):\n";
+  reasons.forEach(function(r,i){ txt+="  "+(i+1)+". "+r+"\n"; });
+  txt+="Reviews: "+(d.rev||"--")+" | NRs last 30D: "+(d.nrCount30d||0)+"\n";
+  if(d.nrSummary&&d.nrSummary.length){
+    txt+="Top NRs:\n";
+    d.nrSummary.forEach(function(nr){ txt+="  • "+nr.rating+"★ ("+nr.date+") — "+nr.cause+"\n"; });
+  }
+  navigator.clipboard.writeText(txt).then(function(){
+    var btn=document.getElementById("copy-alert-btn");
+    btn.textContent="✓ Copied!"; btn.className="copied";
+    setTimeout(function(){ btn.textContent="⎘ Copy alert text"; btn.className=""; },2000);
+  });
+}
+
+document.addEventListener("click", function(e){
+  if(!e.target.closest("#alert-popup")&&!e.target.closest(".alert-chip")){
+    closeAlertPopup();
+  }
+  var btn=e.target.closest(".copy-btn");
+  if(btn&&btn.dataset.copy){ e.stopPropagation(); copyText(btn.dataset.copy,btn); }
 });
 
 function render(){
@@ -638,7 +838,7 @@ function appendRow(tb,item){
   var rc=rowCls(d.cur,d.r1);
   var tr=document.createElement("tr"); tr.className=rc;
   var bdColor=item.brand==="Barnyard Designs"?"#2563eb":"#16a34a";
-  var skuUrl="https://sellercentral.amazon.com/myinventory/inventory?fulfilledBy=all&page=1&pageSize=25&searchField=all&searchTerm="+encodeURIComponent(item.sku);
+  var skuUrl="https://sellercentral.amazon.com/myinventory/inventory?fulfilledBy=all&page=1&pageSize=25&searchField=all&searchTerm="+encodeURIComponent(item.sku)+"&sort=date_created_desc&status=all";
   var asinUrl="https://www.amazon.com/dp/"+item.asin;
   var t=item.tier||"N"; var ts=TC[t]||TC.N;
   var parentLine="";
