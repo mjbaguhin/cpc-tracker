@@ -667,7 +667,11 @@ function renderAlertBanner(){
     });
     tipRows+="<tr><td style='padding-top:6px'>Current</td><td style='padding-top:6px;color:#f87171'>"+d.cur.toFixed(1)+"&#9733;</td></tr>";
     tipRows+="<tr><td>60D ago</td><td>"+(d.r60!==null?d.r60.toFixed(1)+"&#9733;":"--")+"</td></tr>";
-    var revDisplay = (d.rev||"--") + (d.revYTD!==undefined&&d.revYTD!==null ? " ("+d.revYTD+" YTD)" : "");
+    var revParts = [];
+    if(d.revYTD!==undefined&&d.revYTD!==null) revParts.push(d.revYTD+" YTD");
+    if(d.rev30D!==undefined&&d.rev30D!==null) revParts.push("+"+d.rev30D+" in 30D");
+    if(d.nrCountAll!==undefined&&d.nrCountAll!==null&&d.nrCountAll>0) revParts.push(d.nrCountAll+" NR"+(d.nrCountAll>1?"s":""));
+    var revDisplay = (d.rev||"--") + (revParts.length ? " ("+revParts.join(" \u00b7 ")+")" : "");
     tipRows+="<tr><td>Total Reviews</td><td>"+revDisplay+"</td></tr>";
     tipRows+="<tr><td>OOS</td><td>"+oos+"</td></tr>";
     tipRows+="<tr><td>NRs (30D)</td><td style='color:"+(d.nrCount30d>0?"#f87171":"#4ade80")+"'>"+nrText+"</td></tr>";
@@ -711,6 +715,11 @@ function openAlertPopup(item, d, reasons){
   titleEl.innerHTML=item.sku+" &mdash; "+item.name.substring(0,40)+(item.name.length>40?"...":"")
     +(multiAlert?" <span style='background:#7f1d1d;color:#fecaca;font-size:10px;font-weight:700;padding:2px 7px;border-radius:3px;margin-left:4px'>"+reasons.length+" alerts</span>":"");
   var oos=d.available!==null&&d.available===0?"Yes ("+d.available+" units)":"No"+(d.available!==null?" ("+d.available+" units)":"");
+  var revPartsPop = [];
+  if(d.revYTD!==undefined&&d.revYTD!==null) revPartsPop.push(d.revYTD+" YTD");
+  if(d.rev30D!==undefined&&d.rev30D!==null) revPartsPop.push("+"+d.rev30D+" in 30D");
+  if(d.nrCountAll!==undefined&&d.nrCountAll!==null&&d.nrCountAll>0) revPartsPop.push(d.nrCountAll+" NR"+(d.nrCountAll>1?"s":""));
+  var revPopDisplay = (d.rev||"--") + (revPartsPop.length ? " ("+revPartsPop.join(" \u00b7 ")+")" : "");
   var rows=[
     ["ASIN", item.asin],
     ["Current rating", d.cur.toFixed(1)+"★"],
@@ -718,7 +727,7 @@ function openAlertPopup(item, d, reasons){
     ["60D ago", d.r60!==null?d.r60.toFixed(1)+"★":"--"],
     ["Drop (30D)", d.r30!==null?((d.cur-d.r30).toFixed(1)+"★"):"--"],
     ["Drop (60D)", d.r60!==null?((d.cur-d.r60).toFixed(1)+"★"):"--"],
-    ["Total Reviews", (d.rev||"--") + (d.revYTD!==undefined&&d.revYTD!==null ? " ("+d.revYTD+" YTD)" : "")],
+    ["Total Reviews", revPopDisplay],
     ["OOS", oos],
     ["NRs last 30D", d.nrCount30d||0]
   ];
@@ -735,7 +744,9 @@ function openAlertPopup(item, d, reasons){
 
   var nrHtml="";
   if(d.nrSummary&&d.nrSummary.length){
-    nrHtml="<div style='border-top:1px solid #334155;margin-top:10px;padding-top:8px;font-size:11px;color:#94a3b8;font-weight:700;text-transform:uppercase;letter-spacing:.06em;margin-bottom:5px'>NRs last 30D</div>";
+    var nrCountSummary = d.nrSummary.length + " total" + (d.nrCount30d ? " · " + d.nrCount30d + " in last 30D" : "");
+    nrHtml="<div style='border-top:1px solid #334155;margin-top:10px;padding-top:8px;font-size:11px;color:#94a3b8;font-weight:700;text-transform:uppercase;letter-spacing:.06em;margin-bottom:2px'>NR History</div>"
+         +"<div style='font-size:10px;color:#64748b;margin-bottom:8px;font-style:italic'>"+nrCountSummary+"</div>";
     d.nrSummary.forEach(function(nr){
       var hdrParts=[esc(nr.rating)+"&#9733;", esc(nr.date)];
       if(nr.channel) hdrParts.push(esc(nr.channel));
