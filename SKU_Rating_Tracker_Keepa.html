@@ -667,7 +667,8 @@ function renderAlertBanner(){
     });
     tipRows+="<tr><td style='padding-top:6px'>Current</td><td style='padding-top:6px;color:#f87171'>"+d.cur.toFixed(1)+"&#9733;</td></tr>";
     tipRows+="<tr><td>60D ago</td><td>"+(d.r60!==null?d.r60.toFixed(1)+"&#9733;":"--")+"</td></tr>";
-    tipRows+="<tr><td>YTD Reviews</td><td>"+(d.rev||"--")+"</td></tr>";
+    var revDisplay = (d.rev||"--") + (d.revYTD!==undefined&&d.revYTD!==null ? " ("+d.revYTD+" YTD)" : "");
+    tipRows+="<tr><td>Total Reviews</td><td>"+revDisplay+"</td></tr>";
     tipRows+="<tr><td>OOS</td><td>"+oos+"</td></tr>";
     tipRows+="<tr><td>NRs (30D)</td><td style='color:"+(d.nrCount30d>0?"#f87171":"#4ade80")+"'>"+nrText+"</td></tr>";
 
@@ -717,7 +718,7 @@ function openAlertPopup(item, d, reasons){
     ["60D ago", d.r60!==null?d.r60.toFixed(1)+"★":"--"],
     ["Drop (30D)", d.r30!==null?((d.cur-d.r30).toFixed(1)+"★"):"--"],
     ["Drop (60D)", d.r60!==null?((d.cur-d.r60).toFixed(1)+"★"):"--"],
-    ["YTD Reviews", d.rev||"--"],
+    ["Total Reviews", (d.rev||"--") + (d.revYTD!==undefined&&d.revYTD!==null ? " ("+d.revYTD+" YTD)" : "")],
     ["OOS", oos],
     ["NRs last 30D", d.nrCount30d||0]
   ];
