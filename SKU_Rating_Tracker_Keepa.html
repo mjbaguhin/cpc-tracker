@@ -37,7 +37,7 @@ body{background:#f1f5f9;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',
 .alert-tooltip td{padding:2px 0;font-size:11px}
 .alert-tooltip td:first-child{color:#94a3b8;padding-right:12px}
 .alert-tooltip td:last-child{font-weight:700;font-family:monospace}
-.alert-hint{font-size:10px;color:#94a3b8;margin-top:5px;font-style:italic}
+.alert-hint{font-size:10px;color:#94a3b8;margin-top:8px;padding-top:8px;border-top:1px solid #334155;font-style:italic;text-align:center;letter-spacing:.04em;font-weight:600}
 #alert-popup-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.4);z-index:10000;align-items:center;justify-content:center}
 #alert-popup-overlay.show{display:flex}
 #alert-popup{background:#1e293b;color:#f8fafc;border-radius:12px;padding:16px 20px;min-width:300px;max-width:480px;max-height:85vh;overflow-y:auto;position:relative;font-size:13px}
@@ -625,8 +625,8 @@ function getRedAlerts(){
     var d=RD[item.asin];
     if(!d||d.cur===null) return;
     var reasons=[];
-    if(d.cur<4.5 && (t==="A"||t==="B"||t==="N")) reasons.push("below 4.5★ (Tier "+t+")");
-    if(d.r60!==null&&(d.cur-d.r60)<=-0.4) reasons.push("dropped "+(d.cur-d.r60).toFixed(1)+"★ in 60D ("+d.r60.toFixed(1)+"★ \u2192 "+d.cur.toFixed(1)+"★)");
+    if(d.cur<4.5 && (t==="A"||t==="B"||t==="N")) reasons.push("Below 4.5\u2605");
+    if(d.peak60!==null&&(d.cur-d.peak60)<=-0.4) reasons.push("Dropped from "+d.peak60.toFixed(1)+"\u2605 \u2192 "+d.cur.toFixed(1)+"\u2605");
     if(reasons.length) alerts.push({item:item,d:d,reasons:reasons});
   });
   return alerts;
@@ -667,34 +667,32 @@ function renderAlertBanner(){
     });
     tipRows+="<tr><td style='padding-top:6px'>Current</td><td style='padding-top:6px;color:#f87171'>"+d.cur.toFixed(1)+"&#9733;</td></tr>";
     tipRows+="<tr><td>60D ago</td><td>"+(d.r60!==null?d.r60.toFixed(1)+"&#9733;":"--")+"</td></tr>";
-    tipRows+="<tr><td>Reviews</td><td>"+(d.rev||"--")+"</td></tr>";
+    tipRows+="<tr><td>YTD Reviews</td><td>"+(d.rev||"--")+"</td></tr>";
     tipRows+="<tr><td>OOS</td><td>"+oos+"</td></tr>";
     tipRows+="<tr><td>NRs (30D)</td><td style='color:"+(d.nrCount30d>0?"#f87171":"#4ade80")+"'>"+nrText+"</td></tr>";
 
     var nrPreview="";
     if(d.nrSummary&&d.nrSummary.length){
       d.nrSummary.slice(0,3).forEach(function(nr){
-        nrPreview+="<tr><td colspan='2' style='color:#94a3b8;font-size:10px;padding-top:3px'>"+esc(nr.rating)+"&#9733; "+esc(nr.date)+" &mdash; "+esc(nr.cause||"")+"</td></tr>";
+        nrPreview+="<tr><td colspan='2' style='color:#94a3b8;font-size:10px;padding-top:3px;text-align:left'>"+esc(nr.rating)+"&#9733; "+esc(nr.date)+" &mdash; "+esc(nr.cause||"")+"</td></tr>";
       });
       if(d.nrSummary.length>3){
-        nrPreview+="<tr><td colspan='2' style='color:#64748b;font-size:10px;padding-top:3px;font-style:italic'>+"+(d.nrSummary.length-3)+" more</td></tr>";
+        nrPreview+="<tr><td colspan='2' style='color:#64748b;font-size:10px;padding-top:3px;font-style:italic;text-align:left'>+"+(d.nrSummary.length-3)+" more</td></tr>";
       }
     }
 
-    // Chip label — show all reasons joined with · and badge if multiple
-    var reasonsLabel=al.reasons.join(" &nbsp;&#183;&nbsp; ");
-    var badge=multiAlert?"<span style='background:#7f1d1d;color:#fecaca;font-size:9px;font-weight:700;padding:1px 5px;border-radius:3px;margin-left:4px'>"+al.reasons.length+" alerts</span>":"";
+    // Chip label — SKU (Tier X) - Reason 1 / Reason 2
+    var reasonsLabel=al.reasons.join(" / ");
 
     chip.innerHTML=
       "<span>&#128308;</span>"+
       "<span style='font-family:monospace'>"+item.sku+"</span>"+
-      "<span style='opacity:.7'>Tier "+item.tier+"</span>"+
-      "<span style='font-family:monospace'>"+d.cur.toFixed(1)+"&#9733;</span>"+
-      "<span style='opacity:.8'>"+reasonsLabel+"</span>"+badge+
+      "<span style='opacity:.7'>(Tier "+item.tier+")</span>"+
+      "<span style='opacity:.8'>- "+reasonsLabel+"</span>"+
       "<div class='alert-tooltip'>"+
         "<div class='alert-tooltip-title'>"+item.sku+(multiAlert?" &mdash; "+al.reasons.length+" alerts":"")+"</div>"+
         "<table>"+tipRows+nrPreview+"</table>"+
-        "<div class='alert-hint'>Click to view full details</div>"+
+        "<div class='alert-hint'>CLICK TO VIEW FULL DETAILS</div>"+
       "</div>";
 
     chip.addEventListener("click", function(e){
@@ -719,7 +717,7 @@ function openAlertPopup(item, d, reasons){
     ["60D ago", d.r60!==null?d.r60.toFixed(1)+"★":"--"],
     ["Drop (30D)", d.r30!==null?((d.cur-d.r30).toFixed(1)+"★"):"--"],
     ["Drop (60D)", d.r60!==null?((d.cur-d.r60).toFixed(1)+"★"):"--"],
-    ["Reviews", d.rev||"--"],
+    ["YTD Reviews", d.rev||"--"],
     ["OOS", oos],
     ["NRs last 30D", d.nrCount30d||0]
   ];
