@@ -40,7 +40,7 @@ body{background:#f1f5f9;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',
 .alert-hint{font-size:10px;color:#94a3b8;margin-top:5px;font-style:italic}
 #alert-popup-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.4);z-index:10000;align-items:center;justify-content:center}
 #alert-popup-overlay.show{display:flex}
-#alert-popup{background:#1e293b;color:#f8fafc;border-radius:12px;padding:16px 20px;min-width:300px;max-width:420px;position:relative;font-size:13px}
+#alert-popup{background:#1e293b;color:#f8fafc;border-radius:12px;padding:16px 20px;min-width:300px;max-width:480px;max-height:85vh;overflow-y:auto;position:relative;font-size:13px}
 #alert-popup-close{position:absolute;top:10px;right:14px;cursor:pointer;font-size:16px;color:#94a3b8;background:none;border:none;line-height:1}
 #alert-popup h3{font-size:13px;font-weight:700;margin-bottom:12px;color:#f8fafc}
 #alert-popup table{width:100%;border-collapse:collapse;margin-bottom:10px;background:#1e293b}
@@ -49,6 +49,13 @@ body{background:#f1f5f9;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',
 #alert-popup td:last-child{font-weight:700;font-family:monospace;color:#f8fafc;background:#1e293b}
 .nr-row{font-size:11px;margin:2px 0;color:#cbd5e1}
 .nr-row span{color:#f87171;font-weight:700;margin-right:4px}
+.nr-card{padding:9px 0;border-bottom:1px solid #334155}
+.nr-card:last-child{border-bottom:none;padding-bottom:0}
+.nr-card-hdr{color:#f87171;font-weight:700;font-family:monospace;font-size:11px;margin-bottom:4px;letter-spacing:.02em}
+.nr-card-cause{color:#f8fafc;font-weight:700;font-size:11px;margin-bottom:5px;line-height:1.35}
+.nr-card-notes{color:#cbd5e1;font-size:11px;line-height:1.45;margin-bottom:6px}
+.nr-card-link{color:#60a5fa;font-size:10px;text-decoration:none;display:inline-block;font-weight:600}
+.nr-card-link:hover{text-decoration:underline}
 #copy-alert-btn{margin-top:12px;width:100%;padding:7px;background:#334155;border:none;border-radius:6px;color:#f8fafc;font-size:12px;font-weight:700;cursor:pointer;transition:background .15s}
 #copy-alert-btn:hover{background:#475569}
 #copy-alert-btn.copied{background:#15803d}
@@ -265,6 +272,15 @@ const TC = {
 
 var CATALOG = [], RD = {}, BF = "All", TF = [], PF = "", Q = "", SM = "all", GROUP = false, QF = "";
 var ALL_PARENTS = [];
+
+function esc(s){
+  return String(s==null?"":s)
+    .replace(/&/g,"&#38;")
+    .replace(/</g,"&#60;")
+    .replace(/>/g,"&#62;")
+    .replace(/"/g,"&#34;")
+    .replace(/'/g,"&#39;");
+}
 
 function toEDT(phtStr){
   try{
@@ -657,9 +673,12 @@ function renderAlertBanner(){
 
     var nrPreview="";
     if(d.nrSummary&&d.nrSummary.length){
-      d.nrSummary.slice(0,2).forEach(function(nr){
-        nrPreview+="<tr><td colspan='2' style='color:#94a3b8;font-size:10px;padding-top:3px'>"+nr.rating+"&#9733; &mdash; "+nr.cause+"</td></tr>";
+      d.nrSummary.slice(0,3).forEach(function(nr){
+        nrPreview+="<tr><td colspan='2' style='color:#94a3b8;font-size:10px;padding-top:3px'>"+esc(nr.rating)+"&#9733; "+esc(nr.date)+" &mdash; "+esc(nr.cause||"")+"</td></tr>";
       });
+      if(d.nrSummary.length>3){
+        nrPreview+="<tr><td colspan='2' style='color:#64748b;font-size:10px;padding-top:3px;font-style:italic'>+"+(d.nrSummary.length-3)+" more</td></tr>";
+      }
     }
 
     // Chip label — show all reasons joined with · and badge if multiple
@@ -695,7 +714,6 @@ function openAlertPopup(item, d, reasons){
   var oos=d.available!==null&&d.available===0?"Yes ("+d.available+" units)":"No"+(d.available!==null?" ("+d.available+" units)":"");
   var rows=[
     ["ASIN", item.asin],
-    ["Tier", item.tier],
     ["Current rating", d.cur.toFixed(1)+"★"],
     ["30D ago", d.r30!==null?d.r30.toFixed(1)+"★":"--"],
     ["60D ago", d.r60!==null?d.r60.toFixed(1)+"★":"--"],
@@ -718,9 +736,24 @@ function openAlertPopup(item, d, reasons){
 
   var nrHtml="";
   if(d.nrSummary&&d.nrSummary.length){
-    nrHtml="<div style='border-top:1px solid #334155;margin-top:8px;padding-top:8px;font-size:11px;color:#94a3b8;font-weight:700;text-transform:uppercase;letter-spacing:.06em;margin-bottom:5px'>NRs last 30D</div>";
+    nrHtml="<div style='border-top:1px solid #334155;margin-top:10px;padding-top:8px;font-size:11px;color:#94a3b8;font-weight:700;text-transform:uppercase;letter-spacing:.06em;margin-bottom:5px'>NRs last 30D</div>";
     d.nrSummary.forEach(function(nr){
-      nrHtml+="<div class='nr-row'><span>"+nr.rating+"&#9733;</span>"+nr.date+" &mdash; "+nr.cause+"</div>";
+      var hdrParts=[esc(nr.rating)+"&#9733;", esc(nr.date)];
+      if(nr.channel) hdrParts.push(esc(nr.channel));
+      var hdr=hdrParts.join(" &middot; ");
+      var causeHtml=nr.cause?"<div class='nr-card-cause'>"+esc(nr.cause)+"</div>":"";
+      var notesHtml=nr.notes?"<div class='nr-card-notes'>"+esc(nr.notes)+"</div>":"";
+      var linkHtml="";
+      if(nr.link){
+        var safeHref=esc(nr.link);
+        linkHtml="<a href='"+safeHref+"' target='_blank' rel='noopener' class='nr-card-link'>View on Amazon &#8599;</a>";
+      }
+      nrHtml+="<div class='nr-card'>"
+           + "<div class='nr-card-hdr'>"+hdr+"</div>"
+           + causeHtml
+           + notesHtml
+           + linkHtml
+           + "</div>";
     });
   }
   document.getElementById("popup-nrs").innerHTML=nrHtml;
@@ -747,7 +780,15 @@ function copyAlertText(){
   txt+="Reviews: "+(d.rev||"--")+" | NRs last 30D: "+(d.nrCount30d||0)+"\n";
   if(d.nrSummary&&d.nrSummary.length){
     txt+="Top NRs:\n";
-    d.nrSummary.forEach(function(nr){ txt+="  • "+nr.rating+"★ ("+nr.date+") — "+nr.cause+"\n"; });
+    d.nrSummary.forEach(function(nr){
+      var hdr=nr.rating+"\u2605 ("+nr.date+(nr.channel?", "+nr.channel:"")+") \u2014 "+nr.cause;
+      txt+="  \u2022 "+hdr+"\n";
+      if(nr.notes){
+        var nShort=nr.notes.length>200?nr.notes.substring(0,200)+"...":nr.notes;
+        txt+="     "+nShort+"\n";
+      }
+      if(nr.link) txt+="     "+nr.link+"\n";
+    });
   }
   navigator.clipboard.writeText(txt).then(function(){
     var btn=document.getElementById("copy-alert-btn");
