@@ -399,7 +399,8 @@ async function doLoad(){
     var raw=j.data||{}, res={};
     Object.keys(raw).forEach(function(a){
       var d=raw[a];
-      res[a]={cur:d.cur,r1:d.r1,r30:d.r30,r60:d.r60||null,r90:d.r90,r180:d.r180,rev:d.rev,bsr:d.bsr||null,bsrCat:d.bsrCat||null,keepaParent:d.keepaParent||null,
+      res[a]={cur:d.cur,r1:d.r1,r30:d.r30,r60:d.r60||null,r90:d.r90,r180:d.r180,rev:d.rev,
+  peak60:d.peak60||null,revYTD:d.revYTD||null,rev30D:d.rev30D||null,nrCountAll:d.nrCountAll||0,bsr:d.bsr||null,bsrCat:d.bsrCat||null,keepaParent:d.keepaParent||null,
         available:d.available!=null?d.available:null,invHealth:d.invHealth||null,inbound:d.inbound!=null?d.inbound:null,days:d.days!=null?d.days:null,
         nrCount30d:d.nrCount30d||0,nrSummary:d.nrSummary||[],
         rh:(d.rh||[]).map(function(x){return{d:new Date(x.d),v:x.v};})};
