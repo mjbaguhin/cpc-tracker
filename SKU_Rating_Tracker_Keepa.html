@@ -627,7 +627,7 @@ function getRedAlerts(){
     if(!d||d.cur===null) return;
     var reasons=[];
     if(d.cur<4.5 && (t==="A"||t==="B"||t==="N")) reasons.push("Below 4.5\u2605");
-    if(d.peak60!==null&&(d.cur-d.peak60)<=-0.4) reasons.push("Dropped from "+d.peak60.toFixed(1)+"\u2605 \u2192 "+d.cur.toFixed(1)+"\u2605");
+    if(d.peak60!==null && d.peak60>=4.7 && d.cur<=4.35 && d.cur>=4.25) reasons.push("Dropped from "+d.peak60.toFixed(1)+"\u2605 \u2192 "+d.cur.toFixed(1)+"\u2605");
     if(reasons.length) alerts.push({item:item,d:d,reasons:reasons});
   });
   return alerts;
