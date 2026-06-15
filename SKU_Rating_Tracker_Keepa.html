@@ -608,6 +608,15 @@ function copyText(text, el){
 // Copy button event delegation
 var CURRENT_ALERT_ITEM = null;
 
+// Directional rating change (current minus a past value). Shows an arrow + direction so a
+// recovery is never mislabeled as a "drop". Returns e.g. "down 0.3" / "up 0.3" / "no change".
+function changeStr(cur, ago){
+  if(ago===null||ago===undefined) return "--";
+  var delta=Math.round((cur-ago)*10)/10;
+  if(delta<0) return "&#8595; "+Math.abs(delta).toFixed(1)+"&#9733; (drop)";
+  if(delta>0) return "&#8593; "+delta.toFixed(1)+"&#9733; (rose)";
+  return "no change";
+}
 // All-time peak across the loaded rating history (launch-vs-decline fallback when
 // data.json predates the maxRating field; the Apps Script writes the true full-history peak).
 function maxOfRh(rh){
@@ -660,6 +669,10 @@ function getRedAlerts(){
     var peakAll = (d.maxRating!=null) ? d.maxRating : maxOfRh(d.rh);
     var everHealthy = (peakAll==null) ? true : (Math.round(peakAll*10) >= 45);
     if(d.cur<4.5 && (t==="A"||t==="B"||t==="N") && everHealthy) reasons.push("Below 4.5\u2605");
+    // Steep drop (Sam's flashing-red rule): was >= 4.5 within 60D and fell >= 0.3 below it.
+    if(d.cur<4.5 && (t==="A"||t==="B"||t==="N") && d.r60!==null && Math.round(d.r60*10)>=45 && (Math.round(d.r60*10)-Math.round(d.cur*10))>=3){
+      reasons.push("STEEP DROP: "+d.r60.toFixed(1)+"\u2605 \u2192 "+d.cur.toFixed(1)+"\u2605 in 60D");
+    }
     if(d.peak60!==null && d.peak60>=4.7 && d.cur<=4.35 && d.cur>=4.25) reasons.push("Dropped from "+d.peak60.toFixed(1)+"\u2605 \u2192 "+d.cur.toFixed(1)+"\u2605");
     if(reasons.length) alerts.push({item:item,d:d,reasons:reasons});
   });
@@ -759,8 +772,8 @@ function openAlertPopup(item, d, reasons){
     ["Current rating", d.cur.toFixed(1)+"★"],
     ["30D ago", d.r30!==null?d.r30.toFixed(1)+"★":"--"],
     ["60D ago", d.r60!==null?d.r60.toFixed(1)+"★":"--"],
-    ["Drop (30D)", d.r30!==null?((d.cur-d.r30).toFixed(1)+"★"):"--"],
-    ["Drop (60D)", d.r60!==null?((d.cur-d.r60).toFixed(1)+"★"):"--"],
+    ["30D change", changeStr(d.cur, d.r30)],
+    ["60D change", changeStr(d.cur, d.r60)],
     ["Total Reviews", revPopDisplay],
     ["OOS", oos],
     ["NRs last 30D", d.nrCount30d||0]
@@ -827,7 +840,7 @@ function copyAlertText(){
   var txt="🚨 Rating Alert — "+item.sku+"\n";
   txt+="ASIN: "+item.asin+" | Tier: "+item.tier+"\n";
   txt+="Rating: "+(d.r30!==null?d.r30.toFixed(1)+"★ → ":"--★ → ")+d.cur.toFixed(1)+"★\n";
-  if(d.r60!==null) txt+="60D ago: "+d.r60.toFixed(1)+"★ | Drop (60D): "+(d.cur-d.r60).toFixed(1)+"★\n";
+  if(d.r60!==null){ var dl60=Math.round((d.cur-d.r60)*10)/10; txt+="60D ago: "+d.r60.toFixed(1)+"\u2605 | 60D change: "+(dl60<0?"\u2193"+Math.abs(dl60).toFixed(1)+"\u2605 (drop)":dl60>0?"\u2191"+dl60.toFixed(1)+"\u2605 (rose)":"no change")+"\n"; }
   txt+="Alerts ("+reasons.length+"):\n";
   reasons.forEach(function(r,i){ txt+="  "+(i+1)+". "+r+"\n"; });
   var trendCopy=buildReversalTrend(d.rh,90);
