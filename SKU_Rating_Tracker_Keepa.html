@@ -173,23 +173,21 @@ canvas{cursor:pointer}
     <div class="ts" id="stat-cov"><div class="tv" id="s-cov" style="color:#60a5fa">0/0</div><div class="tl">ASINs Tracked</div></div>
   </div>
 </div>
-<div id="coir-card" style="display:none;margin:12px 20px 0;background:#fff;border:1px solid #e2e8f0;border-radius:12px;box-shadow:0 2px 8px rgba(0,0,0,.06);padding:14px 18px">
-  <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">
-    <div style="font-size:14px;font-weight:800;color:#0f172a">&#127968; Coir Doormat Family</div>
-    <div style="font-size:9px;color:#64748b;text-transform:uppercase;letter-spacing:.07em;background:#f1f5f9;border-radius:20px;padding:2px 8px">Daily watch</div>
-    <div id="coir-updated" style="font-size:10px;color:#94a3b8;margin-left:auto"></div>
+<div id="coir-card" style="display:none;margin:10px 20px 0;background:#fff;border:1px solid #e2e8f0;border-radius:10px;box-shadow:0 1px 4px rgba(0,0,0,.05);padding:8px 14px">
+  <div style="display:flex;align-items:center;gap:14px;flex-wrap:wrap">
+    <span style="font-size:12px;font-weight:800;color:#0f172a;white-space:nowrap">&#127968; Coir Family</span>
+    <span style="display:inline-flex;align-items:baseline;gap:6px;white-space:nowrap">
+      <span id="coir-rating" style="font-size:20px;font-weight:900;line-height:1">--</span>
+      <span id="coir-wow" style="font-size:10px;color:#94a3b8"></span>
+    </span>
+    <span style="display:inline-flex;align-items:center;gap:5px;flex-shrink:0">
+      <span style="font-size:10px;font-weight:700;color:#dc2626">4.4</span>
+      <svg id="coir-gauge" viewBox="0 0 160 20" style="width:120px;height:16px"></svg>
+      <span style="font-size:10px;font-weight:700;color:#15803d">4.6</span>
+    </span>
+    <span id="coir-line" style="flex:1;min-width:200px;font-size:11px;color:#475569;line-height:1.4"></span>
+    <span id="coir-updated" style="font-size:9px;color:#cbd5e1;white-space:nowrap"></span>
   </div>
-  <div style="display:flex;align-items:center;gap:22px;flex-wrap:wrap;margin-top:12px">
-    <div style="text-align:center;min-width:70px">
-      <div id="coir-rating" style="font-size:32px;font-weight:900;line-height:1">--</div>
-      <div id="coir-wow" style="font-size:10px;color:#64748b;margin-top:3px">&nbsp;</div>
-    </div>
-    <div style="flex:1;min-width:280px">
-      <svg id="coir-gauge" viewBox="0 0 400 64" style="width:100%;height:auto;display:block"></svg>
-    </div>
-  </div>
-  <div id="coir-dist" style="display:flex;gap:14px;flex-wrap:wrap;margin-top:6px"></div>
-  <div id="coir-meta" style="margin-top:9px;font-size:11px;color:#475569;line-height:1.5"></div>
 </div>
 <div id="banner"><div class="brow" id="bchips"></div></div>
 <div id="alert-banner">
@@ -899,49 +897,37 @@ function renderCoirCard(c){
   var cur=Number(c.rating), t=Math.round(cur*10);
   var col = t>=46 ? "#15803d" : (t>=45 ? "#f59e0b" : "#dc2626");
 
-  // rating + week-over-week (from history: today vs ~7 days ago)
-  document.getElementById("coir-rating").textContent=cur.toFixed(1)+"\u2605";
-  document.getElementById("coir-rating").style.color=col;
+  var rEl=document.getElementById("coir-rating");
+  rEl.textContent=cur.toFixed(1)+"\u2605"; rEl.style.color=col;
+
   var wow="";
   if(c.history && c.history.length>1){
     var last=c.history[c.history.length-1];
     var wk=null, cut=new Date(new Date(last.d).getTime()-7*86400000);
     for(var i=c.history.length-1;i>=0;i--){ if(new Date(c.history[i].d)<=cut){ wk=c.history[i].v; break; } }
-    if(wk!=null){ var dd=Math.round((cur-wk)*10)/10; wow = dd===0 ? "holding vs last wk" : (dd>0?"+":"")+dd.toFixed(1)+" vs last wk"; }
+    if(wk!=null){ var dd=Math.round((cur-wk)*10)/10; wow = dd===0 ? "holding" : (dd>0?"+":"")+dd.toFixed(1)+" wk"; }
   }
-  document.getElementById("coir-wow").textContent=wow||"\u00a0";
+  document.getElementById("coir-wow").textContent=wow;
 
-  // gauge 4.4 -> 4.6
-  var x0=44, x1=356, w=x1-x0, mid=(x0+x1)/2;
-  var frac=Math.max(0,Math.min(1,(cur-4.4)/0.2));
-  var mx=x0+w*frac;
+  // slim gauge 4.4 -> 4.6
+  var W=160, frac=Math.max(0,Math.min(1,(cur-4.4)/0.2)), mx=Math.max(6,Math.min(W-6,frac*W));
   var svg="";
-  svg+='<rect x="'+x0+'" y="26" width="'+(w/2)+'" height="12" rx="6" fill="#fde2e1"/>';
-  svg+='<rect x="'+mid+'" y="26" width="'+(w/2)+'" height="12" rx="6" fill="#dcf3df"/>';
-  svg+='<line x1="'+x0+'" y1="20" x2="'+x0+'" y2="44" stroke="#dc2626" stroke-width="2"/>';
-  svg+='<line x1="'+x1+'" y1="20" x2="'+x1+'" y2="44" stroke="#15803d" stroke-width="2"/>';
-  svg+='<text x="'+x0+'" y="58" text-anchor="middle" font-size="12" font-weight="700" fill="#dc2626">4.4</text>';
-  svg+='<text x="'+x1+'" y="58" text-anchor="middle" font-size="12" font-weight="700" fill="#15803d">4.6</text>';
-  svg+='<circle cx="'+mx+'" cy="32" r="8" fill="'+col+'" stroke="#fff" stroke-width="2"/>';
-  svg+='<text x="'+mx+'" y="14" text-anchor="middle" font-size="12" font-weight="800" fill="'+col+'">'+cur.toFixed(1)+'\u2605</text>';
+  svg+='<rect x="0" y="7" width="80" height="6" rx="3" fill="#fde2e1"/>';
+  svg+='<rect x="80" y="7" width="80" height="6" rx="3" fill="#dcf3df"/>';
+  svg+='<circle cx="'+mx+'" cy="10" r="6" fill="'+col+'" stroke="#fff" stroke-width="2"/>';
   document.getElementById("coir-gauge").innerHTML=svg;
 
-  // distances both ways
-  function pill(txt,c1,c2){return '<div style="background:'+c2+';border:1px solid '+c1+';border-radius:8px;padding:6px 10px;font-size:11px;color:#334155">'+txt+'</div>';}
-  var d="";
-  d+=pill("Down to 4.4: <b>several dozen</b> more 1-star reviews (cushion)","#fca5a5","#fef2f2");
-  if(t>=46) d+=pill("Up to 4.6: <b>at goal</b>","#86efac","#f0fdf4");
-  else d+=pill("Up to 4.6: <b>right at the line</b> on a straight average \u00b7 a cleared removal could tip it","#86efac","#f0fdf4");
-  document.getElementById("coir-dist").innerHTML=d;
-
-  // meta line
-  var m=[];
+  // one condensed line
+  var parts=[];
+  parts.push("<b>several dozen</b> to 4.4");
+  parts.push(t>=46 ? "<b>at 4.6</b>" : "right at the 4.6 line");
   if(c.weekNRs>0){
-    var theme = c.stainHits>=Math.ceil(c.weekNRs/2) ? "mostly staining" : (c.stainHits>0 ? "some staining" : (c.topCause||"mixed reasons"));
-    m.push("This week: <b>"+c.weekNRs+"</b> new negative review"+(c.weekNRs===1?"":"s")+" ("+theme+")");
-  } else { m.push("This week: no new negative reviews"); }
-  if(c.caseStatus){ m.push("Removal case: "+c.caseStatus+(c.caseReviewID?" (review "+c.caseReviewID+")":"")); }
-  document.getElementById("coir-meta").innerHTML=m.join(" &middot; ");
+    var theme = c.stainHits>=Math.ceil(c.weekNRs/2) ? "staining" : (c.stainHits>0 ? "some staining" : (c.topCause||"mixed"));
+    parts.push("<b>"+c.weekNRs+"</b> neg this wk ("+theme+")");
+  } else { parts.push("0 neg this wk"); }
+  if(c.caseStatus){ parts.push("removal: "+c.caseStatus); }
+  document.getElementById("coir-line").innerHTML=parts.join(" &middot; ");
+
   document.getElementById("coir-updated").textContent=c.updated?("Updated "+c.updated):"";
 }
 function render(){
