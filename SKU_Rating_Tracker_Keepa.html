@@ -917,14 +917,14 @@ function renderCoirCard(c){
   svg+='<circle cx="'+mx+'" cy="10" r="6" fill="'+col+'" stroke="#fff" stroke-width="2"/>';
   document.getElementById("coir-gauge").innerHTML=svg;
 
-  // one condensed line
+  // one condensed, self-explanatory line
   var parts=[];
-  parts.push("<b>several dozen</b> to 4.4");
-  parts.push(t>=46 ? "<b>at 4.6</b>" : "right at the 4.6 line");
+  parts.push('<span style="color:#dc2626;font-weight:700">Down to 4.4 (risk):</span> several dozen more bad reviews away, a safe cushion');
+  parts.push('<span style="color:#15803d;font-weight:700">Up to 4.6 (goal):</span> ' + (t>=46 ? 'reached' : 'essentially there already, a cleared removal could tip it'));
   if(c.weekNRs>0){
     var theme = c.stainHits>=Math.ceil(c.weekNRs/2) ? "staining" : (c.stainHits>0 ? "some staining" : (c.topCause||"mixed"));
-    parts.push("<b>"+c.weekNRs+"</b> neg this wk ("+theme+")");
-  } else { parts.push("0 neg this wk"); }
+    parts.push("<b>"+c.weekNRs+"</b> negative review"+(c.weekNRs===1?"":"s")+" this week ("+theme+")");
+  } else { parts.push("no negative reviews this week"); }
   if(c.caseStatus){ parts.push("removal: "+c.caseStatus); }
   document.getElementById("coir-line").innerHTML=parts.join(" &middot; ");
 
