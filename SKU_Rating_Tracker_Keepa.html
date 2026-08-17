@@ -181,9 +181,9 @@ canvas{cursor:pointer}
       <span id="coir-wow" style="font-size:10px;color:#94a3b8"></span>
     </span>
     <span style="display:inline-flex;align-items:center;gap:5px;flex-shrink:0">
-      <span style="font-size:10px;font-weight:700;color:#dc2626">4.4</span>
+      <span id="coir-lo" style="font-size:10px;font-weight:700;color:#dc2626">4.4</span>
       <svg id="coir-gauge" viewBox="0 0 160 20" style="width:120px;height:16px"></svg>
-      <span style="font-size:10px;font-weight:700;color:#15803d">4.6</span>
+      <span id="coir-hi" style="font-size:10px;font-weight:700;color:#15803d">4.6</span>
     </span>
     <span id="coir-line" style="flex:1;min-width:200px;font-size:11px;color:#475569;line-height:1.4"></span>
     <span id="coir-updated" style="font-size:9px;color:#cbd5e1;white-space:nowrap"></span>
@@ -513,21 +513,94 @@ function renderBanner(wd){
   var mv=wd.filter(function(i){var d=RD[i.asin];return d.r1!=null&&Math.abs(d.cur-d.r1)>0.005;});
   if(!mv.length){banner.style.display="none";return;}
   mv.sort(function(a,b){var da=RD[a.asin],db=RD[b.asin];return(da.cur-da.r1)-(db.cur-db.r1);});
-  var hasDrop=mv.some(function(i){return RD[i.asin].cur<RD[i.asin].r1;});
+
+  // Pooled variation children share one review pool, so a family-level move is one
+  // event, not N events. Keepa refreshes each child on its own schedule, so that one
+  // event trickles across several days and each straggler used to be reported as fresh
+  // news. Group by parent, and mark a group as catching up when its destination is a
+  // level siblings already reached on an earlier day.
+  var byParent={};
+  wd.forEach(function(i){
+    if(i.standalone) return;
+    var k=i.pasin||i.parent; if(!k) return;
+    (byParent[k]=byParent[k]||[]).push(i);
+  });
+
+  var groups={}, order=[];
+  mv.forEach(function(item){
+    var d=RD[item.asin];
+    var pk = (!item.standalone && (item.pasin||item.parent)) ? ("P:"+(item.pasin||item.parent)) : ("S:"+item.sku);
+    var mk = pk+"|"+d.r1.toFixed(1)+">"+d.cur.toFixed(1);
+    if(!groups[mk]){
+      groups[mk]={items:[],from:d.r1,to:d.cur,parent:item.parent||"",
+                  pkey:(item.pasin||item.parent||""),isParent:pk.charAt(0)==="P",settled:0};
+      order.push(mk);
+    }
+    groups[mk].items.push(item);
+  });
+
+  // A sibling is "settled" at the destination if it is already there and did not move
+  // today, meaning it arrived on a previous run.
+  order.forEach(function(mk){
+    var g=groups[mk]; if(!g.isParent) return;
+    var sibs=byParent[g.pkey]||[];
+    sibs.forEach(function(i){
+      var d=RD[i.asin]; if(!d||d.cur==null||d.r1==null) return;
+      if(Math.abs(d.cur-g.to)<0.005 && Math.abs(d.cur-d.r1)<=0.005) g.settled++;
+    });
+  });
+
+  // Genuinely new moves first, catch-up tails last.
+  order.sort(function(a,b){ return (groups[a].settled>0?1:0)-(groups[b].settled>0?1:0); });
+
+  var fresh=order.filter(function(mk){return groups[mk].settled===0;});
+  var hasDrop=fresh.length
+    ? fresh.some(function(mk){return groups[mk].to<groups[mk].from;})
+    : mv.some(function(i){return RD[i.asin].cur<RD[i.asin].r1;});
   banner.style.display="block";
   banner.style.background=hasDrop?"#fff1f2":"#f0fdf4";
   banner.style.borderBottomColor=hasDrop?"#fca5a5":"#86efac";
   chips.innerHTML="";
   var lbl=document.createElement("span"); lbl.style.color=hasDrop?"#b91c1c":"#15803d"; lbl.innerHTML="Today&#39;s movements:"; chips.appendChild(lbl);
-  mv.forEach(function(item){
-    var d=RD[item.asin],isUp=d.cur>d.r1;
+
+  order.forEach(function(mk){
+    var g=groups[mk], first=g.items[0], count=g.items.length;
+    // Catch-up only when the stragglers are outnumbered by siblings already settled at
+    // the destination. If most of the family moved today, this IS the family event, even
+    // though a sibling or two happened to be sitting at the destination already.
+    var catchUp = g.isParent && g.settled>count;
+    var collapse = g.isParent && (count>1 || catchUp);
+    var isUp=g.to>g.from;
     var chip=document.createElement("div"); chip.className="chip "+(isUp?"chip-up":"chip-dn");
-    chip.innerHTML='<span style="opacity:.6;font-size:11px;font-family:monospace">'+d.r1.toFixed(1)+'&#9733;</span><span style="font-size:14px">'+(isUp?"&#8593;":"&#8595;")+'</span><span style="font-size:12px;font-family:monospace">'+d.cur.toFixed(1)+'&#9733;</span><span style="font-size:11px;font-family:monospace;font-weight:800">'+item.sku+'</span>';
-    chip.onclick=function(){Q=item.sku;document.getElementById("srch").value=item.sku;render();};
+    var label;
+    if(collapse){
+      label=(g.parent||first.sku);
+      if(count>1) label+=' <span style="opacity:.65;font-weight:600">&times;'+count+'</span>';
+      if(catchUp) label+=' <span style="opacity:.6;font-weight:600;font-family:inherit">catching up ('+
+                          (g.settled+count)+' of family)</span>';
+    } else {
+      label=first.sku;
+    }
+    if(catchUp) chip.style.opacity="0.72";
+    chip.innerHTML='<span style="opacity:.6;font-size:11px;font-family:monospace">'+g.from.toFixed(1)+'&#9733;</span>'+
+      '<span style="font-size:14px">'+(isUp?"&#8593;":"&#8595;")+'</span>'+
+      '<span style="font-size:12px;font-family:monospace">'+g.to.toFixed(1)+'&#9733;</span>'+
+      '<span style="font-size:11px;font-family:monospace;font-weight:800">'+label+'</span>';
+    if(collapse){
+      chip.title=(catchUp
+        ? "Family already moved to "+g.to.toFixed(1)+" on an earlier run. "+g.settled+
+          " sibling(s) settled there, these "+count+" caught up today.\n"
+        : count+" children moved together.\n")+
+        g.items.map(function(x){return x.sku;}).join(", ");
+    }
+    if(collapse && g.parent && typeof selectP==="function"){
+      chip.onclick=function(){ selectP(g.parent); };
+    } else {
+      chip.onclick=function(){Q=first.sku;document.getElementById("srch").value=first.sku;render();};
+    }
     chips.appendChild(chip);
   });
 }
-
 function spark(canvas,hist,cls){
   if(!canvas) return;
   var colors={DN:"#dc2626",DN2:"#f59e0b",UP:"#16a34a",FL:"#94a3b8",ND:"#cbd5e1"};
@@ -891,10 +964,16 @@ document.addEventListener("click", function(e){
 });
 
 function renderCoirCard(c){
+  // The payload is an array once a second family is watched. Take the first.
+  if(Array.isArray(c)) c = c.length ? c[0] : null;
   if(!c || c.rating==null) return;
   var card=document.getElementById("coir-card"); if(!card) return;
   card.style.display="block";
-  var cur=Number(c.rating), t=Math.round(cur*10);
+  var cur=Number(c.rating), t=Math.round(cur*10), h=c.histogram||null;
+  // Tolerate the older payload shape, so this file is safe to deploy before or after the
+  // Apps Script. The previous build named these weekNRs and stainHits.
+  var nr7   = (c.nr7!=null)   ? c.nr7   : (c.weekNRs!=null   ? c.weekNRs   : 0);
+  var stain = (c.stain7!=null)? c.stain7: (c.stainHits!=null ? c.stainHits : 0);
   var col = t>=46 ? "#15803d" : (t>=45 ? "#f59e0b" : "#dc2626");
 
   var rEl=document.getElementById("coir-rating");
@@ -909,25 +988,61 @@ function renderCoirCard(c){
   }
   document.getElementById("coir-wow").textContent=wow;
 
-  // slim gauge 4.4 -> 4.6
-  var W=160, frac=Math.max(0,Math.min(1,(cur-4.4)/0.2)), mx=Math.max(6,Math.min(W-6,frac*W));
+  // Endpoint labels follow the family instead of being frozen at 4.4 and 4.6.
+  var lo = (c.levelBelow!=null) ? Number(c.levelBelow) : Math.round(t-1)/10;
+  var hi = (c.levelAbove!=null) ? Number(c.levelAbove) : Math.round(t+1)/10;
+  var loEl=document.getElementById("coir-lo"), hiEl=document.getElementById("coir-hi");
+  if(loEl) loEl.textContent=lo.toFixed(1);
+  if(hiEl) hiEl.textContent=hi.toFixed(1);
+
+  // Same slim gauge. Plots the straight average from the daily screenshot, which moves
+  // day to day, rather than the display rating, which only jumps when it flips a level.
+  // The old scale was hardcoded to 4.4, so the dot pinned to the left edge at 4.4 and
+  // would have looked identical at 4.0.
+  var plot = (h && h.trueAvg!=null) ? Number(h.trueAvg) : cur;
+  var known = !!(h && h.trueAvg!=null);
+  var W=160, frac=Math.max(0,Math.min(1,(plot-lo)/(hi-lo))), mx=Math.max(6,Math.min(W-6,frac*W));
   var svg="";
   svg+='<rect x="0" y="7" width="80" height="6" rx="3" fill="#fde2e1"/>';
   svg+='<rect x="80" y="7" width="80" height="6" rx="3" fill="#dcf3df"/>';
-  svg+='<circle cx="'+mx+'" cy="10" r="6" fill="'+col+'" stroke="#fff" stroke-width="2"/>';
+  svg+='<circle cx="'+mx.toFixed(1)+'" cy="10" r="6" fill="'+(known?col:"#cbd5e1")+'" stroke="#fff" stroke-width="2"/>';
   document.getElementById("coir-gauge").innerHTML=svg;
 
-  // one condensed, self-explanatory line
+  // Same condensed line, same order. Every figure now comes from the payload, so no
+  // rating wording is written into this file.
   var parts=[];
-  parts.push('<span style="color:#dc2626;font-weight:700">Down to 4.4 (risk):</span> several dozen more bad reviews away, a safe cushion');
-  parts.push('<span style="color:#15803d;font-weight:700">Up to 4.6 (goal):</span> ' + (t>=46 ? 'reached' : 'essentially there already, a cleared removal could tip it'));
-  if(c.weekNRs>0){
-    var theme = c.stainHits>=Math.ceil(c.weekNRs/2) ? "staining" : (c.stainHits>0 ? "some staining" : (c.topCause||"mixed"));
-    parts.push("<b>"+c.weekNRs+"</b> negative review"+(c.weekNRs===1?"":"s")+" this week ("+theme+")");
-  } else { parts.push("no negative reviews this week"); }
+  if(h && h.downOnes!=null){
+    var rng=(h.downOnesLo!=null&&h.downOnesHi!=null)?(" ("+h.downOnesLo+" to "+h.downOnesHi+")"):"";
+    parts.push('<span style="color:#dc2626;font-weight:700">Down to '+lo.toFixed(1)+' (risk):</span> about <b>'+
+               h.downOnes+'</b> more 1-star reviews'+rng);
+  } else {
+    parts.push('<span style="color:#dc2626;font-weight:700">Down to '+lo.toFixed(1)+' (risk):</span> '+
+               'no current star breakdown, distance not computable');
+  }
+  var bnd=(t+0.5)/10, ratio=(c.offsetRatio!=null)?c.offsetRatio:Math.round((bnd-1)/(5-bnd));
+  if(ratio!=null && isFinite(ratio)){
+    parts.push('<span style="color:#15803d;font-weight:700">Up to '+hi.toFixed(1)+' (goal):</span> each new 1-star '+
+               'needs about <b>'+ratio+'</b> clean 5-stars to cancel');
+  }
+  if(nr7>0){
+    var theme = stain>=Math.ceil(nr7/2) ? "mostly staining" : (stain>0 ? "some staining" : (c.topCause||"mixed"));
+    parts.push("<b>"+nr7+"</b> negative review"+(nr7===1?"":"s")+" this week ("+theme+")");
+  } else {
+    // A bare zero read as a clean week even when the NR Log had not been written up
+    // before the 5am run.
+    parts.push("no negatives logged"+(c.logThrough?(", NR Log through "+c.logThrough):", NR Log currency unknown"));
+  }
   if(c.caseStatus){ parts.push("removal: "+c.caseStatus); }
-  document.getElementById("coir-line").innerHTML=parts.join(" &middot; ");
 
+  // Only interruption to the line, and only when the screenshot feed has a problem.
+  if(h && h.readOn){
+    var ageD=Math.floor((Date.now()-new Date(h.readOn+"T12:00:00").getTime())/86400000);
+    if(ageD>3) parts.push('<span style="color:#b45309;font-weight:700">breakdown '+ageD+'d old</span>');
+  } else if(!h){
+    parts.push('<span style="color:#b45309;font-weight:700">no screenshot ingested</span>');
+  }
+
+  document.getElementById("coir-line").innerHTML=parts.join(" &middot; ");
   document.getElementById("coir-updated").textContent=c.updated?("Updated "+c.updated):"";
 }
 function render(){
