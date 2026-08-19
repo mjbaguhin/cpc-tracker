@@ -63,16 +63,68 @@ header h1{
 #meta{font-size:.7rem;color:#93a0b0;letter-spacing:.02em}
 #meta b{color:#ccd6e2;font-weight:600}
 
-#toggle,#fs{
+#toggle,#fs,#catBtn{
   font-size:.74rem;padding:.24rem .6rem;
   background:transparent;color:#fff;border:1px solid #3a4652;
 }
-#toggle{margin-left:auto}
-#toggle:hover,#fs:hover{background:#1c232b}
-#toggle .badge{
+#catBtn{margin-left:auto}
+#catBtn[aria-pressed="true"]{background:#2f4a6d;border-color:#4a6fa5}
+#toggle:hover,#fs:hover,#catBtn:hover{background:#1c232b}
+#toggle .badge,#catBtn .badge{
   display:inline-block;margin-left:.35rem;padding:0 .32rem;
-  background:#4a6fa5;border-radius:8px;font-size:.68rem;font-weight:700;
+  background:#a83a26;border-radius:8px;font-size:.68rem;font-weight:700;
 }
+
+/* ---------- detail overlay ---------- */
+#veil{
+  position:fixed;inset:0;background:rgba(16,20,24,.55);
+  display:flex;align-items:flex-end;justify-content:center;z-index:60;
+}
+#veil[hidden]{display:none}
+
+#detail{
+  background:var(--slab);width:min(46rem,100%);
+  max-height:88dvh;overflow-y:auto;
+  border-radius:6px 6px 0 0;
+  padding:1.1rem 1.2rem 1.4rem;
+}
+@media(min-width:701px){
+  #veil{align-items:center}
+  #detail{border-radius:4px}
+}
+
+#detail h2{
+  font-size:.72rem;text-transform:uppercase;letter-spacing:.14em;
+  color:var(--muted);font-weight:700;margin-bottom:.15rem;
+}
+#detail h3{font-size:1.02rem;margin-bottom:.8rem}
+#detail .why{
+  background:var(--field);border-left:3px solid var(--warn);
+  padding:.6rem .75rem;font-size:.86rem;margin-bottom:.9rem;
+}
+#detail dl{display:grid;grid-template-columns:8rem 1fr;gap:.3rem .8rem;
+  font-size:.84rem;margin-bottom:1rem}
+#detail dt{color:var(--muted);font-size:.72rem;text-transform:uppercase;
+  letter-spacing:.08em;padding-top:.15rem}
+#detail dd{word-break:break-word}
+
+#draft{
+  width:100%;min-height:13rem;font:inherit;font-size:.8rem;
+  font-family:ui-monospace,Menlo,Consolas,monospace;
+  padding:.6rem;border:1px solid var(--line);border-radius:2px;
+  background:var(--field);resize:vertical;
+}
+.actions{display:flex;gap:.5rem;flex-wrap:wrap;margin-top:.7rem}
+.actions a{
+  font-size:.8rem;padding:.34rem .68rem;border:1px solid var(--line);
+  border-radius:2px;text-decoration:none;color:var(--ink);background:var(--slab);
+}
+.actions a:hover{background:var(--field)}
+
+/* clickable circles */
+td.ind-cell .ind{cursor:default}
+td.ind-cell .ind.i-bad,td.ind-cell .ind.i-warn{cursor:pointer}
+td.ind-cell .ind.i-bad:hover{outline:2px solid var(--warn);outline-offset:2px}
 
 /* ---------- controls ---------- */
 #panel{
@@ -265,6 +317,7 @@ td.ind-cell{text-align:center}
 <header>
   <h1>ALM Console</h1>
   <span id="meta">Loading</span>
+  <button id="catBtn">Category checking</button>
   <button id="toggle" aria-expanded="true">Filters</button>
   <button id="fs" title="Fullscreen">Full screen</button>
 </header>
@@ -348,6 +401,10 @@ td.ind-cell{text-align:center}
   <tbody id="tbody"></tbody>
 </table></div>
 
+<div id="veil" hidden>
+  <div id="detail" role="dialog" aria-modal="true"></div>
+</div>
+
 <script>
 const SRC = 'https://raw.githubusercontent.com/mjbaguhin/cpc-tracker/main/data.json';
 
@@ -355,6 +412,9 @@ const SRC = 'https://raw.githubusercontent.com/mjbaguhin/cpc-tracker/main/data.j
 // with status, tier, parents, and US and CA stock and prices. data.json
 // supplies rating, reviews and BSR for the active ones.
 const PUB = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vRJzdMWKepuICHrxxJXuYxMJPiRIh7iifhDaRLHhb6j57Motm4XMyS0GIPqqM_tzbVY1drpOXslDbH-/pub?gid=1429581451&single=true&output=csv';
+
+// Category tab of the same sheet, published separately. Paste its URL here.
+const PUB_CAT = '';
 
 // Tier priority. Used to derive a parent tier from its children.
 const TIER_RANK = {A:0, B:1, N:2, C:3, X:4};
@@ -402,7 +462,7 @@ const COLS = [
 let ROWS = [];
 let META = {};
 const S = {
-  mk:'US', allCols:false,
+  mk:'US', allCols:false, view:'catalog',
   brands:new Set(), statuses:new Set(), tiers:new Set(), ptiers:new Set(),
   stock:new Set(), price:new Set(),
   group:'none', q:'', sort:'sku', dir:1, open:new Set()
@@ -413,9 +473,10 @@ const S = {
 async function load(){
   msg('Loading catalog');
 
-  const [pub, json] = await Promise.all([
+  const [pub, json, cat] = await Promise.all([
     grab(PUB, 'text').catch(e => ({err:'ALM Console Data: ' + e.message})),
-    grab(SRC, 'json').catch(e => ({err:'data.json: ' + e.message}))
+    grab(SRC, 'json').catch(e => ({err:'data.json: ' + e.message})),
+    PUB_CAT ? grab(PUB_CAT, 'text').catch(e => ({err:e.message})) : Promise.resolve(null)
   ]);
 
   // The published sheet is the spine. Without it there are no rows at all.
@@ -433,7 +494,53 @@ async function load(){
     console.warn('data.json unavailable:', json && json.err);
   }
 
+  buildCategory(cat);
   build(j, csvParse(pub), json && json.err ? 'ratings unavailable' : '');
+}
+
+
+/* ---------- category audit ---------- */
+
+let CAT = [];   // one entry per SKU and country, with its four checks
+
+function buildCategory(text){
+  CAT = [];
+  if(!text || text.err) {
+    if(text && text.err) console.warn('Category feed:', text.err);
+    return;
+  }
+
+  const byKey = {};
+
+  csvParse(text).forEach(r=>{
+    const sku = (r.SKU || '').trim();
+    if(!sku) return;
+
+    const key = sku + '|' + (r.Country || '');
+    if(!byKey[key]){
+      byKey[key] = {
+        sku, country:(r.Country || '').trim(), asin:(r.ASIN || '').trim(),
+        status:(r.Status || '').trim(), tier:(r.Tier || '').trim(),
+        name:r.Name || '', caseId:(r.CaseID || '').trim(),
+        caseDate:(r.CaseDate || '').trim(), caseNotes:r.CaseNotes || '',
+        checks:{}
+      };
+      CAT.push(byKey[key]);
+    }
+
+    byKey[key].checks[(r.Check || '').trim()] = {
+      state:(r.Healthy || 'unknown').trim(),
+      expected:(r.Expected || '').trim(),
+      actual:(r.Actual || '').trim()
+    };
+  });
+}
+
+const CHECKS = ['GL','Product Type','ITK','Category Path'];
+
+// Only rows with at least one failing check are worth showing
+function catFailing(){
+  return CAT.filter(c=> CHECKS.some(k=> c.checks[k] && c.checks[k].state === 'bad'));
 }
 
 async function grab(url, as){
@@ -661,9 +768,155 @@ function visible(){
   });
 }
 
+/* ---------- category view ---------- */
+
+const WHY = {
+  'GL': 'The GL category decides referral fees and which department the listing '+
+        'sits in. Amazon has it in one category, Plytix says another.',
+  'Product Type': 'Product type controls which attributes the listing accepts. A '+
+        'wrong type means required fields are missing and others are ignored.',
+  'ITK': 'The item type keyword drives browse placement and search refinement. A '+
+        'wrong keyword puts the product on the wrong shelf.',
+  'Category Path': 'The browse path is where customers find the product. Amazon '+
+        'sometimes rewords a path while keeping the same node, so confirm the node '+
+        'before treating this as an error.'
+};
+
+function renderCategory(){
+
+  const rows = catFailing();
+  const tbl  = document.getElementById('tbl');
+  const tb   = document.getElementById('tbody');
+
+  document.getElementById('bar').innerHTML =
+    `<span><b>${rows.length}</b> SKUs with a category problem</span>`+
+    CHECKS.map(k=>{
+      const n = CAT.filter(c=> c.checks[k] && c.checks[k].state === 'bad').length;
+      return `<span><span class="dot" style="background:var(--warn)"></span>${n} ${esc(k)}</span>`;
+    }).join('')+
+    '<span class="mut">Tap any red circle for the detail and a drafted case</span>';
+
+  if(!rows.length){
+    tbl.hidden = true;
+    msg(CAT.length ? 'No category problems' : 'No category data',
+        CAT.length ? 'Every check on every SKU is passing.'
+                   : 'Set PUB_CAT to the published Category tab URL.');
+    return;
+  }
+
+  document.getElementById('msg').hidden = true;
+  tbl.hidden = false;
+  tbl.className = '';
+
+  document.getElementById('hrow').innerHTML =
+    ['SKU','Country','Product','Tier','GL','Type','ITK','Path','Case']
+      .map(h=>`<th>${h}</th>`).join('');
+
+  tb.innerHTML = rows.map((c,i)=>
+    '<tr>'+
+    `<td class="mono">${esc(c.sku)}</td>`+
+    `<td>${esc(c.country)}</td>`+
+    `<td class="name">${esc(c.name)}</td>`+
+    `<td>${c.tier ? `<span class="tier t${esc(c.tier)}">${esc(c.tier)}</span>` : ''}</td>`+
+    CHECKS.map(k=>{
+      const ck = c.checks[k] || {state:'unknown'};
+      const st = ck.state === 'ok' ? 'ok' : ck.state === 'bad' ? 'bad' : 'none';
+      return `<td class="ind-cell"><span class="ind i-${st}" `+
+             `data-row="${i}" data-check="${esc(k)}" `+
+             `title="${esc(k)}: ${esc(ck.state)}"></span></td>`;
+    }).join('')+
+    `<td class="mono">${c.caseId ? esc(c.caseId) : '<span class="mut">\u2014</span>'}</td>`+
+    '</tr>'
+  ).join('');
+
+  [...tb.querySelectorAll('.ind.i-bad')].forEach(el=> el.onclick = ()=>
+    openDetail(rows[+el.dataset.row], el.dataset.check));
+}
+
+
+function openDetail(row, check){
+
+  const ck = row.checks[check] || {};
+  const d  = document.getElementById('detail');
+
+  d.innerHTML =
+    `<h2>${esc(check)} \u00b7 ${esc(row.country)}</h2>`+
+    `<h3>${esc(row.sku)} \u00b7 ${esc(row.name)}</h3>`+
+    `<div class="why">${esc(WHY[check] || '')}</div>`+
+    '<dl>'+
+    `<dt>ASIN</dt><dd class="mono">${esc(row.asin)}</dd>`+
+    `<dt>Amazon has</dt><dd class="warn">${esc(ck.actual || '(blank)')}</dd>`+
+    `<dt>Plytix says</dt><dd class="ok">${esc(ck.expected || '(blank)')}</dd>`+
+    (row.caseId ? `<dt>Existing case</dt><dd class="mono">${esc(row.caseId)}`+
+                  `${row.caseDate ? ' opened ' + esc(row.caseDate) : ''}</dd>` : '')+
+    (row.caseNotes ? `<dt>Notes</dt><dd>${esc(row.caseNotes)}</dd>` : '')+
+    '</dl>'+
+    (row.caseId ? '<div class="why">A case already exists for this SKU. Check it '+
+                  'before opening another, or reply on the existing one.</div>' : '')+
+    '<h2>Case draft</h2>'+
+    `<textarea id="draft">${esc(caseText(row, check, ck))}</textarea>`+
+    '<div class="actions">'+
+      '<button id="copyBtn" class="act">Copy case text</button>'+
+      '<a href="https://sellercentral.amazon.com/hz/productclassify" target="_blank" '+
+        'rel="noopener">Verify in classifier</a>'+
+      `<a href="https://www.${row.country === 'CA' ? 'amazon.ca' : 'amazon.com'}`+
+        `/dp/${encodeURIComponent(row.asin)}" target="_blank" rel="noopener">Detail page</a>`+
+      '<button id="closeBtn">Close</button>'+
+    '</div>';
+
+  document.getElementById('copyBtn').onclick = ()=>{
+    const t = document.getElementById('draft');
+    t.select();
+    navigator.clipboard.writeText(t.value)
+      .then(()=> document.getElementById('copyBtn').textContent = 'Copied')
+      .catch(()=> document.getElementById('copyBtn').textContent = 'Press Ctrl+C');
+  };
+  document.getElementById('closeBtn').onclick = closeDetail;
+
+  document.getElementById('veil').hidden = false;
+}
+
+function closeDetail(){ document.getElementById('veil').hidden = true; }
+
+
+/* Case text following the six-block template. The provenance and the
+   detail-page wording are left as explicit instructions rather than
+   invented, because a fabricated node or an imagined product description
+   is what gets a case rejected. */
+function caseText(row, check, ck){
+
+  const site  = row.country === 'CA' ? 'amazon.ca' : 'amazon.com';
+  const label = check === 'GL' ? 'GL (General Ledger) category'
+              : check === 'Product Type' ? 'product type'
+              : check === 'ITK' ? 'item type keyword'
+              : 'browse path';
+
+  const subject = 'Category correction request, ASIN ' + row.asin + ', ' +
+                  label + ' incorrect, ' + row.country;
+
+  const body =
+    'I am writing to request a correction to the ' + label + ' assigned to ASIN ' +
+    row.asin + ' (SKU: ' + row.sku + ') on the ' + site + ' marketplace. This ' +
+    'product is the ' + row.name + '. It is currently assigned ' +
+    (ck.actual || 'no value') + ' for this attribute. The correct value is ' +
+    (ck.expected || '[confirm]') + ', which matches the product detail page and ' +
+    'our catalogue records. Could you please update the ' + label + ' to ' +
+    (ck.expected || '[confirm]') + ' and confirm once applied?';
+
+  return 'SUBJECT\n' + subject + '\n\nBODY\n' + body +
+    '\n\n---\nBefore sending: confirm the value in the product classifier. For a ' +
+    'browse node claim add the Browse Tree Guide name and row. Replace the product ' +
+    'description with wording taken from the live detail page, since a case that ' +
+    'quotes the page is far harder to reject.';
+}
+
+
 /* ---------- render ---------- */
 
 function render(){
+
+  if(S.view === 'category'){ renderCategory(); return; }
+
   const rows = visible();
   strip(rows);
 
@@ -799,6 +1052,10 @@ function strip(rows){
             (S.group !== 'none' ? 1 : 0);
   const t = document.getElementById('toggle');
   t.innerHTML = 'Filters' + (n ? `<span class="badge">${n}</span>` : '');
+
+  const nCat = catFailing().length;
+  const cb2  = document.getElementById('catBtn');
+  cb2.innerHTML = 'Category checking' + (nCat ? `<span class="badge">${nCat}</span>` : '');
 }
 
 function msg(title, sub){
@@ -957,6 +1214,25 @@ fsBtn.onclick = ()=>{
 
 document.addEventListener('fullscreenchange', ()=>{
   fsBtn.textContent = document.fullscreenElement ? 'Exit full screen' : 'Full screen';
+});
+
+/* ---------- category toggle ---------- */
+
+const catBtn = document.getElementById('catBtn');
+
+catBtn.onclick = ()=>{
+  S.view = S.view === 'category' ? 'catalog' : 'category';
+  catBtn.setAttribute('aria-pressed', S.view === 'category');
+  // The filter rail applies to the catalog view only, so hide it in category
+  setPanel(S.view === 'catalog' && window.innerWidth > 820);
+  render();
+};
+
+document.getElementById('veil').onclick = e=>{
+  if(e.target.id === 'veil') closeDetail();
+};
+document.addEventListener('keydown', e=>{
+  if(e.key === 'Escape') closeDetail();
 });
 
 document.getElementById('bRefresh').onclick = load;
