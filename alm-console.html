@@ -1,0 +1,805 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>ALM Console</title>
+<style>
+:root{
+  --ink:#101418;
+  --slab:#ffffff;
+  --field:#e9edf2;
+  --line:#d3dae3;
+  --line-soft:#e6ebf1;
+  --muted:#68727f;
+  --byd:#9a5f2e;
+  --sb:#3f6f36;
+  --warn:#a83a26;
+  --ok:#256b5c;
+  --accent:#22456f;
+  --accent-soft:#dde6f2;
+}
+
+*{box-sizing:border-box;margin:0;padding:0}
+
+body{
+  background:var(--field);
+  color:var(--ink);
+  font:15px/1.45 ui-sans-serif,-apple-system,"Segoe UI",Roboto,sans-serif;
+  -webkit-font-smoothing:antialiased;
+  padding-bottom:3rem;
+}
+
+.mono{font-family:ui-monospace,"SF Mono",Menlo,Consolas,monospace;font-size:.86em;letter-spacing:-.01em}
+
+/* ---------- masthead ---------- */
+header{
+  background:var(--ink);color:#fff;
+  padding:.85rem 1rem;
+  position:sticky;top:0;z-index:30;
+  display:flex;align-items:baseline;gap:.9rem;flex-wrap:wrap;
+}
+header h1{
+  font-size:.78rem;font-weight:700;
+  text-transform:uppercase;letter-spacing:.18em;
+}
+#meta{font-size:.72rem;color:#93a0b0;letter-spacing:.02em}
+#meta b{color:#ccd6e2;font-weight:600}
+
+/* ---------- controls ---------- */
+.rail{
+  background:var(--slab);
+  border-bottom:1px solid var(--line);
+  padding:.75rem 1rem;
+  position:sticky;top:2.95rem;z-index:20;
+}
+.grp{display:flex;align-items:center;gap:.4rem;flex-wrap:wrap;margin-bottom:.55rem}
+.grp:last-child{margin-bottom:0}
+.lbl{
+  font-size:.63rem;font-weight:700;text-transform:uppercase;
+  letter-spacing:.13em;color:var(--muted);
+  min-width:5.4rem;
+}
+
+button{
+  font:inherit;font-size:.8rem;
+  padding:.34rem .68rem;
+  border:1px solid var(--line);
+  background:var(--slab);color:var(--ink);
+  border-radius:2px;cursor:pointer;
+  transition:background .12s,border-color .12s;
+}
+button:hover{background:var(--field)}
+button:focus-visible{outline:2px solid var(--accent);outline-offset:1px}
+button[aria-pressed="true"]{
+  background:var(--accent);border-color:var(--accent);color:#fff;
+}
+button.act{border-color:var(--ink)}
+button.act:hover{background:var(--ink);color:#fff}
+
+.seg{display:flex;border:1px solid var(--line);border-radius:2px;overflow:hidden}
+.seg button{border:0;border-right:1px solid var(--line);border-radius:0}
+.seg button:last-child{border-right:0}
+
+input[type=search]{
+  font:inherit;font-size:.8rem;padding:.34rem .6rem;
+  border:1px solid var(--line);border-radius:2px;
+  background:var(--slab);min-width:12rem;flex:1;max-width:22rem;
+}
+input[type=search]:focus{outline:2px solid var(--accent);outline-offset:-1px}
+
+/* ---------- count strip ---------- */
+#strip{
+  padding:.5rem 1rem;font-size:.75rem;color:var(--muted);
+  display:flex;gap:1.1rem;flex-wrap:wrap;align-items:center;
+}
+#strip b{color:var(--ink);font-weight:600}
+.dot{width:.5rem;height:.5rem;border-radius:50%;display:inline-block;margin-right:.3rem}
+
+/* ---------- table ---------- */
+.wrap{overflow-x:auto;background:var(--slab);border-top:1px solid var(--line)}
+table{border-collapse:collapse;width:100%;min-width:60rem}
+th,td{padding:.42rem .6rem;text-align:left;border-bottom:1px solid var(--line-soft);white-space:nowrap}
+th{
+  font-size:.62rem;text-transform:uppercase;letter-spacing:.1em;
+  color:var(--muted);font-weight:700;
+  background:var(--slab);position:sticky;top:0;cursor:pointer;
+  border-bottom:1px solid var(--line);
+}
+th:hover{color:var(--ink)}
+th .ar{color:var(--accent)}
+td.num{text-align:right}
+tr:hover td{background:#f6f8fb}
+
+td.name{white-space:normal;min-width:16rem;max-width:26rem;font-size:.82rem}
+
+/* group headers */
+tr.gh td{
+  background:var(--accent-soft);
+  border-bottom:1px solid var(--line);
+  border-top:1px solid var(--line);
+  font-weight:600;font-size:.8rem;
+  cursor:pointer;position:sticky;top:1.75rem;
+}
+tr.gh .cnt{color:var(--muted);font-weight:400;font-size:.75rem}
+tr.gh .tw{display:inline-block;width:.9rem;color:var(--accent)}
+
+/* pills */
+.pill{
+  display:inline-block;padding:.05rem .38rem;border-radius:2px;
+  font-size:.66rem;font-weight:700;letter-spacing:.04em;
+  border:1px solid currentColor;
+}
+.b-byd{color:var(--byd)}
+.b-sb{color:var(--sb)}
+.tier{
+  display:inline-block;min-width:1.3rem;text-align:center;
+  padding:.05rem .3rem;border-radius:2px;
+  font-size:.68rem;font-weight:700;
+  background:var(--ink);color:#fff;
+}
+.tier.tC,.tier.tX{background:var(--muted)}
+
+.warn{color:var(--warn);font-weight:600}
+.ok{color:var(--ok)}
+.mut{color:var(--muted)}
+
+/* price indicators */
+.ind{
+  display:inline-block;width:.62rem;height:.62rem;border-radius:50%;
+  border:1px solid rgba(0,0,0,.18);
+}
+.i-ok{background:var(--ok)}
+.i-bad{background:var(--warn)}
+.i-warn{background:#c8912e}
+.i-none{background:transparent;border:1px dashed var(--line)}
+td.ind-cell{text-align:center}
+
+#legend{
+  padding:.35rem 1rem .6rem;font-size:.7rem;color:var(--muted);
+  display:flex;gap:1rem;flex-wrap:wrap;align-items:center;
+}
+#legend .ind{margin-right:.25rem;vertical-align:middle}
+
+#msg{padding:2.5rem 1rem;text-align:center;color:var(--muted);font-size:.9rem}
+#msg b{display:block;color:var(--ink);font-size:1rem;margin-bottom:.3rem}
+
+@media(max-width:640px){
+  .lbl{min-width:100%;margin-bottom:.1rem}
+  .rail{top:2.6rem;padding:.6rem .7rem}
+  header{padding:.6rem .7rem}
+  #strip{padding:.5rem .7rem}
+}
+</style>
+</head>
+<body>
+
+<header>
+  <h1>ALM Console</h1>
+  <span id="meta">Loading</span>
+</header>
+
+<div class="rail">
+
+  <div class="grp">
+    <span class="lbl">Data</span>
+    <button class="act" id="bRefresh">Refresh data</button>
+    <button class="act" id="bCsv">Download CSV</button>
+    <button class="act" id="bReset">Reset all filters</button>
+    <input type="search" id="q" placeholder="Search SKU, ASIN, product, parent">
+  </div>
+
+  <div class="grp">
+    <span class="lbl">Marketplace</span>
+    <div class="seg" id="mkSeg">
+      <button data-mk="US" aria-pressed="true">US</button>
+      <button data-mk="CA" aria-pressed="false">CA</button>
+    </div>
+    <span class="mut" id="mkNote" style="font-size:.72rem"></span>
+  </div>
+
+  <div class="grp">
+    <span class="lbl">Brand</span>
+    <button id="brandAll" aria-pressed="true">All brands</button>
+    <span id="brandBox"></span>
+  </div>
+
+  <div class="grp">
+    <span class="lbl">SKU status</span>
+    <button id="statusAll" aria-pressed="true">All statuses</button>
+    <span id="statusBox"></span>
+  </div>
+
+  <div class="grp">
+    <span class="lbl">SKU tier</span>
+    <button id="tierAll" aria-pressed="true">All tiers</button>
+    <span id="tierBox"></span>
+  </div>
+
+  <div class="grp">
+    <span class="lbl">Parent tier</span>
+    <button id="ptierAll" aria-pressed="true">All tiers</button>
+    <span id="ptierBox"></span>
+  </div>
+
+  <div class="grp">
+    <span class="lbl">Stock</span>
+    <button data-stock="oos" aria-pressed="false">Out of stock</button>
+    <button data-stock="in" aria-pressed="false">In stock</button>
+    <button data-stock="inbound" aria-pressed="false">Has inbound</button>
+  </div>
+
+  <div class="grp">
+    <span class="lbl">Price</span>
+    <button data-price="nolist" aria-pressed="false">List price missing</button>
+    <button data-price="nosale" aria-pressed="false">No sale price</button>
+    <button data-price="badsale" aria-pressed="false">Sale not below list</button>
+    <button data-price="nofeat" aria-pressed="false">Not featured offer</button>
+  </div>
+
+  <div class="grp">
+    <span class="lbl">Group by</span>
+    <div class="seg" id="groupSeg">
+      <button data-group="none" aria-pressed="true">Flat list</button>
+      <button data-group="psku" aria-pressed="false">Parent SKU</button>
+      <button data-group="pasin" aria-pressed="false">Parent ASIN</button>
+      <button data-group="parent" aria-pressed="false">Parent ASIN Name</button>
+    </div>
+  </div>
+
+</div>
+
+<div id="strip"></div>
+<div id="legend"></div>
+<div id="msg">Loading catalog</div>
+<div class="wrap"><table id="tbl" hidden>
+  <thead><tr id="hrow"></tr></thead>
+  <tbody id="tbody"></tbody>
+</table></div>
+
+<script>
+const SRC = 'https://raw.githubusercontent.com/mjbaguhin/cpc-tracker/main/data.json';
+
+// ALM Console Data, published to web as CSV. Carries all 831 Plytix SKUs
+// with status, tier, parents, and US and CA stock and prices. data.json
+// supplies rating, reviews and BSR for the active ones.
+const PUB = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vRJzdMWKepuICHrxxJXuYxMJPiRIh7iifhDaRLHhb6j57Motm4XMyS0GIPqqM_tzbVY1drpOXslDbH-/pub?gid=1429581451&single=true&output=csv';
+
+// Tier priority. Used to derive a parent tier from its children.
+const TIER_RANK = {A:0, B:1, N:2, C:3, X:4};
+
+// Filters are drawn from these fixed lists, not from the loaded data, so the
+// controls are always visible even before data.json arrives or if it fails.
+const TIERS  = ['A','B','N','C','X'];
+const STATUS = ['Active','In Dev','Inactive'];
+const BRANDS = [['Barnyard Designs','BYD'], ['Seedboy','SB']];
+
+const COLS = [
+  {k:'sku',    t:'SKU',       cls:'mono'},
+  {k:'name',   t:'Product',   cls:'name'},
+  {k:'brand',  t:'Brand'},
+  {k:'status', t:'Status'},
+  {k:'tier',   t:'Tier'},
+  {k:'ptier',  t:'P.Tier'},
+  {k:'cur',    t:'Rating',    num:true},
+  {k:'d30',    t:'30D',       num:true},
+  {k:'rev',    t:'Reviews',   num:true},
+  {k:'bsr',    t:'BSR',       num:true},
+  {k:'avail',  t:'Available', num:true},
+  {k:'inbound',t:'Inbound',   num:true},
+  {k:'health', t:'Health'},
+  {k:'list',   t:'List',  ind:'list'},
+  {k:'sale',   t:'Sale',  ind:'sale'},
+  {k:'feat',   t:'Feat',  ind:'feat'},
+  {k:'psku',   t:'Parent SKU',cls:'mono'},
+  {k:'pasin',  t:'Parent ASIN',cls:'mono'},
+  {k:'parent', t:'Parent name'}
+];
+
+let ROWS = [];
+let META = {};
+const S = {
+  mk:'US',
+  brands:new Set(), statuses:new Set(), tiers:new Set(), ptiers:new Set(),
+  stock:new Set(), price:new Set(),
+  group:'none', q:'', sort:'sku', dir:1, open:new Set()
+};
+
+/* ---------- load ---------- */
+
+async function load(){
+  msg('Loading catalog');
+
+  const [pub, json] = await Promise.all([
+    grab(PUB, 'text').catch(e => ({err:'ALM Console Data: ' + e.message})),
+    grab(SRC, 'json').catch(e => ({err:'data.json: ' + e.message}))
+  ]);
+
+  // The published sheet is the spine. Without it there are no rows at all.
+  if(pub && pub.err){
+    msg('Could not load ALM Console Data', pub.err +
+        '. Check the sheet is still published: File, Share, Publish to web.');
+    return;
+  }
+
+  // data.json only adds rating, reviews and BSR, so carry on without it
+  // rather than showing nothing.
+  let j = json;
+  if(!j || j.err){
+    j = {};
+    console.warn('data.json unavailable:', json && json.err);
+  }
+
+  build(j, csvParse(pub), json && json.err ? 'ratings unavailable' : '');
+}
+
+async function grab(url, as){
+  const r = await fetch(url + (url.includes('?') ? '&' : '?') + 't=' + Date.now(),
+                        {cache:'no-store'});
+  if(!r.ok) throw new Error('HTTP ' + r.status);
+  return as === 'json' ? r.json() : r.text();
+}
+
+/* Minimal CSV reader. Handles quoted fields, embedded commas, escaped
+   quotes and CRLF, which product titles and descriptions all contain. */
+function csvParse(text){
+  const rows = [];
+  let row = [], val = '', q = false;
+
+  for(let i = 0; i < text.length; i++){
+    const ch = text[i];
+
+    if(q){
+      if(ch === '"'){
+        if(text[i+1] === '"'){ val += '"'; i++; }
+        else q = false;
+      } else val += ch;
+      continue;
+    }
+
+    if(ch === '"')       { q = true; }
+    else if(ch === ',')  { row.push(val); val = ''; }
+    else if(ch === '\n') { row.push(val); rows.push(row); row = []; val = ''; }
+    else if(ch !== '\r') { val += ch; }
+  }
+  if(val !== '' || row.length){ row.push(val); rows.push(row); }
+
+  if(!rows.length) return [];
+  const head = rows[0].map(h => h.trim());
+  return rows.slice(1).filter(r => r.length > 1).map(r=>{
+    const o = {};
+    head.forEach((h,i)=> o[h] = (r[i] === undefined ? '' : r[i]));
+    return o;
+  });
+}
+
+function build(j, pub, warnNote){
+
+  const d = j.data || {};
+
+  META = {
+    when: j.fetched_at_et || j.fetched_at || 'unknown',
+    tokens: j.tokens_left, skus: pub.length, note: warnNote || ''
+  };
+
+  // Parent tier: the strongest tier among children sharing a parent SKU.
+  const ptier = {};
+  pub.forEach(r=>{
+    const ps = (r.ParentSKU || '').trim();
+    if(!ps) return;
+    const rank = TIER_RANK[(r.Tier || '').trim()];
+    if(rank === undefined) return;
+    if(ptier[ps] === undefined || rank < ptier[ps]) ptier[ps] = rank;
+  });
+  const rankTier = {};
+  Object.keys(TIER_RANK).forEach(k=> rankTier[TIER_RANK[k]] = k);
+
+  ROWS = pub.map(r=>{
+    const asin = (r.ASIN || '').trim();
+    const x    = d[asin] || {};
+    const cur  = num(x.cur), r30 = num(x.r30);
+    const ps   = (r.ParentSKU || '').trim();
+
+    return {
+      sku:(r.SKU || '').trim(), asin,
+      name:r.Name || '', brand:(r.Brand || '').trim(),
+      status:(r.Status || '').trim(), tier:(r.Tier || '').trim(),
+      ptier: ps && ptier[ps] !== undefined ? rankTier[ptier[ps]] : '',
+
+      cur, d30: (cur!==null && r30!==null) ? Math.round((cur-r30)*10)/10 : null,
+      rev:num(x.rev), bsr:num(x.bsr),
+
+      // Both marketplaces held at once. applyMk copies the active set into
+      // the plain fields the table, filters and sort all read.
+      usAvail:num(r.US_Available), usInbound:num(r.US_Inbound), usHealth:r.US_Health || '',
+      usList:num(r.US_List), usSale:num(r.US_Sale), usFeat:num(r.US_Feat),
+      caAvail:num(r.CA_Available), caInbound:num(r.CA_Inbound), caHealth:'',
+      caList:num(r.CA_List), caSale:num(r.CA_Sale), caFeat:num(r.CA_Feat),
+
+      psku:ps, pasin:(r.ParentASIN || '').trim(), parent:r.ParentName || ''
+    };
+  });
+
+  applyMk();
+
+  const exSt = [...new Set(ROWS.map(r=>r.status).filter(Boolean))]
+                 .filter(s=> STATUS.indexOf(s) === -1).sort();
+  if(exSt.length){
+    console.log('Unexpected SKU statuses in data:', exSt);
+    chips('statusBox','statuses','statusAll',STATUS.concat(exSt));
+  }
+
+  const exT = [...new Set(ROWS.map(r=>r.tier).concat(ROWS.map(r=>r.ptier)).filter(Boolean))]
+                .filter(t=> TIERS.indexOf(t) === -1).sort();
+  if(exT.length){
+    chips('tierBox','tiers','tierAll',TIERS.concat(exT));
+    chips('ptierBox','ptiers','ptierAll',TIERS.concat(exT));
+  }
+
+  render();
+}
+
+/* Copies the selected marketplace's stock and price onto the generic
+   fields, so nothing downstream has to know which marketplace is active. */
+function applyMk(){
+  const p = S.mk === 'CA' ? 'ca' : 'us';
+  ROWS.forEach(r=>{
+    r.avail   = r[p+'Avail'];
+    r.inbound = r[p+'Inbound'];
+    r.health  = r[p+'Health'];
+    r.list    = r[p+'List'];
+    r.sale    = r[p+'Sale'];
+    r.feat    = r[p+'Feat'];
+  });
+
+  const n = ROWS.filter(r=> r.list !== null).length;
+  const el = document.getElementById('mkNote');
+  if(el) el.textContent = n + ' SKUs with ' + S.mk + ' price data' +
+    (S.mk === 'CA' ? ', and CA has no health column' : '');
+}
+
+const num = v => (v===null||v===undefined||v===''||isNaN(Number(v))) ? null : Number(v);
+
+/* ---------- price indicators ----------
+   These are our own definitions, not a copy of Amazon's icons. Amazon's
+   tooltip wording does not match the numbers it appears next to, so
+   reproducing it would mean guessing. What each circle means here is
+   stated in the legend and in the cell tooltip, so it can be trusted. */
+
+// List price present and above zero.
+function stList(r){
+  return r.list > 0 ? 'ok' : 'bad';
+}
+
+// Sale price present and genuinely below the list price.
+function stSale(r){
+  if(!(r.sale > 0))  return 'none';        // no sale set
+  if(!(r.list > 0))  return 'warn';        // sale with no list price to compare
+  return r.sale < r.list ? 'ok' : 'bad';   // bad means the sale is not a discount
+}
+
+// Our price is at or below the featured offer, so we are competitive on price.
+function stFeat(r){
+  if(!(r.feat > 0)) return 'none';         // no featured offer on the ASIN
+  if(!(r.list > 0)) return 'none';
+  return r.list <= r.feat + 0.005 ? 'ok' : 'bad';
+}
+
+const IND = {list:stList, sale:stSale, feat:stFeat};
+
+const IND_TITLE = {
+  list:{ok:'List price set', bad:'List price is empty or zero'},
+  sale:{ok:'Sale price is below list price', bad:'Sale price is not below list price',
+        warn:'Sale price set but no list price to compare', none:'No sale price set'},
+  feat:{ok:'Our price is at or below the featured offer',
+        bad:'Our price is above the featured offer', none:'No featured offer on this ASIN'}
+};
+const uniq = a => [...new Set(a.filter(Boolean))].sort(
+  (x,y)=>(TIER_RANK[x]??9)-(TIER_RANK[y]??9) || String(x).localeCompare(y));
+
+// vals may be plain values or [value, label] pairs.
+function chips(boxId, key, allBtnId, vals){
+  const box = document.getElementById(boxId);
+  box.innerHTML = '';
+  vals.forEach(item=>{
+    const v = Array.isArray(item) ? item[0] : item;
+    const l = Array.isArray(item) ? item[1] : item;
+    const b = document.createElement('button');
+    b.textContent = l;
+    b.dataset.v = v;
+    b.setAttribute('aria-pressed', S[key].has(v));
+    b.onclick = ()=>{
+      S[key].has(v) ? S[key].delete(v) : S[key].add(v);
+      b.setAttribute('aria-pressed', S[key].has(v));
+      document.getElementById(allBtnId).setAttribute('aria-pressed', S[key].size === 0);
+      render();
+    };
+    box.appendChild(b);
+  });
+}
+
+/* ---------- filter ---------- */
+
+function visible(){
+  const q = S.q.toLowerCase();
+  return ROWS.filter(r=>{
+    if(S.brands.size && !S.brands.has(r.brand)) return false;
+    if(S.statuses.size && !S.statuses.has(r.status)) return false;
+    if(S.tiers.size  && !S.tiers.has(r.tier))   return false;
+    if(S.ptiers.size && !S.ptiers.has(r.ptier)) return false;
+
+    if(S.stock.size){
+      let hit = false;
+      if(S.stock.has('oos')     && r.avail === 0) hit = true;
+      if(S.stock.has('in')      && r.avail > 0)   hit = true;
+      if(S.stock.has('inbound') && r.inbound > 0) hit = true;
+      if(!hit) return false;
+    }
+
+    if(S.price.size){
+      let hit = false;
+      if(S.price.has('nolist')  && stList(r) === 'bad') hit = true;
+      if(S.price.has('nosale')  && stSale(r) === 'none') hit = true;
+      if(S.price.has('badsale') && stSale(r) === 'bad') hit = true;
+      if(S.price.has('nofeat')  && stFeat(r) === 'bad') hit = true;
+      if(!hit) return false;
+    }
+
+    if(q && !(r.sku+' '+r.asin+' '+r.name+' '+r.psku+' '+r.pasin+' '+r.parent)
+              .toLowerCase().includes(q)) return false;
+    return true;
+  }).sort((a,b)=>{
+    const x = a[S.sort], y = b[S.sort];
+    if(x === null && y === null) return 0;
+    if(x === null) return 1;            // blanks always sink
+    if(y === null) return -1;
+    return (typeof x === 'number' ? x-y : String(x).localeCompare(String(y))) * S.dir;
+  });
+}
+
+/* ---------- render ---------- */
+
+function render(){
+  const rows = visible();
+  strip(rows);
+
+  const tbl = document.getElementById('tbl');
+  const tb  = document.getElementById('tbody');
+
+  if(!rows.length){
+    tbl.hidden = true;
+    msg('Nothing matches', ROWS.length ?
+      'Loosen a filter, or press Reset all filters.' : 'No catalog rows in data.json.');
+    return;
+  }
+  document.getElementById('msg').hidden = true;
+  tbl.hidden = false;
+
+  document.getElementById('hrow').innerHTML = COLS.map(c=>
+    `<th data-k="${c.k}">${c.t}${S.sort===c.k?`<span class="ar"> ${S.dir>0?'\u2191':'\u2193'}</span>`:''}</th>`
+  ).join('');
+  [...document.querySelectorAll('th')].forEach(th=> th.onclick = ()=>{
+    const k = th.dataset.k;
+    S.dir = (S.sort === k) ? -S.dir : 1;
+    S.sort = k; render();
+  });
+
+  let html = '';
+
+  if(S.group === 'none'){
+    rows.forEach(r=> html += tr(r));
+  }else{
+    const g = {};
+    rows.forEach(r=>{ const k = r[S.group] || '\u2014 no parent \u2014'; (g[k] = g[k] || []).push(r); });
+    Object.keys(g).sort().forEach(k=>{
+      const kids = g[k];
+      const open = S.open.has(k);
+      const rated = kids.map(r=>r.cur).filter(v=>v!==null);
+      const lo = rated.length ? Math.min(...rated).toFixed(1) : null;
+      const hi = rated.length ? Math.max(...rated).toFixed(1) : null;
+      const stock = kids.reduce((s,r)=>s+(r.avail||0),0);
+      const oos = kids.filter(r=>r.avail === 0).length;
+
+      html += `<tr class="gh" data-g="${esc(k)}"><td colspan="${COLS.length}">`+
+        `<span class="tw">${open?'\u25be':'\u25b8'}</span>${esc(k)} `+
+        `<span class="cnt">${kids.length} SKU${kids.length>1?'s':''}`+
+        (rated.length ? ` \u00b7 ${lo===hi?lo:lo+' to '+hi}\u2605` : '')+
+        ` \u00b7 ${stock} units`+
+        (oos ? ` \u00b7 <span class="warn">${oos} OOS</span>` : '')+
+        `</span></td></tr>`;
+
+      if(open) kids.forEach(r=> html += tr(r));
+    });
+  }
+
+  tb.innerHTML = html;
+  [...tb.querySelectorAll('tr.gh')].forEach(el=> el.onclick = ()=>{
+    const k = el.dataset.g;
+    S.open.has(k) ? S.open.delete(k) : S.open.add(k);
+    render();
+  });
+}
+
+function tr(r){
+  return '<tr>' + COLS.map(c=>{
+    let v = r[c.k], cls = c.cls || '';
+    if(c.num) cls += ' num';
+
+    if(c.ind){
+      const st = IND[c.ind](r);
+      const t  = (IND_TITLE[c.ind] && IND_TITLE[c.ind][st]) || st;
+      const price = v === null ? '' : ' ' + v.toFixed(2);
+      return `<td class="ind-cell"><span class="ind i-${st}" title="${esc(t)}${esc(price)}"></span></td>`;
+    }
+
+    if(c.k === 'brand')
+      v = v ? `<span class="pill ${v==='Seedboy'?'b-sb':'b-byd'}">${v==='Seedboy'?'SB':'BYD'}</span>` : '';
+    else if(c.k === 'status')
+      v = v ? `<span class="${/^active$/i.test(v) ? 'ok' : 'mut'}">${esc(v)}</span>`
+            : '<span class="mut">\u2014</span>';
+    else if(c.k === 'tier' || c.k === 'ptier')
+      v = v ? `<span class="tier t${v}">${v}</span>` : '<span class="mut">\u2014</span>';
+    else if(c.k === 'cur')
+      v = v === null ? '<span class="mut">\u2014</span>'
+        : `<span class="${v < 4.5 ? 'warn' : ''}">${v.toFixed(1)}</span>`;
+    else if(c.k === 'd30')
+      v = v === null ? '<span class="mut">\u2014</span>'
+        : (v === 0 ? '<span class="mut">0</span>'
+        : `<span class="${v < 0 ? 'warn' : 'ok'}">${v > 0 ? '+' : ''}${v.toFixed(1)}</span>`);
+    else if(c.k === 'avail')
+      v = v === null ? '<span class="mut">\u2014</span>'
+        : (v === 0 ? '<span class="warn">0</span>' : v);
+    else if(c.k === 'inbound')
+      v = (v === null || v === 0) ? '<span class="mut">\u2014</span>' : v;
+    else if(c.k === 'health')
+      v = v ? `<span class="${/healthy/i.test(v)?'ok':'warn'}">${esc(v)}</span>` : '<span class="mut">\u2014</span>';
+    else if(v === null || v === '')
+      v = '<span class="mut">\u2014</span>';
+    else v = esc(v);
+
+    return `<td class="${cls.trim()}">${v}</td>`;
+  }).join('') + '</tr>';
+}
+
+function strip(rows){
+  const oos = rows.filter(r=>r.avail === 0).length;
+  const low = rows.filter(r=>r.cur !== null && r.cur < 4.5).length;
+  const inb = rows.filter(r=>r.inbound > 0).length;
+  const nl  = rows.filter(r=>stList(r) === 'bad').length;
+  const nf  = rows.filter(r=>stFeat(r) === 'bad').length;
+
+  document.getElementById('strip').innerHTML =
+    `<span><b>${rows.length}</b> of ${ROWS.length} SKUs</span>`+
+    `<span><span class="dot" style="background:var(--warn)"></span>${oos} out of stock</span>`+
+    `<span><span class="dot" style="background:var(--warn)"></span>${low} under 4.5\u2605</span>`+
+    `<span><span class="dot" style="background:var(--warn)"></span>${nl} no list price</span>`+
+    `<span><span class="dot" style="background:var(--warn)"></span>${nf} above featured offer</span>`+
+    `<span><span class="dot" style="background:var(--ok)"></span>${inb} with inbound</span>`;
+
+  document.getElementById('legend').innerHTML =
+    '<span><span class="ind i-ok"></span>ok</span>'+
+    '<span><span class="ind i-bad"></span>needs attention</span>'+
+    '<span><span class="ind i-warn"></span>cannot judge</span>'+
+    '<span><span class="ind i-none"></span>not set</span>'+
+    '<span class="mut">List, Sale and Feat are our own checks from the FBA inventory report. '+
+    'Hover any circle for what it means and the price behind it.</span>';
+
+  document.getElementById('meta').innerHTML =
+    `<b>${META.skus||0}</b> SKUs \u00b7 ${esc(S.mk)} \u00b7 ratings fetched ${esc(META.when||'?')}`+
+    (META.tokens!==undefined && META.tokens!==null ? ` \u00b7 ${META.tokens} Keepa tokens left` : '')+
+    (META.note ? ` \u00b7 <span style="color:#f0b6a8">${esc(META.note)}</span>` : '');
+}
+
+function msg(title, sub){
+  const m = document.getElementById('msg');
+  m.hidden = false;
+  m.innerHTML = `<b>${esc(title)}</b>${sub?esc(sub):''}`;
+  document.getElementById('tbl').hidden = true;
+}
+
+const esc = s => String(s).replace(/[&<>"]/g, c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+
+/* ---------- csv ---------- */
+
+function csv(){
+  const rows = visible();
+  if(!rows.length) return;
+  const cell = v => (v===null||v===undefined) ? '' :
+    (/[",\n]/.test(String(v)) ? '"'+String(v).replace(/"/g,'""')+'"' : String(v));
+
+  const out = [COLS.map(c=>c.t).concat('ASIN').join(',')]
+    .concat(rows.map(r=> COLS.map(c=>cell(r[c.k])).concat(cell(r.asin)).join(',')))
+    .join('\n');
+
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(new Blob([out], {type:'text/csv'}));
+  a.download = 'alm-' + new Date().toISOString().slice(0,10) + '.csv';
+  a.click();
+  URL.revokeObjectURL(a.href);
+}
+
+/* ---------- wiring ---------- */
+
+function segment(id, key){
+  const box = document.getElementById(id);
+  [...box.querySelectorAll('button')].forEach(b=> b.onclick = ()=>{
+    [...box.querySelectorAll('button')].forEach(x=> x.setAttribute('aria-pressed','false'));
+    b.setAttribute('aria-pressed','true');
+    S[key] = b.dataset.brand || b.dataset.group;
+    if(key === 'group') S.open.clear();
+    render();
+  });
+}
+segment('groupSeg','group');
+
+[...document.querySelectorAll('#mkSeg button')].forEach(b=> b.onclick = ()=>{
+  [...document.querySelectorAll('#mkSeg button')]
+    .forEach(x=> x.setAttribute('aria-pressed','false'));
+  b.setAttribute('aria-pressed','true');
+  S.mk = b.dataset.mk;
+  applyMk();
+  render();
+});
+
+// Drawn immediately, before any fetch, so the filters are never blank.
+chips('brandBox','brands','brandAll',BRANDS);
+chips('statusBox','statuses','statusAll',STATUS);
+chips('tierBox', 'tiers', 'tierAll', TIERS);
+chips('ptierBox','ptiers','ptierAll',TIERS);
+
+[...document.querySelectorAll('[data-stock]')].forEach(b=> b.onclick = ()=>{
+  const k = b.dataset.stock;
+  S.stock.has(k) ? S.stock.delete(k) : S.stock.add(k);
+  b.setAttribute('aria-pressed', S.stock.has(k));
+  render();
+});
+
+[...document.querySelectorAll('[data-price]')].forEach(b=> b.onclick = ()=>{
+  const k = b.dataset.price;
+  S.price.has(k) ? S.price.delete(k) : S.price.add(k);
+  b.setAttribute('aria-pressed', S.price.has(k));
+  render();
+});
+
+document.getElementById('brandAll').onclick  = ()=> clearChips('brands','brandBox','brandAll');
+document.getElementById('statusAll').onclick = ()=> clearChips('statuses','statusBox','statusAll');
+document.getElementById('tierAll').onclick  = ()=> clearChips('tiers','tierBox','tierAll');
+document.getElementById('ptierAll').onclick = ()=> clearChips('ptiers','ptierBox','ptierAll');
+
+function clearChips(key, box, allBtn){
+  S[key].clear();
+  [...document.getElementById(box).querySelectorAll('button')]
+    .forEach(b=> b.setAttribute('aria-pressed','false'));
+  document.getElementById(allBtn).setAttribute('aria-pressed','true');
+  render();
+}
+
+let t;
+document.getElementById('q').oninput = e=>{
+  clearTimeout(t);
+  t = setTimeout(()=>{ S.q = e.target.value.trim(); render(); }, 180);
+};
+
+document.getElementById('bRefresh').onclick = load;
+document.getElementById('bCsv').onclick = csv;
+document.getElementById('bReset').onclick = ()=>{
+  S.stock.clear(); S.price.clear();
+  S.group='none'; S.q=''; S.sort='sku'; S.dir=1; S.open.clear();
+  document.getElementById('q').value = '';
+
+  const bs = [...document.getElementById('groupSeg').querySelectorAll('button')];
+  bs.forEach((b,i)=> b.setAttribute('aria-pressed', i===0));
+
+  [...document.querySelectorAll('[data-stock],[data-price]')]
+    .forEach(b=> b.setAttribute('aria-pressed','false'));
+
+  clearChips('brands','brandBox','brandAll');
+  clearChips('statuses','statusBox','statusAll');
+  clearChips('tiers','tierBox','tierAll');
+  clearChips('ptiers','ptierBox','ptierAll');
+};
+
+load();
+</script>
+</body>
+</html>
