@@ -544,14 +544,14 @@ function buildCategory(text){
   });
 }
 
-const CHECKS = ['GL','Product Type','ITK','Category Path'];
+const CHECKS = ['GL','Search Department','Product Type','ITK','Category Path'];
 
 /* The checklist. Each row is a real ClickUp task, so ClickUp stays the
    place work is tracked and this is only the view that says how much is
    left. Tapping a row opens that task's checks; the arrow opens ClickUp. */
 const TASKS = [
   { id:'868e1nc6z', name:'Correct Categories (US & CA)',
-    checks:['GL','Product Type','ITK','Category Path'] },
+    checks:['GL','Search Department','Product Type','ITK','Category Path'] },
   { id:'868e1nccv', name:'Correct Variations',            checks:['Variation'] },
   { id:'868e748bz', name:'Correct Copy Checking (US & CA)', checks:['Copy'] },
   { id:'868e1ndcb', name:'List Price Exists',             checks:['Backend List Price'] },
@@ -879,14 +879,28 @@ function renderChecklist(){
 
 const WHY = {
   'GL': 'The GL category decides referral fees and which department the listing '+
-        'sits in. Amazon has it in one category, Plytix says another.',
+        'sits in. Taken from product-group in the FBA inventory report, which is '+
+        'the real GL. Not the same thing as the search department.',
+  'Search Department': 'The customer-facing department on the storefront, which is '+
+        'what Keepa returns now that it no longer reports GL. Related to the GL but '+
+        'a different field, so a mismatch here is not a GL problem.',
   'Product Type': 'Product type controls which attributes the listing accepts. A '+
         'wrong type means required fields are missing and others are ignored.',
   'ITK': 'The item type keyword drives browse placement and search refinement. A '+
         'wrong keyword puts the product on the wrong shelf.',
   'Category Path': 'The browse path is where customers find the product. Amazon '+
         'sometimes rewords a path while keeping the same node, so confirm the node '+
-        'before treating this as an error.'
+        'before treating this as an error.',
+  'Variation': 'The parent and child relationship, or the variation theme, does not '+
+        'match what Plytix expects.',
+  'Copy': 'Title, bullets, description or keywords on Amazon differ from Plytix.',
+  'Backend List Price': 'The backend list price field is empty on an active listing.',
+  'Buy Box': 'We are not currently holding the featured offer.',
+  'BSR': 'No best seller rank is showing, which usually means the listing is not '+
+        'placed in a ranked category.',
+  'BSR Synced': 'The variation family is not sharing a best seller rank.',
+  'Reviews Synced': 'The variation family is not sharing reviews.',
+  'Stranded': 'Inventory is at Amazon but not attached to a sellable listing.'
 };
 
 function renderCategory(){
@@ -966,10 +980,14 @@ function openDetail(row, check){
     '</dl>'+
     (row.caseId ? '<div class="why">A case already exists for this SKU. Check it '+
                   'before opening another, or reply on the existing one.</div>' : '')+
-    '<h2>Case draft</h2>'+
-    `<textarea id="draft">${esc(caseText(row, check, ck))}</textarea>`+
+    (CASEABLE.indexOf(check) === -1
+      ? '<div class="why">This one is not fixed by a Seller Support case. It is '+
+        'either something to change on the listing, or something to watch.</div>'
+      : '<h2>Case draft</h2>'+
+        `<textarea id="draft">${esc(caseText(row, check, ck))}</textarea>`)+
     '<div class="actions">'+
-      '<button id="copyBtn" class="act">Copy case text</button>'+
+      (CASEABLE.indexOf(check) === -1 ? '' :
+        '<button id="copyBtn" class="act">Copy case text</button>')+
       '<a href="https://sellercentral.amazon.com/hz/productclassify" target="_blank" '+
         'rel="noopener">Verify in classifier</a>'+
       `<a href="https://www.${row.country === 'CA' ? 'amazon.ca' : 'amazon.com'}`+
@@ -977,12 +995,13 @@ function openDetail(row, check){
       '<button id="closeBtn">Close</button>'+
     '</div>';
 
-  document.getElementById('copyBtn').onclick = ()=>{
+  const cbtn = document.getElementById('copyBtn');
+  if(cbtn) cbtn.onclick = ()=>{
     const t = document.getElementById('draft');
     t.select();
     navigator.clipboard.writeText(t.value)
-      .then(()=> document.getElementById('copyBtn').textContent = 'Copied')
-      .catch(()=> document.getElementById('copyBtn').textContent = 'Press Ctrl+C');
+      .then(()=> cbtn.textContent = 'Copied')
+      .catch(()=> cbtn.textContent = 'Press Ctrl+C');
   };
   document.getElementById('closeBtn').onclick = closeDetail;
 
@@ -996,10 +1015,16 @@ function closeDetail(){ document.getElementById('veil').hidden = true; }
    detail-page wording are left as explicit instructions rather than
    invented, because a fabricated node or an imagined product description
    is what gets a case rejected. */
+/* Which checks a Seller Support case can actually fix. Buy Box, Stranded
+   and the sync checks are not category corrections and must not produce a
+   case draft, because a case asking Amazon to fix them goes nowhere. */
+const CASEABLE = ['GL','Search Department','Product Type','ITK','Category Path'];
+
 function caseText(row, check, ck){
 
   const site  = row.country === 'CA' ? 'amazon.ca' : 'amazon.com';
   const label = check === 'GL' ? 'GL (General Ledger) category'
+              : check === 'Search Department' ? 'search department'
               : check === 'Product Type' ? 'product type'
               : check === 'ITK' ? 'item type keyword'
               : 'browse path';
