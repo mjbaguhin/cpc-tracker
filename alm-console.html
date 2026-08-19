@@ -478,32 +478,40 @@ const S = {
 
 /* ---------- load ---------- */
 
-async function load(){
-  msg('Loading catalog');
+let PUBROWS = [];
 
-  const [pub, json, cat] = await Promise.all([
-    grab(PUB, 'text').catch(e => ({err:'ALM Console Data: ' + e.message})),
-    grab(SRC, 'json').catch(e => ({err:'data.json: ' + e.message})),
-    PUB_CAT ? grab(PUB_CAT, 'text').catch(e => ({err:e.message})) : Promise.resolve(null)
+/* Two stage. The published sheets are small and carry everything the
+   checklist and category views need, so they paint first. data.json is much
+   the largest file, holds 180 days of rating history per ASIN, and supplies
+   only four columns, so waiting on it before showing anything was the main
+   reason this felt slow. */
+async function load(fresh){
+
+  msg('Loading');
+
+  const [pub, cat] = await Promise.all([
+    grab(PUB, 'text', fresh).catch(e => ({err:'ALM Console Data: ' + e.message})),
+    PUB_CAT ? grab(PUB_CAT, 'text', fresh).catch(e => ({err:e.message}))
+            : Promise.resolve(null)
   ]);
 
-  // The published sheet is the spine. Without it there are no rows at all.
   if(pub && pub.err){
     msg('Could not load ALM Console Data', pub.err +
         '. Check the sheet is still published: File, Share, Publish to web.');
     return;
   }
 
-  // data.json only adds rating, reviews and BSR, so carry on without it
-  // rather than showing nothing.
-  let j = json;
-  if(!j || j.err){
-    j = {};
-    console.warn('data.json unavailable:', json && json.err);
-  }
-
   buildCategory(cat);
-  build(j, csvParse(pub), json && json.err ? 'ratings unavailable' : '');
+  PUBROWS = csvParse(pub);
+  build({}, PUBROWS, 'ratings loading');
+
+  // Ratings arrive after the first paint and trigger a rebuild
+  grab(SRC, 'json', fresh)
+    .then(j => build(j, PUBROWS, ''))
+    .catch(e => {
+      console.warn('data.json unavailable:', e.message);
+      build({}, PUBROWS, 'ratings unavailable');
+    });
 }
 
 
@@ -593,9 +601,11 @@ function catFailing(applyFilters, checkSet){
   });
 }
 
-async function grab(url, as){
-  const r = await fetch(url + (url.includes('?') ? '&' : '?') + 't=' + Date.now(),
-                        {cache:'no-store'});
+/* The cache is only bypassed on an explicit refresh. Busting it on every
+   load meant re-downloading everything each time the page opened. */
+async function grab(url, as, fresh){
+  const u = fresh ? url + (url.includes('?') ? '&' : '?') + 't=' + Date.now() : url;
+  const r = await fetch(u, fresh ? {cache:'no-store'} : {});
   if(!r.ok) throw new Error('HTTP ' + r.status);
   return as === 'json' ? r.json() : r.text();
 }
@@ -1308,7 +1318,11 @@ tBtn.onclick = ()=> setPanel(panel.hidden);
 // Closed by default on a phone, where the filters would otherwise take the
 // whole screen. Open on a laptop, where there is room for both.
 setPanel(window.innerWidth > 820);
-homeBtn.setAttribute('aria-pressed', 'true');
+
+// Element looked up directly rather than through the const declared further
+// down. Referencing that const before its declaration line throws, which
+// stopped the script before load() was ever called.
+document.getElementById('homeBtn').setAttribute('aria-pressed', 'true');
 
 
 /* Drag the divider to set the split yourself. Pointer events rather than
@@ -1383,7 +1397,7 @@ document.addEventListener('keydown', e=>{
   if(e.key === 'Escape') closeDetail();
 });
 
-document.getElementById('bRefresh').onclick = load;
+document.getElementById('bRefresh').onclick = ()=> load(true);
 document.getElementById('bCsv').onclick = csv;
 document.getElementById('bReset').onclick = ()=>{
   S.stock.clear(); S.price.clear();
