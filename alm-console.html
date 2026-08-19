@@ -881,9 +881,11 @@ const WHY = {
   'GL': 'The GL category decides referral fees and which department the listing '+
         'sits in. Taken from product-group in the FBA inventory report, which is '+
         'the real GL. Not the same thing as the search department.',
-  'Search Department': 'The customer-facing department on the storefront, which is '+
-        'what Keepa returns now that it no longer reports GL. Related to the GL but '+
-        'a different field, so a mismatch here is not a GL problem.',
+  'Search Department': 'The customer-facing department on the storefront. Not '+
+        'currently checked, because there is no reliable source for what Amazon '+
+        'actually has. Keepa reports GL names rather than department names, and '+
+        'is wrong on some SKUs. The real source is the Catalog Items API, which '+
+        'needs SP-API credentials.',
   'Product Type': 'Product type controls which attributes the listing accepts. A '+
         'wrong type means required fields are missing and others are ignored.',
   'ITK': 'The item type keyword drives browse placement and search refinement. A '+
