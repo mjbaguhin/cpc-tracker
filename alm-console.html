@@ -361,9 +361,21 @@ const TIER_RANK = {A:0, B:1, N:2, C:3, X:4};
 
 // Filters are drawn from these fixed lists, not from the loaded data, so the
 // controls are always visible even before data.json arrives or if it fails.
+// Display ORDER hints only, not the list of chips. Chips are built from the
+// values actually present in the data, so anything real is filterable and
+// anything absent never appears. Hardcoding this list is how "In Dev"
+// became a button that matched nothing.
 const TIERS  = ['A','B','N','C','X'];
-const STATUS = ['Active','In Dev','Inactive'];
+const STATUS = ['Active','In Development','Inactive'];
 const BRANDS = [['Barnyard Designs','BYD'], ['Seedboy','SB']];
+
+/* Values present in the data, ordered by the hint above, with anything
+   unexpected appended rather than dropped. */
+function present(key, order){
+  const seen = [...new Set(ROWS.map(r=>r[key]).filter(Boolean))];
+  const rank = v =>{ const i = order.indexOf(v); return i === -1 ? 99 : i; };
+  return seen.sort((a,b)=> rank(a) - rank(b) || String(a).localeCompare(b));
+}
 
 const COLS = [
   {k:'sku',    t:'SKU',       cls:'mono'},
@@ -513,19 +525,20 @@ function build(j, pub, warnNote){
 
   applyMk();
 
-  const exSt = [...new Set(ROWS.map(r=>r.status).filter(Boolean))]
-                 .filter(s=> STATUS.indexOf(s) === -1).sort();
-  if(exSt.length){
-    console.log('Unexpected SKU statuses in data:', exSt);
-    chips('statusBox','statuses','statusAll',STATUS.concat(exSt));
-  }
+  // Rebuild every chip row from what the data actually contains, so no
+  // phantom buttons and nothing real left unfilterable.
+  const st  = present('status', STATUS);
+  const tvs = [...new Set(present('tier', TIERS).concat(present('ptier', TIERS)))];
 
-  const exT = [...new Set(ROWS.map(r=>r.tier).concat(ROWS.map(r=>r.ptier)).filter(Boolean))]
-                .filter(t=> TIERS.indexOf(t) === -1).sort();
-  if(exT.length){
-    chips('tierBox','tiers','tierAll',TIERS.concat(exT));
-    chips('ptierBox','ptiers','ptierAll',TIERS.concat(exT));
-  }
+  chips('statusBox','statuses','statusAll', st);
+  chips('tierBox',  'tiers',   'tierAll',   tvs);
+  chips('ptierBox', 'ptiers',  'ptierAll',  tvs);
+
+  // If a value vanished between refreshes, drop it from the active filter
+  // rather than leaving a selection that silently matches nothing.
+  [['statuses', st], ['tiers', tvs], ['ptiers', tvs]].forEach(([k, ok])=>{
+    [...S[k]].forEach(v=>{ if(!ok.includes(v)) S[k].delete(v); });
+  });
 
   render();
 }
