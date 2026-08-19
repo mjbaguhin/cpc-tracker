@@ -538,9 +538,33 @@ function buildCategory(text){
 
 const CHECKS = ['GL','Product Type','ITK','Category Path'];
 
-// Only rows with at least one failing check are worth showing
-function catFailing(){
-  return CAT.filter(c=> CHECKS.some(k=> c.checks[k] && c.checks[k].state === 'bad'));
+/* Rows with at least one failing check, honouring the filter rail.
+   The category feed carries country, status and tier but not brand, so
+   brand is resolved from the catalog rows by SKU. Ignoring the filters
+   here was a bug: the marketplace toggle read US while CA rows showed. */
+function catFailing(applyFilters){
+
+  const brandOf = {};
+  if(applyFilters !== false && S.brands.size){
+    ROWS.forEach(r=>{ if(r.sku) brandOf[r.sku] = r.brand; });
+  }
+
+  const q = S.q.toLowerCase();
+
+  return CAT.filter(c=>{
+
+    if(!CHECKS.some(k=> c.checks[k] && c.checks[k].state === 'bad')) return false;
+    if(applyFilters === false) return true;
+
+    if(c.country && c.country !== S.mk) return false;
+    if(S.brands.size && !S.brands.has(brandOf[c.sku])) return false;
+    if(S.statuses.size && !S.statuses.has(c.status)) return false;
+    if(S.tiers.size && !S.tiers.has(c.tier)) return false;
+
+    if(q && !(c.sku+' '+c.asin+' '+c.name).toLowerCase().includes(q)) return false;
+
+    return true;
+  });
 }
 
 async function grab(url, as){
@@ -785,20 +809,24 @@ const WHY = {
 function renderCategory(){
 
   const rows = catFailing();
+  const all  = catFailing(false);
   const tbl  = document.getElementById('tbl');
   const tb   = document.getElementById('tbody');
 
   document.getElementById('bar').innerHTML =
-    `<span><b>${rows.length}</b> SKUs with a category problem</span>`+
+    `<span><b>${rows.length}</b> of ${all.length} SKUs with a category problem</span>`+
     CHECKS.map(k=>{
-      const n = CAT.filter(c=> c.checks[k] && c.checks[k].state === 'bad').length;
+      const n = rows.filter(c=> c.checks[k] && c.checks[k].state === 'bad').length;
       return `<span><span class="dot" style="background:var(--warn)"></span>${n} ${esc(k)}</span>`;
     }).join('')+
-    '<span class="mut">Tap any red circle for the detail and a drafted case</span>';
+    `<span class="mut">${esc(S.mk)} \u00b7 tap any red circle for the detail and a drafted case</span>`;
 
   if(!rows.length){
     tbl.hidden = true;
-    msg(CAT.length ? 'No category problems' : 'No category data',
+    msg(all.length ? 'Nothing matches these filters' :
+        CAT.length ? 'No category problems' : 'No category data',
+        all.length ? all.length + ' SKUs have a category problem, but none match the '+
+                     'current marketplace, brand, status or tier filters.' :
         CAT.length ? 'Every check on every SKU is passing.'
                    : 'Set PUB_CAT to the published Category tab URL.');
     return;
@@ -1223,8 +1251,6 @@ const catBtn = document.getElementById('catBtn');
 catBtn.onclick = ()=>{
   S.view = S.view === 'category' ? 'catalog' : 'category';
   catBtn.setAttribute('aria-pressed', S.view === 'category');
-  // The filter rail applies to the catalog view only, so hide it in category
-  setPanel(S.view === 'catalog' && window.innerWidth > 820);
   render();
 };
 
