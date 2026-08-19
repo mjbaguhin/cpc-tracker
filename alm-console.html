@@ -63,11 +63,12 @@ header h1{
 #meta{font-size:.7rem;color:#93a0b0;letter-spacing:.02em}
 #meta b{color:#ccd6e2;font-weight:600}
 
-#toggle{
-  margin-left:auto;font-size:.74rem;padding:.24rem .6rem;
+#toggle,#fs{
+  font-size:.74rem;padding:.24rem .6rem;
   background:transparent;color:#fff;border:1px solid #3a4652;
 }
-#toggle:hover{background:#1c232b}
+#toggle{margin-left:auto}
+#toggle:hover,#fs:hover{background:#1c232b}
 #toggle .badge{
   display:inline-block;margin-left:.35rem;padding:0 .32rem;
   background:#4a6fa5;border-radius:8px;font-size:.68rem;font-weight:700;
@@ -80,9 +81,28 @@ header h1{
   padding:.7rem 1rem;
   flex:0 0 auto;
   overflow-y:auto;
-  max-height:58dvh;   /* never more than just over half the screen */
+  /* Capped so the table always gets most of the screen. Scrolls inside
+     itself, and the divider below lets this be dragged to any height. */
+  max-height:32dvh;
 }
 #panel[hidden]{display:none}
+
+/* Drag handle. Pointer events rather than mouse events, so it works with
+   a finger on the tablet as well as a mouse. */
+#split{
+  flex:0 0 auto;
+  height:.8rem;
+  background:var(--field);
+  border-bottom:1px solid var(--line);
+  cursor:row-resize;
+  display:flex;align-items:center;justify-content:center;
+  touch-action:none;
+}
+#split::before{
+  content:'';width:2.4rem;height:3px;border-radius:2px;background:var(--line);
+}
+#split:hover::before{background:var(--muted)}
+#split[hidden]{display:none}
 
 .grp{display:flex;align-items:center;gap:.4rem;flex-wrap:wrap;margin-bottom:.5rem}
 .grp:last-child{margin-bottom:0}
@@ -246,6 +266,7 @@ td.ind-cell{text-align:center}
   <h1>ALM Console</h1>
   <span id="meta">Loading</span>
   <button id="toggle" aria-expanded="true">Filters</button>
+  <button id="fs" title="Fullscreen">Full screen</button>
 </header>
 
 <div id="panel">
@@ -317,6 +338,8 @@ td.ind-cell{text-align:center}
   </div>
 
 </div>
+
+<div id="split" title="Drag to resize, double click to reset"></div>
 
 <div id="bar"></div>
 <div id="msg">Loading catalog</div>
@@ -859,9 +882,11 @@ document.getElementById('q').oninput = e=>{
 
 const panel = document.getElementById('panel');
 const tBtn  = document.getElementById('toggle');
+const split = document.getElementById('split');
 
 function setPanel(open){
   panel.hidden = !open;
+  split.hidden = !open;          // nothing to resize when it is closed
   tBtn.setAttribute('aria-expanded', open);
 }
 
@@ -870,6 +895,56 @@ tBtn.onclick = ()=> setPanel(panel.hidden);
 // Closed by default on a phone, where the filters would otherwise take the
 // whole screen. Open on a laptop, where there is room for both.
 setPanel(window.innerWidth > 820);
+
+
+/* Drag the divider to set the split yourself. Pointer events rather than
+   mouse events, so a finger on the tablet works the same as a mouse.
+   Height is held in memory only, so a reload returns to the default. */
+split.addEventListener('pointerdown', e=>{
+  if(panel.hidden) return;
+  e.preventDefault();
+  split.setPointerCapture(e.pointerId);
+
+  const y0 = e.clientY;
+  const h0 = panel.getBoundingClientRect().height;
+
+  const move = ev=>{
+    const h = Math.max(0, Math.min(window.innerHeight * 0.8, h0 + (ev.clientY - y0)));
+    panel.style.maxHeight = 'none';
+    panel.style.height = h + 'px';
+  };
+
+  const up = ()=>{
+    split.removeEventListener('pointermove', move);
+    split.removeEventListener('pointerup', up);
+    split.removeEventListener('pointercancel', up);
+  };
+
+  split.addEventListener('pointermove', move);
+  split.addEventListener('pointerup', up);
+  split.addEventListener('pointercancel', up);
+});
+
+// Double click puts it back to the default height
+split.ondblclick = ()=>{
+  panel.style.height = '';
+  panel.style.maxHeight = '';
+};
+
+
+/* Fullscreen, which is the real fix for a small screen on a tablet */
+const fsBtn = document.getElementById('fs');
+
+fsBtn.onclick = ()=>{
+  if(document.fullscreenElement) document.exitFullscreen();
+  else document.documentElement.requestFullscreen().catch(err=>{
+    console.warn('Fullscreen refused:', err && err.message);
+  });
+};
+
+document.addEventListener('fullscreenchange', ()=>{
+  fsBtn.textContent = document.fullscreenElement ? 'Exit full screen' : 'Full screen';
+});
 
 document.getElementById('bRefresh').onclick = load;
 document.getElementById('bCsv').onclick = csv;
