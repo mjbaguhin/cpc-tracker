@@ -63,16 +63,17 @@ header h1{
 #meta{font-size:.7rem;color:#93a0b0;letter-spacing:.02em}
 #meta b{color:#ccd6e2;font-weight:600}
 
-#toggle,#fs,#homeBtn,#catalogBtn{
+#toggle,#fs,#homeBtn,#quickCat,#catalogBtn{
   font-size:.74rem;padding:.24rem .6rem;
   background:transparent;color:#fff;border:1px solid #3a4652;
 }
 #homeBtn{margin-left:auto}
-#homeBtn[aria-pressed="true"],#catalogBtn[aria-pressed="true"]{
+#homeBtn[aria-pressed="true"],#quickCat[aria-pressed="true"],
+#catalogBtn[aria-pressed="true"]{
   background:#2f4a6d;border-color:#4a6fa5;
 }
-#toggle:hover,#fs:hover,#homeBtn:hover,#catalogBtn:hover{background:#1c232b}
-#toggle .badge,#homeBtn .badge{
+#toggle:hover,#fs:hover,#homeBtn:hover,#quickCat:hover,#catalogBtn:hover{background:#1c232b}
+#toggle .badge,#homeBtn .badge,#quickCat .badge{
   display:inline-block;margin-left:.35rem;padding:0 .32rem;
   background:#a83a26;border-radius:8px;font-size:.68rem;font-weight:700;
 }
@@ -325,6 +326,7 @@ td.ind-cell{text-align:center}
   <h1>ALM Console</h1>
   <span id="meta">Loading</span>
   <button id="homeBtn">Checklist</button>
+  <button id="quickCat">Category</button>
   <button id="catalogBtn">Catalog</button>
   <button id="toggle" aria-expanded="true">Filters</button>
   <button id="fs" title="Fullscreen">Full screen</button>
@@ -1274,6 +1276,10 @@ function strip(rows){
   const open = TASKS.reduce((s,tk)=> s + catFailing(true, tk.checks).length, 0);
   document.getElementById('homeBtn').innerHTML =
     'Checklist' + (open ? `<span class="badge">${open}</span>` : '');
+
+  const nCat = catFailing(true, CHECKS).length;
+  document.getElementById('quickCat').innerHTML =
+    'Category' + (nCat ? `<span class="badge">${nCat}</span>` : '');
 }
 
 function msg(title, sub){
@@ -1444,16 +1450,27 @@ document.addEventListener('fullscreenchange', ()=>{
 const homeBtn    = document.getElementById('homeBtn');
 const catalogBtn = document.getElementById('catalogBtn');
 
+const quickCat   = document.getElementById('quickCat');
+
 function go(view){
   S.view = view;
   if(view !== 'category'){ S.checks = null; S.taskName = ''; }
   homeBtn.setAttribute('aria-pressed', view === 'checklist');
+  quickCat.setAttribute('aria-pressed', view === 'category');
   catalogBtn.setAttribute('aria-pressed', view === 'catalog');
   render();
 }
 
 homeBtn.onclick    = ()=> go('checklist');
 catalogBtn.onclick = ()=> go('catalog');
+
+// Straight to the category checks, without going via the checklist
+quickCat.onclick = ()=>{
+  S.checks   = ['GL','Search Department','Product Type','ITK','Category Path'];
+  S.taskName = 'Correct Categories (US & CA)';
+  go('category');
+  quickCat.setAttribute('aria-pressed', 'true');
+};
 
 document.getElementById('veil').onclick = e=>{
   if(e.target.id === 'veil') closeDetail();
