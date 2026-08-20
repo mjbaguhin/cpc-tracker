@@ -749,11 +749,16 @@ function stSale(r){
   return r.sale < r.list ? 'ok' : 'bad';   // bad means the sale is not a discount
 }
 
-// Our price is at or below the featured offer, so we are competitive on price.
+// Our price is at or below the featured offer, so we are competitive.
+// Compared against the price we actually sell at, which is the sale price
+// when one is running, not the list price. Comparing list against featured
+// made almost every row red, because the featured offer reflects the
+// discounted price.
 function stFeat(r){
   if(!(r.feat > 0)) return 'none';         // no featured offer on the ASIN
-  if(!(r.list > 0)) return 'none';
-  return r.list <= r.feat + 0.005 ? 'ok' : 'bad';
+  const our = r.sale > 0 ? r.sale : r.list;
+  if(!(our > 0)) return 'none';
+  return our <= r.feat + 0.005 ? 'ok' : 'bad';
 }
 
 const IND = {list:stList, sale:stSale, feat:stFeat};
@@ -762,8 +767,28 @@ const IND_TITLE = {
   list:{ok:'List price set', bad:'List price is empty or zero'},
   sale:{ok:'Sale price is below list price', bad:'Sale price is not below list price',
         warn:'Sale price set but no list price to compare', none:'No sale price set'},
-  feat:{ok:'Our price is at or below the featured offer',
-        bad:'Our price is above the featured offer', none:'No featured offer on this ASIN'}
+  feat:{ok:'Our selling price is at or below the featured offer',
+        bad:'Our selling price is above the featured offer',
+        none:'No featured offer on this ASIN'}
+};
+
+/* What a red price circle actually means, and whose job it is. Pricing is
+   Haris's, so these are flags to raise rather than things to fix here. Only
+   an empty list price is a catalogue problem. */
+const PRICE_WHY = {
+  list:{ title:'List price',
+    bad:'The backend list price field is empty or zero on this listing. That is a '+
+        'catalogue problem rather than a pricing one, and it is yours to fix.',
+    fix:'Set the list price in Manage Inventory, or via a flat file.' },
+  sale:{ title:'Sale price',
+    bad:'A sale price is set but it is not below the list price, so it is not '+
+        'actually discounting anything.',
+    warn:'A sale price is set but there is no list price to compare it against.',
+    fix:'Pricing is Haris\u2019s, so this is one to flag rather than change.' },
+  feat:{ title:'Featured offer',
+    bad:'Our selling price is above the featured offer, so we are unlikely to be '+
+        'holding the buy box on this ASIN.',
+    fix:'Pricing is Haris\u2019s, so this is one to flag rather than change.' }
 };
 const uniq = a => [...new Set(a.filter(Boolean))].sort(
   (x,y)=>(TIER_RANK[x]??9)-(TIER_RANK[y]??9) || String(x).localeCompare(y));
@@ -1096,7 +1121,7 @@ function render(){
   let html = '';
 
   if(S.group === 'none'){
-    rows.forEach(r=> html += tr(r));
+    rows.forEach((r,i)=> html += tr(r, i));
   }else{
     const g = {};
     rows.forEach(r=>{ const k = r[S.group] || '\u2014 no parent \u2014'; (g[k] = g[k] || []).push(r); });
@@ -1117,7 +1142,7 @@ function render(){
         (oos ? ` \u00b7 <span class="warn">${oos} OOS</span>` : '')+
         `</span></td></tr>`;
 
-      if(open) kids.forEach(r=> html += tr(r));
+      if(open) kids.forEach(r=> html += tr(r, rows.indexOf(r)));
     });
   }
 
@@ -1127,9 +1152,47 @@ function render(){
     S.open.has(k) ? S.open.delete(k) : S.open.add(k);
     render();
   });
+
+  // A red circle should do something wherever it appears. In this view there
+  // is no case to draft, so it explains itself and says whose job it is.
+  [...tb.querySelectorAll('.ind.i-bad,.ind.i-warn')].forEach(el=>{
+    if(!el.dataset.ind) return;
+    el.onclick = ()=> openPriceDetail(rows[+el.dataset.row], el.dataset.ind);
+  });
 }
 
-function tr(r){
+
+function openPriceDetail(row, kind){
+
+  const st = IND[kind](row);
+  const w  = PRICE_WHY[kind] || {};
+  const d  = document.getElementById('detail');
+
+  const money = v => (v === null || v === undefined) ? '\u2014' : v.toFixed(2);
+
+  d.innerHTML =
+    `<h2>${esc(w.title || kind)} \u00b7 ${esc(S.mk)}</h2>`+
+    `<h3>${esc(row.sku)} \u00b7 ${esc(row.name)}</h3>`+
+    `<div class="why">${esc(w[st] || '')}</div>`+
+    '<dl>'+
+    `<dt>ASIN</dt><dd class="mono">${esc(row.asin)}</dd>`+
+    `<dt>List price</dt><dd>${money(row.list)}</dd>`+
+    `<dt>Sale price</dt><dd>${money(row.sale)}</dd>`+
+    `<dt>Featured offer</dt><dd>${money(row.feat)}</dd>`+
+    `<dt>Selling at</dt><dd>${money(row.sale > 0 ? row.sale : row.list)}</dd>`+
+    '</dl>'+
+    `<div class="why">${esc(w.fix || '')}</div>`+
+    '<div class="actions">'+
+      `<a href="https://www.${S.mk === 'CA' ? 'amazon.ca' : 'amazon.com'}`+
+        `/dp/${encodeURIComponent(row.asin)}" target="_blank" rel="noopener">Detail page</a>`+
+      '<button id="closeBtn">Close</button>'+
+    '</div>';
+
+  document.getElementById('closeBtn').onclick = closeDetail;
+  document.getElementById('veil').hidden = false;
+}
+
+function tr(r, IDX){
   return '<tr>' + COLS.map(c=>{
     let v = r[c.k], cls = c.cls || '';
     if(c.num) cls += ' num';
@@ -1139,7 +1202,9 @@ function tr(r){
       const st = IND[c.ind](r);
       const t  = (IND_TITLE[c.ind] && IND_TITLE[c.ind][st]) || st;
       const price = v === null ? '' : ' ' + v.toFixed(2);
-      return `<td class="ind-cell ${cls}"><span class="ind i-${st}" title="${esc(t)}${esc(price)}"></span></td>`;
+      return `<td class="ind-cell ${cls}"><span class="ind i-${st}" `+
+             `data-ind="${c.ind}" data-row="${IDX}" `+
+             `title="${esc(t)}${esc(price)}"></span></td>`;
     }
 
     if(c.k === 'brand')
