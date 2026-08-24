@@ -861,6 +861,26 @@ const IND = {list:stList, sale:stSale, feat:stFeat};
 /* Stock, shown as a small line under the SKU. Deliberately quiet: a dot and
    a number, muted unless something is wrong. Out of stock is the only state
    that earns colour, since that is the one worth spotting mid scroll. */
+/* The category feed carries no stock, but the catalog rows do and both are
+   keyed by SKU. So it is joined here rather than republished. Country is
+   taken from the category row itself, not the marketplace toggle, because a
+   CA row should show CA stock even while looking at US. */
+function stockFor(sku, country){
+  const r = ROWS.find(x=> x.sku === sku);
+  if(!r) return null;
+  const p = country === 'CA' ? 'ca' : 'us';
+  return { avail:r[p+'Avail'], inbound:r[p+'Inbound'], health:r[p+'Health'] };
+}
+
+function stockLine(st){
+  if(!st) return '';
+  const s2 = stockState({avail:st.avail, health:st.health});
+  if(s2 === 'none') return '';
+  return `<span class="stk s-${s2}">${st.avail}`+
+         (s2 === 'oos' && st.inbound > 0 ? ` \u00b7 ${st.inbound} in` : '')+
+         '</span>';
+}
+
 function stockState(r){
   if(r.avail === null || r.avail === undefined) return 'none';
   if(r.avail === 0) return 'oos';
@@ -1132,7 +1152,8 @@ function renderCategory(){
 
   tb.innerHTML = rows.map((c,i)=>
     '<tr>'+
-    `<td class="mono id" data-sku="${esc(c.sku)}" data-asin="${esc(c.asin)}">${esc(c.sku)}</td>`+
+    `<td class="mono id" data-sku="${esc(c.sku)}" data-asin="${esc(c.asin)}">`+
+      `${esc(c.sku)}${stockLine(stockFor(c.sku, c.country))}</td>`+
     `<td class="mono id" data-sku="${esc(c.sku)}" data-asin="${esc(c.asin)}">${esc(c.asin)}</td>`+
     `<td>${esc(c.country)}</td>`+
     `<td class="name">${esc(c.name)}</td>`+
