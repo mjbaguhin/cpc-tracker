@@ -253,9 +253,28 @@ th:nth-child(2),td:nth-child(2){
 th:first-child,th:nth-child(2){z-index:6}
 tr:hover td:first-child,tr:hover td:nth-child(2){background:#f6f8fb}
 
+/* the quiet stock line under a SKU */
+.stk{
+  display:block;margin-top:.12rem;
+  font-size:.64rem;letter-spacing:.01em;color:var(--muted);
+  font-family:ui-sans-serif,-apple-system,"Segoe UI",Roboto,sans-serif;
+  text-decoration:none;
+}
+.stk::before{
+  content:'';display:inline-block;
+  width:.36rem;height:.36rem;border-radius:50%;
+  margin-right:.28rem;vertical-align:middle;background:var(--muted);
+}
+.s-ok::before{background:var(--ok)}
+.s-low::before{background:#c8912e}
+.s-low{color:#8a6417}
+.s-oos::before{background:var(--warn)}
+.s-oos{color:var(--warn);font-weight:600}
+
 td.id{cursor:pointer;text-decoration:underline;text-decoration-style:dotted;
   text-underline-offset:3px;text-decoration-color:var(--line)}
 td.id:hover{color:var(--accent);text-decoration-color:var(--accent)}
+td.id:hover .stk{color:inherit}
 
 @media(max-width:640px){
   th:first-child,td:first-child{min-width:7rem;max-width:7rem}
@@ -440,6 +459,9 @@ const SRC = 'https://raw.githubusercontent.com/mjbaguhin/cpc-tracker/main/data.j
 const PUB = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vRJzdMWKepuICHrxxJXuYxMJPiRIh7iifhDaRLHhb6j57Motm4XMyS0GIPqqM_tzbVY1drpOXslDbH-/pub?gid=1429581451&single=true&output=csv';
 
 // Category tab of the same sheet, published separately.
+// Amazon's case creation entry point
+const CASE_URL = 'https://sellercentral.amazon.com/help/center?redirectSource=HelpHub';
+
 const PUB_CAT = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vRJzdMWKepuICHrxxJXuYxMJPiRIh7iifhDaRLHhb6j57Motm4XMyS0GIPqqM_tzbVY1drpOXslDbH-/pub?gid=619932151&single=true&output=csv';
 
 // Tier priority. Used to derive a parent tier from its children.
@@ -475,7 +497,7 @@ const COLS = [
   {k:'d30',    t:'30D',       num:true, opt:true},
   {k:'rev',    t:'Reviews',   num:true, opt:true},
   {k:'bsr',    t:'BSR',       num:true, opt:true},
-  {k:'avail',  t:'Available', num:true},
+  {k:'avail',  t:'Available', num:true, opt:true},
   {k:'inbound',t:'Inbound',   num:true, opt:true},
   {k:'health', t:'Health',    opt:true},
   {k:'list',   t:'List',  ind:'list'},
@@ -836,6 +858,16 @@ function stFeat(r){
 
 const IND = {list:stList, sale:stSale, feat:stFeat};
 
+/* Stock, shown as a small line under the SKU. Deliberately quiet: a dot and
+   a number, muted unless something is wrong. Out of stock is the only state
+   that earns colour, since that is the one worth spotting mid scroll. */
+function stockState(r){
+  if(r.avail === null || r.avail === undefined) return 'none';
+  if(r.avail === 0) return 'oos';
+  if(/low/i.test(r.health || '')) return 'low';
+  return 'ok';
+}
+
 const IND_TITLE = {
   list:{ok:'List price set', bad:'List price is empty or zero'},
   sale:{ok:'Sale price is below list price', bad:'Sale price is not below list price',
@@ -1148,7 +1180,8 @@ function openDetail(row, check){
         `<textarea id="draft">${esc(caseText(row, check, ck))}</textarea>`)+
     '<div class="actions">'+
       (CASEABLE.indexOf(check) === -1 ? '' :
-        '<button id="copyBtn" class="act">Copy case text</button>')+
+        '<button id="copyBtn" class="act">Copy and open case form</button>'+
+        '<button id="copyOnly">Copy only</button>')+
       '<a href="https://sellercentral.amazon.com/hz/productclassify" target="_blank" '+
         'rel="noopener">Verify in classifier</a>'+
       `<a href="https://www.${row.country === 'CA' ? 'amazon.ca' : 'amazon.com'}`+
@@ -1156,13 +1189,26 @@ function openDetail(row, check){
       '<button id="closeBtn">Close</button>'+
     '</div>';
 
+  /* The tab is opened first and the copy happens after. Doing it the other
+     way round loses the click gesture while the clipboard promise settles,
+     and the browser blocks the popup. */
   const cbtn = document.getElementById('copyBtn');
   if(cbtn) cbtn.onclick = ()=>{
+    window.open(CASE_URL, '_blank', 'noopener');
     const t = document.getElementById('draft');
     t.select();
     navigator.clipboard.writeText(t.value)
-      .then(()=> cbtn.textContent = 'Copied')
-      .catch(()=> cbtn.textContent = 'Press Ctrl+C');
+      .then(()=> cbtn.textContent = 'Copied, paste into the case')
+      .catch(()=> cbtn.textContent = 'Case form open, press Ctrl+C to copy');
+  };
+
+  const conly = document.getElementById('copyOnly');
+  if(conly) conly.onclick = ()=>{
+    const t = document.getElementById('draft');
+    t.select();
+    navigator.clipboard.writeText(t.value)
+      .then(()=> conly.textContent = 'Copied')
+      .catch(()=> conly.textContent = 'Press Ctrl+C');
   };
   document.getElementById('closeBtn').onclick = closeDetail;
 
@@ -1381,9 +1427,23 @@ function tr(r, IDX){
              `title="${esc(t)}${esc(price)}"></span></td>`;
     }
 
-    if(c.k === 'sku' || c.k === 'asin')
+    if(c.k === 'sku' || c.k === 'asin'){
+      const body = v ? esc(v) : '<span class="mut">\u2014</span>';
+
+      // Stock sits under the SKU only, not under the ASIN
+      let stock = '';
+      if(c.k === 'sku'){
+        const st = stockState(r);
+        if(st !== 'none'){
+          stock = `<span class="stk s-${st}">${r.avail}`+
+                  (st === 'oos' && r.inbound > 0 ? ` \u00b7 ${r.inbound} in` : '')+
+                  '</span>';
+        }
+      }
+
       return `<td class="${cls.trim()}" data-sku="${esc(r.sku)}" `+
-             `data-asin="${esc(r.asin)}">${v ? esc(v) : '<span class="mut">\u2014</span>'}</td>`;
+             `data-asin="${esc(r.asin)}">${body}${stock}</td>`;
+    }
 
     if(c.k === 'brand')
       v = v ? `<span class="pill ${v==='Seedboy'?'b-sb':'b-byd'}">${v==='Seedboy'?'SB':'BYD'}</span>` : '';
