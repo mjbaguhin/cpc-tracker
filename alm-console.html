@@ -80,6 +80,8 @@ header h1{
 
 /* checklist rows read as tappable, since the whole row is the target */
 tr.task{cursor:pointer}
+tr.task.no-data{cursor:default}
+tr.task.no-data:hover td{background:transparent}
 tr.task:hover td{background:var(--accent-soft)}
 tr.task td{padding:.7rem .6rem}
 
@@ -556,21 +558,75 @@ function buildCategory(text){
 
 const CHECKS = ['GL','Search Department','Product Type','ITK','Category Path'];
 
-/* The checklist. Each row is a real ClickUp task, so ClickUp stays the
-   place work is tracked and this is only the view that says how much is
-   left. Tapping a row opens that task's checks; the arrow opens ClickUp. */
+/* Every recurring task, with the day taken from the due dates in ClickUp
+   rather than guessed. Read only: nothing here writes back.
+
+   Tasks with a checks array show a live count from the audit feed and open
+   that view when tapped. The rest have no data source yet, so they show as
+   a reminder with a link into ClickUp, which is still better than being
+   invisible. */
 const TASKS = [
-  { id:'868e1nc6z', name:'Correct Categories (US & CA)',
+
+  // Monday
+  { id:'868eapdpa', day:'Mon', name:'CS KPI Review & Report Scrape Updates' },
+  { id:'868eap9n4', day:'Mon', name:'Log negative customer reviews' },
+  { id:'868jmdu7n', day:'Mon', name:'Triage Meta ad comments (FB + IG)' },
+  { id:'868e1na6u', day:'Mon', name:'Buy Box Won',        checks:['Buy Box'] },
+  { id:'868e1ndcb', day:'Mon', name:'List Price Exists',  checks:['Backend List Price'] },
+  { id:'868e40q8u', day:'Mon', name:'Update ALM Dashboard Scrapes' },
+  { id:'868eapfxy', day:'Mon', name:'Walmart Third Party Seller Tracking' },
+
+  // Tuesday
+  { id:'868e1nc6z', day:'Tue', name:'Correct Categories (US & CA)',
     checks:['GL','Search Department','Product Type','ITK','Category Path'] },
-  { id:'868e1nccv', name:'Correct Variations',            checks:['Variation'] },
-  { id:'868e748bz', name:'Correct Copy Checking (US & CA)', checks:['Copy'] },
-  { id:'868e1ndcb', name:'List Price Exists',             checks:['Backend List Price'] },
-  { id:'868e1ncmk', name:'Best Seller Ranks (BSR) Exists', checks:['BSR'] },
-  { id:'868e1na6u', name:'Buy Box Won',                   checks:['Buy Box'] },
-  { id:'868e52b0b', name:'Syncing Variant BSRs & Reviews',
+  { id:'868e748bz', day:'Tue', name:'Correct Copy Checking (US & CA)', checks:['Copy'] },
+  { id:'868e1nccv', day:'Tue', name:'Correct Variations',              checks:['Variation'] },
+
+  // Wednesday
+  { id:'868e1ncmk', day:'Wed', name:'Best Seller Ranks (BSR) Exists',  checks:['BSR'] },
+  { id:'868e1ndma', day:'Wed', name:'Amazon Listing Health Checks',    checks:['Stranded'] },
+
+  // Thursday
+  { id:'868e1ncjn', day:'Thu', name:'Only Seller (BuyBox Seller) Checking' },
+  { id:'868e52b0b', day:'Thu', name:'Syncing Variant BSRs & Reviews',
     checks:['BSR Synced','Reviews Synced'] },
-  { id:'868e1ndma', name:'Amazon Listing Health Checks',  checks:['Stranded'] }
+
+  // Friday
+  { id:'868hqadqe', day:'Fri', name:'Weekly Cleanup: Delete Unused G&R SKUs' },
+  { id:'868jjncd5', day:'Fri', name:'Meta ad comments weekly summary' },
+  { id:'868eapaj6', day:'Fri', name:'Negative Seller Feedback Removal' },
+
+  // Monthly, first of the month
+  { id:'868eaph51', day:'Monthly', name:'Returns Processing Fees Report' },
+  { id:'868j0fy0n', day:'Monthly', name:'Negative Review Monthly Analysis Report' },
+  { id:'8687d5vv7', day:'Monthly', name:'BSR Sync Monthly Catalog Review, US' },
+  { id:'868cj8u94', day:'Monthly', name:'BSR Sync Monthly Catalog Review, CA' },
+  { id:'868e1nejw', day:'Monthly', name:'Plytix Attribute Check Dashboard Review' },
+  { id:'868e40tpq', day:'Monthly', name:'Cross Channel Catalog Dashboard Updates' },
+  { id:'868eh1ypy', day:'Monthly', name:'Liquidate Unfulfillable Inventory' },
+  { id:'868e3d8zd', day:'Monthly', name:'Category Checking Amazon CA' },
+  { id:'868e6k94m', day:'Monthly', name:'Inactive & OOS Standalone SKU Removal' },
+  { id:'868e6k7fp', day:'Monthly', name:'Inactive SKU Variation Review' },
+
+  // Ongoing rather than tied to a weekday
+  { id:'868eap85n', day:'Daily',   name:'Monitor Zendesk tickets and Amazon inbox' }
 ];
+
+// Order the groups appear in. Daily first because it is every day, then the
+// week in order, then the monthly block.
+const DAY_ORDER = ['Daily','Mon','Tue','Wed','Thu','Fri','Monthly','Unscheduled'];
+
+const DAY_FULL = { Daily:'Every day', Mon:'Monday', Tue:'Tuesday', Wed:'Wednesday',
+                   Thu:'Thursday', Fri:'Friday', Monthly:'Monthly',
+                   Unscheduled:'Not scheduled' };
+
+// Which short day it is now, in ET, since that is the working day the rest
+// of the catalogue runs on rather than wherever the browser happens to be.
+function todayShort(){
+  const d = new Date().toLocaleDateString('en-US',
+              {weekday:'short', timeZone:'America/New_York'});
+  return d.slice(0,3);
+}
 
 /* Rows with at least one failing check, honouring the filter rail.
    The category feed carries country, status and tier but not brand, so
@@ -862,10 +918,17 @@ function renderChecklist(){
   const tbl = document.getElementById('tbl');
   const tb  = document.getElementById('tbody');
 
-  const done = TASKS.filter(t=> catFailing(true, t.checks).length === 0).length;
+  const today = todayShort();
+  const done  = TASKS.filter(t=> t.checks && catFailing(true, t.checks).length === 0).length;
+
+  // What is actually due today: everything daily plus today's own tasks
+  const dueToday = TASKS.filter(t=> t.day === 'Daily' || t.day === today);
+  const openToday = dueToday.reduce((s,t)=> s + (t.checks ? catFailing(true, t.checks).length : 0), 0);
 
   document.getElementById('bar').innerHTML =
-    `<span><b>${done}</b> of ${TASKS.length} clear</span>`+
+    `<span><b>${esc(DAY_FULL[today] || today)}</b> \u00b7 `+
+    `${openToday ? openToday + ' to do today' : 'nothing due today'}</span>`+
+    `<span><b>${done}</b> of ${TASKS.length} tasks clear</span>`+
     `<span class="mut">${esc(S.mk)} \u00b7 tap a row to work it, `+
     `the arrow opens the task in ClickUp</span>`;
 
@@ -883,27 +946,68 @@ function renderChecklist(){
   document.getElementById('hrow').innerHTML =
     ['', 'Task', 'To do', 'ClickUp'].map(h=>`<th>${h}</th>`).join('');
 
-  tb.innerHTML = TASKS.map((t,i)=>{
+  // Group by day, in a fixed order, with anything unrecognised at the end
+  const groups = {};
+  TASKS.forEach((t,i)=>{
+    const d = DAY_ORDER.indexOf(t.day) === -1 ? 'Unscheduled' : t.day;
+    (groups[d] = groups[d] || []).push(i);
+  });
 
-    const n       = catFailing(true, t.checks).length;
-    const unknown = CAT.filter(c=> t.checks.some(k=>
-                      c.checks[k] && c.checks[k].state === 'unknown')).length;
+  let html = '';
 
-    return '<tr class="task" data-i="'+i+'">'+
-      `<td class="ind-cell"><span class="ind i-${n ? 'bad' : 'ok'}"></span></td>`+
-      `<td class="name"><b>${esc(t.name)}</b>`+
-        (unknown && !n ? `<br><span class="mut" style="font-size:.75rem">`+
-          `${unknown} not evaluated</span>` : '')+
-      '</td>'+
-      `<td class="num"><b style="font-size:1.05rem">${n || ''}</b>`+
-        (n ? '' : '<span class="ok">clear</span>')+'</td>'+
-      `<td><a href="https://app.clickup.com/t/${esc(t.id)}" target="_blank" `+
-        `rel="noopener" onclick="event.stopPropagation()">open \u2197</a></td>`+
-      '</tr>';
-  }).join('');
+  DAY_ORDER.forEach(day=>{
+
+    const list = groups[day];
+    if(!list || !list.length) return;
+
+    const n = list.reduce((s,i)=> s + (TASKS[i].checks
+                ? catFailing(true, TASKS[i].checks).length : 0), 0);
+    const isToday = (day === today) || day === 'Daily';
+
+    html += `<tr class="gh"><td colspan="4">`+
+      `${esc(DAY_FULL[day] || day)}`+
+      (isToday ? ' <span class="ok" style="font-size:.72rem">\u00b7 today</span>' : '')+
+      ` <span class="cnt">${n ? n + ' to do' : 'clear'}</span></td></tr>`;
+
+    list.forEach(i=>{
+      const t = TASKS[i];
+
+      // No checks array means the console has no data for this task yet, so
+      // it shows as a reminder rather than a misleading zero.
+      if(!t.checks){
+        html += '<tr class="task no-data" data-i="'+i+'">'+
+          '<td class="ind-cell"><span class="ind i-none"></span></td>'+
+          `<td class="name">${esc(t.name)}</td>`+
+          '<td class="num mut" style="font-size:.75rem">in ClickUp</td>'+
+          `<td><a href="https://app.clickup.com/t/${esc(t.id)}" target="_blank" `+
+            `rel="noopener" onclick="event.stopPropagation()">open \u2197</a></td>`+
+          '</tr>';
+        return;
+      }
+
+      const n2      = catFailing(true, t.checks).length;
+      const unknown = CAT.filter(c=> t.checks.some(k=>
+                        c.checks[k] && c.checks[k].state === 'unknown')).length;
+
+      html += '<tr class="task" data-i="'+i+'">'+
+        `<td class="ind-cell"><span class="ind i-${n2 ? 'bad' : 'ok'}"></span></td>`+
+        `<td class="name"><b>${esc(t.name)}</b>`+
+          (unknown && !n2 ? `<br><span class="mut" style="font-size:.75rem">`+
+            `${unknown} not evaluated</span>` : '')+
+        '</td>'+
+        `<td class="num"><b style="font-size:1.05rem">${n2 || ''}</b>`+
+          (n2 ? '' : '<span class="ok">clear</span>')+'</td>'+
+        `<td><a href="https://app.clickup.com/t/${esc(t.id)}" target="_blank" `+
+          `rel="noopener" onclick="event.stopPropagation()">open \u2197</a></td>`+
+        '</tr>';
+    });
+  });
+
+  tb.innerHTML = html;
 
   [...tb.querySelectorAll('tr.task')].forEach(el=> el.onclick = ()=>{
     const t = TASKS[+el.dataset.i];
+    if(!t.checks) return;          // nothing to drill into yet
     S.checks = t.checks;
     S.taskName = t.name;
     S.view = 'category';
@@ -1273,7 +1377,7 @@ function strip(rows){
 
   // Total outstanding across every task, so the number means the same thing
   // wherever you are rather than moving as you drill in.
-  const open = TASKS.reduce((s,tk)=> s + catFailing(true, tk.checks).length, 0);
+  const open = TASKS.reduce((s,tk)=> s + (tk.checks ? catFailing(true, tk.checks).length : 0), 0);
   document.getElementById('homeBtn').innerHTML =
     'Checklist' + (open ? `<span class="badge">${open}</span>` : '');
 
