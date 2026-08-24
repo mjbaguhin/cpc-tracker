@@ -80,8 +80,14 @@ header h1{
 
 /* checklist rows read as tappable, since the whole row is the target */
 tr.task{cursor:pointer}
-tr.task.no-data{cursor:default}
-tr.task.no-data:hover td{background:transparent}
+.go{color:var(--muted);font-size:.75rem}
+tr.task:hover .go{color:var(--accent)}
+button.work{
+  font-size:.76rem;padding:.2rem .55rem;
+  border-color:var(--accent);color:var(--accent);font-weight:600;
+}
+button.work:hover{background:var(--accent);color:#fff}
+
 tr.task:hover td{background:var(--accent-soft)}
 tr.task td{padding:.7rem .6rem}
 
@@ -996,8 +1002,8 @@ function renderChecklist(){
     `<span><b>${esc(DAY_FULL[today] || today)}</b> \u00b7 `+
     `${openToday ? openToday + ' to do today' : 'nothing due today'}</span>`+
     `<span><b>${done}</b> of ${TASKS.length} tasks clear</span>`+
-    `<span class="mut">${esc(S.mk)} \u00b7 tap a row to work it, `+
-    `the arrow opens the task in ClickUp</span>`;
+    `<span class="mut">${esc(S.mk)} \u00b7 tap a row to open it in ClickUp, `+
+    `tap the count to work through it</span>`;
 
   if(!CAT.length){
     tbl.hidden = true;
@@ -1011,7 +1017,7 @@ function renderChecklist(){
   tbl.className = '';
 
   document.getElementById('hrow').innerHTML =
-    ['', 'Task', 'To do', 'ClickUp'].map(h=>`<th>${h}</th>`).join('');
+    ['', 'Task', 'To do'].map(h=>`<th>${h}</th>`).join('');
 
   // Group by day, in a fixed order, with anything unrecognised at the end
   const groups = {};
@@ -1031,7 +1037,7 @@ function renderChecklist(){
                 ? catFailing(true, TASKS[i].checks).length : 0), 0);
     const isToday = (day === today) || day === 'Daily';
 
-    html += `<tr class="gh"><td colspan="4">`+
+    html += `<tr class="gh"><td colspan="3">`+
       `${esc(DAY_FULL[day] || day)}`+
       (isToday ? ' <span class="ok" style="font-size:.72rem">\u00b7 today</span>' : '')+
       ` <span class="cnt">${n ? n + ' to do' : 'clear'}</span></td></tr>`;
@@ -1042,12 +1048,10 @@ function renderChecklist(){
       // No checks array means the console has no data for this task yet, so
       // it shows as a reminder rather than a misleading zero.
       if(!t.checks){
-        html += '<tr class="task no-data" data-i="'+i+'">'+
+        html += '<tr class="task" data-i="'+i+'">'+
           '<td class="ind-cell"><span class="ind i-none"></span></td>'+
-          `<td class="name">${esc(t.name)}</td>`+
-          '<td class="num mut" style="font-size:.75rem">in ClickUp</td>'+
-          `<td><a href="https://app.clickup.com/t/${esc(t.id)}" target="_blank" `+
-            `rel="noopener" onclick="event.stopPropagation()">open \u2197</a></td>`+
+          `<td class="name">${esc(t.name)} <span class="go">\u2197</span></td>`+
+          '<td class="num mut" style="font-size:.72rem">no data yet</td>'+
           '</tr>';
         return;
       }
@@ -1058,14 +1062,14 @@ function renderChecklist(){
 
       html += '<tr class="task" data-i="'+i+'">'+
         `<td class="ind-cell"><span class="ind i-${n2 ? 'bad' : 'ok'}"></span></td>`+
-        `<td class="name"><b>${esc(t.name)}</b>`+
+        `<td class="name"><b>${esc(t.name)}</b> <span class="go">\u2197</span>`+
           (unknown && !n2 ? `<br><span class="mut" style="font-size:.75rem">`+
             `${unknown} not evaluated</span>` : '')+
         '</td>'+
-        `<td class="num"><b style="font-size:1.05rem">${n2 || ''}</b>`+
-          (n2 ? '' : '<span class="ok">clear</span>')+'</td>'+
-        `<td><a href="https://app.clickup.com/t/${esc(t.id)}" target="_blank" `+
-          `rel="noopener" onclick="event.stopPropagation()">open \u2197</a></td>`+
+        `<td class="num">`+
+          (n2 ? `<button class="work" data-i="${i}">${n2} to do</button>`
+              : '<span class="ok">clear</span>')+
+        '</td>'+
         '</tr>';
     });
   });
@@ -1073,9 +1077,16 @@ function renderChecklist(){
   tb.innerHTML = html;
   wireIds(tb);
 
+  // The row is the task, so tapping it opens the task in ClickUp, where it
+  // can be closed. The count is the way into the work itself.
   [...tb.querySelectorAll('tr.task')].forEach(el=> el.onclick = ()=>{
     const t = TASKS[+el.dataset.i];
-    if(!t.checks) return;          // nothing to drill into yet
+    window.open('https://app.clickup.com/t/' + t.id, '_blank', 'noopener');
+  });
+
+  [...tb.querySelectorAll('button.work')].forEach(b=> b.onclick = e=>{
+    e.stopPropagation();
+    const t = TASKS[+b.dataset.i];
     S.checks = t.checks;
     S.taskName = t.name;
     S.view = 'category';
