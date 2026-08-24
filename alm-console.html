@@ -63,23 +63,27 @@ header h1{
 #meta{font-size:.7rem;color:#93a0b0;letter-spacing:.02em}
 #meta b{color:#ccd6e2;font-weight:600}
 
-#toggle,#fs,#homeBtn,#quickCat,#catalogBtn{
+#toggle,#fs,#homeBtn,#quickCat,#casesBtn,#catalogBtn{
   font-size:.74rem;padding:.24rem .6rem;
   background:transparent;color:#fff;border:1px solid #3a4652;
 }
 #homeBtn{margin-left:auto}
 #homeBtn[aria-pressed="true"],#quickCat[aria-pressed="true"],
+#casesBtn[aria-pressed="true"],
 #catalogBtn[aria-pressed="true"]{
   background:#2f4a6d;border-color:#4a6fa5;
 }
-#toggle:hover,#fs:hover,#homeBtn:hover,#quickCat:hover,#catalogBtn:hover{background:#1c232b}
-#toggle .badge,#homeBtn .badge,#quickCat .badge{
+#toggle:hover,#fs:hover,#homeBtn:hover,#quickCat:hover,#casesBtn:hover,#catalogBtn:hover{background:#1c232b}
+#toggle .badge,#homeBtn .badge,#quickCat .badge,#casesBtn .badge{
   display:inline-block;margin-left:.35rem;padding:0 .32rem;
   background:#a83a26;border-radius:8px;font-size:.68rem;font-weight:700;
 }
 
 /* checklist rows read as tappable, since the whole row is the target */
 tr.task{cursor:pointer}
+tr.case{cursor:pointer}
+tr.case:hover td{background:var(--accent-soft)}
+td.id2{max-width:11rem;overflow:hidden;text-overflow:ellipsis}
 .go{color:var(--muted);font-size:.75rem}
 tr.task:hover .go{color:var(--accent)}
 button.work{
@@ -368,6 +372,7 @@ td.ind-cell{text-align:center}
   <span id="meta">Loading</span>
   <button id="homeBtn">Checklist</button>
   <button id="quickCat">Category</button>
+  <button id="casesBtn">Cases</button>
   <button id="catalogBtn">Catalog</button>
   <button id="toggle" aria-expanded="true">Filters</button>
   <button id="fs" title="Fullscreen">Full screen</button>
@@ -465,6 +470,9 @@ const SRC = 'https://raw.githubusercontent.com/mjbaguhin/cpc-tracker/main/data.j
 const PUB = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vRJzdMWKepuICHrxxJXuYxMJPiRIh7iifhDaRLHhb6j57Motm4XMyS0GIPqqM_tzbVY1drpOXslDbH-/pub?gid=1429581451&single=true&output=csv';
 
 // Category tab of the same sheet, published separately.
+// Open cases, normalised out of the case tracker
+const PUB_CASES = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vRJzdMWKepuICHrxxJXuYxMJPiRIh7iifhDaRLHhb6j57Motm4XMyS0GIPqqM_tzbVY1drpOXslDbH-/pub?gid=403229889&single=true&output=csv';
+
 // Amazon's case creation entry point
 const CASE_URL = 'https://sellercentral.amazon.com/help/center?redirectSource=HelpHub';
 
@@ -536,10 +544,12 @@ async function load(fresh){
 
   msg('Loading');
 
-  const [pub, cat] = await Promise.all([
+  const [pub, cat, cas] = await Promise.all([
     grab(PUB, 'text', fresh).catch(e => ({err:'ALM Console Data: ' + e.message})),
     PUB_CAT ? grab(PUB_CAT, 'text', fresh).catch(e => ({err:e.message}))
-            : Promise.resolve(null)
+            : Promise.resolve(null),
+    PUB_CASES ? grab(PUB_CASES, 'text', fresh).catch(e => ({err:e.message}))
+              : Promise.resolve(null)
   ]);
 
   if(pub && pub.err){
@@ -549,6 +559,7 @@ async function load(fresh){
   }
 
   buildCategory(cat);
+  buildCases(cas);
   PUBROWS = csvParse(pub);
   build({}, PUBROWS, 'ratings loading');
 
@@ -748,9 +759,14 @@ function build(j, pub, warnNote){
 
   const d = j.data || {};
 
+  // The inventory file dates ride along on every row, so the age of the
+  // stock data can be shown without publishing anything extra.
+  const src = k => { const r = pub.find(x=> (x[k] || '').trim()); return r ? r[k].trim() : ''; };
+
   META = {
     when: j.fetched_at_et || j.fetched_at || 'unknown',
-    tokens: j.tokens_left, skus: pub.length, note: warnNote || ''
+    tokens: j.tokens_left, skus: pub.length, note: warnNote || '',
+    srcUs: src('US_Source'), srcCa: src('CA_Source')
   };
 
   // Parent tier: the strongest tier among children sharing a parent SKU.
@@ -831,6 +847,30 @@ function applyMk(){
 }
 
 const num = v => (v===null||v===undefined||v===''||isNaN(Number(v))) ? null : Number(v);
+
+/* How old a yyyy-mm-dd stamp is, in whole days, against today in ET. Used to
+   say plainly when the stock and prices on screen are not from today. */
+function ageDays(stamp){
+  if(!stamp) return null;
+  const today = new Date().toLocaleDateString('en-CA', {timeZone:'America/New_York'});
+  const a = Date.parse(today), b = Date.parse(stamp);
+  if(isNaN(a) || isNaN(b)) return null;
+  return Math.round((a - b) / 86400000);
+}
+
+/* One short line about where the stock numbers came from and how stale they
+   are. Silent when the file is current, because a note you always see is a
+   note you stop reading. */
+function sourceNote(){
+  const stamp = S.mk === 'CA' ? META.srcCa : META.srcUs;
+  if(!stamp) return '';
+  const d = ageDays(stamp);
+  if(d === null) return '';
+  if(d <= 0) return `<span class="mut">stock from today</span>`;
+  const stale = d > 2;
+  return `<span class="${stale ? 'warn' : 'mut'}">stock from ${esc(stamp)}`+
+         `, ${d} day${d===1?'':'s'} old${stale ? '' : ''}</span>`;
+}
 
 /* ---------- price indicators ----------
    These are our own definitions, not a copy of Amazon's icons. Amazon's
@@ -1095,6 +1135,117 @@ function renderChecklist(){
 }
 
 
+/* ---------- cases ---------- */
+
+let CASES = [];
+
+const CASE_TYPES = ['Category','Listing copy','Review removal','Removal order','Other'];
+
+function buildCases(text){
+  CASES = [];
+  if(!text || text.err){
+    if(text && text.err) console.warn('Cases feed:', text.err);
+    return;
+  }
+  CASES = csvParse(text).map(r=>({
+    type:(r.Type || 'Other').trim(),
+    status:(r.Status || '').trim(),
+    id:(r.CaseID || '').trim(),
+    opened:(r.Opened || '').trim(),
+    age:num(r.AgeDays),
+    marketplace:(r.Marketplace || '').trim(),
+    sku:(r.SKU || '').trim(),
+    asin:(r.ASIN || '').trim(),
+    summary:(r.Summary || '').trim(),
+    link:(r.Link || '').trim(),
+    tab:(r.Tab || '').trim()
+  })).filter(c=> c.id || c.sku || c.summary);
+}
+
+/* A case open this long is almost certainly forgotten rather than pending.
+   Worth saying so, since the tracker gave no way to see it. */
+const CASE_STALE = 90;
+const CASE_DEAD  = 270;
+
+function caseState(c){
+  if(c.age === null) return 'none';
+  if(c.age >= CASE_DEAD)  return 'bad';
+  if(c.age >= CASE_STALE) return 'warn';
+  return 'ok';
+}
+
+function renderCases(){
+
+  const tbl = document.getElementById('tbl');
+  const tb  = document.getElementById('tbody');
+
+  const rows = CASES.slice().sort((a,b)=>{
+    const ta = CASE_TYPES.indexOf(a.type), tb2 = CASE_TYPES.indexOf(b.type);
+    if(ta !== tb2) return (ta===-1?99:ta) - (tb2===-1?99:tb2);
+    return (b.age === null ? -1 : b.age) - (a.age === null ? -1 : a.age);
+  });
+
+  const stale = rows.filter(c=> caseState(c) === 'warn').length;
+  const dead  = rows.filter(c=> caseState(c) === 'bad').length;
+
+  document.getElementById('bar').innerHTML =
+    `<span><b>${rows.length}</b> open cases</span>`+
+    (dead  ? `<span><span class="dot" style="background:var(--warn)"></span>${dead} over ${CASE_DEAD} days</span>` : '')+
+    (stale ? `<span><span class="dot" style="background:#c8912e"></span>${stale} over ${CASE_STALE} days</span>` : '')+
+    '<span class="mut">closed cases are left in the tracker, not shown here</span>';
+
+  if(!rows.length){
+    tbl.hidden = true;
+    msg('No open cases', CASES.length ? 'Everything in the tracker is closed.'
+        : 'Run buildCaseList in almPublishCases, then publish the Cases tab.');
+    return;
+  }
+
+  document.getElementById('msg').hidden = true;
+  tbl.hidden = false;
+  tbl.className = '';
+
+  document.getElementById('hrow').innerHTML =
+    ['Case ID','Age','Type','SKU','ASIN','Summary','Status']
+      .map(h=>`<th>${esc(h)}</th>`).join('');
+
+  let html = '', lastType = null;
+
+  rows.forEach(c=>{
+
+    if(c.type !== lastType){
+      const n = rows.filter(x=> x.type === c.type).length;
+      html += `<tr class="gh"><td colspan="7">${esc(c.type)}`+
+              ` <span class="cnt">${n}</span></td></tr>`;
+      lastType = c.type;
+    }
+
+    const st = caseState(c);
+
+    html += `<tr class="case" data-link="${esc(c.link)}" data-id="${esc(c.id)}">`+
+      `<td class="mono id2">${c.id ? esc(c.id.slice(0,60)) : '<span class="mut">no case id</span>'}</td>`+
+      `<td class="num"><span class="${st==='bad'?'warn':st==='warn'?'':'mut'}"`+
+        `${st==='warn'?' style="color:#8a6417"':''}>`+
+        `${c.age === null ? '\u2014' : c.age + 'd'}</span></td>`+
+      `<td class="mut">${esc(c.type)}</td>`+
+      `<td class="mono">${esc(c.sku.slice(0,40))}</td>`+
+      `<td class="mono">${esc(c.asin.slice(0,40))}</td>`+
+      `<td class="name">${esc(c.summary.slice(0,120))}</td>`+
+      `<td class="mut">${esc(c.status.slice(0,40))}</td>`+
+      '</tr>';
+  });
+
+  tb.innerHTML = html;
+
+  [...tb.querySelectorAll('tr.case')].forEach(el=> el.onclick = ()=>{
+    const id = el.dataset.id.replace(/[^0-9]/g, '');
+    const link = el.dataset.link ||
+      (id ? 'https://sellercentral.amazon.com/cu/case-dashboard/view-case?caseID=' + id : '');
+    if(link) window.open(link, '_blank', 'noopener');
+  });
+}
+
+
 /* ---------- category view ---------- */
 
 const WHY = {
@@ -1125,6 +1276,16 @@ const WHY = {
   'Stranded': 'Inventory is at Amazon but not attached to a sellable listing.'
 };
 
+/* Search Department is published but never judged, because Keepa reports GL
+   names rather than department names and is wrong on some SKUs. Saying so on
+   screen is better than a column of grey circles nobody can explain. */
+function sdNote(){
+  const filled = CAT.filter(c=> c.checks['Search Department'] &&
+                                c.checks['Search Department'].expected).length;
+  return `<span class="mut">Search Department not checked, no reliable source`+
+         (filled ? `, ${filled} have a Plytix value` : '')+`</span>`;
+}
+
 function renderCategory(){
 
   const set  = S.checks || CHECKS;
@@ -1140,6 +1301,7 @@ function renderCategory(){
       const n = rows.filter(c=> c.checks[k] && c.checks[k].state === 'bad').length;
       return `<span><span class="dot" style="background:var(--warn)"></span>${n} ${esc(k)}</span>`;
     }).join('')+
+    (set.indexOf('Search Department') !== -1 ? sdNote() : '')+
     `<span class="mut">${esc(S.mk)} \u00b7 tap any red circle for the detail and a drafted case</span>`;
 
   if(!rows.length){
@@ -1347,6 +1509,7 @@ function caseText(row, check, ck){
 function render(){
 
   if(S.view === 'checklist'){ renderChecklist(); return; }
+  if(S.view === 'cases'){ renderCases(); return; }
   if(S.view === 'category'){ renderCategory(); return; }
 
   const rows = visible();
@@ -1529,7 +1692,8 @@ function strip(rows){
   document.getElementById('meta').innerHTML =
     `<b>${META.skus||0}</b> SKUs \u00b7 ${esc(S.mk)} \u00b7 ratings ${esc(META.when||'?')}`+
     (META.tokens!==undefined && META.tokens!==null ? ` \u00b7 ${META.tokens} tokens` : '')+
-    (META.note ? ` \u00b7 <span style="color:#f0b6a8">${esc(META.note)}</span>` : '');
+    (META.note ? ` \u00b7 <span style="color:#f0b6a8">${esc(META.note)}</span>` : '')+
+    (sourceNote() ? ' \u00b7 ' + sourceNote() : '');
 
   // Count active filters so the collapsed state still tells you something
   // is on. A hidden filter you have forgotten about is worse than no filter.
@@ -1548,6 +1712,9 @@ function strip(rows){
   const nCat = catFailing(true, CHECKS).length;
   document.getElementById('quickCat').innerHTML =
     'Category' + (nCat ? `<span class="badge">${nCat}</span>` : '');
+
+  document.getElementById('casesBtn').innerHTML =
+    'Cases' + (CASES.length ? `<span class="badge">${CASES.length}</span>` : '');
 }
 
 function msg(title, sub){
@@ -1720,14 +1887,19 @@ const catalogBtn = document.getElementById('catalogBtn');
 
 const quickCat   = document.getElementById('quickCat');
 
+const casesBtn = document.getElementById('casesBtn');
+
 function go(view){
   S.view = view;
   if(view !== 'category'){ S.checks = null; S.taskName = ''; }
   homeBtn.setAttribute('aria-pressed', view === 'checklist');
   quickCat.setAttribute('aria-pressed', view === 'category');
+  casesBtn.setAttribute('aria-pressed', view === 'cases');
   catalogBtn.setAttribute('aria-pressed', view === 'catalog');
   render();
 }
+
+casesBtn.onclick = ()=> go('cases');
 
 homeBtn.onclick    = ()=> go('checklist');
 catalogBtn.onclick = ()=> go('catalog');
