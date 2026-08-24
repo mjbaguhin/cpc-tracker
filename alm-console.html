@@ -240,13 +240,27 @@ th .ar{color:var(--accent)}
 td.num{text-align:right}
 tr:hover td{background:#f6f8fb}
 
-/* SKU stays visible while scrolling sideways, which matters most on a phone */
+/* SKU and ASIN both stay visible while scrolling sideways. They belong
+   together: one searches Seller Central, the other opens the live page. */
 th:first-child,td:first-child{
   position:sticky;left:0;background:var(--slab);z-index:4;
+  min-width:8.5rem;max-width:8.5rem;
+}
+th:nth-child(2),td:nth-child(2){
+  position:sticky;left:8.5rem;background:var(--slab);z-index:4;
   box-shadow:1px 0 0 var(--line-soft);
 }
-th:first-child{z-index:6}
-tr:hover td:first-child{background:#f6f8fb}
+th:first-child,th:nth-child(2){z-index:6}
+tr:hover td:first-child,tr:hover td:nth-child(2){background:#f6f8fb}
+
+td.id{cursor:pointer;text-decoration:underline;text-decoration-style:dotted;
+  text-underline-offset:3px;text-decoration-color:var(--line)}
+td.id:hover{color:var(--accent);text-decoration-color:var(--accent)}
+
+@media(max-width:640px){
+  th:first-child,td:first-child{min-width:7rem;max-width:7rem}
+  th:nth-child(2),td:nth-child(2){left:7rem}
+}
 
 td.name{white-space:normal;min-width:14rem;max-width:24rem;font-size:.82rem}
 
@@ -256,7 +270,7 @@ tr.gh td{
   border-bottom:1px solid var(--line);
   border-top:1px solid var(--line);
   font-weight:600;font-size:.8rem;
-  cursor:pointer;
+  position:sticky;top:1.6rem;z-index:3;
 }
 tr.gh td:first-child{background:var(--accent-soft)}
 tr.gh .cnt{color:var(--muted);font-weight:400;font-size:.75rem}
@@ -450,7 +464,8 @@ function present(key, order){
 }
 
 const COLS = [
-  {k:'sku',    t:'SKU',       cls:'mono'},
+  {k:'sku',    t:'SKU',       cls:'mono id'},
+  {k:'asin',   t:'ASIN',      cls:'mono id'},
   {k:'name',   t:'Product',   cls:'name'},
   {k:'brand',  t:'Brand',     opt:true},
   {k:'status', t:'Status'},
@@ -1004,6 +1019,7 @@ function renderChecklist(){
   });
 
   tb.innerHTML = html;
+  wireIds(tb);
 
   [...tb.querySelectorAll('tr.task')].forEach(el=> el.onclick = ()=>{
     const t = TASKS[+el.dataset.i];
@@ -1079,12 +1095,13 @@ function renderCategory(){
   tbl.className = '';
 
   document.getElementById('hrow').innerHTML =
-    ['SKU','Country','Product','Tier'].concat(set).concat(['Case'])
+    ['SKU','ASIN','Country','Product','Tier'].concat(set).concat(['Case'])
       .map(h=>`<th>${esc(h)}</th>`).join('');
 
   tb.innerHTML = rows.map((c,i)=>
     '<tr>'+
-    `<td class="mono">${esc(c.sku)}</td>`+
+    `<td class="mono id" data-sku="${esc(c.sku)}" data-asin="${esc(c.asin)}">${esc(c.sku)}</td>`+
+    `<td class="mono id" data-sku="${esc(c.sku)}" data-asin="${esc(c.asin)}">${esc(c.asin)}</td>`+
     `<td>${esc(c.country)}</td>`+
     `<td class="name">${esc(c.name)}</td>`+
     `<td>${c.tier ? `<span class="tier t${esc(c.tier)}">${esc(c.tier)}</span>` : ''}</td>`+
@@ -1101,6 +1118,7 @@ function renderCategory(){
 
   [...tb.querySelectorAll('.ind.i-bad')].forEach(el=> el.onclick = ()=>
     openDetail(rows[+el.dataset.row], el.dataset.check));
+  wireIds(tb);
 }
 
 
@@ -1152,6 +1170,60 @@ function openDetail(row, check){
 }
 
 function closeDetail(){ document.getElementById('veil').hidden = true; }
+
+
+/* ---------- SKU and ASIN ---------- */
+
+/* Both identifiers are shown together and both are clickable, because in
+   practice you need one to search Seller Central and the other to look at
+   the customer-facing page, and hunting for the second one is the annoying
+   part. */
+function wireIds(scope){
+  [...scope.querySelectorAll('td.id')].forEach(td=>{
+    if(!td.dataset.sku && !td.dataset.asin) return;
+    td.onclick = ()=> openIds(td.dataset.sku, td.dataset.asin);
+  });
+}
+
+function openIds(sku, asin){
+
+  const site = S.mk === 'CA' ? 'amazon.ca' : 'amazon.com';
+  const d    = document.getElementById('detail');
+
+  d.innerHTML =
+    `<h2>Identifiers \u00b7 ${esc(S.mk)}</h2>`+
+    `<h3 class="mono">${esc(sku || '\u2014')}</h3>`+
+    '<dl>'+
+    `<dt>SKU</dt><dd class="mono">${esc(sku || '\u2014')}</dd>`+
+    `<dt>ASIN</dt><dd class="mono">${esc(asin || '\u2014')}</dd>`+
+    '</dl>'+
+    '<div class="actions">'+
+      (sku  ? '<button id="cpSku" class="act">Copy SKU</button>' : '')+
+      (asin ? '<button id="cpAsin" class="act">Copy ASIN</button>' : '')+
+      (asin ? `<a href="https://www.${site}/dp/${encodeURIComponent(asin)}" `+
+              'target="_blank" rel="noopener">Detail page</a>' : '')+
+      (sku  ? `<a href="https://sellercentral.amazon.com/skucentral?mSku=`+
+              `${encodeURIComponent(sku)}&ref=myi_skuc" target="_blank" `+
+              'rel="noopener">Seller Central</a>' : '')+
+      '<button id="closeBtn">Close</button>'+
+    '</div>'+
+    '<div class="why" style="border-left-color:var(--line);margin-top:.9rem">'+
+      'Seller Central opens the SKU performance page for this SKU. Detail page '+
+      'opens the live listing on ' + esc(site) + '.</div>';
+
+  const copy = (id, text, label) => {
+    const b = document.getElementById(id);
+    if(!b) return;
+    b.onclick = ()=> navigator.clipboard.writeText(text)
+      .then(()=> b.textContent = 'Copied')
+      .catch(()=> b.textContent = 'Copy failed');
+  };
+  copy('cpSku', sku);
+  copy('cpAsin', asin);
+
+  document.getElementById('closeBtn').onclick = closeDetail;
+  document.getElementById('veil').hidden = false;
+}
 
 
 /* Case text following the six-block template. The provenance and the
@@ -1231,33 +1303,29 @@ function render(){
   }else{
     const g = {};
     rows.forEach(r=>{ const k = r[S.group] || '\u2014 no parent \u2014'; (g[k] = g[k] || []).push(r); });
+    // Headers with their rows always beneath. Collapsing them behind a
+    // twisty meant every group needed opening before anything was readable.
     Object.keys(g).sort().forEach(k=>{
       const kids = g[k];
-      const open = S.open.has(k);
       const rated = kids.map(r=>r.cur).filter(v=>v!==null);
       const lo = rated.length ? Math.min(...rated).toFixed(1) : null;
       const hi = rated.length ? Math.max(...rated).toFixed(1) : null;
       const stock = kids.reduce((s,r)=>s+(r.avail||0),0);
       const oos = kids.filter(r=>r.avail === 0).length;
 
-      html += `<tr class="gh" data-g="${esc(k)}"><td colspan="${COLS.length}">`+
-        `<span class="tw">${open?'\u25be':'\u25b8'}</span>${esc(k)} `+
+      html += `<tr class="gh"><td colspan="${COLS.length}">`+
+        `${esc(k)} `+
         `<span class="cnt">${kids.length} SKU${kids.length>1?'s':''}`+
         (rated.length ? ` \u00b7 ${lo===hi?lo:lo+' to '+hi}\u2605` : '')+
         ` \u00b7 ${stock} units`+
         (oos ? ` \u00b7 <span class="warn">${oos} OOS</span>` : '')+
         `</span></td></tr>`;
 
-      if(open) kids.forEach(r=> html += tr(r, rows.indexOf(r)));
+      kids.forEach(r=> html += tr(r, rows.indexOf(r)));
     });
   }
 
   tb.innerHTML = html;
-  [...tb.querySelectorAll('tr.gh')].forEach(el=> el.onclick = ()=>{
-    const k = el.dataset.g;
-    S.open.has(k) ? S.open.delete(k) : S.open.add(k);
-    render();
-  });
 
   // A red circle should do something wherever it appears. In this view there
   // is no case to draft, so it explains itself and says whose job it is.
@@ -1312,6 +1380,10 @@ function tr(r, IDX){
              `data-ind="${c.ind}" data-row="${IDX}" `+
              `title="${esc(t)}${esc(price)}"></span></td>`;
     }
+
+    if(c.k === 'sku' || c.k === 'asin')
+      return `<td class="${cls.trim()}" data-sku="${esc(r.sku)}" `+
+             `data-asin="${esc(r.asin)}">${v ? esc(v) : '<span class="mut">\u2014</span>'}</td>`;
 
     if(c.k === 'brand')
       v = v ? `<span class="pill ${v==='Seedboy'?'b-sb':'b-byd'}">${v==='Seedboy'?'SB':'BYD'}</span>` : '';
@@ -1403,8 +1475,8 @@ function csv(){
   const cell = v => (v===null||v===undefined) ? '' :
     (/[",\n]/.test(String(v)) ? '"'+String(v).replace(/"/g,'""')+'"' : String(v));
 
-  const out = [COLS.map(c=>c.t).concat('ASIN').join(',')]
-    .concat(rows.map(r=> COLS.map(c=>cell(r[c.k])).concat(cell(r.asin)).join(',')))
+  const out = [COLS.map(c=>c.t).join(',')]
+    .concat(rows.map(r=> COLS.map(c=>cell(r[c.k])).join(',')))
     .join('\n');
 
   const a = document.createElement('a');
