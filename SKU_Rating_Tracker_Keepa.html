@@ -409,6 +409,7 @@ async function doLoad(){
       res[a]={cur:d.cur,r1:d.r1,r30:d.r30,r60:d.r60||null,r90:d.r90,r180:d.r180,rev:d.rev,
   peak60:d.peak60||null,maxRating:d.maxRating!=null?d.maxRating:null,revYTD:d.revYTD||null,rev30D:d.rev30D||null,nrCountAll:d.nrCountAll||0,bsr:d.bsr||null,bsrCat:d.bsrCat||null,keepaParent:d.keepaParent||null,
         available:d.available!=null?d.available:null,invHealth:d.invHealth||null,inbound:d.inbound!=null?d.inbound:null,days:d.days!=null?d.days:null,
+        caAvailable:d.caAvailable!=null?d.caAvailable:null,caInvHealth:d.caInvHealth||null,caInbound:d.caInbound!=null?d.caInbound:null,caDays:d.caDays!=null?d.caDays:null,caAsin:d.caAsin||null,
         nrCount30d:d.nrCount30d||0,nrSummary:d.nrSummary||[],
         rh:(d.rh||[]).map(function(x){return{d:new Date(x.d),v:x.v};})};
     });
@@ -1163,6 +1164,18 @@ function appendRow(tb,item){
       +'<br><span style="font-size:9px;font-weight:700;color:'+hColor+'">'+hIcon+' '+(d.invHealth||'--')+'</span>';
     if(d.inbound!=null&&d.inbound>0) invHtml+='<br><span style="font-size:9px;color:#6366f1">+'+d.inbound.toLocaleString()+' inbound</span>';
   }
+  // CA inventory, one line, and only for SKUs that actually have a CA listing. Grey when
+  // there is nothing to do, so the eye skips it. Amber or red only when it needs a
+  // decision, which is the one case worth interrupting a scan for.
+  if(d.caAvailable!=null){
+    var caOut=(d.caInvHealth==='Out of stock'||d.caAvailable===0);
+    var caLow=(d.caInvHealth==='Low stock');
+    var caColor=caOut?'#dc2626':caLow?'#f59e0b':'#94a3b8';
+    var caTxt='CA '+d.caAvailable.toLocaleString();
+    if(d.caInbound!=null&&d.caInbound>0) caTxt+=' &middot; +'+d.caInbound.toLocaleString();
+    if(caOut) caTxt+=' &#9888;';
+    invHtml+='<br><span style="font-size:9px;font-weight:'+(caOut||caLow?'700':'400')+';color:'+caColor+'">'+caTxt+'</span>';
+  }
   var cid="cv_"+item.asin;
   tr.innerHTML='<td style="width:5px;padding:0"></td>'
     +'<td class="left"><div class="nn"><span class="bd" style="background:'+bdColor+'"></span>'+item.name+'</div>'
@@ -1207,7 +1220,7 @@ function downloadCSV(){
   else if(SM==="drop-30") items.sort(function(a,b){var da=RD[a.asin],db=RD[b.asin];var va=da&&da.cur!=null&&da.r30!=null?da.cur-da.r30:1,vb=db&&db.cur!=null&&db.r30!=null?db.cur-db.r30:1;return va-vb;});
   else if(SM==="reviews-hi") items.sort(function(a,b){var da=RD[a.asin],db=RD[b.asin];var va=da&&da.rev!=null?da.rev:-1,vb=db&&db.rev!=null?db.rev:-1;return vb-va;});
   else if(SM==="bsr-lo") items.sort(function(a,b){var da=RD[a.asin],db=RD[b.asin];var va=da&&da.bsr!=null?da.bsr:999999,vb=db&&db.bsr!=null?db.bsr:999999;return va-vb;});
-  var rows=[["SKU","ASIN","Brand","Tier","Parent ASIN Name","Parent SKU","Parent ASIN (Plytix)","Keepa Parent ASIN","Parent Mismatch","Product Name","Current Rating","Yesterday","30D Ago","90D Ago","180D Ago","Reviews","BSR","FBA Available","Inventory Health","Inbound"]];
+  var rows=[["SKU","ASIN","Brand","Tier","Parent ASIN Name","Parent SKU","Parent ASIN (Plytix)","Keepa Parent ASIN","Parent Mismatch","Product Name","Current Rating","Yesterday","30D Ago","90D Ago","180D Ago","Reviews","BSR","FBA Available","Inventory Health","Inbound","CA Available","CA Inventory Health","CA Inbound","CA ASIN"]];
   items.forEach(function(item){
     var d=RD[item.asin]||{};
     var keepaParent=d.keepaParent||"";
@@ -1215,7 +1228,8 @@ function downloadCSV(){
     rows.push([item.sku,item.asin,item.brand,item.tier,item.parent||"",item.psku||"",item.pasin||"",keepaParent,mismatch,item.name,
       d.cur!=null?d.cur:"",d.r1!=null?d.r1:"",d.r30!=null?d.r30:"",d.r90!=null?d.r90:"",d.r180!=null?d.r180:"",
       d.rev!=null?d.rev:"",d.bsr!=null?d.bsr:"",
-      d.available!=null?d.available:"",d.invHealth||"",d.inbound!=null?d.inbound:""
+      d.available!=null?d.available:"",d.invHealth||"",d.inbound!=null?d.inbound:"",
+      d.caAvailable!=null?d.caAvailable:"",d.caInvHealth||"",d.caInbound!=null?d.caInbound:"",d.caAsin||""
     ].map(function(c){return '"'+String(c).replace(/"/g,'""')+'"';}).join(","));
   });
   var blob=new Blob([rows.join("\n")],{type:"text/csv;charset=utf-8;"});
