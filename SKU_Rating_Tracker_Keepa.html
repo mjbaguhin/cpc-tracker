@@ -1067,10 +1067,15 @@ function renderCoirCard(c){
     // different causes was reported as whichever sorted first. The SKUs and stars are
     // in the payload, so name them instead.
     var win=(c.win7From&&c.win7To)?(" "+c.win7From.slice(5)+" to "+c.win7To.slice(5)):"";
-    var lbl="<b>"+nr7+"</b> negative review"+(nr7===1?"":"s")+" this week"+win;
+    // v19: a stale log makes the weekly count a floor, not a count. Say so here too, or
+    // the banner repeats the mistake the Slack card just stopped making.
+    var lbl=(c.logStale?'<span style="color:#b45309;font-weight:700">Log '+c.logAgeDays+'d behind:</span> ':"")+
+            "<b>"+nr7+"</b> negative review"+(nr7===1?"":"s")+(c.logStale?" logged so far":" this week")+win;
     if(c.nr7List&&c.nr7List.length){
       lbl+=" ("+c.nr7List.map(function(n){return n.sku+" "+n.rating+"\u2605";}).join(", ")+")";
-    } else {
+    } else if(c.logStale){
+    parts.push('<span style="color:#b45309;font-weight:700">Log '+c.logAgeDays+'d behind:</span> nothing logged in this week\'s window, which tells us nothing either way');
+  } else {
       var theme = stain>=Math.ceil(nr7/2) ? "mostly staining" : (stain>0 ? "some staining" : (c.topCause||"mixed"));
       lbl+=" ("+theme+")";
     }
