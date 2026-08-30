@@ -1045,91 +1045,73 @@ function renderCoirCard(c){
 
   // Same condensed line, same order. Every figure now comes from the payload, so no
   // rating wording is written into this file.
-  var parts=[];
-  // The "about N more 1-star reviews" figure that used to lead this line is gone. It
-  // assumed only 1-stars arrive and nothing good, which never happens, and it is what
-  // produced 63 on the Aug 24 card and 27 on Aug 10, six days before the drop. What
-  // replaces it is measured: where the true average actually sits, and how many
-  // negatives our own past drops actually took.
-  if(h && h.bandLo!=null && h.bandHi!=null && !h.divergent){
-    var mid=(h.bandLo+h.bandHi)/2, frac=(mid-lo-0.05)/0.1;
-    var pos = frac>=0.66 ? "near the top" : frac>=0.34 ? "mid-band" : "near the bottom";
-    parts.push('<span style="font-weight:700">True average:</span> <b>'+h.bandLo.toFixed(3)+
-               ' to '+h.bandHi.toFixed(3)+'</b>, '+pos+' of the '+(t/10).toFixed(1)+
-               ' band (floor '+(lo+0.05).toFixed(2)+')');
-  } else if(h && h.divergent){
-    parts.push('<span style="color:#b45309;font-weight:700">Breakdown and displayed star do not reconcile</span> '+
-               '('+h.rawLo.toFixed(3)+' to '+h.rawHi.toFixed(3)+'), recency weighting is pulling the star below the plain average');
-  } else {
-    parts.push('<span style="color:#b45309;font-weight:700">No current star breakdown</span>, position unknown');
-  }
-  // Budget from the completed downward bands, which is what actually happened rather
-  // than what a formula projects.
-  if(c.budget && c.budget.samples>0){
-    var bcol = c.budget.remaining<=Math.max(3,Math.round(c.budget.budget*0.25)) ? "#dc2626" : "#475569";
-    parts.push('<span style="color:'+bcol+';font-weight:700">Down to '+lo.toFixed(1)+':</span> <b>'+
-               c.budget.used+' of ~'+c.budget.budget+'</b> negatives used since '+c.budget.sinceDrop+
-               ', <b>'+c.budget.remaining+'</b> to go'+
-               (c.budget.samples<3?' <span style="color:#94a3b8">(from '+c.budget.samples+' past drop'+(c.budget.samples===1?'':'s')+', direction only)</span>':''));
-    // The count per band has held, but the calendar it burns over has not. Same budget
-    // over half the days means the runway is shortening even while the number looks stable.
-    if(c.budget.accelerating && c.budget.spanDays && c.budget.spanDays.length>=2){
-      var sd=c.budget.spanDays;
-      parts.push('<span style="color:#b45309;font-weight:700">Speeding up:</span> same budget spent over '+
-                 sd[sd.length-1]+'d then <b>'+sd[0]+'d</b>');
-    }
-  }
-  // Trend only once it can survive its own error bar.
-  if(c.trend && c.trend.enough && c.trend.falling && c.trend.targetDate){
-    parts.push('<span style="color:#dc2626;font-weight:700">Trend:</span> falling '+
-               Math.abs(c.trend.slopePerWeek).toFixed(4)+'/wk, reaches '+c.trend.target.toFixed(2)+
-               ' around <b>'+c.trend.targetDate+'</b>');
-  }
-  // Measured 1-star arrivals, including the silent ones no report shows.
-  if(c.silent && c.silent.silentAtLeast>0){
-    parts.push('<span style="font-weight:700">Measured:</span> at least <b>'+c.silent.measuredMin+
-               '</b> 1-stars since '+c.silent.from+' vs <b>'+c.silent.logged+
-               '</b> logged, so at least '+c.silent.silentAtLeast+' left no text');
-  }
-  var bnd=(t+0.5)/10, ratio=(c.offsetRatio!=null)?c.offsetRatio:Math.round((bnd-1)/(5-bnd));
-  if(ratio!=null && isFinite(ratio)){
-    parts.push('<span style="color:#15803d;font-weight:700">Up to '+hi.toFixed(1)+' (goal):</span> each new 1-star '+
-               'needs about <b>'+ratio+'</b> clean 5-stars to cancel');
-  }
-  if(nr7>0){
-    // One theme for the whole week was picked by a tie-break, so a week of three
-    // different causes was reported as whichever sorted first. The SKUs and stars are
-    // in the payload, so name them instead.
-    var win=(c.win7From&&c.win7To)?(" "+c.win7From.slice(5)+" to "+c.win7To.slice(5)):"";
-    // v19: a stale log makes the weekly count a floor, not a count. Say so here too, or
-    // the banner repeats the mistake the Slack card just stopped making.
-    var lbl=(c.logStale?'<span style="color:#b45309;font-weight:700">Log '+c.logAgeDays+'d behind:</span> ':"")+
-            "<b>"+nr7+"</b> negative review"+(nr7===1?"":"s")+(c.logStale?" logged so far":" this week")+win;
-    if(c.nr7List&&c.nr7List.length){
-      lbl+=" ("+c.nr7List.map(function(n){return n.sku+" "+n.rating+"\u2605";}).join(", ")+")";
-    } else if(c.logStale){
-    parts.push('<span style="color:#b45309;font-weight:700">Log '+c.logAgeDays+'d behind:</span> nothing logged in this week\'s window, which tells us nothing either way');
-  } else {
-      var theme = stain>=Math.ceil(nr7/2) ? "mostly staining" : (stain>0 ? "some staining" : (c.topCause||"mixed"));
-      lbl+=" ("+theme+")";
-    }
-    parts.push(lbl);
-  } else {
-    // A bare zero read as a clean week even when the NR Log had not been written up
-    // before the 7am run.
-    parts.push("no negatives logged"+(c.logThrough?(", NR Log through "+c.logThrough):", NR Log currency unknown"));
-  }
-  if(c.caseStatus){ parts.push("removal: "+c.caseStatus); }
-
-  // Only interruption to the line, and only when the screenshot feed has a problem.
-  if(h && h.readOn){
-    var ageD=Math.floor((Date.now()-new Date(h.readOn+"T12:00:00").getTime())/86400000);
-    if(ageD>3) parts.push('<span style="color:#b45309;font-weight:700">breakdown '+ageD+'d old</span>');
-  } else if(!h){
-    parts.push('<span style="color:#b45309;font-weight:700">no screenshot ingested</span>');
+  // v27.5. This was one run-on sentence of six clauses joined by middots, and it could not
+  // be read at a glance. It is now a short row of labelled facts, and everything that is
+  // not needed for a decision has been cut: the offset ratio, the "from 2 past drops"
+  // qualifier, the SKU list, and the raw band numbers all live on the Slack card instead.
+  var facts = [];
+  function fact(label, value, colour, note) {
+    facts.push('<span style="display:inline-block;margin-right:18px;white-space:nowrap">' +
+      '<span style="font-size:9px;color:#94a3b8;text-transform:uppercase;letter-spacing:.4px">' + label + '</span><br>' +
+      '<span style="font-size:13px;font-weight:700;color:' + (colour || '#1e293b') + '">' + value + '</span>' +
+      (note ? '<span style="font-size:10px;color:#94a3b8"> ' + note + '</span>' : '') +
+      '</span>');
   }
 
-  document.getElementById("coir-line").innerHTML=parts.join(" &middot; ");
+  // 1. Where we sit inside the band. One phrase, no decimals.
+  if (h && h.bandLo != null && h.bandHi != null && !h.divergent) {
+    var mid = (h.bandLo + h.bandHi) / 2, frac = (mid - lo - 0.05) / 0.1;
+    var pos = frac >= 0.66 ? "Near the top" : frac >= 0.34 ? "Mid-band" : "Near the bottom";
+    var pcol = frac >= 0.66 ? "#059669" : frac >= 0.34 ? "#b45309" : "#dc2626";
+    fact("Position in the " + (t / 10).toFixed(1) + " band", pos, pcol, "(floor " + (lo + 0.05).toFixed(2) + ")");
+  } else if (h && h.divergent) {
+    fact("Position", "Cannot tell today", "#b45309", "breakdown and star disagree");
+  } else {
+    fact("Position", "No reading", "#b45309");
+  }
+
+  // 2. Headroom. The single number worth acting on.
+  if (c.budget && c.budget.samples > 0) {
+    var rem = c.budget.remaining;
+    var rcol = rem <= Math.max(3, Math.round(c.budget.budget * 0.25)) ? "#dc2626" : "#1e293b";
+    fact("Headroom to " + lo.toFixed(1), rem + " negatives", rcol, "of ~" + c.budget.budget);
+    if (c.budget.accelerating && c.budget.spanDays && c.budget.spanDays.length >= 2) {
+      var sd = c.budget.spanDays;
+      fact("Pace", "Speeding up", "#b45309", sd[sd.length - 1] + "d then " + sd[0] + "d");
+    }
+  }
+
+  // 3. This week, and whether the log can be trusted to have it all.
+  if (c.logStale) {
+    fact("This week", nr7 + " so far", "#b45309", "log " + c.logAgeDays + "d behind");
+  } else if (nr7 > 0) {
+    fact("This week", nr7 + " negative" + (nr7 === 1 ? "" : "s"), "#1e293b");
+  } else {
+    fact("This week", "None", "#059669", "log current");
+  }
+
+  // 4. Silent 1 stars, when the star breakdown proves one landed that the log never saw.
+  //    Shown next to the logged count because the pair is the point: what we can see, and
+  //    what we know we cannot.
+  if (c.silent && c.silent.silentAtLeast > 0) {
+    fact("Silent 1 stars", "at least " + c.silent.silentAtLeast, "#b45309",
+         "since " + c.silent.from.slice(5) + ", never shown as a review");
+  }
+
+  // 5. Anything that would make the numbers above wrong. Only shown when it applies.
+  var nh = c.nrLogHealth;
+  if (nh && nh.failed) {
+    fact("NR Log", "COULD NOT BE READ", "#dc2626", nh.reason || "");
+  } else if (nh && (nh.problem > 0 || nh.dupes > 0)) {
+    // Only what is actually worth fixing. The legacy rows with no ASIN all predate 2026
+    // and are excluded upstream, so this appears when there is something to do.
+    var bits = [];
+    if (nh.dupes) bits.push(nh.dupes + " duplicate Review ID" + (nh.dupes === 1 ? "" : "s"));
+    if (nh.problem) bits.push(nh.problem + " row" + (nh.problem === 1 ? "" : "s") + " to fix");
+    fact("NR Log", bits.join(", "), "#b45309", "counted twice or missed");
+  }
+
+  document.getElementById("coir-line").innerHTML = facts.join("");
   document.getElementById("coir-updated").textContent=c.updated?("Updated "+c.updated):"";
 }
 function render(){
