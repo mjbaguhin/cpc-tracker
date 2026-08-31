@@ -180,10 +180,16 @@ canvas{cursor:pointer}
       <span id="coir-rating" style="font-size:20px;font-weight:900;line-height:1">--</span>
       <span id="coir-wow" style="font-size:10px;color:#94a3b8"></span>
     </span>
-    <span style="display:inline-flex;align-items:center;gap:5px;flex-shrink:0">
-      <span id="coir-lo" style="font-size:10px;font-weight:700;color:#dc2626">4.4</span>
-      <svg id="coir-gauge" viewBox="0 0 160 20" style="width:120px;height:16px"></svg>
-      <span id="coir-hi" style="font-size:10px;font-weight:700;color:#15803d">4.6</span>
+    <span style="display:inline-flex;flex-direction:column;align-items:center;gap:1px;flex-shrink:0">
+      <span style="display:inline-flex;align-items:center;gap:5px">
+        <span id="coir-lo" style="font-size:10px;font-weight:700;color:#dc2626">4.4</span>
+        <svg id="coir-gauge" viewBox="0 0 160 20" style="width:120px;height:16px"></svg>
+        <span id="coir-hi" style="font-size:10px;font-weight:700;color:#15803d">4.6</span>
+      </span>
+      <!-- The measured true average, sitting under the gauge because that is what the dot
+           on the gauge represents. Small on purpose: it is the provenance of the dot, not
+           a headline. -->
+      <span id="coir-avg" style="font-size:9px;color:#94a3b8;white-space:nowrap;letter-spacing:.1px"></span>
     </span>
     <span id="coir-line" style="flex:1;min-width:200px;font-size:11px;color:#475569;line-height:1.4"></span>
     <span id="coir-updated" style="font-size:9px;color:#cbd5e1;white-space:nowrap"></span>
@@ -1085,8 +1091,15 @@ function renderCoirCard(c){
   }
 
   // 3. This week, and whether the log can be trusted to have it all.
-  if (c.logStale) {
-    fact("This week", nr7 + " so far", "#b45309", "log " + c.logAgeDays + "d behind");
+  if (c.logStale && c.quietConfirmed) {
+    // v30. "log 4d behind" read as an accusation on 2026-08-31 when the log was correct
+    // and there was simply nothing to add. The screenshots confirm it, so this now says so.
+    fact("This week", nr7 + (nr7 === 1 ? " negative" : " negatives"), "#059669",
+         "nothing new since " + c.logThrough + ", breakdown agrees");
+  } else if (c.logStale) {
+    var qa = c.quietCheck ? (c.quietCheck.minArrived + " low rating" +
+             (c.quietCheck.minArrived === 1 ? "" : "s") + " arrived unlogged") : "no breakdown to check";
+    fact("This week", nr7 + " so far", "#b45309", qa);
   } else if (nr7 > 0) {
     fact("This week", nr7 + " negative" + (nr7 === 1 ? "" : "s"), "#1e293b");
   } else {
@@ -1112,6 +1125,20 @@ function renderCoirCard(c){
     if (nh.dupes) bits.push(nh.dupes + " duplicate Review ID" + (nh.dupes === 1 ? "" : "s"));
     if (nh.problem) bits.push(nh.problem + " row" + (nh.problem === 1 ? "" : "s") + " to fix");
     fact("NR Log", bits.join(", "), "#b45309", "counted twice or missed");
+  }
+
+  // The number behind the dot. Withheld when the breakdown and the displayed star do not
+  // reconcile, because then the dot's position is not something we can stand behind.
+  var avgEl = document.getElementById("coir-avg");
+  if (avgEl) {
+    if (h && h.bandLo != null && h.bandHi != null && !h.divergent) {
+      avgEl.textContent = "true avg " + h.bandLo.toFixed(3) + " to " + h.bandHi.toFixed(3) +
+                          ", read " + h.readOn.slice(5);
+    } else if (h && h.divergent) {
+      avgEl.textContent = "true avg does not reconcile with the shown star";
+    } else {
+      avgEl.textContent = "no breakdown read";
+    }
   }
 
   document.getElementById("coir-line").innerHTML = facts.join("");
