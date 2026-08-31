@@ -441,7 +441,6 @@ async function doLoad(){
       var d=raw[a];
       res[a]={cur:d.cur,r1:d.r1,r30:d.r30,r60:d.r60||null,r90:d.r90,r180:d.r180,rev:d.rev,
   peak60:d.peak60||null,maxRating:d.maxRating!=null?d.maxRating:null,revYTD:d.revYTD||null,rev30D:d.rev30D||null,nrCountAll:d.nrCountAll||0,bsr:d.bsr||null,bsrCat:d.bsrCat||null,keepaParent:d.keepaParent||null,
-        parentTier:c.parentTier||null, parentName:c.parentName||null,
         available:d.available!=null?d.available:null,invHealth:d.invHealth||null,inbound:d.inbound!=null?d.inbound:null,days:d.days!=null?d.days:null,
         caAvailable:d.caAvailable!=null?d.caAvailable:null,caInvHealth:d.caInvHealth||null,caInbound:d.caInbound!=null?d.caInbound:null,caDays:d.caDays!=null?d.caDays:null,caAsin:d.caAsin||null,
         nrCount30d:d.nrCount30d||0,nrSummary:d.nrSummary||[],
@@ -1058,6 +1057,10 @@ function renderCoirCard(c){
       '</span>');
   }
 
+  // 0. What the screenshot counted, so the figure on the dashboard and the figure on the
+  //    Slack card come from the same place and can be checked against the image.
+  if (h && h.rawTotal) fact("Ratings", h.rawTotal.toLocaleString(), null, "on the " + h.readOn.slice(5) + " screenshot");
+
   // 1. Where we sit inside the band. One phrase, no decimals.
   if (h && h.bandLo != null && h.bandHi != null && !h.divergent) {
     var mid = (h.bandLo + h.bandHi) / 2, frac = (mid - lo - 0.05) / 0.1;
@@ -1298,7 +1301,7 @@ function downloadCSV(){
     rows.push([item.sku,item.asin,item.brand,item.tier,item.parent||"",item.psku||"",item.pasin||"",keepaParent,mismatch,item.name,
       d.cur!=null?d.cur:"",d.r1!=null?d.r1:"",d.r30!=null?d.r30:"",d.r90!=null?d.r90:"",d.r180!=null?d.r180:"",
       d.rev!=null?d.rev:"",d.bsr!=null?d.bsr:"",
-      d.parentTier||"",d.available!=null?d.available:"",d.invHealth||"",d.inbound!=null?d.inbound:"",
+      item.parentTier||"",d.available!=null?d.available:"",d.invHealth||"",d.inbound!=null?d.inbound:"",
       d.caAvailable!=null?d.caAvailable:"",d.caInvHealth||"",d.caInbound!=null?d.caInbound:"",d.caAsin||""
     ].map(function(c){return '"'+String(c).replace(/"/g,'""')+'"';}).join(","));
   });
