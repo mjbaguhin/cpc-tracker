@@ -1070,7 +1070,13 @@ function renderCoirCard(c){
 
   // 0. What the screenshot counted, so the figure on the dashboard and the figure on the
   //    Slack card come from the same place and can be checked against the image.
-  if (h && h.rawTotal) fact("Ratings", h.rawTotal.toLocaleString(), null, "on the " + h.readOn.slice(5) + " screenshot");
+  // v31. "on the 08-31 screenshot" next to "Updated 2026-09-01" read as a contradiction.
+  // The age closes that: a same-day read says nothing, an older one says how old.
+  if (h && h.rawTotal) {
+    var ageTxt = "on the " + h.readOn.slice(5) + " screenshot";
+    if (h.ageDays > 0) ageTxt += ", " + h.ageDays + "d old";
+    fact("Ratings", h.rawTotal.toLocaleString(), h.ageDays >= 3 ? "#b45309" : null, ageTxt);
+  }
 
   // 1. Where we sit inside the band. One phrase, no decimals.
   if (h && h.bandLo != null && h.bandHi != null && !h.divergent) {
@@ -1119,6 +1125,11 @@ function renderCoirCard(c){
          "since " + c.silent.from.slice(5) + ", never shown as a review");
   }
 
+  // 4b. A real gap in the screenshot record, as opposed to a one day lag.
+  if (h && h.ageDays >= 3) {
+    fact("Screenshot", h.ageDays + " days old", "#dc2626", "drop one in the folder");
+  }
+
   // 5. Anything that would make the numbers above wrong. Only shown when it applies.
   var nh = c.nrLogHealth;
   if (nh && nh.failed) {
@@ -1138,7 +1149,8 @@ function renderCoirCard(c){
   if (avgEl) {
     if (h && h.bandLo != null && h.bandHi != null && !h.divergent) {
       avgEl.textContent = "true avg " + h.bandLo.toFixed(3) + " to " + h.bandHi.toFixed(3) +
-                          ", read " + h.readOn.slice(5);
+                          ", read " + h.readOn.slice(5) +
+                          (h.ageDays > 0 ? " (" + h.ageDays + "d ago)" : "");
     } else if (h && h.divergent) {
       avgEl.textContent = "true avg does not reconcile with the shown star";
     } else {
