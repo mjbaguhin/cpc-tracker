@@ -1118,8 +1118,10 @@ function renderCoirCard(c){
     fact("This week", nr7 + (nr7 === 1 ? " negative" : " negatives"), "#059669",
          "nothing new since " + c.logThrough + ", breakdown agrees");
   } else if (c.logStale) {
-    var qa = c.quietCheck ? (c.quietCheck.minArrived + " low rating" +
-             (c.quietCheck.minArrived === 1 ? "" : "s") + " arrived unlogged") : "no breakdown to check";
+    // v33. "arrived unlogged" read as something missed. A rating can be in the star count
+    // while its review is still in Amazon moderation, which runs 24 to 72 hours.
+    var qa = c.quietCheck ? (c.quietCheck.minArrived + " in the count, not yet a review")
+                          : "no breakdown to check";
     fact("This week", nr7 + " so far", "#b45309", qa);
   } else if (nr7 > 0) {
     fact("This week", nr7 + " negative" + (nr7 === 1 ? "" : "s"), "#1e293b");
