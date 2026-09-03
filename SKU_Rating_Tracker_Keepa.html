@@ -1081,9 +1081,19 @@ function renderCoirCard(c){
   // 1. Where we sit inside the band. One phrase, no decimals.
   if (h && h.bandLo != null && h.bandHi != null && !h.divergent) {
     var mid = (h.bandLo + h.bandHi) / 2, frac = (mid - lo - 0.05) / 0.1;
+    var pct = Math.max(0, Math.min(100, Math.round(frac * 100)));
     var pos = frac >= 0.66 ? "Near the top" : frac >= 0.34 ? "Mid-band" : "Near the bottom";
     var pcol = frac >= 0.66 ? "#059669" : frac >= 0.34 ? "#b45309" : "#dc2626";
-    fact("Position in the " + (t / 10).toFixed(1) + " band", pos, pcol, "(floor " + (lo + 0.05).toFixed(2) + ")");
+    // v32. The label alone cannot show movement, so the percentage and the day over day
+    // change in the raw average go with it. Holding now looks like holding.
+    var note = pct + "% up, floor " + (lo + 0.05).toFixed(2);
+    if (c.bandMove && Math.abs(c.bandMove.delta) >= 0.0005) {
+      note += ", " + (c.bandMove.delta < 0 ? "down " : "up ") +
+              Math.abs(c.bandMove.delta).toFixed(3) + " on " + c.bandMove.from.slice(5);
+    } else if (c.bandMove) {
+      note += ", unchanged";
+    }
+    fact("Position in the " + (t / 10).toFixed(1) + " band", pos, pcol, note);
   } else if (h && h.divergent) {
     fact("Position", "Cannot tell today", "#b45309", "breakdown and star disagree");
   } else {
@@ -1123,6 +1133,16 @@ function renderCoirCard(c){
   if (c.silent && c.silent.silentAtLeast > 0) {
     fact("Silent 1 stars", "at least " + c.silent.silentAtLeast, "#b45309",
          "since " + c.silent.from.slice(5) + ", never shown as a review");
+  }
+
+  // 4a. The measured trend, which only became valid at twelve readings on 2026-09-02.
+  if (c.trend && c.trend.enough) {
+    if (c.trend.falling && c.trend.targetDate) {
+      fact("Measured trend", "reaches " + c.trend.target.toFixed(2) + " " + c.trend.targetDate,
+           "#dc2626", "falling " + Math.abs(c.trend.slopePerWeek).toFixed(4) + "/wk over " + c.trend.readings + " readings");
+    } else if (!c.trend.falling) {
+      fact("Measured trend", "flat or rising", "#059669", "over " + c.trend.readings + " readings");
+    }
   }
 
   // 4b. A real gap in the screenshot record, as opposed to a one day lag.
