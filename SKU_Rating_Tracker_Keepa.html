@@ -1140,8 +1140,13 @@ function renderCoirCard(c){
   // 4a. The measured trend, which only became valid at twelve readings on 2026-09-02.
   if (c.trend && c.trend.enough) {
     if (c.trend.falling && c.trend.targetDate) {
+      // v34. A date that moved eight days in three should not be shown as settled.
+      var ts = c.targetStability;
+      var tnote = "falling " + Math.abs(c.trend.slopePerWeek).toFixed(4) + "/wk over " + c.trend.readings + " readings";
+      if (ts && !ts.settled) tnote = "still moving, was " + ts.was + " " + ts.overDays + "d ago";
+      else if (ts) tnote = "steady for " + ts.overDays + " days, " + tnote;
       fact("Measured trend", "reaches " + c.trend.target.toFixed(2) + " " + c.trend.targetDate,
-           "#dc2626", "falling " + Math.abs(c.trend.slopePerWeek).toFixed(4) + "/wk over " + c.trend.readings + " readings");
+           (ts && !ts.settled) ? "#b45309" : "#dc2626", tnote);
     } else if (!c.trend.falling) {
       fact("Measured trend", "flat or rising", "#059669", "over " + c.trend.readings + " readings");
     }
