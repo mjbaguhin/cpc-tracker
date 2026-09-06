@@ -1104,10 +1104,18 @@ function renderCoirCard(c){
   if (c.budget && c.budget.samples > 0) {
     var rem = c.budget.remaining;
     var rcol = rem <= Math.max(3, Math.round(c.budget.budget * 0.25)) ? "#dc2626" : "#1e293b";
-    fact("Headroom to " + lo.toFixed(1), rem + " negatives", rcol, "of ~" + c.budget.budget);
+    fact("Headroom to " + lo.toFixed(1), rem + " negatives", rcol,
+         "of ~" + c.budget.budget + (c.budget.sinceDrop ? ", since " + c.budget.sinceDrop.slice(5) : ""));
     if (c.budget.accelerating && c.budget.spanDays && c.budget.spanDays.length >= 2) {
+      // v34.1. The spans alone did not say when. The crossing dates come off the bands so
+      // the whole timeline reads in one glance: how long each step took and the day it
+      // landed. bands are newest first, so the closed ones are reversed back into order.
       var sd = c.budget.spanDays;
-      fact("Pace", "Speeding up", "#b45309", sd[sd.length - 1] + "d then " + sd[0] + "d");
+      var closed = (c.bands || []).filter(function(b){ return !b.open && !b.blip; }).slice().reverse();
+      var pnote = closed.length >= 2
+        ? closed.map(function(b){ return b.from + " to " + b.to + " on " + b.end.slice(5) + " (" + b.days + "d)"; }).join(", ")
+        : sd[sd.length - 1] + "d then " + sd[0] + "d";
+      fact("Pace", "Speeding up", "#b45309", pnote);
     }
   }
 
@@ -1144,7 +1152,7 @@ function renderCoirCard(c){
       var ts = c.targetStability;
       var tnote = "falling " + Math.abs(c.trend.slopePerWeek).toFixed(4) + "/wk over " + c.trend.readings + " readings";
       if (ts && !ts.settled) tnote = "still moving, was " + ts.was + " " + ts.overDays + "d ago";
-      else if (ts) tnote = "steady for " + ts.overDays + " days, " + tnote;
+      else if (ts) tnote = "steady for " + ts.overDays + " day" + (ts.overDays === 1 ? "" : "s") + ", " + tnote;
       fact("Measured trend", "reaches " + c.trend.target.toFixed(2) + " " + c.trend.targetDate,
            (ts && !ts.settled) ? "#b45309" : "#dc2626", tnote);
     } else if (!c.trend.falling) {
