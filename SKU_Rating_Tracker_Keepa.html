@@ -1217,6 +1217,22 @@ function renderCoirCard(c){
     fact("Ratings", h.rawTotal.toLocaleString(), h.ageDays >= 3 ? "#b45309" : null, ageTxt);
   }
 
+  // 0b. The breakdown itself, plus its week on week move. Sam asked for exactly this on
+  //     2026-09-07, and he had to ask because everything else here is derived from these
+  //     five numbers while the numbers themselves were never shown.
+  if (h && h.pct) {
+    var bd = "5\u2605 " + h.pct[0] + "  4\u2605 " + h.pct[1] + "  3\u2605 " + h.pct[2] +
+             "  2\u2605 " + h.pct[3] + "  1\u2605 " + h.pct[4];
+    var wnote = null;
+    if (c.wow) {
+      var lb = ["5\u2605", "4\u2605", "3\u2605", "2\u2605", "1\u2605"], mv = [];
+      c.wow.deltas.forEach(function(dv, i){ if (dv !== 0) mv.push(lb[i] + (dv > 0 ? "+" : "") + dv); });
+      wnote = "wk on wk " + (mv.length ? mv.join(" ") : "flat") +
+              ", low " + c.wow.lowThen + "\u2192" + c.wow.lowNow + "%";
+    }
+    fact("Breakdown %", bd, null, wnote);
+  }
+
   // 1. Where we sit inside the band. One phrase, no decimals.
   if (h && h.bandLo != null && h.bandHi != null && !h.divergent) {
     var mid = (h.bandLo + h.bandHi) / 2, frac = (mid - lo - 0.05) / 0.1;
