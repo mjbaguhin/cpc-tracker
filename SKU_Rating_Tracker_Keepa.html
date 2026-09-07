@@ -859,18 +859,47 @@ function renderAlertBanner(){
 
   // A family of 2 or more whose children carry only the plain threshold reason collapses
   // to one summary chip. Anything with a real movement stays on its own line.
+  // v37. Two problems with the first pass.
+  //
+  // PP-PEA-16OZ and PP-PUMPKIN-16OZ are both Plant Protein Powders and both alerting, but
+  // PP-PEA carries a steep drop so it was pulled out as "notable", which left PP-PUMPKIN
+  // alone and the two siblings read as unrelated chips. A family is now one chip whenever
+  // it has two or more alerting members, and any notable reason is carried onto that chip
+  // rather than splitting the family apart.
+  //
+  // Worse: the alert rule only fires for tiers A, B and N, so a family can be low across
+  // the board while only one child alerts. DMRUB-30 alerts alone while six Tier C siblings
+  // sit at 4.4, and SB-POLLIN-2OZ alerts alone while its only sibling is also at 4.3. The
+  // chip read as one SKU when the whole family was down. Non-alerting siblings below the
+  // threshold are counted and stated.
+  function belowSiblings(item) {
+    if (!item.parent) return {total: 0, below: 0};
+    var sibs = CATALOG.filter(function(c){ return c.parent === item.parent; });
+    var below = sibs.filter(function(c){
+      var dd = RD[c.asin];
+      return dd && dd.cur !== null && dd.cur < 4.5;
+    });
+    return {total: sibs.length, below: below.length};
+  }
+
   var flat = [];
   order.forEach(function(k){
     var g = groups[k];
-    var plain = g.members.filter(function(m){ return m.reasons.length === 1 && /Below 4\.5/.test(m.reasons[0]); });
-    var notable = g.members.filter(function(m){ return plain.indexOf(m) === -1; });
-    notable.forEach(function(m){ flat.push(m); });
-    if (plain.length >= 2) {
-      flat.push({group: true, item: plain[0].item, members: plain,
-                 label: (plain[0].item.parent || plain[0].item.psku || "family"),
-                 reasons: [plain.length + " SKUs below 4.5\u2605"]});
+    var notableReasons = [];
+    g.members.forEach(function(m){
+      m.reasons.forEach(function(r){
+        if (!/Below 4\.5/.test(r) && notableReasons.indexOf(r) === -1) notableReasons.push(r);
+      });
+    });
+    var sib = belowSiblings(g.members[0].item);
+    if (g.members.length >= 2) {
+      flat.push({group: true, item: g.members[0].item, members: g.members,
+                 label: (g.members[0].item.parent || g.members[0].item.psku || "family"),
+                 notable: notableReasons, sib: sib});
     } else {
-      plain.forEach(function(m){ flat.push(m); });
+      var solo = g.members[0];
+      solo.sib = sib;
+      flat.push(solo);
     }
   });
 
@@ -891,8 +920,16 @@ function renderAlertBanner(){
       caret.style.cssText = "display:inline-block;transition:transform .15s;margin-right:6px;opacity:.7";
       gc.appendChild(caret);
       var lbl = document.createElement("span");
+      var extra = "";
+      if (al.sib && al.sib.below > al.members.length) {
+        extra = " <span style='font-size:10px;opacity:.7'>(" + al.sib.below + " of " +
+                al.sib.total + " in the family are below 4.5, " +
+                (al.sib.below - al.members.length) + " not alerting on tier)</span>";
+      }
+      var nb = (al.notable && al.notable.length)
+        ? " <span style='color:#dc2626'>/ " + esc(al.notable.join(" / ")) + "</span>" : "";
       lbl.innerHTML = "<b>" + esc(al.label) + "</b> <span style='opacity:.8'>&mdash; " +
-        al.members.length + " SKUs below 4.5&#9733;</span>" +
+        al.members.length + " SKUs below 4.5&#9733;</span>" + nb + extra +
         "<span style='font-size:10px;opacity:.6'> &nbsp;click to expand</span>";
       gc.appendChild(lbl);
       wrap.appendChild(gc);
@@ -963,6 +1000,10 @@ function buildAlertChip(al){
 
     // Chip label — SKU (Tier X) - Reason 1 / Reason 2
     var reasonsLabel=al.reasons.join(" / ");
+    if (al.sib && al.sib.below > 1) {
+      reasonsLabel += " <span style='font-size:10px;opacity:.7'>(" + al.sib.below + " of " +
+        al.sib.total + " in this family are below 4.5, the rest are Tier C so they do not alert)</span>";
+    }
 
     chip.innerHTML=
       "<span>&#128308;</span>"+
@@ -1264,7 +1305,11 @@ function renderCoirCard(c){
       var tnote = "falling " + Math.abs(c.trend.slopePerWeek).toFixed(4) + "/wk over " + c.trend.readings + " readings";
       if (ts && !ts.settled) tnote = "still moving, was " + ts.was + " " + ts.overDays + "d ago";
       else if (ts) tnote = "steady for " + ts.overDays + " day" + (ts.overDays === 1 ? "" : "s") + ", " + tnote;
-      fact("Measured trend", "reaches " + c.trend.target.toFixed(2) + " " + c.trend.targetDate,
+      // v36.2. This read "reaches 4.35 Oct 1, 2026" in bold red with no hedge on it, which
+      // is a forecast presented as a fact. Three things make it an estimate: the rate is
+      // assumed to hold, one bad day moved it eight days in three, and the starting point
+      // is itself a range. The marker goes on the value where it cannot be missed.
+      fact("Measured trend", "est. " + c.trend.target.toFixed(2) + " by " + c.trend.targetDate,
            (ts && !ts.settled) ? "#b45309" : "#dc2626", tnote);
     } else if (!c.trend.falling) {
       fact("Measured trend", "flat or rising", "#059669", "over " + c.trend.readings + " readings");
