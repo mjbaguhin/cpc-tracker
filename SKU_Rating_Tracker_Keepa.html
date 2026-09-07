@@ -156,6 +156,141 @@ td.left{text-align:left}
 #spark-tip .dn{color:#f87171}
 #spark-tip .fl{color:#94a3b8}
 canvas{cursor:pointer}
+
+/* ============================================================
+   MOBILE  (v39)
+   The page had a viewport tag but no media queries, so on a phone the desktop
+   layout simply squeezed: eleven table columns crushed into 390px, the filter bar
+   wrapped into six rows, and .box carried overflow:hidden so the table could not
+   even be scrolled sideways. Nothing was unusable in principle, it was just
+   unreadable.
+   Approach: keep one layout and adapt it. Four of the eleven columns are hidden
+   because they are the least used on a phone (the sparkline, 90D, 180D and BSR),
+   the table scrolls sideways for the rest with the product name pinned so you can
+   always tell which row you are on, and every horizontal strip that used to wrap
+   now scrolls instead.
+   ============================================================ */
+@media (max-width: 760px) {
+
+  body { font-size: 12px; }
+
+  /* Header. The logo and the five KPI tiles used to wrap into a tall stack. */
+  #top { padding: 10px 12px; gap: 8px; }
+  #top img, #top .logo { width: 34px !important; height: 34px !important; }
+  #top h1, #top .title { font-size: 15px !important; }
+  #top .sub { font-size: 10px !important; line-height: 1.3; }
+
+  /* KPI tiles scroll sideways rather than stacking. */
+  #topstats {
+    display: flex !important;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    gap: 6px;
+    width: 100%;
+    scrollbar-width: none;
+  }
+  #topstats::-webkit-scrollbar { display: none; }
+  #topstats > div { flex-shrink: 0; }
+
+  /* Coir banner: the gauge and the fact grid stack, and facts go one per row. */
+  #coir-card { margin: 8px 8px 0 !important; padding: 10px !important; }
+  #coir-card > div { flex-direction: column !important; align-items: stretch !important; }
+  #coir-line {
+    grid-template-columns: 1fr 1fr !important;
+    gap: 10px 12px !important;
+    min-width: 0 !important;
+    flex: 1 1 auto !important;
+  }
+  #coir-gauge { width: 100px !important; }
+  #coir-updated { align-self: flex-start !important; }
+
+  /* Filter bar and button rows scroll sideways instead of wrapping. */
+  #ctrl, #ctrl2 {
+    flex-wrap: nowrap !important;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    padding: 8px 10px !important;
+    scrollbar-width: none;
+  }
+  #ctrl::-webkit-scrollbar, #ctrl2::-webkit-scrollbar { display: none; }
+  #ctrl > *, #ctrl2 > * { flex-shrink: 0; }
+  #msg { white-space: nowrap; }
+  .tbb { flex-shrink: 0; }
+  .dv { flex-shrink: 0; }
+  button { font-size: 11px !important; padding: 7px 10px !important; }
+  .tbtn { padding: 5px 8px !important; font-size: 11px !important; }
+  select, input[type="text"] { font-size: 12px !important; padding: 7px 8px !important; }
+
+  /* Alert chips: full width, one per line, so long reasons stay readable. */
+  #alert-chips { flex-direction: column !important; align-items: stretch !important; }
+  .alert-chip { width: 100% !important; white-space: normal !important; }
+  .alert-tooltip { display: none !important; }   /* no hover on a touch screen */
+
+  /* The table. Sideways scroll, product name pinned, four columns dropped. */
+  #wrap { padding: 8px 8px 20px; }
+  .box { overflow-x: auto !important; -webkit-overflow-scrolling: touch; }
+  .box > table { min-width: 620px; }
+  th, td { padding: 6px 5px !important; }
+  th { font-size: 8px !important; }
+
+  /* Pin the product column. nth-child(1) is a 5px spacer, so 2 is Product. */
+  thead th:nth-child(2), tbody td:nth-child(2) {
+    position: sticky; left: 0; z-index: 2;
+    box-shadow: 2px 0 4px rgba(0,0,0,.06);
+    max-width: 150px;
+  }
+  tbody td:nth-child(2) { background: #fff; }
+  thead th:nth-child(2) { background: #0f172a; }
+
+  /* Dropped on a phone: 30D sparkline, 90 Days, 180 Days, BSR. */
+  thead th:nth-child(5),  tbody td:nth-child(5),
+  thead th:nth-child(8),  tbody td:nth-child(8),
+  thead th:nth-child(9),  tbody td:nth-child(9),
+  thead th:nth-child(11), tbody td:nth-child(11) { display: none !important; }
+
+  /* The parent ASIN picker. #plist is position:absolute inside #ctrl2, and #ctrl2 is
+     now an overflow-x scroller, which CLIPS an absolutely positioned child. The dropdown
+     would have been cut off or invisible, which breaks the parent picker outright, and
+     checking parents and children on a phone is the main reason for this whole exercise.
+     Fixed positioning takes it out of the scroller entirely. */
+  #plist {
+    position: fixed !important;
+    top: auto !important;
+    left: 8px !important; right: 8px !important;
+    width: auto !important;
+    max-height: 55vh !important;
+    z-index: 9000 !important;
+    box-shadow: 0 8px 24px rgba(0,0,0,.18) !important;
+  }
+  #psearch, #srch { min-width: 150px; }
+
+  /* Group headers. colspan spans the whole table, so on a sideways scroll the parent
+     name used to slide out of view and you lost track of which family you were in.
+     Pinned to the left edge so the name stays put. */
+  tr.PR > td {
+    position: sticky; left: 0;
+    max-width: 100vw;
+    white-space: normal !important;
+    font-size: 11px !important;
+    padding: 7px 8px !important;
+  }
+
+  /* Popups and modals fit the screen. */
+  #alert-popup {
+    width: calc(100vw - 20px) !important;
+    max-width: none !important;
+    left: 10px !important; right: 10px !important;
+    max-height: 80vh; overflow-y: auto;
+  }
+}
+
+@media (max-width: 420px) {
+  /* Very narrow. Facts go single column and the table drops two more. */
+  #coir-line { grid-template-columns: 1fr !important; }
+  thead th:nth-child(3), tbody td:nth-child(3),
+  thead th:nth-child(7), tbody td:nth-child(7) { display: none !important; }
+  .box > table { min-width: 380px; }
+}
 </style>
 </head>
 <body>
