@@ -825,9 +825,107 @@ function renderAlertBanner(){
 
   banner.className="has-alerts";
   title.className="alert-title";
-  title.innerHTML="&#128680; Red Alerts &#8212; "+alerts.length+" SKU"+(alerts.length>1?"s":"")+" need attention";
 
+  // v36. 30 chips, 25 of them coir children all reading "Below 4.5", was not a list of
+  // problems. It was one problem printed 25 times, and the coir banner directly above
+  // already covers it in full. Worse, the only chip that needed attention on 2026-09-07,
+  // PP-PEA-16OZ with a STEEP DROP from 4.6 to 4.2 in 60 days, sat at position 28 of 30
+  // where nobody would find it.
+  //
+  // Alerts are grouped by variation family, so a family is one chip carrying its child
+  // count, and sorted so anything with a steep drop or a specific movement comes first.
+  // A family whose children all say the same thing collapses to a single line.
+  var groups = {}, order = [];
   alerts.forEach(function(al){
+    var key = al.item.parent || al.item.psku || ("solo:" + al.item.sku);
+    if (!groups[key]) { groups[key] = {key: key, members: [], worst: 0}; order.push(key); }
+    var g = groups[key];
+    g.members.push(al);
+    // Severity: a steep drop or a named movement outranks a plain threshold breach.
+    var sev = al.reasons.some(function(r){ return /STEEP DROP/.test(r); }) ? 3
+            : al.reasons.some(function(r){ return /Dropped from/.test(r); }) ? 2 : 1;
+    if (sev > g.worst) g.worst = sev;
+  });
+  var famCount = order.length;
+  title.innerHTML = "&#128680; Red Alerts &#8212; " + alerts.length + " SKU" +
+    (alerts.length > 1 ? "s" : "") + " across " + famCount + " famil" + (famCount === 1 ? "y" : "ies");
+
+  // Worst first, then largest family, so the urgent single SKUs lead.
+  order.sort(function(a, b){
+    var ga = groups[a], gb = groups[b];
+    if (gb.worst !== ga.worst) return gb.worst - ga.worst;
+    return gb.members.length - ga.members.length;
+  });
+
+  // A family of 2 or more whose children carry only the plain threshold reason collapses
+  // to one summary chip. Anything with a real movement stays on its own line.
+  var flat = [];
+  order.forEach(function(k){
+    var g = groups[k];
+    var plain = g.members.filter(function(m){ return m.reasons.length === 1 && /Below 4\.5/.test(m.reasons[0]); });
+    var notable = g.members.filter(function(m){ return plain.indexOf(m) === -1; });
+    notable.forEach(function(m){ flat.push(m); });
+    if (plain.length >= 2) {
+      flat.push({group: true, item: plain[0].item, members: plain,
+                 label: (plain[0].item.parent || plain[0].item.psku || "family"),
+                 reasons: [plain.length + " SKUs below 4.5\u2605"]});
+    } else {
+      plain.forEach(function(m){ flat.push(m); });
+    }
+  });
+
+  // v36.1. A group chip that only summarised would have thrown away the per SKU tooltip
+  // and the click-through popup that every individual chip carries. So the group is a
+  // toggle: collapsed by default, and clicking it renders the real chips underneath with
+  // their tooltips and popups intact. Nothing is lost, it is just folded away.
+  flat.forEach(function(al){
+    if (al.group) {
+      var wrap = document.createElement("div");
+      wrap.style.width = "100%";
+
+      var gc = document.createElement("div");
+      gc.className = "alert-chip";
+      gc.style.cursor = "pointer";
+      var caret = document.createElement("span");
+      caret.textContent = "\u25B8";
+      caret.style.cssText = "display:inline-block;transition:transform .15s;margin-right:6px;opacity:.7";
+      gc.appendChild(caret);
+      var lbl = document.createElement("span");
+      lbl.innerHTML = "<b>" + esc(al.label) + "</b> <span style='opacity:.8'>&mdash; " +
+        al.members.length + " SKUs below 4.5&#9733;</span>" +
+        "<span style='font-size:10px;opacity:.6'> &nbsp;click to expand</span>";
+      gc.appendChild(lbl);
+      wrap.appendChild(gc);
+
+      var inner = document.createElement("div");
+      inner.style.cssText = "width:100%;margin-top:6px;padding-left:14px;" +
+        "border-left:2px solid rgba(220,38,38,.25);flex-wrap:wrap;gap:6px";
+      inner.style.display = "none";
+      wrap.appendChild(inner);
+
+      // Open state is tracked in a variable rather than read back off style.display. The
+      // first version read the DOM to decide which way to toggle, which meant the very
+      // first click depended on the initial value being the exact string "none". Holding
+      // the flag here cannot get out of step with itself.
+      var built = false, open = false;
+      gc.addEventListener("click", function(e){
+        e.stopPropagation();
+        if (!built) { al.members.forEach(function(m){ inner.appendChild(buildAlertChip(m)); }); built = true; }
+        open = !open;
+        inner.style.display = open ? "flex" : "none";
+        caret.style.transform = open ? "rotate(90deg)" : "";
+      });
+      chipsEl.appendChild(wrap);
+      return;
+    }
+    chipsEl.appendChild(buildAlertChip(al));
+  });
+}
+
+// One chip, with its tooltip and its click-through popup. Used for standalone alerts and
+// for the members revealed when a family group is expanded.
+function buildAlertChip(al){
+  {
     var item=al.item, d=al.d;
     var chip=document.createElement("div");
     chip.className="alert-chip";
@@ -881,8 +979,8 @@ function renderAlertBanner(){
       e.stopPropagation();
       openAlertPopup(item, d, al.reasons);
     });
-    chipsEl.appendChild(chip);
-  });
+    return chip;
+  }
 }
 
 function openAlertPopup(item, d, reasons){
@@ -1144,10 +1242,11 @@ function renderCoirCard(c){
   // reports the whole silent population rather than a 1 star floor.
   if (c.silentMeasured && c.silentMeasured.exact) {
     // v35.1. All five buckets logged, so this is an exact count rather than a range.
+    // v35.2. One number, the one that changes a decision: how much of the negative
+    // population we can actually read.
     var sme = c.silentMeasured;
-    fact("Silent ratings", sme.silent.toLocaleString(), "#b45309",
-         (100 - sme.writtenShare) + "% of " + sme.total.toLocaleString() +
-         " left no text, " + sme.lowSilentLo + "-" + sme.lowSilentHi + " of them negative");
+    var rs = Math.round(200 * sme.lowWritten / (sme.lowRatingsLo + sme.lowRatingsHi));
+    fact("Negatives we can read", rs + "%", "#b45309", "the rest left no written review");
   } else if (c.silentMeasured && c.silentMeasured.silentHi > 0) {
     var smx = c.silentMeasured;
     fact("Silent low ratings", smx.silentLo + " to " + smx.silentHi, "#b45309",
