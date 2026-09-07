@@ -1142,7 +1142,13 @@ function renderCoirCard(c){
   //    what we know we cannot.
   // v35. Measured beats estimated. The written counts cover all three low buckets, so this
   // reports the whole silent population rather than a 1 star floor.
-  if (c.silentMeasured && c.silentMeasured.silentHi > 0) {
+  if (c.silentMeasured && c.silentMeasured.exact) {
+    // v35.1. All five buckets logged, so this is an exact count rather than a range.
+    var sme = c.silentMeasured;
+    fact("Silent ratings", sme.silent.toLocaleString(), "#b45309",
+         (100 - sme.writtenShare) + "% of " + sme.total.toLocaleString() +
+         " left no text, " + sme.lowSilentLo + "-" + sme.lowSilentHi + " of them negative");
+  } else if (c.silentMeasured && c.silentMeasured.silentHi > 0) {
     var smx = c.silentMeasured;
     fact("Silent low ratings", smx.silentLo + " to " + smx.silentHi, "#b45309",
          "of " + smx.ratingsLo + "-" + smx.ratingsHi + ", " + (100 - smx.writtenShare) + "% left no text");
