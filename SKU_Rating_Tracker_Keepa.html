@@ -1140,9 +1140,15 @@ function renderCoirCard(c){
   // 4. Silent 1 stars, when the star breakdown proves one landed that the log never saw.
   //    Shown next to the logged count because the pair is the point: what we can see, and
   //    what we know we cannot.
-  if (c.silent && c.silent.silentAtLeast > 0) {
+  // v35. Measured beats estimated. The written counts cover all three low buckets, so this
+  // reports the whole silent population rather than a 1 star floor.
+  if (c.silentMeasured && c.silentMeasured.silentHi > 0) {
+    var smx = c.silentMeasured;
+    fact("Silent low ratings", smx.silentLo + " to " + smx.silentHi, "#b45309",
+         "of " + smx.ratingsLo + "-" + smx.ratingsHi + ", " + (100 - smx.writtenShare) + "% left no text");
+  } else if (c.silent && c.silent.silentAtLeast > 0) {
     fact("Silent 1 stars", "at least " + c.silent.silentAtLeast, "#b45309",
-         "since " + c.silent.from.slice(5) + ", never shown as a review");
+         "since " + c.silent.from.slice(5) + ", estimated, no written counts yet");
   }
 
   // 4a. The measured trend, which only became valid at twelve readings on 2026-09-02.
