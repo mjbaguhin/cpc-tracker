@@ -1356,16 +1356,21 @@ function renderCoirCard(c){
   //     2026-09-07, and he had to ask because everything else here is derived from these
   //     five numbers while the numbers themselves were never shown.
   if (h && h.pct) {
-    var bd = "5\u2605 " + h.pct[0] + "  4\u2605 " + h.pct[1] + "  3\u2605 " + h.pct[2] +
-             "  2\u2605 " + h.pct[3] + "  1\u2605 " + h.pct[4];
+    // v39.1. "5★ 76 4★ 9 3★ 4 2★ 3 1★ 8" ran together as one blob: ten values, all the
+    // same size, weight and colour, with the labels competing with the numbers. The order
+    // is always 5 down to 1, so the labels are said once in the fact name and the numbers
+    // stand alone as a distribution. The 1 star is coloured because it is the only one of
+    // the five that changes a decision.
+    var bd = h.pct.slice(0, 4).join(" \u00b7 ") +
+             " \u00b7 <span style='color:#dc2626'>" + h.pct[4] + "</span>";
     var wnote = null;
     if (c.wow) {
       var lb = ["5\u2605", "4\u2605", "3\u2605", "2\u2605", "1\u2605"], mv = [];
-      c.wow.deltas.forEach(function(dv, i){ if (dv !== 0) mv.push(lb[i] + (dv > 0 ? "+" : "") + dv); });
-      wnote = "wk on wk " + (mv.length ? mv.join(" ") : "flat") +
-              ", low " + c.wow.lowThen + "\u2192" + c.wow.lowNow + "%";
+      c.wow.deltas.forEach(function(dv, i){ if (dv !== 0) mv.push(lb[i] + " " + (dv > 0 ? "+" : "\u2212") + Math.abs(dv)); });
+      wnote = "wk: " + (mv.length ? mv.join(", ") : "no change") +
+              " &middot; low " + c.wow.lowThen + " to " + c.wow.lowNow + "%";
     }
-    fact("Breakdown %", bd, null, wnote);
+    fact("Breakdown % 5\u2605 to 1\u2605", bd, null, wnote);
   }
 
   // 1. Where we sit inside the band. One phrase, no decimals.
@@ -1472,18 +1477,10 @@ function renderCoirCard(c){
     fact("Screenshot", h.ageDays + " days old", "#dc2626", "drop one in the folder");
   }
 
-  // 5. Anything that would make the numbers above wrong. Only shown when it applies.
-  var nh = c.nrLogHealth;
-  if (nh && nh.failed) {
-    fact("NR Log", "COULD NOT BE READ", "#dc2626", nh.reason || "");
-  } else if (nh && (nh.problem > 0 || nh.dupes > 0)) {
-    // Only what is actually worth fixing. The legacy rows with no ASIN all predate 2026
-    // and are excluded upstream, so this appears when there is something to do.
-    var bits = [];
-    if (nh.dupes) bits.push(nh.dupes + " duplicate Review ID" + (nh.dupes === 1 ? "" : "s"));
-    if (nh.problem) bits.push(nh.problem + " row" + (nh.problem === 1 ? "" : "s") + " to fix");
-    fact("NR Log", bits.join(", "), "#b45309", "counted twice or missed");
-  }
+  // 5. v39.1. The NR Log fact is gone from the banner at MJ's request, to save space.
+  //    It is not dropped: it still prints on the Slack card and names the exact rows in
+  //    the run log, which is where a data-entry fix actually gets acted on. The banner is
+  //    for the rating at a glance; the card is the record.
 
   // The number behind the dot. Withheld when the breakdown and the displayed star do not
   // reconcile, because then the dot's position is not something we can stand behind.
