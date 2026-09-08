@@ -1363,12 +1363,14 @@ function renderCoirCard(c){
     // the five that changes a decision.
     var bd = h.pct.slice(0, 4).join(" \u00b7 ") +
              " \u00b7 <span style='color:#dc2626'>" + h.pct[4] + "</span>";
+    // v40.1. The week on week note ran straight on from the five numbers with no break,
+    // so MJ could not see it was a separate thing. Put on its own line.
     var wnote = null;
     if (c.wow) {
       var lb = ["5\u2605", "4\u2605", "3\u2605", "2\u2605", "1\u2605"], mv = [];
       c.wow.deltas.forEach(function(dv, i){ if (dv !== 0) mv.push(lb[i] + " " + (dv > 0 ? "+" : "\u2212") + Math.abs(dv)); });
-      wnote = "wk: " + (mv.length ? mv.join(", ") : "no change") +
-              " &middot; low " + c.wow.lowThen + " to " + c.wow.lowNow + "%";
+      wnote = "<br>wk on wk: " + (mv.length ? mv.join(", ") : "no change") +
+              "<br>low " + c.wow.lowThen + " to " + c.wow.lowNow + "%";
     }
     fact("Breakdown % 5\u2605 to 1\u2605", bd, null, wnote);
   }
@@ -1407,10 +1409,15 @@ function renderCoirCard(c){
       // landed. bands are newest first, so the closed ones are reversed back into order.
       var sd = c.budget.spanDays;
       var closed = (c.bands || []).filter(function(b){ return !b.open && !b.blip; }).slice().reverse();
+      // v40.2. This was six values on one line: two dates, two rating pairs and two
+      // durations, all running together. The dates matter and stay, but each step gets
+      // its own line so the halving is visible at a glance rather than parsed.
       var pnote = closed.length >= 2
-        ? closed.map(function(b){ return b.from + " to " + b.to + " on " + b.end.slice(5) + " (" + b.days + "d)"; }).join(", ")
+        ? closed.map(function(b){
+            return b.from + "\u2192" + b.to + " " + b.end.slice(5) + ", " + b.days + "d";
+          }).join("<br>")
         : sd[sd.length - 1] + "d then " + sd[0] + "d";
-      fact("Pace", "Speeding up", "#b45309", pnote);
+      fact("Pace", "Speeding up", "#b45309", "<br>" + pnote);
     }
   }
 
