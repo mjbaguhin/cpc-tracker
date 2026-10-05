@@ -431,7 +431,7 @@ const DATA_URL = "https://raw.githubusercontent.com/mjbaguhin/cpc-tracker/main/d
 // Sheet must stay "Anyone with the link can view" or the page falls back to the data.json catalog.
 const PLYTIX_SHEET_ID = "123-uqIFYHTpHaH1QpBzGTZ2sMW4YMuNUgi-SbhyH9rw";
 const PLYTIX_TAB = "Raw Data";
-const PLYTIX_FIELDS = ["SKU","ASIN","Brand","SKU Status","SKU Tier","Product Name","Parent ASIN Name","Amazon Variation Parent ASIN","Amazon Variation Parent SKU"];
+const PLYTIX_FIELDS = ["SKU","ASIN","Brand","SKU Status","SKU Tier","Product Name","Parent ASIN Name","Amazon Variation Parent ASIN","Amazon Variation Parent SKU","Amazon Variation"];
 var PLYTIX_OK = false;
 function gvizUrl(tq){ return "https://docs.google.com/spreadsheets/d/"+PLYTIX_SHEET_ID+"/gviz/tq?tqx=out:json&headers=1&sheet="+encodeURIComponent(PLYTIX_TAB)+"&tq="+encodeURIComponent(tq)+"&nc="+Date.now(); }
 async function gviz(tq){
@@ -441,26 +441,30 @@ async function gviz(tq){
   return j.table;
 }
 function gv(c){ if(!c) return ""; var v=(c.v!=null?c.v:(c.f!=null?c.f:"")); return String(v).trim(); }
-// Builds the catalog from the live Plytix sheet: Active + Active-RO, Barnyard Designs + Seedboy, with an ASIN.
-async function loadPlytixCatalog(){
+// Builds the catalog from the live Plytix sheet with the SAME rules as getActiveCatalog() in Code.gs:
+// SKU Status exactly "Active", Barnyard Designs + Seedboy, has an ASIN, standalone when "Amazon Variation" is false/blank.
+// Parent Tier is not in Plytix (it comes from Jack's Parent sheet via Code.gs), so it is carried over from data.json.
+async function loadPlytixCatalog(prevCatalog){
   var head=await gviz("limit 0");
   var ids={}; head.cols.forEach(function(c){ ids[String(c.label||"").trim()]=c.id; });
   var miss=PLYTIX_FIELDS.filter(function(f){return !ids[f];});
   if(miss.length) throw new Error("Plytix missing columns: "+miss.join(", "));
   var tbl=await gviz("select "+PLYTIX_FIELDS.map(function(f){return ids[f];}).join(","));
   var rows=tbl.rows.map(function(r){ var o={}; PLYTIX_FIELDS.forEach(function(f,i){ o[f]=gv(r.c[i]); }); return o; });
-  var tierBySku={}; rows.forEach(function(o){ if(o.SKU) tierBySku[o.SKU]=o["SKU Tier"]; });
+  var prev={}; (prevCatalog||[]).forEach(function(c){ prev[c.sku]=c; });
   var seen={}, cat=[];
   rows.forEach(function(o){
     if(!o.SKU||!o.ASIN||seen[o.SKU]) return;
-    if(["Active","Active-RO"].indexOf(o["SKU Status"])<0) return;
+    if(o["SKU Status"]!=="Active") return;
     if(["Barnyard Designs","Seedboy"].indexOf(o.Brand)<0) return;
     seen[o.SKU]=1;
     var pasin=o["Amazon Variation Parent ASIN"], psku=o["Amazon Variation Parent SKU"], pname=o["Parent ASIN Name"];
-    var standalone=!pasin;
-    cat.push({sku:o.SKU, brand:o.Brand, name:(o["Product Name"]||o.SKU).substring(0,60), asin:o.ASIN,
-      tier:o["SKU Tier"]||"N", parent:pname||"", parentName:pname||"", pasin:pasin||"", psku:psku||"",
-      standalone:standalone, parentTier:(!standalone&&psku&&tierBySku[psku])?tierBySku[psku]:null});
+    var av=String(o["Amazon Variation"]||"").toLowerCase();
+    var standalone=(av==="false"||av===""||av==="nan");
+    var p0=prev[o.SKU]||{};
+    cat.push({sku:o.SKU, brand:o.Brand, name:(o["Product Name"]||o.SKU).substring(0,80), asin:o.ASIN,
+      tier:o["SKU Tier"]||"N", parent:pname||"", parentName:p0.parentName||pname||"", pasin:pasin||"", psku:psku||"",
+      standalone:standalone, parentTier:p0.parentTier!=null?p0.parentTier:null});
   });
   if(cat.length<20) throw new Error("Plytix returned only "+cat.length+" active SKUs");
   return cat;
@@ -612,7 +616,7 @@ async function doLoad(){
     PLYTIX_OK=false;
     try{
       msg.textContent="Loading Plytix catalog..."; setP(60);
-      buildCatalog(await loadPlytixCatalog()); PLYTIX_OK=true;
+      buildCatalog(await loadPlytixCatalog(j.catalog)); PLYTIX_OK=true;
     } catch(pe){
       console.warn("Plytix load failed, using data.json catalog:", pe);
       if(j.catalog && j.catalog.length > 0) buildCatalog(j.catalog);
