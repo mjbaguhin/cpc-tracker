@@ -1628,6 +1628,12 @@ function sizeOf(name, sku){
   return inch ? inch[1] + '"' : '';
 }
 
+/* Similar items for one listing: rows tied to it by ASIN (any product), plus
+   same-size rows for doormats */
+function simForRow(asin, size){
+  const own = SIM.filter(x=> x.forAsin === asin && num(x.price) !== null);
+  return own.concat(simFor(size)).sort((a,b)=> a.price - b.price);
+}
 function simFor(size){
   if(!size) return [];
   const sizes = size === '17x30' ? ['17x30','18x30'] : [size];
@@ -1689,7 +1695,7 @@ function cptRows(){
     // Similar mats only matter for listings held back by the CPT
     const rowList = row && row.usList !== null ? row.usList : (c.kList !== undefined ? c.kList : null);
     const heldNow = !(gap > 0) && rowList !== null && c.cpt && (rowList - c.cpt) / c.cpt * 100 >= 10;
-    const sim  = (gap !== null && gap > 0) || heldNow ? simFor(size) : [];
+    const sim  = (gap !== null && gap > 0) || heldNow ? simForRow(c.asin, size) : [];
     const r = Object.assign({}, c, {ours, gap, pct, size, sim, simLow: sim.length ? sim[0] : null,
       sku: c.sku || (row && row.sku) || '', name,
       sale: row ? row.usSale : null,
@@ -1874,8 +1880,8 @@ const numw = n=> n <= 10 ? NUMW[n] : String(n);
    that is how the bot most likely matched it. */
 const REF_TOL = 0.05;
 function likelyRefs(r){
-  if(r.cpt === null || !r.size) return [];
-  return SIM.filter(x=> x.market !== 'Amazon' && x.size === r.size && Math.abs(Number(x.price) - r.cpt) <= REF_TOL);
+  if(r.cpt === null) return [];
+  return SIM.filter(x=> x.market !== 'Amazon' && ((r.size && x.size === r.size) || x.forAsin === r.asin) && Math.abs(Number(x.price) - r.cpt) <= REF_TOL);
 }
 const DESIGN_WORDS = ['welcome','border','plain','blank','hello','paws','home','yall','chaos','birds','forest','snow','wreath'];
 function sharedDesign(r, x){
@@ -2281,10 +2287,10 @@ function renderCpt(){
       H('sale', 'Sale price', 'b-ours c', 'desc')+
       H('cpt', 'CPT', 'b-cpt c', 'desc')+
       H('gap', 'Gap', 'b-gap c', 'desc')+
-      `<th>30-day trend${qi('trend')}</th>`+
       H('move', 'Last CPT move', 'b-move')+
       H('sim', 'Cheapest similar', 'b-sim')+
       H('verdict', 'What to do', 'b-case')+
+      `<th>30-day trend${qi('trend')}</th>`+
       '</tr></thead><tbody>'+
       cptBody(rows)+
       '</tbody></table>';
@@ -2468,7 +2474,6 @@ function cptRowHtml(r){
              : r.target !== null && r.short > 0.005 ? `<span class="gap-badge over" data-tip="${esc(TIPS.under)}">CPT ${usd(r.short)} too low</span><span class="was">${r.shortPct}% under the target</span>`
              : r.held ? `<span class="gap-badge held" data-tip="${esc(TIPS.held)}">Held at CPT</span><span class="was">${r.listPct}% under list</span>`
                  : `<span class="gap-badge ok" data-tip="${esc(TIPS.ok)}">At or under</span>`}</td>`+
-          `<td class="trend">${miniSpark(r.h)}</td>`+
           `<td class="move">${r.moved
               ? `${usd(r.from)} to ${usd(r.cpt)}<span class="ago${hot ? ' hot' : ''}">${n === 0 ? 'today' : n + ' days ago'}</span>`
               : '<span class="mut">No change seen</span>'}</td>`+
@@ -2481,6 +2486,7 @@ function cptRowHtml(r){
              `<span class="ac ac-${r.action}" title="${esc(r.verdict.why.join('. '))}">${esc(ACTIONS[r.action].label)}</span>`+
              (r.action === 'follow' && r.caseIds.length ? `<span class="was mono">${esc(r.caseIds[r.caseIds.length - 1])}</span>` : '')}`+
              nextLine(r) + '</td>'+
+          `<td class="trend">${miniSpark(r.h)}</td>`+
           '</tr>';
 }
 
@@ -2627,14 +2633,14 @@ function caseBlock(r){
 }
 
 function simBlock(r){
-  if(!r.size || !(r.gap > 0 || r.held)) return '';
+  if(!(r.gap > 0 || r.held) || !(r.size || (r.sim && r.sim.length))) return '';
   const all = r.sim || [];
   const amz = all.filter(x=> x.market === 'Amazon'), out = all.filter(x=> x.market !== 'Amazon');
-  if(!all.length) return `<h2 style="margin-top:1.1rem">Similar ${esc(r.size)} coir mats</h2>`+
+  if(!all.length) return `<h2 style="margin-top:1.1rem">Similar ${r.size ? esc(r.size) + ' ' : ''}items</h2>`+
     `<p class="mut" style="font-size:.84rem">None found yet. Amazon prices update every morning. Add Walmart, Wayfair or Temu prices in the Outside Amazon tab.</p>`;
   // Amazon sellers never set the CPT, so only outside listings can be the match
   const near = r.cpt !== null ? out.filter(x=> Math.abs(x.price - r.cpt) <= 3) : [];
-  return `<h2 style="margin-top:1.1rem">Similar ${esc(r.size)} coir mats</h2>`+
+  return `<h2 style="margin-top:1.1rem">Similar ${r.size ? esc(r.size) + ' ' : ''}items</h2>`+
     '<dl>'+
     `<dt>On Amazon</dt><dd>${amz.length ? amz.length + ' listings, lowest ' + usd(amz[0].price) + ', median ' + usd(median(amz)) : '<span class="mut">none yet</span>'}</dd>`+
     `<dt>Outside Amazon</dt><dd>${out.length ? out.length + ' listings, lowest ' + usd(out[0].price) + ', median ' + usd(median(out)) : '<span class="mut">none added</span>'}</dd>`+
