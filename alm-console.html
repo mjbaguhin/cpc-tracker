@@ -216,6 +216,7 @@ button.work.strong:hover{background:#8f1d12;border-color:#8f1d12}
 .gap-badge{display:inline-block;font-size:.9rem;padding:.3rem .6rem;border-radius:6px;font-weight:700;font-variant-numeric:tabular-nums}
 .gap-badge.over{background:#fbe7e3;color:var(--warn)}
 .gap-badge.ok{background:#e4f3ee;color:var(--ok)}
+.tgt{display:block;font-size:.74rem;font-weight:700;color:#4e3a8e;margin-top:.15rem}
 .gap-badge.held{background:#fdf1d8;color:#8a5a0b}
 .move{font-variant-numeric:tabular-nums}
 .move .ago{display:block;font-size:.76rem;color:var(--muted);margin-top:.15rem}
@@ -1655,7 +1656,12 @@ function cptRows(){
     r.listGap = (r.list !== null && r.list !== undefined) ? Math.round((r.list - r.cpt) * 100) / 100 : null;
     r.listPct = r.listGap !== null && r.list ? Math.round(r.listGap / r.list * 100) : null;
     r.belowPct = r.gap > 0 && r.ours ? Math.round(r.gap / r.ours * 100) : null;   // CPT under our price
-    r.held = !(r.gap > 0) && r.listGap !== null && r.listPct >= CASE_RULES.heldPct;
+    r.target   = saleTarget(r);
+    r.short    = r.target !== null ? Math.round((r.target - r.cpt) * 100) / 100 : null;   // CPT under the sale price
+    r.shortPct = r.short !== null && r.target ? Math.round(r.short / r.target * 100) : null;
+    r.held = r.target !== null
+      ? !(r.gap > 0) && r.short > 0.005
+      : !(r.gap > 0) && r.listGap !== null && r.listPct >= CASE_RULES.heldPct;
     r.verdict = caseVerdict(r);
     r.action = cptAction(r);
     return r;
@@ -1695,16 +1701,30 @@ function openCaseFor(asin){
    it), and the CPT is 10% or more under our regular price, it needs a case.
    A case already on file (case tracker, or the Cases column of the
    Reference Pricing tab) turns that into a follow-up. */
+/* Haris, Oct 15: compare the CPT with our SALE price for the size, not the
+   list price. Your Price on Amazon is higher and matches Walmart and Shopify,
+   and it is fine to lead the email with it, but the case is about getting the
+   CPT up to at least the sale price. Coir doormats (DMC- SKUs) only. */
+const SALE_TARGET = {'17x30': 24.95, '24x36': 49.95, '30x48': 69.95, '36x72': 119.95};
+function saleTarget(r){
+  return /^DMC-/i.test(r.sku || '') && r.size && SALE_TARGET[r.size] ? SALE_TARGET[r.size] : null;
+}
+
 const ACTIONS = {
   open:   {rank:0, label:'Open a case',        group:'Open a case with Amazon'},
   follow: {rank:1, label:'Follow up',          group:'Follow up on the case on file'},
-  watch:  {rank:2, label:'Small gap, watch',   group:'Small gap, no case yet'},
+  watch:  {rank:2, label:'Price to target',    group:'Priced above the CPT, no case needed'},
   none:   {rank:3, label:'',                   group:'No action'}
 };
 function cptAction(r){
-  const under = r.gap > 0 ? r.pct : (r.held ? r.listPct : null);
   const onFile = (r.cases && r.cases.length) ? r.cases : (openCaseFor(r.asin) ? [openCaseFor(r.asin).id] : []);
   r.caseIds = onFile;
+  // Coir: any CPT under our sale price for the size needs a case ("we want the CPT up anyways")
+  if(r.target !== null){
+    if(r.short > 0.005) return onFile.length ? 'follow' : 'open';
+    return r.gap > 0 ? 'watch' : 'none';
+  }
+  const under = r.gap > 0 ? r.pct : (r.held ? r.listPct : null);
   if(under !== null && under >= CASE_RULES.heldPct) return onFile.length ? 'follow' : 'open';
   if(r.gap > 0) return 'watch';
   return 'none';
@@ -1715,8 +1735,10 @@ function caseVerdict(r){
   if(!(r.gap > 0) && !r.held) return {level:'none', label:'Not flagged', points:0, why};
   let pts = 0;
 
-  const pct = r.gap > 0 ? r.pct : r.listPct;
-  if(r.held) why.push(`Held down: we lowered the price to ${usd(r.ours)} to keep the Buy Box, but our regular price is ${usd(r.list)}`);
+  const pct = r.target !== null ? r.shortPct : (r.gap > 0 ? r.pct : r.listPct);
+  if(r.target !== null && r.short > 0)
+    why.push(`CPT ${usd(r.cpt)} is ${usd(r.short)} (${r.shortPct}%) under our ${r.size} sale price of ${usd(r.target)}`);
+  else if(r.held) why.push(`Held down: we lowered the price to ${usd(r.ours)} to keep the Buy Box, but our regular price is ${usd(r.list)}`);
   if(pct >= CASE_RULES.bigGapPct){ pts += 2; why.push(`${r.held ? 'Regular price' : 'Our price'} is ${pct}% above the CPT, too far for a normal price difference`); }
   else if(pct >= CASE_RULES.midGapPct){ pts += 1; why.push(`${r.held ? 'Regular price' : 'Our price'} is ${pct}% above the CPT`); }
 
@@ -1755,9 +1777,16 @@ function caseEvidence(r){
   const lines = [
     `ASIN: ${r.asin}   SKU: ${r.sku}`,
     `Product: ${r.name}${r.size ? ' (' + r.size + ' inches)' : ''}`,
-    `Our price: ${usd(r.ours)}${r.list ? '   Regular (list) price: ' + usd(r.list) : ''}`,
-    r.held ? `Competitive Price Threshold shown: ${usd(r.cpt)} (${r.listPct}% below our regular price). We cut our price to ${usd(r.ours)} to keep the Featured Offer.`
-           : `Competitive Price Threshold shown: ${usd(r.cpt)} (${r.belowPct}% below our price)`,
+    ...(r.target !== null ? [
+      r.list ? `Our regular price: ${usd(r.list)}` : `Our price: ${usd(r.ours)}`,
+      `Our sale price for this size: ${usd(r.target)}`,
+      `Competitive Price Threshold shown: ${usd(r.cpt)}, ${r.shortPct}% below even our sale price. ` +
+        (r.ours <= r.cpt + 0.005 ? `We have had to cut the price to ${usd(r.ours)} to keep the Featured Offer.` : 'The listing cannot hold the Featured Offer at our sale price.')
+    ] : [
+      `Our price: ${usd(r.ours)}${r.list ? '   Regular (list) price: ' + usd(r.list) : ''}`,
+      r.held ? `Competitive Price Threshold shown: ${usd(r.cpt)} (${r.listPct}% below our regular price). We cut our price to ${usd(r.ours)} to keep the Featured Offer.`
+             : `Competitive Price Threshold shown: ${usd(r.cpt)} (${r.belowPct}% below our price)`
+    ]),
   ];
   if(r.moved) lines.push('', `The threshold moved from ${usd(r.from)} to ${usd(r.cpt)} on ${r.moved}.`);
   if(pool.length){
@@ -1776,7 +1805,8 @@ function caseEvidence(r){
     fair.slice(0, 6).forEach(x=> lines.push(`- ASIN ${x.asin} (SKU ${x.sku}, ${cptTitle(x)}): threshold ${usd(x.cpt)}`));
   }
   lines.push('', 'We believe the threshold is based on a product of a different size or construction. '+
-    'Please re-validate the reference item against a ' + (r.size || 'same-size') + ' coir doormat and reset the threshold.');
+    'Please re-validate the reference item against a ' + (r.size || 'same-size') + ' coir doormat and reset the threshold' +
+    (r.target !== null ? ' to at least our sale price of ' + usd(r.target) + '.' : '.'));
   return lines.join('\n');
 }
 
@@ -2032,7 +2062,7 @@ function siblingHead(fair, size, held){
 
 /* One case for several ASINs at once, usually all flagged mats of one size */
 function groupEvidence(rows){
-  const flagged = rows.filter(r=> r.gap > 0 || r.held);
+  const flagged = rows.filter(r=> r.action === 'open' || r.action === 'follow');
   if(!flagged.length) return '';
   const sizes = [...new Set(flagged.map(r=> r.size).filter(Boolean))];
   const L = [];
@@ -2042,7 +2072,9 @@ function groupEvidence(rows){
          'material and brand are not flagged.', '');
   flagged.forEach(r=>{
     L.push(`ASIN ${r.asin} (SKU ${r.sku}), ${r.size || ''} ${cptTitle(r)}`);
-    if(r.held) L.push(`  Regular price ${usd(r.list)}. Threshold shown ${usd(r.cpt)}, ${r.listPct}% below it. We have had to cut the price to ${usd(r.ours)} to keep the Featured Offer.`);
+    if(r.target !== null) L.push(`  Regular price ${r.list ? usd(r.list) : usd(r.ours)}, sale price ${usd(r.target)}. Threshold shown ${usd(r.cpt)}, ${r.shortPct}% below even our sale price.` +
+      (r.ours <= r.cpt + 0.005 ? ` We have had to cut the price to ${usd(r.ours)} to keep the Featured Offer.` : ''));
+    else if(r.held) L.push(`  Regular price ${usd(r.list)}. Threshold shown ${usd(r.cpt)}, ${r.listPct}% below it. We have had to cut the price to ${usd(r.ours)} to keep the Featured Offer.`);
     else L.push(`  Our price ${usd(r.ours)}${r.list ? ', list price ' + usd(r.list) : ''}. Threshold shown ${usd(r.cpt)}, ${r.belowPct}% below our price.`);
     if(r.moved) L.push(`  The threshold changed from ${usd(r.from)} to ${usd(r.cpt)} on ${r.moved}.`);
   });
@@ -2067,7 +2099,7 @@ function groupEvidence(rows){
     }
   });
   L.push('', 'Each of these is also sold on our own brand website, barnyarddesigns.com, at a price at or above our Amazon price.', '',
-         'Please have the pricing team compare each flagged ASIN with a reference item of the same size and construction, and reset the threshold.');
+         'Please have the pricing team compare each flagged ASIN with a reference item of the same size and construction, and reset the threshold to at least our sale price for the size.');
   return L.join('\n');
 }
 
@@ -2109,9 +2141,9 @@ function cptBody(rows){
     return ['open','follow','watch','none'].map(a=>{
       const g = rows.filter(r=> r.action === a);
       if(!g.length) return '';
-      const sub = a === 'open' ? 'Price cut to the CPT, or stuck above it, by 10% or more under our regular price. No case on file.'
+      const sub = a === 'open' ? 'The CPT is below our sale price for the size. No case on file.'
                : a === 'follow' ? 'Same, but a case is already on file. Reply on it with the latest numbers.'
-               : a === 'watch' ? 'Priced a little above the CPT, under 10%. A case is unlikely to win.'
+               : a === 'watch' ? 'The CPT is at or above our sale price, so we can sell at the sale price without a case.'
                : 'Our price and the CPT agree.';
       const btns = (a === 'open' || a === 'follow')
         ? `<div class="agh-b"><button class="work strong" data-gmail="${a}">Draft one Jassy email for these ${g.length}</button>`+
@@ -2158,10 +2190,12 @@ function cptRowHtml(r){
           `<td class="c">${r.sale !== null && r.sale !== undefined
               ? `<span class="cpill sale">${usd(r.sale)}</span>` +
                 (r.list ? `<span class="was">List ${usd(r.list)}</span>` : '')
-              : '<span class="mut">No sale</span>'}</td>`+
+              : '<span class="mut">No sale</span>'}`+
+             (r.target !== null ? `<span class="tgt">Target ${usd(r.target)}</span>` : '')+'</td>'+
           `<td class="c"><span class="cpill cpt">${usd(r.cpt)}</span></td>`+
           `<td class="c">${r.gap === null ? '<span class="mut">\u2014</span>' :
              bad ? `<span class="gap-badge over">+${usd(r.gap)} &middot; ${r.pct}%</span>`
+             : r.target !== null && r.short > 0.005 ? `<span class="gap-badge over">CPT ${usd(r.short)} under target</span><span class="was">${r.shortPct}% below our sale price</span>`
              : r.held ? `<span class="gap-badge held">Held at CPT</span><span class="was">${r.listPct}% under list</span>`
                  : '<span class="gap-badge ok">At or under</span>'}</td>`+
           `<td class="trend">${miniSpark(r.h)}</td>`+
