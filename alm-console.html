@@ -558,6 +558,31 @@ table.chk th:first-child,table.chk td:first-child{min-width:3rem;max-width:3rem;
 table.chk th:nth-child(2),table.chk td:nth-child(2){left:3rem;text-align:left;width:100%}
 table.chk td.name{font-size:.92rem}
 table.chk tr.gh td{text-align:left;max-width:none;width:auto}
+
+/* Parent family header, as in the rating tracker: a violet band across the
+   whole table with the parent's name first and its IDs and totals after.
+   The catalog pins its first column, which squeezed this header into the
+   SKU width and hid it, so the band opts out of that. */
+tr.pgh td{
+  position:static !important;min-width:0 !important;max-width:none !important;
+  white-space:normal;text-align:left;
+  background:linear-gradient(90deg,#ede9fe,#f6f4ff) !important;
+  border-top:2px solid #c4b5fd;border-bottom:1px solid #c4b5fd;
+  box-shadow:inset 5px 0 0 #7c3aed !important;padding:.7rem .9rem .7rem 1.1rem !important;
+}
+.pgh-name{font-size:.95rem;font-weight:800;color:#3b1d8f}
+.pgh-meta{display:flex;flex-wrap:wrap;gap:.35rem .9rem;margin-top:.3rem;font-size:.78rem;color:#5b3fb5}
+.pgh-meta b{font-weight:700}
+.pgh-meta .k{color:#7d6bbf;margin-right:.25rem}
+.pgh-meta a{color:#5b21b6;font-family:ui-monospace,"SF Mono",Menlo,Consolas,monospace}
+.pgh-meta .mono{font-family:ui-monospace,"SF Mono",Menlo,Consolas,monospace}
+.pgh-tag{padding:.05rem .45rem;border-radius:5px;font-weight:700}
+.pgh-tag.bad{background:#fbe7e3;color:var(--warn)}
+.pgh-tag.ok{background:#e4f3ee;color:var(--ok)}
+tr.pgh.solo td{background:linear-gradient(90deg,#eef1f5,#f7f8fa) !important;border-color:var(--line);
+  box-shadow:inset 5px 0 0 #64748b !important}
+tr.pgh.solo .pgh-name{color:#334155}
+tr.pgh.solo .pgh-meta{color:#64748b}
 </style>
 </head>
 <body>
@@ -1559,7 +1584,7 @@ function cptRows(){
   });
 }
 
-const CPT_F = {show:'all', q:'', group:false};
+const CPT_F = {show:'all', q:'', group:'none'};
 
 /* Tiny two-line trend for the row: CPT solid, our price dashed */
 function miniSpark(h){
@@ -1644,7 +1669,11 @@ function renderCpt(){
         [['all','All ' + all.length], ['over','Over CPT ' + over.length], ['moved','Moved 7 days ' + recent.length]]
           .map(b=> `<button data-show="${b[0]}" aria-pressed="${CPT_F.show === b[0]}">${b[1]}</button>`).join('')+
       '</div>'+
-      `<button id="cptGroup" aria-pressed="${CPT_F.group}">Group by parent</button>`+
+      '<span class="mut" style="font-size:.8rem;margin-left:.3rem">Group by</span>'+
+      '<div class="seg" id="cptGrp">'+
+        [['none','Flat list'], ['parent','Parent name'], ['psku','Parent SKU'], ['pasin','Parent ASIN']]
+          .map(b=> `<button data-g="${b[0]}" aria-pressed="${CPT_F.group === b[0]}">${b[1]}</button>`).join('')+
+      '</div>'+
       `<input id="cptQ" type="search" placeholder="Search SKU, ASIN or product" value="${esc(CPT_F.q)}" aria-label="Search CPT tracker">`+
       `<span class="count">${rows.length} of ${all.length}</span>`+
     '</div>';
@@ -1677,26 +1706,26 @@ function renderCpt(){
 /* Rows, optionally under one header per parent family. A family header
    shows how many of its children are held above the CPT. */
 function cptBody(rows){
-  if(!CPT_F.group) return rows.map(cptRowHtml).join('');
+  const key = CPT_F.group;
+  if(key === 'none') return rows.map(cptRowHtml).join('');
+  const SOLO = '\uffffstandalone';
   const groups = {};
   rows.forEach(r=>{
-    const key = r.parent || r.psku || r.pasin || 'No parent (standalone)';
-    (groups[key] = groups[key] || []).push(r);
+    const k = r[key] || SOLO;
+    (groups[k] = groups[k] || []).push(r);
   });
+  // Families with something over the CPT first, standalone listings last
   return Object.keys(groups).sort((a,b)=>{
-    const sa = /^No parent/.test(a), sb = /^No parent/.test(b);
-    if(sa !== sb) return sa ? 1 : -1;
+    if((a === SOLO) !== (b === SOLO)) return a === SOLO ? 1 : -1;
     const oa = groups[a].filter(r=> r.gap > 0).length, ob = groups[b].filter(r=> r.gap > 0).length;
     return ob - oa || a.localeCompare(b);
   }).map(k=>{
     const g = groups[k], over = g.filter(r=> r.gap > 0).length;
-    const first = g[0];
-    return `<tr class="cpt-gh"><td colspan="8">`+
-      `<span class="gname">${esc(k)}</span>`+
-      (first.pasin ? ` <span class="gid">${esc(first.pasin)}</span>` : '')+
-      ` <span class="gcount">${g.length} ${g.length === 1 ? 'child' : 'children'}</span>`+
-      (over ? ` <span class="gover">${over} over CPT</span>` : ' <span class="gok">all at or under</span>')+
-      '</td></tr>' + g.map(cptRowHtml).join('');
+    const gaps = g.filter(r=> r.gap > 0).map(r=> r.gap);
+    return parentHeader(k === SOLO ? g.map(r=> Object.assign({}, r, {parent:'', psku:'', pasin:''})) : g, 8, [
+      over ? `<span class="pgh-tag bad">${over} over CPT</span>` : '<span class="pgh-tag ok">All at or under the CPT</span>',
+      gaps.length ? `<span><span class="k">Biggest gap</span><b>${usd(Math.max(...gaps))}</b></span>` : ''
+    ].filter(Boolean)) + g.map(cptRowHtml).join('');
   }).join('');
 }
 
@@ -1734,8 +1763,7 @@ function cptRowHtml(r){
 function wireCpt(v, all){
 
   [...v.querySelectorAll('#cptSeg button')].forEach(b=> b.onclick = ()=>{ CPT_F.show = b.dataset.show; renderCpt(); });
-  const gb = document.getElementById('cptGroup');
-  if(gb) gb.onclick = ()=>{ CPT_F.group = !CPT_F.group; renderCpt(); };
+  [...v.querySelectorAll('#cptGrp button')].forEach(b=> b.onclick = ()=>{ CPT_F.group = b.dataset.g; renderCpt(); });
   const q = document.getElementById('cptQ');
   if(q){
     q.oninput = ()=>{ CPT_F.q = q.value; renderCpt();
@@ -2103,6 +2131,25 @@ function caseText(row, check, ck){
 }
 
 
+/* ---------- parent family header ---------- */
+
+/* One header row for a parent family. kids carry parent, psku and pasin.
+   extra is a list of [label, html] shown after the IDs. */
+function parentHeader(kids, colspan, extra){
+  const f = kids.find(k=> k.parent || k.psku || k.pasin) || {};
+  const solo = !f.parent && !f.psku && !f.pasin;
+  const name = solo ? 'Standalone SKUs' : (f.parent || f.psku || f.pasin);
+  const bits = [];
+  if(solo) bits.push('<span>Not part of a variation family</span>');
+  if(!solo && f.psku)  bits.push(`<span><span class="k">Parent SKU</span><span class="mono">${esc(f.psku)}</span></span>`);
+  if(!solo && f.pasin) bits.push(`<span><span class="k">Parent ASIN</span><a href="https://www.amazon.com/dp/${esc(f.pasin)}" target="_blank" rel="noopener">${esc(f.pasin)}</a></span>`);
+  bits.push(`<span><b>${kids.length}</b> ${solo ? (kids.length === 1 ? 'SKU' : 'SKUs') : (kids.length === 1 ? 'child' : 'children')}</span>`);
+  (extra || []).forEach(x=> bits.push(x));
+  return `<tr class="gh pgh${solo ? ' solo' : ''}"><td colspan="${colspan}">`+
+    `<div class="pgh-name">${solo ? '\u25a0' : '\u25bc'} ${esc(name)}</div>`+
+    `<div class="pgh-meta">${bits.join('')}</div></td></tr>`;
+}
+
 /* ---------- overview band and header bands ---------- */
 
 /* tiles: [label, value, tone ('bad'|'warn'|'good'|''), note] */
@@ -2192,7 +2239,10 @@ function renderView(){
     rows.forEach(r=>{ const k = r[S.group] || '\u2014 no parent \u2014'; (g[k] = g[k] || []).push(r); });
     // Headers with their rows always beneath. Collapsing them behind a
     // twisty meant every group needed opening before anything was readable.
-    Object.keys(g).sort().forEach(k=>{
+    Object.keys(g).sort((a,b)=>{
+      const na = /no parent/.test(a), nb = /no parent/.test(b);
+      return na !== nb ? (na ? 1 : -1) : a.localeCompare(b);
+    }).forEach(k=>{
       const kids = g[k];
       const rated = kids.map(r=>r.cur).filter(v=>v!==null);
       const lo = rated.length ? Math.min(...rated).toFixed(1) : null;
@@ -2200,13 +2250,12 @@ function renderView(){
       const stock = kids.reduce((s,r)=>s+(r.avail||0),0);
       const oos = kids.filter(r=>r.avail === 0).length;
 
-      html += `<tr class="gh"><td colspan="${COLS.length}">`+
-        `${esc(k)} `+
-        `<span class="cnt">${kids.length} SKU${kids.length>1?'s':''}`+
-        (rated.length ? ` \u00b7 ${lo===hi?lo:lo+' to '+hi}\u2605` : '')+
-        ` \u00b7 ${stock} units`+
-        (oos ? ` \u00b7 <span class="warn">${oos} OOS</span>` : '')+
-        `</span></td></tr>`;
+      const avg = rated.length ? (rated.reduce((a,b)=> a+b, 0) / rated.length).toFixed(1) : null;
+      html += parentHeader(kids, COLS.length, [
+        rated.length ? `<span><span class="k">Rating</span><b>${lo===hi ? lo : lo + ' to ' + hi}\u2605</b>${rated.length > 1 ? ' (avg ' + avg + ')' : ''}</span>` : '',
+        `<span><span class="k">Stock</span><b>${stock}</b> units</span>`,
+        oos ? `<span class="pgh-tag bad">${oos} out of stock</span>` : ''
+      ].filter(Boolean));
 
       kids.forEach(r=> html += tr(r, rows.indexOf(r)));
     });
