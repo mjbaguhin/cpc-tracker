@@ -192,6 +192,24 @@ button.work.strong:hover{background:#8f1d12;border-color:#8f1d12}
 .qi:hover,.qi:focus{background:rgba(255,255,255,.4);outline:none}
 .cpt-tile .qi,.ov-tile .qi{background:rgba(255,255,255,.14)}
 [data-tip]:not(.qi){cursor:help}
+.facts{margin:.3rem 0 0 1.1rem;font-size:.86rem;line-height:1.45}
+.facts li{margin:.3rem 0}
+.fw{display:inline-block;font-size:.68rem;font-weight:800;padding:.05rem .4rem;border-radius:4px;margin-right:.3rem;vertical-align:1px}
+.fw-hi{background:#1f6b4f;color:#fff}
+.fw-mid{background:#e4f3ee;color:#1f6b4f}
+.fw-lo{background:#eef1f5;color:#475569}
+.refbox{margin-top:.6rem;padding:.55rem .7rem;border-radius:8px;background:#fde7e3;font-size:.84rem;color:#8f1d12}
+.risk{margin-top:.6rem;padding:.55rem .7rem;border-radius:8px;background:#fdf1d8;font-size:.84rem;color:#6b4508}
+.next-box{margin-top:.8rem;padding:.7rem .8rem;border-radius:8px;background:#eef2f6;border-left:4px solid #64748b}
+.next-box.now{background:#fde7e3;border-left-color:#b42318}
+.nb-t{font-weight:800}
+.nb-h{font-size:.84rem;color:#374151;margin-top:.2rem}
+.tl{list-style:none;margin:.3rem 0 0;padding:0;border-left:2px solid var(--line);font-size:.84rem}
+.tl li{position:relative;padding:.3rem 0 .3rem .9rem;display:flex;flex-wrap:wrap;gap:.2rem .6rem;align-items:baseline}
+.tl li::before{content:"";position:absolute;left:-.4rem;top:.6rem;width:.6rem;height:.6rem;border-radius:50%;background:#94a3b8}
+.tl li.tl-us::before{background:var(--accent)}
+.tl-d{font-weight:700;min-width:3.4rem}
+.tl-c{color:var(--muted);font-size:.76rem}
 .mailst{display:block;margin-top:.3rem;font-size:.74rem;font-weight:700}
 .mailst span{font-weight:500;color:var(--muted)}
 .mailst.m-bad{color:#b42318}
@@ -1110,7 +1128,7 @@ function build(j, pub, warnNote){
       // Both marketplaces held at once. applyMk copies the active set into
       // the plain fields the table, filters and sort all read.
       usAvail:num(r.US_Available), usInbound:num(r.US_Inbound), usHealth:r.US_Health || '',
-      usList:num(r.US_List), usSale:num(r.US_Sale), usFeat:num(r.US_Feat),
+      usList:num(r.US_List), usSale:num(r.US_Sale), usFeat:num(r.US_Feat), units30:num(r.US_Units30),
       caAvail:num(r.CA_Available), caInbound:num(r.CA_Inbound), caHealth:'',
       caList:num(r.CA_List), caSale:num(r.CA_Sale), caFeat:num(r.CA_Feat),
 
@@ -1636,7 +1654,8 @@ function buildCpt(j){
       }
     }
     return {asin:r.asin, sku:r.sku || '', name:r.name || '', cpt:num(r.cpt), bb:num(r.bb),
-            kOurs:num(r.ours), kList:num(r.list), cases:r.cases || [], mail:r.mail || null,
+            kOurs:num(r.ours), kList:num(r.list), cases:r.cases || [], mail:r.mail || null, events:r.events || [],
+            ours90:num(r.ours90), bb90:num(r.bb90), sold:num(r.sold),
             date:r.d || '', h, moved, from};
   });
 }
@@ -1676,6 +1695,7 @@ function cptRows(){
       sale: row ? row.usSale : null,
       list: row && row.usList !== null ? row.usList : (c.kList !== undefined ? c.kList : null),
       tier: row ? (row.tier || '') : '', avail: row ? row.usAvail : null,
+      units30: row ? row.units30 : null, rating: row ? row.cur : null, reviews: row ? row.rev : null,
       parent: row ? (row.parent || '') : '', psku: row ? (row.psku || '') : '', pasin: row ? (row.pasin || '') : ''});
     // Held down: we already dropped the price to the CPT to keep the Buy Box,
     // so we look fine today but sell well under our regular (list) price.
@@ -1727,13 +1747,46 @@ function openCaseFor(asin){
    it), and the CPT is 10% or more under our regular price, it needs a case.
    A case already on file (case tracker, or the Cases column of the
    Reference Pricing tab) turns that into a follow-up. */
-/* Haris, Oct 15: compare the CPT with our SALE price for the size, not the
-   list price. Your Price on Amazon is higher and matches Walmart and Shopify,
-   and it is fine to lead the email with it, but the case is about getting the
-   CPT up to at least the sale price. Coir doormats (DMC- SKUs) only. */
-const SALE_TARGET = {'17x30': 24.95, '24x36': 49.95, '30x48': 69.95, '36x72': 119.95};
+/* Target, worked out from the data, nothing typed in.
+   Haris's rule (Oct 15): compare the CPT with our SALE price for the size.
+   The sale price we mean is the one most listings of that size and product
+   line actually carry today, read from Amazon's daily inventory report
+   (BigQuery, through ALM Console Data). The few listings stuck at a low CPT
+   are the exception, so they never set the target. When two prices tie, the
+   higher one wins, because a cut price is the stuck one.
+   A product line is the SKU prefix (DMC for coir). It needs 3 or more
+   listings of that size, otherwise there is no target and the older list
+   price rule applies. */
+const TARGET_MIN = 3;
+let TARGETS = null;   // key "DMC|24x36" -> {price, n, of}
+function buildTargets(){
+  const by = {};
+  ROWS.forEach(row=>{
+    const sale = row.usSale;
+    if(sale === null || sale === undefined || !(sale > 0)) return;
+    const size = sizeOf(row.name, row.sku);
+    if(!size) return;
+    const key = String(row.sku || '').split('-')[0].toUpperCase() + '|' + size;
+    (by[key] = by[key] || []).push(Math.round(sale * 100) / 100);
+  });
+  TARGETS = {};
+  Object.keys(by).forEach(k=>{
+    const v = by[k];
+    if(v.length < TARGET_MIN) return;
+    const count = {};
+    v.forEach(x=> count[x] = (count[x] || 0) + 1);
+    const best = Object.keys(count).map(Number).sort((a,b)=> count[b] - count[a] || b - a)[0];
+    TARGETS[k] = {price: best, n: count[best], of: v.length};
+  });
+}
+function targetInfo(r){
+  if(!ROWS.length) return null;
+  if(!TARGETS) buildTargets();
+  return TARGETS[String(r.sku || '').split('-')[0].toUpperCase() + '|' + r.size] || null;
+}
 function saleTarget(r){
-  return /^DMC-/i.test(r.sku || '') && r.size && SALE_TARGET[r.size] ? SALE_TARGET[r.size] : null;
+  const t = r.size ? targetInfo(r) : null;
+  return t ? t.price : null;
 }
 
 /* Amazon's latest email on a listing, from CPT Watch's morning Gmail check */
@@ -1745,12 +1798,168 @@ const MAIL_KIND = {
   waiting:  ['Waiting on Amazon', 'm-wait'],
   fixed:    ['Fixed',             'm-ok']
 };
+function nextLine(r){
+  const n = nextStep(r);
+  if(!n) return mailLine(r);
+  const last = (r.events || [])[0];
+  return (last ? `<span class="mailst m-wait">Last: ${esc(EV_LABEL[last.kind] || last.kind)}${last.who === 'us' ? ' to ' + (last.ch === 'jassy' ? 'Jassy team' : 'case') : ''}, ${shortDate(last.d)}</span>` : '')+
+    `<span class="mailst ${n.due === 'now' ? 'm-bad' : 'm-wait'}">Next: ${esc(n.text)}</span>`;
+}
 function mailLine(r){
   const m = r.mail;
   if(!m || !MAIL_KIND[m.kind]) return '';
   const k = MAIL_KIND[m.kind];
   const when = m.days === 0 ? 'today' : m.days === 1 ? 'yesterday' : m.days + ' days ago';
   return `<span class="mailst ${k[1]}">${k[0]}${m.needsReply ? ', reply' : ''} <span>${when}</span></span>`;
+}
+
+/* ---------- case timeline and next step ----------
+   Built from Gmail by CPT Watch: what we sent (to a case or to the Andy
+   Jassy team), what Amazon answered, and when. The follow-up rule:
+     we sent, no answer for FOLLOW_DAYS     -> follow up on the same case
+     Amazon rejected (Seller Support)       -> reply within a day with new proof;
+                                               after 2 rejections, escalate to Jassy
+     Amazon closed it without a fix         -> reopen within a day
+     Jassy team rejected                    -> reply the same day with the strongest new facts (MJ, Oct 15) */
+const FOLLOW_DAYS = 3, JASSY_WAIT_DAYS = 7;
+const EV_LABEL = {
+  sent: 'We sent', received: 'Amazon received it', rejected: 'Amazon rejected', resolved: 'Amazon closed the case',
+  replied: 'Amazon replied', fixed: 'Amazon fixed it'
+};
+function addDays(d, n){ const t = new Date(d + 'T12:00:00'); t.setDate(t.getDate() + n); return t.toISOString().slice(0,10); }
+function shortDate(d){ return d ? new Date(d + 'T12:00:00').toLocaleDateString('en-US', {month:'short', day:'numeric'}) : ''; }
+function todayStr(){ return new Date().toISOString().slice(0,10); }
+
+function nextStep(r){
+  const ev = r.events || [];
+  if(!ev.length){
+    if(r.action === 'open') return {text:'Open a case, or email the Andy Jassy team', due:'now', how:'Use Draft email to Andy Jassy team, or Copy evidence and open a new case.'};
+    return null;
+  }
+  const last = ev[0], ch = last.ch === 'jassy' ? 'Andy Jassy team' : 'case';
+  const cid = last.cid || (r.caseIds || []).slice(-1)[0] || '';
+  const rejects = ev.filter(x=> x.kind === 'rejected' && x.ch === 'case').length;
+  const jassyUsed = ev.some(x=> x.ch === 'jassy');
+  if(last.who === 'us' || last.kind === 'received'){
+    const due = addDays(last.d, FOLLOW_DAYS);
+    return due > todayStr()
+      ? {text:`Waiting for Amazon. Follow up on ${shortDate(due)} if no answer`, due, how:`Amazon usually answers in 1 to 2 days. If nothing by ${shortDate(due)}, reply on ${cid ? 'case ' + cid : 'the same email'}.`}
+      : {text:`Follow up now, no answer since ${shortDate(last.d)}`, due:'now', how:`Reply on ${cid ? 'case ' + cid : 'the same email thread'} and ask for an update. Use Draft follow-up.`};
+  }
+  if(last.kind === 'resolved') return {text:'Reopen it: Amazon closed the case without fixing', due:'now', how:`Open case ${cid} in Seller Central and reply. Replying reopens it. Say the CPT is still ${usd(r.cpt)}.`};
+  if(last.kind === 'rejected'){
+    if(last.ch === 'jassy')
+      return {text:'Andy Jassy team said no. Reply today with new facts', due:'now',
+              how:'Use Draft follow-up. It answers their reason and leads with the strongest facts below.'};
+    if(rejects >= 2 && !jassyUsed) return {text:'Escalate to the Andy Jassy team (2 rejections)', due:'now', how:'Seller Support said no twice. Use Draft email to Andy Jassy team and list both case numbers.'};
+    return {text:'Reply with new proof', due:'now', how:`Reply on case ${cid}. Point out the same-size mats with a higher CPT. Use Copy case evidence.`};
+  }
+  if(last.kind === 'replied') return {text:"Read Amazon's reply and answer", due:'now', how:'Amazon may be asking for something. Open the email and reply today.'};
+  if(last.kind === 'fixed') return {text:'Amazon says fixed. Check the CPT tomorrow', due:addDays(last.d, 1), how:'If the CPT is still too low tomorrow, reply that it did not change.'};
+  return null;
+}
+
+/* ---------- strongest facts ----------
+   Only facts that are true and that help, strongest first. Each one is
+   about OUR listings, which Amazon cannot explain away with "another
+   retailer". Outside prices are used only when they are all above the CPT;
+   otherwise they would weaken the case, and MJ gets a warning instead. */
+const NUMW = ['No','One','Two','Three','Four','Five','Six','Seven','Eight','Nine','Ten'];
+const numw = n=> n <= 10 ? NUMW[n] : String(n);
+
+/* ---------- likely reference item ----------
+   An outside listing of the same size whose price equals our CPT (within
+   5 cents) is most likely the item Amazon compared us with. Name it in the
+   case. When it shares a design word with our listing (Welcome, Border...)
+   that is how the bot most likely matched it. */
+const REF_TOL = 0.05;
+function likelyRefs(r){
+  if(r.cpt === null || !r.size) return [];
+  return SIM.filter(x=> x.market !== 'Amazon' && x.size === r.size && Math.abs(Number(x.price) - r.cpt) <= REF_TOL);
+}
+const DESIGN_WORDS = ['welcome','border','plain','blank','hello','paws','home','yall','chaos','birds','forest','snow','wreath'];
+function sharedDesign(r, x){
+  const ours = cptTitle(r).toLowerCase().replace(/[^a-z ]/g,''), theirs = String(x.name || '').toLowerCase().replace(/[^a-z ]/g,'');
+  return DESIGN_WORDS.filter(w=> ours.indexOf(w) !== -1 && theirs.indexOf(w) !== -1);
+}
+
+function strongFacts(r){
+  const F = [];
+  const line = (r.sku || '').split('-')[0];
+
+  // 0. The outside item Amazon most likely used, priced to the cent at our CPT
+  const refs = likelyRefs(r);
+  if(refs.length){
+    const x = refs[0], words = sharedDesign(r, x);
+    const sameAsUs = cptRows().filter(o=> o.asin !== r.asin && o.size === r.size && o.cpt === r.cpt && (o.sku || '').split('-')[0] === line);
+    const unaffected = cptRows().filter(o=> o.size === r.size && (o.sku || '').split('-')[0] === line && o.cpt !== null && o.cpt > r.cpt + 0.005);
+    F.push({w:6, ref:true, t:`The threshold of ${usd(r.cpt)} matches, to the cent, the ${x.market} price of ${x.brand ? x.brand + ' ' : ''}${x.name} (${usd(x.price)}). ` +
+      (words.length ? `It carries the same design name as our listing (${words.map(w=> w.charAt(0).toUpperCase() + w.slice(1)).join(', ')}). ` : '') +
+      (sameAsUs.length && unaffected.length ? `Only our ${r.size} designs that share a name with that brand's mats are held at ${usd(r.cpt)}. Our other ${numw(unaffected.length).toLowerCase()} ${r.size} designs, same size, material and backing, are not. The threshold follows a design name, not the product.` : 'The threshold appears to come from that single item.')});
+  }
+  const same = cptRows().filter(x=> x.asin !== r.asin && x.size === r.size && (x.sku || '').split('-')[0] === line && x.cpt !== null);
+
+  // 1. Same threshold on different designs and prices: a generic reference
+  const twins = same.filter(x=> x.cpt === r.cpt && (x.held || x.gap > 0));
+  if(twins.length) F.push({w:5, t:`${numw(twins.length + 1)} of our ${r.size} listings with different designs and prices (${[r].concat(twins).map(x=> x.sku).join(', ')}) all show the exact same threshold of ${usd(r.cpt)}. A real price match would not give identical numbers to different products. This points to one generic reference item.`});
+
+  // 2. Same brand, same size, same material, higher threshold
+  const fair = same.filter(x=> !x.held && !(x.gap > 0) && x.cpt > r.cpt + 0.005);
+  if(fair.length){
+    const v = fair.map(x=> x.cpt), lo = Math.min(...v), hi = Math.max(...v);
+    F.push({w:5, t:`${numw(fair.length)} other ${r.size} coir mats from our brand, same size and material, have a threshold of ${lo === hi ? usd(lo) : usd(lo) + ' to ' + usd(hi)}. Only this listing${twins.length ? ' and ' + twins.map(x=> x.sku).join(', ') + ' are' : ' is'} held at ${usd(r.cpt)}.`});
+  }
+
+  // 3. Shoppers already paid more on this listing
+  if(r.bb90 && r.bb90 > r.cpt * 1.03) F.push({w:4, t:`Over the last 90 days the average Featured Offer price on this listing was ${usd(r.bb90)}, ${Math.round((r.bb90 / r.cpt - 1) * 100)}% above the threshold. Shoppers were buying at that price.`});
+  else if(r.ours90 && r.ours90 > r.cpt * 1.03) F.push({w:3, t:`Our average price on this listing over the last 90 days was ${usd(r.ours90)}, above today's threshold of ${usd(r.cpt)}.`});
+
+  // 4. The threshold jumps around without any change on our side
+  const pts = (r.h || []).filter(x=> x[1] !== null);
+  if(pts.length >= 2){
+    const vs = pts.map(x=> x[1]), lo = Math.min(...vs), hi = Math.max(...vs);
+    if(hi > lo * 1.1) F.push({w:3, t:`Since ${shortDate(pts[0][0])} the threshold on this listing has ranged from ${usd(lo)} to ${usd(hi)}. A reference price that moves this much is not a stable comparison.`});
+  }
+
+  // 5. Demand and quality
+  if(r.sold && r.sold >= 50) F.push({w:2, t:`Amazon shows "${r.sold}+ bought in past month" on this listing.`});
+  else if(r.units30 && r.units30 >= 30) F.push({w:2, t:`We shipped ${r.units30} units of this listing in the last 30 days through FBA.`});
+  if(r.rating && r.reviews && r.rating >= 4.3) F.push({w:2, t:`The listing is rated ${r.rating} stars from ${Number(r.reviews).toLocaleString('en-US')} reviews.`});
+
+  // 6. Outside prices, only when every one helps
+  const out = (r.sim || []).filter(x=> x.market !== 'Amazon');
+  if(out.length && out.every(x=> x.price > r.cpt)) F.push({w:3, t:`Every same-size coir mat we found outside Amazon (${out.length} listings) is priced above ${usd(r.cpt)}. The cheapest is ${usd(out[0].price)}.`});
+
+  return F.sort((a,b)=> b.w - a.w);
+}
+function refLine(x){
+  return `${x.brand ? x.brand + ' ' : ''}${x.name} at ${x.market}, ${usd(x.price)}${x.link ? ' (' + x.link + ')' : ''}`;
+}
+
+function outsideRisk(r){
+  const out = (r.sim || []).filter(x=> x.market !== 'Amazon' && x.price < r.cpt - REF_TOL);
+  return out.length ? out : null;
+}
+
+function followUpEmail(r){
+  const ev = (r.events || [])[0] || {};
+  const cid = ev.cid || (r.caseIds || []).slice(-1)[0] || '';
+  const subject = (ev.ch === 'jassy' && ev.kind === 'rejected' ? 'New facts: ' : 'Follow-up: ') +
+    (ev.subj ? ev.subj.replace(/^(re|fw|fwd):\s*/i, '') : `Competitive Price Threshold on ${r.asin}`);
+  const body = ['Hello,', '',
+    `I am following up on ${cid ? 'case ' + cid : 'my earlier message'}${ev.d ? ' from ' + shortDate(ev.d) : ''}. ` +
+    `As of today, the Competitive Price Threshold on ASIN ${r.asin} is still ${usd(r.cpt)}` +
+    (r.target ? `, below our usual sale price of ${usd(r.target)} for this size.` : '.'), '',
+    ...(ev.ch === 'jassy' && ev.kind === 'rejected' ? [
+      'Your reply said the price is not competitive compared with another retailer, and that the reference item cannot be shared. '+
+      'We respect that, but the facts below show the threshold is not comparing like with like:', ''] : []),
+    ...strongFacts(r).slice(0, 5).map((f,i)=> `${i + 1}. ${f.t}`), '',
+    ...(likelyRefs(r).length ? ['We believe the reference is ' + refLine(likelyRefs(r)[0]) + '. If it is, please compare the two products side by side, and look at why only our listings with the same design name are held to its price.', ''] : []),
+    'If the reference item cannot be shared, could the pricing team at least confirm it is a ' + (r.size || 'same-size') + ' coir doormat? '+
+    'If it is not, please reset the threshold' + (r.target ? ' to at least ' + usd(r.target) + '.' : '.'), '',
+    'Thank you for taking another look.', '',
+    'Best regards,', 'MJ Baguhin', 'Barnyard Designs, Cross Path Capital LLC'].join('\n');
+  return {subject, body, toJassy: ev.ch === 'jassy'};
 }
 
 const ACTIONS = {
@@ -1810,8 +2019,9 @@ function caseVerdict(r){
   if(open) return {level:'open', label:'Case open', points:pts, why, open};
   if(pts >= CASE_RULES.strong)   return {level:'strong',   label:'Strong case',   points:pts, why};
   if(pts >= CASE_RULES.possible) return {level:'possible', label:'Possible case', points:pts, why};
+  // Under the target, a case is wanted anyway (Haris: "we want the CPT up"), so no "weak" warning there
   return {level:'price', label:'Price fix', points:pts,
-          why: why.concat(['Signals are weak, so a case is unlikely to win. This looks like a pricing call for Haris.'])};
+          why: r.target !== null && r.short > 0.005 ? why : why.concat(['Signals are weak, so a case is unlikely to win. This looks like a pricing call for Haris.'])};
 }
 
 /* Text for a case, built from the numbers on screen */
@@ -1832,19 +2042,22 @@ function caseEvidence(r){
     ]),
   ];
   if(r.moved) lines.push('', `The threshold moved from ${usd(r.from)} to ${usd(r.cpt)} on ${r.moved}.`);
-  if(pool.length){
-    lines.push('', `Comparable ${r.size} coir doormats sold outside Amazon:`);
-    pool.slice(0, 5).forEach(x=> lines.push(`- ${x.market}, ${x.brand || 'brand not listed'}: ${usd(x.price)}${x.link ? '  ' + x.link : ''}`));
-  }
+  // Outside prices are not listed here: many are below our CPT and would weaken
+  // the case. strongFacts() adds them only when every one is above the CPT.
+  const top = strongFacts(r).slice(0, 4);
+  if(top.length){ lines.push('', 'Key facts:'); top.forEach((f,i)=> lines.push(`${i + 1}. ${f.t}`)); }
+  const lr = likelyRefs(r);
+  if(lr.length) lines.push('', 'We believe your system is comparing us with ' + refLine(lr[0]) +
+    '. Please confirm. If so, please compare the two products side by side, and look at why only our listings with the same design name are held to its price.');
   const fair = r.size ? fairSiblings(r.size, [r.asin]) : [];
   // Other listings of the same size stuck at this exact threshold
   const twins = r.size ? cptRows().filter(x=> x.asin !== r.asin && x.size === r.size && x.cpt === r.cpt &&
                   (x.held || x.gap > 0) && (x.sku || '').split('-')[0] === (r.sku || '').split('-')[0]) : [];
-  if(twins.length) lines.push('', `${twins.map(x=> 'ASIN ' + x.asin + ' (SKU ' + x.sku + ', ' + cptTitle(x) + ')').join(' and ')} `+
+  if(twins.length && !top.length) lines.push('', `${twins.map(x=> 'ASIN ' + x.asin + ' (SKU ' + x.sku + ', ' + cptTitle(x) + ')').join(' and ')} `+
     `${twins.length > 1 ? 'are' : 'is'} held at the exact same ${usd(r.cpt)} threshold, although the design and price differ. `+
     'That points to one generic reference item, not a match to our product.');
   if(fair.length){
-    lines.push('', siblingHead(fair, r.size, [r.cpt]));
+    lines.push('', top.length ? 'Details, the same-size listings from fact 2:' : siblingHead(fair, r.size, [r.cpt]));
     fair.slice(0, 6).forEach(x=> lines.push(`- ASIN ${x.asin} (SKU ${x.sku}, ${cptTitle(x)}): threshold ${usd(x.cpt)}`));
   }
   lines.push('', 'We believe the threshold is based on a product of a different size or construction. '+
@@ -1974,6 +2187,7 @@ function renderCpt(){
   if(CPT_F.show === 'moved')  rows = recent;
   if(CPT_F.show === 'held')   rows = all.filter(r=> r.held);
   if(CPT_F.show === 'reply')  rows = all.filter(r=> r.mail && r.mail.needsReply);
+  if(CPT_F.show === 'due')    rows = all.filter(r=> { const n = nextStep(r); return n && n.due === 'now'; });
   if(CPT_F.show === 'need')   rows = all.filter(r=> r.action === 'open' || r.action === 'follow');
   if(CPT_F.show === 'cases')  rows = all.filter(r=> r.verdict.level === 'strong' || r.verdict.level === 'possible');
   // Column filters: min and max per column, tier, stock, open cases
@@ -2015,9 +2229,9 @@ function renderCpt(){
              `<span style="font-size:1rem;color:var(--c-night-mut)"> new, ${all.filter(r=> r.action === 'follow').length} follow up</span>`,
              all.some(r=> r.action === 'open' || r.action === 'follow') ? 'bad' : '',
              esc(all.filter(r=> r.action === 'open' || r.action === 'follow').map(r=> r.sku).slice(0,4).join(', ')) || 'Nothing to raise today')+
-        tile('Amazon emails to answer', all.filter(r=> r.mail && r.mail.needsReply).length,
-             all.some(r=> r.mail && r.mail.needsReply) ? 'warn' : '',
-             all.some(r=> r.mail) ? esc(all.filter(r=> r.mail && r.mail.needsReply).map(r=> r.sku).slice(0,3).join(', ')) || 'All answered' : 'Gmail check runs every morning')+
+        (()=>{ const due = all.filter(r=> { const n = nextStep(r); return n && n.due === 'now'; });
+           return tile('Do today', due.length, due.length ? 'bad' : 'good',
+             due.length ? esc(due.map(r=> r.sku).slice(0,3).join(', ')) : 'No follow-ups due'); })()+
         tile('Priced above the CPT ' + qi('buybox'), over.length, over.length ? 'bad' : '',
              over.length ? 'Featured Offer at risk on these' : 'None, every price is at or under')+
         tile('Held at the CPT', all.filter(r=> r.held).length, all.some(r=> r.held) ? 'warn' : '',
@@ -2034,7 +2248,7 @@ function renderCpt(){
          ['need','Needs a case ' + all.filter(r=> r.action === 'open' || r.action === 'follow').length],
          ['over','Over CPT ' + over.length], ['moved','Moved 7 days ' + recent.length],
          ['held','Held at CPT ' + all.filter(r=> r.held).length],
-         ['reply','Needs a reply ' + all.filter(r=> r.mail && r.mail.needsReply).length]]
+         ['due','Follow-up due ' + all.filter(r=> { const n = nextStep(r); return n && n.due === 'now'; }).length]]
           .map(b=> `<button data-show="${b[0]}" aria-pressed="${CPT_F.show === b[0]}">${b[1]}</button>`).join('')+
       '</div>'+
       '<span class="mut" style="font-size:.8rem;margin-left:.3rem">Group by</span>'+
@@ -2142,7 +2356,11 @@ function groupEvidence(rows){
       L.push('', siblingHead(fair, z, flagged.filter(r=> r.size === z).map(r=> r.cpt)));
       fair.slice(0, 8).forEach(r=> L.push(`  ASIN ${r.asin} (SKU ${r.sku}, ${cptTitle(r)}): threshold ${usd(r.cpt)}`));
     }
-    const out = SIM.filter(x=> x.size === z && x.market !== 'Amazon').sort((a,b)=> a.price - b.price);
+    const held = flagged.filter(r=> r.size === z);
+    const lr = held.length ? likelyRefs(held[0]) : [];
+    if(lr.length) L.push('', `For ${z}: the threshold of ${usd(held[0].cpt)} matches, to the cent, ${refLine(lr[0])}. ` +
+      'Only our designs sharing a name with that brand\u2019s mats are held to it. Please confirm whether this is the reference item.');
+    const out = [];
     if(out.length){
       L.push('', `Comparable ${z} coir doormats sold outside Amazon:`);
       out.slice(0, 5).forEach(x=> L.push(`  ${x.market}, ${x.brand || 'brand not listed'}: ${usd(x.price)}${x.link ? '  ' + x.link : ''}`));
@@ -2212,14 +2430,16 @@ function cptBody(rows){
   // Families with something over the CPT first, standalone listings last
   return Object.keys(groups).sort((a,b)=>{
     if((a === SOLO) !== (b === SOLO)) return a === SOLO ? 1 : -1;
-    const oa = groups[a].filter(r=> r.gap > 0).length, ob = groups[b].filter(r=> r.gap > 0).length;
-    return ob - oa || a.localeCompare(b);
+    const need = k=> groups[k].filter(r=> r.action === 'open' || r.action === 'follow').length;
+    return need(b) - need(a) || a.localeCompare(b);
   }).map(k=>{
-    const g = groups[k], over = g.filter(r=> r.gap > 0).length;
-    const gaps = g.filter(r=> r.gap > 0).map(r=> r.gap);
+    const g = groups[k];
+    // Same rule as the What to do column: a case to open or follow up
+    const need = g.filter(r=> r.action === 'open' || r.action === 'follow').length;
+    const lows = g.filter(r=> r.short > 0.005).map(r=> r.short).concat(g.filter(r=> r.gap > 0).map(r=> r.gap));
     return parentHeader(k === SOLO ? g.map(r=> Object.assign({}, r, {parent:'', psku:'', pasin:''})) : g, 9, [
-      over ? `<span class="pgh-tag bad">${over} over CPT</span>` : '<span class="pgh-tag ok">All at or under the CPT</span>',
-      gaps.length ? `<span><span class="k">Biggest gap</span><b>${usd(Math.max(...gaps))}</b></span>` : ''
+      need ? `<span class="pgh-tag bad">${need} need${need === 1 ? 's' : ''} a case</span>` : '<span class="pgh-tag ok">Nothing to do</span>',
+      lows.length ? `<span><span class="k">CPT most too low by</span><b>${usd(Math.max(...lows))}</b></span>` : ''
     ].filter(Boolean)) + g.map(cptRowHtml).join('');
   }).join('');
 }
@@ -2241,24 +2461,26 @@ function cptRowHtml(r){
               ? `<span class="cpill sale" data-tip="${esc(TIPS.sale)}">${usd(r.sale)}</span>` +
                 (r.list ? `<span class="was" data-tip="${esc(TIPS.list)}">List ${usd(r.list)}</span>` : '')
               : '<span class="mut">No sale</span>'}`+
-             (r.target !== null ? `<span class="tgt" data-tip="${esc(TIPS.target)}">Target ${usd(r.target)}</span>` : '')+'</td>'+
+             (r.target !== null ? `<span class="tgt" data-tip="${esc(targetTip(r))}">Target ${usd(r.target)}</span>` : '')+'</td>'+
           `<td class="c"><span class="cpill cpt" data-tip="${esc(TIPS.cpt)}">${usd(r.cpt)}</span></td>`+
           `<td class="c">${r.gap === null ? '<span class="mut">\u2014</span>' :
              bad ? `<span class="gap-badge over" data-tip="${esc(TIPS.over)}">+${usd(r.gap)} &middot; ${r.pct}%</span>`
-             : r.target !== null && r.short > 0.005 ? `<span class="gap-badge over" data-tip="${esc(TIPS.under)}">CPT ${usd(r.short)} too low</span><span class="was">${r.shortPct}% under Haris\u2019s price</span>`
+             : r.target !== null && r.short > 0.005 ? `<span class="gap-badge over" data-tip="${esc(TIPS.under)}">CPT ${usd(r.short)} too low</span><span class="was">${r.shortPct}% under the target</span>`
              : r.held ? `<span class="gap-badge held" data-tip="${esc(TIPS.held)}">Held at CPT</span><span class="was">${r.listPct}% under list</span>`
                  : `<span class="gap-badge ok" data-tip="${esc(TIPS.ok)}">At or under</span>`}</td>`+
           `<td class="trend">${miniSpark(r.h)}</td>`+
           `<td class="move">${r.moved
               ? `${usd(r.from)} to ${usd(r.cpt)}<span class="ago${hot ? ' hot' : ''}">${n === 0 ? 'today' : n + ' days ago'}</span>`
               : '<span class="mut">No change seen</span>'}</td>`+
-          `<td class="sim">${r.simLow
+          `<td class="sim">${likelyRefs(r).length
+              ? `<span class="lo" style="color:#b42318" data-tip="An outside item priced exactly at our CPT. Amazon most likely compared us with it.">Likely reference ${usd(likelyRefs(r)[0].price)}</span><span class="where">${esc(likelyRefs(r)[0].market)}, ${esc(likelyRefs(r)[0].brand || '')}</span>`
+              : r.simLow
               ? `<span class="lo">${usd(r.simLow.price)}</span><span class="where">${esc(r.simLow.market)}${r.simLow.brand ? ', ' + esc(r.simLow.brand) : ''}</span>`
               : '<span class="mut">\u2014</span>'}</td>`+
           `<td>${r.action === 'none' ? '<span class="mut">\u2014</span>' :
              `<span class="ac ac-${r.action}" title="${esc(r.verdict.why.join('. '))}">${esc(ACTIONS[r.action].label)}</span>`+
              (r.action === 'follow' && r.caseIds.length ? `<span class="was mono">${esc(r.caseIds[r.caseIds.length - 1])}</span>` : '')}`+
-             mailLine(r) + '</td>'+
+             nextLine(r) + '</td>'+
           '</tr>';
 }
 
@@ -2348,6 +2570,31 @@ function sparkSvg(h){
     `<span style="color:var(--byd);font-weight:700">- -</span> Our price</div>`;
 }
 
+function factsBlock(r){
+  if(!(r.action === 'open' || r.action === 'follow')) return '';
+  const F = strongFacts(r), risk = outsideRisk(r);
+  return '<h2 style="margin-top:1rem">Strongest facts for the case</h2>'+
+    (F.length ? '<ol class="facts">' + F.map(f=> `<li><span class="fw fw-${f.w >= 4 ? 'hi' : f.w >= 3 ? 'mid' : 'lo'}">${f.w >= 4 ? 'Strong' : f.w >= 3 ? 'Good' : 'Extra'}</span> ${esc(f.t)}</li>`).join('') + '</ol>'
+              : '<p class="mut" style="font-size:.84rem">No strong facts yet. They fill in as more days of data come in.</p>')+
+    (likelyRefs(r).length ? `<div class="refbox"><b>Likely reference found:</b> ${esc(refLine(likelyRefs(r)[0]))}. Its price equals our CPT to the cent. It is named in the case emails.</div>` : '')+
+    (risk ? `<div class="risk"><b>Careful:</b> ${risk.length} same-size mat${risk.length > 1 ? 's' : ''} outside Amazon sell${risk.length > 1 ? '' : 's'} below the CPT (cheapest ${usd(risk[0].price)}, ${esc(risk[0].market)}). Do not argue on outside prices. Argue on our own listings, as in the facts above.</div>` : '')+
+    '<p class="mut" style="font-size:.78rem;margin-top:.4rem">These facts are added to every draft email automatically, strongest first.</p>';
+}
+
+function timelineBlock(r){
+  const n = nextStep(r), ev = r.events || [];
+  if(!n && !ev.length) return '';
+  return (n ? `<div class="next-box ${n.due === 'now' ? 'now' : ''}"><div class="nb-t">Next step: ${esc(n.text)}</div>`+
+      `<div class="nb-h">${esc(n.how)}</div>`+
+      (ev.length ? '<p style="margin-top:.5rem"><button class="work strong" id="fuBtn">Draft follow-up</button></p>' : '')+'</div>' : '')+
+    (ev.length ? '<h2 style="margin-top:1rem">History</h2><ol class="tl">'+
+      ev.map(x=> `<li class="tl-${x.who}"><span class="tl-d">${esc(shortDate(x.d))}</span>`+
+        `<span class="tl-k">${esc(EV_LABEL[x.kind] || x.kind)}${x.who === 'us' ? (x.ch === 'jassy' ? ' to the Andy Jassy team' : ' on the case') : (x.ch === 'jassy' ? ' (Andy Jassy team)' : '')}</span>`+
+        (x.cid ? `<span class="tl-c mono">${esc(x.cid)}</span>` : '')+
+        `<a href="${esc(x.link)}" target="_blank" rel="noopener">open</a></li>`).join('')+
+      '</ol>' : '<p class="mut" style="font-size:.8rem">No case emails found yet.</p>');
+}
+
 function caseBlock(r){
   const v = r.verdict;
   if(v.level === 'none') return '';
@@ -2358,6 +2605,8 @@ function caseBlock(r){
     (r.caseIds && r.caseIds.length ? `<p class="mut" style="font-size:.84rem">Case on file: <span class="mono">${esc(r.caseIds.join(', '))}</span>. Reply on the newest one with the evidence below.</p>` : '')+
     (v.open ? `<p class="mut" style="font-size:.84rem">Case ${esc(v.open.id)} is already open for this ASIN (${esc(v.open.status || 'open')}). Reply on it instead of opening another.</p>` : '')+
     '<ul class="why-list">' + v.why.map(w=> `<li>${esc(w)}</li>`).join('') + '</ul>'+
+    timelineBlock(r)+
+    factsBlock(r)+
     (r.mail ? `<h2 style="margin-top:1rem">Latest Amazon email</h2>`+
       `<p style="margin:.2rem 0">${mailLine(r)}${r.mail.unread ? ' <span class="mailst m-warn">Unread</span>' : ''}</p>`+
       `<p style="font-size:.84rem;margin:.3rem 0"><b>${esc(r.mail.subject)}</b><br><span class="mut">${esc(r.mail.date)}</span></p>`+
@@ -2441,6 +2690,17 @@ function openCpt(r){
   if(mb2) mb2.onclick = ()=>{
     const m = jassyEmail([r]);
     if(m) window.open(gmailCompose(MAIL.jassy, MAIL.cc, m.subject, m.body), '_blank', 'noopener');
+  };
+  const fu = document.getElementById('fuBtn');
+  if(fu) fu.onclick = ()=>{
+    const m = followUpEmail(r);
+    if(m.toJassy) window.open(gmailCompose(MAIL.jassy, MAIL.cc, m.subject, m.body), '_blank', 'noopener');
+    else {
+      const ev = (r.events || [])[0] || {};
+      const cid = ev.cid || (r.caseIds || []).slice(-1)[0];
+      if(cid) window.open(caseLink(cid), '_blank', 'noopener');
+      if(navigator.clipboard) navigator.clipboard.writeText(m.body).then(()=> fu.textContent = 'Follow-up copied, paste it into the case');
+    }
   };
   const om = document.getElementById('openMail');
   if(om && r.mail) om.onclick = ()=> window.open(r.mail.link, '_blank', 'noopener');
@@ -2776,13 +3036,13 @@ const TIPS = {
   list:   'Full price. Our normal price, no discount.',
   sale:   'Discount price. The lower price we set. Shoppers see the full price crossed out next to it.',
   ours:   'Price today. What a shopper pays right now. If there is a sale, it is the sale price.',
-  target: 'The sale price Haris wants. 30" $24.95, 36" $49.95, 48" $69.95, 72" $119.95.',
+  target: 'The sale price we should be at: the price most mats of the same size are on sale for today, from Amazon\u2019s daily report.',
   cpt:    'Amazon\u2019s price limit. If our price is higher, Amazon hides our Add to Cart button.',
   buybox: 'The Add to Cart button. No Buy Box means almost no sales.',
   feat:   'The price on the Add to Cart button right now.',
   gap:    'Our price compared with Amazon\u2019s limit. Red means there is a problem.',
   held:   'We dropped our price to Amazon\u2019s limit just to keep selling. We make less on every sale.',
-  under:  'Amazon\u2019s limit is lower than the price Haris wants. Ask Amazon to raise it: open a case.',
+  under:  'Amazon\u2019s limit is lower than our usual sale price for this size. Ask Amazon to raise it: open a case.',
   over:   'Our price is above Amazon\u2019s limit. The Add to Cart button is probably gone.',
   ok:     'All good. Nothing to do.',
   trend:  'Last 30 days. Solid line: Amazon\u2019s limit. Dashed line: our price.',
@@ -2806,20 +3066,27 @@ function priceGuide(){
   const row = (term, key) => `<div class="pg-row"><div class="pg-t">${term}</div><div class="pg-d">${esc(TIPS[key])}</div></div>`;
   return '<div class="pguide">'+
     '<div class="pg-h">What do these prices mean?</div>'+
-    '<div class="pg-one">In one line: <b>Amazon has a price limit (the CPT). When that limit is lower than the price Haris wants, we open a case to ask Amazon to raise it.</b></div>'+
+    '<div class="pg-one">In one line: <b>Amazon has a price limit (the CPT). When that limit is lower than our usual sale price for the size, we open a case to ask Amazon to raise it.</b></div>'+
     row('List price', 'list') + row('Sale price', 'sale') + row('Our price', 'ours') +
     row('Target', 'target') + row('CPT', 'cpt') + row('Buy Box', 'buybox') +
     row('Held at CPT', 'held') + row('Too low', 'under') +
     (ex ? '<div class="pg-ex"><b>Example: ' + esc(ex.sku) + '</b>'+
       '<ol class="pg-steps">'+
       `<li>Full price: <b>${usd(ex.list)}</b></li>`+
-      `<li>Haris wants it on sale for: <b>${usd(ex.target)}</b></li>`+
+      `<li>Most ${esc(ex.size)} mats are on sale for: <b>${usd(ex.target)}</b> (the target)</li>`+
       `<li>Amazon's limit (CPT): <b>${usd(ex.cpt)}</b></li>`+
       `<li>So we sell it for: <b>${usd(ex.ours)}</b>, just to keep the Add to Cart button</li>`+
       '</ol>'+
       (ex.short > 0.005 ? `<div class="pg-end">Amazon's limit is <b>${usd(ex.short)} too low</b>. Open a case.</div>` : '<div class="pg-end">Amazon\u2019s limit is fine here. Nothing to do.</div>')+
       '</div>' : '')+
   '</div>';
+}
+
+function targetTip(r){
+  const t = targetInfo(r);
+  if(!t) return TIPS.target;
+  return `Target: the usual sale price for ${r.size} mats like this. ${t.n} of our ${t.of} ${r.size} listings are on sale at ${usd(t.price)} today, `+
+         'from Amazon\u2019s daily report. It updates by itself when the sale prices change.';
 }
 
 function qi(key){ return TIPS[key] ? `<span class="qi" tabindex="0" data-tip="${esc(TIPS[key])}">?</span>` : ''; }
@@ -2912,6 +3179,7 @@ function bandHeaders(){
 /* ---------- render ---------- */
 
 function render(){
+  TARGETS = null;      // re-read from today's data on every redraw
   renderView();
   chrome();
   if(S.view === 'cpt') document.getElementById('ov').hidden = true;
