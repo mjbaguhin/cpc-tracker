@@ -63,18 +63,19 @@ header h1{
 #meta{font-size:.7rem;color:#93a0b0;letter-spacing:.02em}
 #meta b{color:#ccd6e2;font-weight:600}
 
-#toggle,#fs,#homeBtn,#quickCat,#casesBtn,#catalogBtn{
+#toggle,#fs,#homeBtn,#quickCat,#casesBtn,#catalogBtn,#cptBtn{
   font-size:.74rem;padding:.24rem .6rem;
   background:transparent;color:#fff;border:1px solid #3a4652;
 }
 #homeBtn{margin-left:auto}
 #homeBtn[aria-pressed="true"],#quickCat[aria-pressed="true"],
 #casesBtn[aria-pressed="true"],
+#cptBtn[aria-pressed="true"],
 #catalogBtn[aria-pressed="true"]{
   background:#2f4a6d;border-color:#4a6fa5;
 }
-#toggle:hover,#fs:hover,#homeBtn:hover,#quickCat:hover,#casesBtn:hover,#catalogBtn:hover{background:#1c232b}
-#toggle .badge,#homeBtn .badge,#quickCat .badge,#casesBtn .badge{
+#toggle:hover,#fs:hover,#homeBtn:hover,#quickCat:hover,#casesBtn:hover,#catalogBtn:hover,#cptBtn:hover{background:#1c232b}
+#toggle .badge,#homeBtn .badge,#quickCat .badge,#casesBtn .badge,#cptBtn .badge{
   display:inline-block;margin-left:.35rem;padding:0 .32rem;
   background:#a83a26;border-radius:8px;font-size:.68rem;font-weight:700;
 }
@@ -82,6 +83,94 @@ header h1{
 /* checklist rows read as tappable, since the whole row is the target */
 tr.task{cursor:pointer}
 tr.case{cursor:pointer}
+tr.cpt{cursor:pointer}
+tr.cpt:hover td{background:var(--accent-soft)}
+.gap-bad{color:var(--warn);font-weight:600}
+.gap-ok{color:var(--ok)}
+.hist{width:100%;border-collapse:collapse;margin-top:.8rem;min-width:0}
+.hist th,.hist td{padding:.3rem .5rem;border-bottom:1px solid var(--line-soft);text-align:left;font-size:.84rem}
+.hist td.num,.hist th.num{text-align:right}
+.spark{display:block;margin:.6rem 0 .2rem}
+
+/* ---------- CPT tracker view ----------
+   Two zones. A dark overview band on top, the same night-desk look as the
+   review monitor, with the four numbers that say whether today is a problem.
+   Under it, one row per ASIN with banded column headers, like the rating
+   tracker, so price, threshold and gap read as separate instruments. */
+#cptView{
+  --c-night:#15181d; --c-night2:#1d2128; --c-night-line:#2b313a; --c-night-mut:#8a94a3;
+  --c-ours:#1f6b4f; --c-cpt:#22456f; --c-gap:#4e3a8e; --c-move:#7c2f28; --c-sim:#3d4a57;
+  --c-pill:#eef2f6;
+  background:var(--field);
+}
+#cptView[hidden],#bar[hidden],#mainWrap[hidden]{display:none}
+
+.cpt-top{background:var(--c-night);color:#e8edf3;padding:1.1rem 1.25rem 1.2rem}
+.cpt-head{display:flex;align-items:baseline;gap:.9rem;flex-wrap:wrap;margin-bottom:1rem}
+.cpt-head h2{font-size:1.25rem;font-weight:700;letter-spacing:-.01em}
+.cpt-head .sub{font-family:ui-monospace,"SF Mono",Menlo,Consolas,monospace;font-size:.78rem;color:var(--c-night-mut)}
+.cpt-live{display:inline-flex;align-items:center;gap:.4rem;border:1px solid var(--c-night-line);
+  border-radius:6px;padding:.18rem .55rem;font-family:ui-monospace,"SF Mono",Menlo,Consolas,monospace;font-size:.76rem;color:#cfd7e2}
+.cpt-live i{width:.45rem;height:.45rem;border-radius:50%;background:#3fbf7f;display:inline-block}
+.cpt-live.stale i{background:#d9a13b}
+
+.cpt-tiles{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:.7rem}
+.cpt-tile{background:var(--c-night2);border:1px solid var(--c-night-line);border-radius:8px;padding:.8rem .95rem;min-width:0}
+.cpt-tile .k{font-size:.78rem;color:var(--c-night-mut);margin-bottom:.35rem}
+.cpt-tile .v{font-size:1.9rem;font-weight:700;line-height:1.05;font-variant-numeric:tabular-nums}
+.cpt-tile .v.bad{color:#ff8a73}
+.cpt-tile .v.warn{color:#f2c46b}
+.cpt-tile .n{font-size:.78rem;color:var(--c-night-mut);margin-top:.3rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+@media(max-width:820px){ .cpt-tiles{grid-template-columns:repeat(2,minmax(0,1fr))} }
+
+.cpt-tools{display:flex;align-items:center;gap:.5rem;flex-wrap:wrap;padding:.7rem 1.25rem;background:var(--slab);border-bottom:1px solid var(--line)}
+.cpt-tools .seg button{font-size:.8rem;padding:.28rem .7rem}
+.cpt-tools input{flex:1 1 14rem;min-width:10rem;font:inherit;font-size:.85rem;padding:.38rem .6rem;border:1px solid var(--line);border-radius:6px}
+.cpt-tools .count{margin-left:auto;font-size:.8rem;color:var(--muted)}
+
+.cpt-table{width:100%;min-width:62rem;border-collapse:separate;border-spacing:0;background:var(--slab)}
+.cpt-table thead th{position:sticky;top:0;z-index:2;color:#fff;font-size:.72rem;font-weight:700;
+  text-transform:none;letter-spacing:.02em;padding:.75rem .7rem;border:0;background:var(--c-night);white-space:nowrap}
+.cpt-table thead th.b-ours{background:var(--c-ours)}
+.cpt-table thead th.b-cpt{background:var(--c-cpt)}
+.cpt-table thead th.b-gap{background:var(--c-gap)}
+.cpt-table thead th.b-move{background:var(--c-move)}
+.cpt-table thead th.b-sim{background:var(--c-sim)}
+.cpt-table thead th:first-child{border-top-left-radius:8px}
+.cpt-table thead th:last-child{border-top-right-radius:8px}
+.cpt-table th.c,.cpt-table td.c{text-align:center}
+/* The catalog table pins its first two columns; this one does not */
+.cpt-table th,.cpt-table td{position:static;min-width:0;max-width:none;box-shadow:none !important}
+.cpt-table thead th{position:sticky}
+.cpt-table tr:hover td{background:transparent}
+.cpt-table td.c{font-family:inherit;font-size:inherit}
+.cpt-table td.prod{min-width:19rem}
+.cpt-table td{border-left:0 !important;border-right:0 !important;padding:.85rem .7rem;border-bottom:1px solid var(--line-soft);vertical-align:middle;white-space:nowrap}
+.cpt-table tr.row{cursor:pointer}
+.cpt-table tr.row:hover td{background:#f5f8fb}
+.cpt-table tr.row:focus-visible td{outline:2px solid var(--accent);outline-offset:-2px}
+
+.p-name{font-weight:700;font-size:.95rem;max-width:22rem;overflow:hidden;text-overflow:ellipsis;display:flex;align-items:center;gap:.45rem}
+.p-name .dot{width:.5rem;height:.5rem;margin:0;flex:0 0 auto}
+.p-id{font-family:ui-monospace,"SF Mono",Menlo,Consolas,monospace;font-size:.78rem;color:#2257a5;margin-top:.15rem}
+.p-id span{color:var(--muted);margin-right:.25rem}
+.p-size{display:inline-block;margin-top:.3rem;font-size:.72rem;padding:.08rem .45rem;border-radius:4px;background:var(--accent-soft);color:var(--accent);font-weight:600}
+
+.cpill{display:inline-block;min-width:5.6rem;font-size:.95rem;text-align:center;padding:.3rem .6rem;border-radius:6px;border:1px solid var(--line);
+  background:var(--c-pill);font-weight:700;font-variant-numeric:tabular-nums}
+.cpill.ours{background:#e7f4ee;border-color:#b9dccb;color:var(--c-ours)}
+.cpill.cpt{background:#e6eef8;border-color:#bccde6;color:var(--c-cpt)}
+.gap-badge{display:inline-block;font-size:.9rem;padding:.3rem .6rem;border-radius:6px;font-weight:700;font-variant-numeric:tabular-nums}
+.gap-badge.over{background:#fbe7e3;color:var(--warn)}
+.gap-badge.ok{background:#e4f3ee;color:var(--ok)}
+.move{font-variant-numeric:tabular-nums}
+.move .ago{display:block;font-size:.76rem;color:var(--muted);margin-top:.15rem}
+.move .ago.hot{color:var(--warn);font-weight:700}
+.sim .lo{font-weight:700;font-variant-numeric:tabular-nums}
+.sim .where{display:block;font-size:.76rem;color:var(--muted);margin-top:.15rem}
+td.trend svg{display:block}
+.cpt-empty{padding:2.5rem 1.25rem;text-align:center;color:var(--muted)}
+.cpt-empty b{display:block;color:var(--ink);font-size:1rem;margin-bottom:.3rem}
 tr.case:hover td{background:var(--accent-soft)}
 td.id2{max-width:11rem;overflow:hidden;text-overflow:ellipsis}
 .go{color:var(--muted);font-size:.75rem}
@@ -373,6 +462,7 @@ td.ind-cell{text-align:center}
   <button id="homeBtn">Checklist</button>
   <button id="quickCat">Category</button>
   <button id="casesBtn">Cases</button>
+  <button id="cptBtn">CPT tracker</button>
   <button id="catalogBtn">Catalog</button>
   <button id="toggle" aria-expanded="true">Filters</button>
   <button id="fs" title="Fullscreen">Full screen</button>
@@ -452,7 +542,8 @@ td.ind-cell{text-align:center}
 
 <div id="bar"></div>
 <div id="msg">Loading catalog</div>
-<div class="wrap"><table id="tbl" hidden>
+<div class="wrap" id="cptView" hidden></div>
+<div class="wrap" id="mainWrap"><table id="tbl" hidden>
   <thead><tr id="hrow"></tr></thead>
   <tbody id="tbody"></tbody>
 </table></div>
@@ -472,6 +563,14 @@ const PUB = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vRJzdMWKepuICHrxxJX
 // Category tab of the same sheet, published separately.
 // Open cases, normalised out of the case tracker
 const PUB_CASES = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vRJzdMWKepuICHrxxJXuYxMJPiRIh7iifhDaRLHhb6j57Motm4XMyS0GIPqqM_tzbVY1drpOXslDbH-/pub?gid=403229889&single=true&output=csv';
+
+// Daily Competitive Price Threshold per ASIN, written by CPT Watch in the
+// CPC Keepa Fetcher project. Same repo as data.json.
+const CPT_SRC = 'https://raw.githubusercontent.com/mjbaguhin/cpc-tracker/main/cpt.json';
+
+// Other brands' coir mats in our sizes: Amazon from Keepa (weekly), plus the
+// Outside Amazon tab (Walmart, Wayfair, Temu and so on, added by hand).
+const SIM_SRC = 'https://raw.githubusercontent.com/mjbaguhin/cpc-tracker/main/similar.json';
 
 // Amazon's case creation entry point
 const CASE_URL = 'https://sellercentral.amazon.com/help/center?redirectSource=HelpHub';
@@ -562,6 +661,15 @@ async function load(fresh){
   buildCases(cas);
   PUBROWS = csvParse(pub);
   build({}, PUBROWS, 'ratings loading');
+
+  // CPT feed is small and independent, so it never holds up the first paint
+  grab(CPT_SRC, 'json', fresh)
+    .then(j => { buildCpt(j); if(S.view === 'cpt') render(); })
+    .catch(e => { CPT_ERR = e.message; if(S.view === 'cpt') render(); });
+  grab(SIM_SRC, 'json', fresh)
+    .then(j => { SIM = (j && j.items) || []; SIM_META = {updated: j && j.updated || ''};
+                 if(S.view === 'cpt') render(); })
+    .catch(e => console.warn('similar.json unavailable:', e.message));
 
   // Ratings arrive after the first paint and trigger a rebuild
   grab(SRC, 'json', fresh)
@@ -1246,6 +1354,332 @@ function renderCases(){
 }
 
 
+/* ---------- CPT tracker ---------- */
+
+/* One row per ASIN from cpt.json: today's Competitive Price Threshold, our
+   live offer price as Keepa saw it (sale included), the Buy Box price, and up
+   to 120 days of both. If Keepa has no price for us, the US columns of ALM
+   Console Data are the fallback. */
+let CPT = [], CPT_META = {}, CPT_ERR = '';
+let SIM = [], SIM_META = {};
+
+/* Size of one of our mats, read from its name: "(30x48, Border)" -> 30x48.
+   A 17x30 mat is compared with 18x30 too, the common market size. */
+function matSize(text){
+  const t = String(text || '').replace(/[\u201d\u2033]/g, '"');
+  const m = t.match(/(\d{2})\s*(?:"|in)?\s*[xX\u00d7]\s*(\d{2})/);
+  if(!m) return '';
+  const a = +m[1], b = +m[2];
+  return Math.min(a,b) + 'x' + Math.max(a,b);
+}
+function simFor(size){
+  if(!size) return [];
+  const sizes = size === '17x30' ? ['17x30','18x30'] : [size];
+  return SIM.filter(x=> sizes.indexOf(x.size) !== -1 && num(x.price) !== null)
+            .sort((a,b)=> a.price - b.price);
+}
+function median(a){
+  if(!a.length) return null;
+  const v = a.map(x=> +x.price).sort((x,y)=> x-y), m = Math.floor(v.length/2);
+  return v.length % 2 ? v[m] : Math.round((v[m-1] + v[m]) / 2 * 100) / 100;
+}
+const CPT_RECENT = 7;   // a move inside this many days is flagged as recent
+
+function buildCpt(j){
+  CPT_ERR = '';
+  CPT_META = {updated: j && j.updated || ''};
+  CPT = ((j && j.rows) || []).map(r=>{
+    const h = (r.h || []).filter(x=> x && x[0]).sort((a,b)=> a[0] < b[0] ? -1 : 1);
+    // Last date the CPT changed, and what it changed from
+    let moved = '', from = null;
+    for(let i = h.length - 1; i > 0; i--){
+      if(h[i][1] !== null && h[i-1][1] !== null && h[i][1] !== h[i-1][1]){
+        moved = h[i][0]; from = h[i-1][1]; break;
+      }
+    }
+    return {asin:r.asin, sku:r.sku || '', name:r.name || '', cpt:num(r.cpt), bb:num(r.bb),
+            kOurs:num(r.ours), date:r.d || '', h, moved, from};
+  });
+}
+
+function ourPrice(asin){
+  const row = ROWS.find(x=> x.asin === asin);
+  if(!row) return null;
+  const sale = row.usSale, list = row.usList;
+  if(sale !== null && (list === null || sale < list)) return sale;
+  return list;
+}
+
+const usd = v => v === null || v === undefined ? '\u2014' : '$' + Number(v).toFixed(2);
+
+function daysSince(d){
+  if(!d) return null;
+  const t = new Date(d + 'T12:00:00');
+  return isNaN(t) ? null : Math.round((Date.now() - t) / 86400000);
+}
+
+function cptRows(){
+  return CPT.filter(c=> c.cpt !== null).map(c=>{
+    const ours = c.kOurs !== null ? c.kOurs : ourPrice(c.asin);
+    const gap  = ours !== null ? Math.round((ours - c.cpt) * 100) / 100 : null;
+    const pct  = gap !== null && c.cpt ? Math.round(gap / c.cpt * 100) : null;
+    const row  = ROWS.find(x=> x.asin === c.asin);
+    const name = c.name || (row && row.name) || '';
+    const size = matSize(name) || matSize(c.sku);
+    const sim  = simFor(size);
+    return Object.assign({}, c, {ours, gap, pct, size, sim, simLow: sim.length ? sim[0] : null,
+      sku: c.sku || (row && row.sku) || '', name});
+  }).sort((a,b)=>{
+    const fa = a.gap !== null && a.gap > 0, fb = b.gap !== null && b.gap > 0;
+    if(fa !== fb) return fa ? -1 : 1;
+    return (b.pct === null ? -1e9 : b.pct) - (a.pct === null ? -1e9 : a.pct);
+  });
+}
+
+const CPT_F = {show:'all', q:''};
+
+/* Tiny two-line trend for the row: CPT solid, our price dashed */
+function miniSpark(h){
+  const pts = (h || []).slice(-30);
+  if(pts.length < 2) return '<span class="mut">\u2014</span>';
+  const W = 110, H = 30, P = 3, vs = [];
+  pts.forEach(x=>{ if(x[1] !== null) vs.push(x[1]); if(x[2] !== null && x[2] !== undefined) vs.push(x[2]); });
+  if(!vs.length) return '<span class="mut">\u2014</span>';
+  const lo = Math.min(...vs), hi = Math.max(...vs), span = (hi - lo) || 1;
+  const X = i => P + i * (W - 2*P) / (pts.length - 1), Y = v => H - P - (v - lo) * (H - 2*P) / span;
+  const path = k =>{ let d = '', pen = false;
+    pts.forEach((x,i)=>{ const v = x[k];
+      if(v === null || v === undefined){ pen = false; return; }
+      d += (pen ? 'L' : 'M') + X(i).toFixed(1) + ' ' + Y(v).toFixed(1) + ' '; pen = true; });
+    return d; };
+  return `<svg viewBox="0 0 ${W} ${H}" width="${W}" height="${H}" aria-hidden="true">`+
+    `<path d="${path(2)}" fill="none" stroke="var(--byd)" stroke-width="1.6" stroke-dasharray="4 3"/>`+
+    `<path d="${path(1)}" fill="none" stroke="var(--accent)" stroke-width="1.8"/></svg>`;
+}
+
+/* "Barnyard Designs Natural Coco Coir Non-Slip Doormat (30x48, Welcome)"
+   reads as "Welcome coir doormat": the style is what tells rows apart. */
+function cptTitle(r){
+  const n = String(r.name || '');
+  const m = n.match(/\(([^)]*)\)\s*$/) || n.match(/\(([^)]*)\)/);
+  if(m){
+    const style = m[1].split(',').map(x=> x.trim()).filter(x=> x && !matSize(x)).join(', ');
+    if(style && /coir|coco/i.test(n)) return style + ' coir doormat';
+    if(style) return style;
+  }
+  return n.replace(/^Barnyard Designs\s*/i, '').replace(/^Seedboy\s*/i, '').split(/[|,]/)[0].trim() || r.sku;
+}
+
+function renderCpt(){
+
+  // This view owns the screen: the shared table, bar and message step aside
+  document.getElementById('msg').hidden = true;
+  document.getElementById('bar').innerHTML = '';
+  const v = document.getElementById('cptView');
+
+  const all    = cptRows();
+  const over   = all.filter(r=> r.gap !== null && r.gap > 0);
+  const recent = all.filter(r=>{ const n = daysSince(r.moved); return n !== null && n <= CPT_RECENT; });
+  const none   = CPT.length - all.length;
+  const worst  = over.slice().sort((a,b)=> b.gap - a.gap)[0];
+  const today  = new Date().toISOString().slice(0,10);
+  const fresh  = CPT_META.updated && CPT_META.updated.slice(0,10) >= new Date(Date.now() - 2*86400000).toISOString().slice(0,10);
+
+  // Filter and search
+  let rows = all;
+  if(CPT_F.show === 'over')   rows = over;
+  if(CPT_F.show === 'moved')  rows = recent;
+  if(CPT_F.q){
+    const q = CPT_F.q.toLowerCase();
+    rows = rows.filter(r=> (r.sku + ' ' + r.asin + ' ' + r.name).toLowerCase().indexOf(q) !== -1);
+  }
+
+  const tile = (k, val, cls, note) =>
+    `<div class="cpt-tile"><div class="k">${k}</div><div class="v ${cls || ''}">${val}</div>`+
+    `<div class="n">${note || '&nbsp;'}</div></div>`;
+
+  let html =
+    '<section class="cpt-top">'+
+      '<div class="cpt-head">'+
+        '<h2>CPT tracker</h2>'+
+        `<span class="sub">Amazon US, ${CPT.length} active ASINs checked</span>`+
+        (CPT_META.updated ? `<span class="cpt-live${fresh ? '' : ' stale'}"><i></i>Updated ${esc(CPT_META.updated)} ET, daily</span>` : '')+
+      '</div>'+
+      '<div class="cpt-tiles">'+
+        tile('Priced above the CPT', over.length, over.length ? 'bad' : '',
+             over.length ? 'Featured Offer at risk on these' : 'None, every price is at or under')+
+        tile('CPT moved, last 7 days', recent.length, recent.length ? 'warn' : '',
+             recent.length ? recent.map(r=> esc(r.sku)).slice(0,3).join(', ') + (recent.length > 3 ? '\u2026' : '') : 'No changes this week')+
+        tile('Biggest gap', worst ? usd(worst.gap) : '\u2014', worst ? 'bad' : '',
+             worst ? esc(worst.sku) + ', ' + worst.pct + '% over' : 'Nothing over the threshold')+
+        tile('ASINs with a CPT', all.length, '',
+             none ? none + ' with no CPT today' : 'All ASINs have one')+
+      '</div>'+
+    '</section>'+
+    '<div class="cpt-tools">'+
+      '<div class="seg" id="cptSeg">'+
+        [['all','All ' + all.length], ['over','Over CPT ' + over.length], ['moved','Moved 7 days ' + recent.length]]
+          .map(b=> `<button data-show="${b[0]}" aria-pressed="${CPT_F.show === b[0]}">${b[1]}</button>`).join('')+
+      '</div>'+
+      `<input id="cptQ" type="search" placeholder="Search SKU, ASIN or product" value="${esc(CPT_F.q)}" aria-label="Search CPT tracker">`+
+      `<span class="count">${rows.length} of ${all.length}</span>`+
+    '</div>';
+
+  if(!all.length){
+    html += CPT_ERR
+      ? '<div class="cpt-empty"><b>CPT feed not found yet</b>Run setupCptWatchDaily in the CPC Keepa Fetcher project. It creates cpt.json on its first run.</div>'
+      : `<div class="cpt-empty"><b>${CPT.length ? 'No ASIN has a CPT today' : 'Loading CPT'}</b>${CPT.length ? 'Amazon is not holding any of our listings to a competitive price right now.' : ''}</div>`;
+  } else if(!rows.length){
+    html += '<div class="cpt-empty"><b>Nothing matches</b>Clear the search or pick All.</div>';
+  } else {
+    html += '<table class="cpt-table"><thead><tr>'+
+      '<th>Product</th>'+
+      '<th class="b-ours c">Our price</th>'+
+      '<th class="b-cpt c">CPT</th>'+
+      '<th class="b-gap c">Gap</th>'+
+      '<th>30-day trend</th>'+
+      '<th class="b-move">Last CPT move</th>'+
+      '<th class="b-sim">Cheapest similar</th>'+
+      '</tr></thead><tbody>'+
+      rows.map(r=>{
+        const bad = r.gap !== null && r.gap > 0;
+        const n = daysSince(r.moved);
+        const hot = n !== null && n <= CPT_RECENT;
+        const brandDot = /barnyard/i.test(r.name) || /^DMC|^FM|^HD/i.test(r.sku) ? 'var(--byd)' : 'var(--sb)';
+        return `<tr class="row" tabindex="0" data-asin="${esc(r.asin)}">`+
+          '<td class="prod">'+
+            `<div class="p-name" title="${esc(r.name)}"><span class="dot" style="background:${brandDot}"></span>${esc(cptTitle(r).slice(0,48))}</div>`+
+            `<div class="p-id"><span>SKU</span>${esc(r.sku)}</div>`+
+            `<div class="p-id"><span>ASIN</span>${esc(r.asin)}</div>`+
+            (r.size ? `<span class="p-size">${esc(r.size)}</span>` : '')+
+          '</td>'+
+          `<td class="c"><span class="cpill ours">${usd(r.ours)}</span></td>`+
+          `<td class="c"><span class="cpill cpt">${usd(r.cpt)}</span></td>`+
+          `<td class="c">${r.gap === null ? '<span class="mut">\u2014</span>' :
+             bad ? `<span class="gap-badge over">+${usd(r.gap)} &middot; ${r.pct}%</span>`
+                 : '<span class="gap-badge ok">At or under</span>'}</td>`+
+          `<td class="trend">${miniSpark(r.h)}</td>`+
+          `<td class="move">${r.moved
+              ? `${usd(r.from)} to ${usd(r.cpt)}<span class="ago${hot ? ' hot' : ''}">${n === 0 ? 'today' : n + ' days ago'}</span>`
+              : '<span class="mut">No change seen</span>'}</td>`+
+          `<td class="sim">${r.simLow
+              ? `<span class="lo">${usd(r.simLow.price)}</span><span class="where">${esc(r.simLow.market)}${r.simLow.brand ? ', ' + esc(r.simLow.brand) : ''}</span>`
+              : '<span class="mut">\u2014</span>'}</td>`+
+          '</tr>';
+      }).join('')+
+      '</tbody></table>';
+  }
+
+  v.innerHTML = html;
+
+  [...v.querySelectorAll('#cptSeg button')].forEach(b=> b.onclick = ()=>{ CPT_F.show = b.dataset.show; renderCpt(); });
+  const q = document.getElementById('cptQ');
+  if(q){
+    q.oninput = ()=>{ CPT_F.q = q.value; renderCpt();
+      const q2 = document.getElementById('cptQ'); q2.focus(); q2.setSelectionRange(q2.value.length, q2.value.length); };
+  }
+  [...v.querySelectorAll('tr.row')].forEach(el=>{
+    const open = ()=>{ const r = all.find(x=> x.asin === el.dataset.asin); if(r) openCpt(r); };
+    el.onclick = open;
+    el.onkeydown = e=>{ if(e.key === 'Enter' || e.key === ' '){ e.preventDefault(); open(); } };
+  });
+}
+
+/* CPT (solid) and our price (dashed) on one scale, so the gap between them
+   is the picture: lines apart means we are priced over the threshold. */
+function sparkSvg(h){
+  if(h.length < 2) return '';
+  const W = 320, H = 64, P = 4;
+  const vs = [];
+  h.forEach(x=>{ if(x[1] !== null) vs.push(x[1]); if(x[2] !== null && x[2] !== undefined) vs.push(x[2]); });
+  if(!vs.length) return '';
+  const lo = Math.min(...vs), hi = Math.max(...vs), span = (hi - lo) || 1;
+  const X = i => P + i * (W - 2*P) / (h.length - 1);
+  const Y = v => H - P - (v - lo) * (H - 2*P) / span;
+  function path(k){
+    let d = '', pen = false;
+    h.forEach((x,i)=>{
+      const v = x[k];
+      if(v === null || v === undefined){ pen = false; return; }
+      d += (pen ? 'L' : 'M') + X(i).toFixed(1) + ' ' + Y(v).toFixed(1) + ' ';
+      pen = true;
+    });
+    return d;
+  }
+  return `<svg class="spark" viewBox="0 0 ${W} ${H}" width="100%" height="${H}" preserveAspectRatio="none" role="img" `+
+    `aria-label="CPT and our price, ${usd(lo)} to ${usd(hi)}, over ${h.length} days">`+
+    `<path d="${path(2)}" fill="none" stroke="var(--byd)" stroke-width="2" stroke-dasharray="5 4"/>`+
+    `<path d="${path(1)}" fill="none" stroke="var(--accent)" stroke-width="2"/></svg>`+
+    `<div class="mut" style="font-size:.74rem;margin-bottom:.4rem">`+
+    `<span style="color:var(--accent);font-weight:700">\u2014</span> CPT &nbsp; `+
+    `<span style="color:var(--byd);font-weight:700">- -</span> Our price</div>`;
+}
+
+function simBlock(r){
+  if(!r.size) return '';
+  const all = r.sim || [];
+  const amz = all.filter(x=> x.market === 'Amazon'), out = all.filter(x=> x.market !== 'Amazon');
+  if(!all.length) return `<h2 style="margin-top:1.1rem">Similar ${esc(r.size)} coir mats</h2>`+
+    `<p class="mut" style="font-size:.84rem">None found yet. Amazon prices update every morning. Add Walmart, Wayfair or Temu prices in the Outside Amazon tab.</p>`;
+  // Amazon sellers never set the CPT, so only outside listings can be the match
+  const near = r.cpt !== null ? out.filter(x=> Math.abs(x.price - r.cpt) <= 3) : [];
+  return `<h2 style="margin-top:1.1rem">Similar ${esc(r.size)} coir mats</h2>`+
+    '<dl>'+
+    `<dt>On Amazon</dt><dd>${amz.length ? amz.length + ' listings, lowest ' + usd(amz[0].price) + ', median ' + usd(median(amz)) : '<span class="mut">none yet</span>'}</dd>`+
+    `<dt>Outside Amazon</dt><dd>${out.length ? out.length + ' listings, lowest ' + usd(out[0].price) + ', median ' + usd(median(out)) : '<span class="mut">none added</span>'}</dd>`+
+    (near.length ? `<dt>Near the CPT</dt><dd class="warn">${near.length} priced within $3 of ${usd(r.cpt)}, possible source of the CPT</dd>` : '')+
+    '</dl>'+
+    '<table class="hist"><thead><tr><th>Where</th><th>Brand</th><th>Product</th><th class="num">Price</th></tr></thead><tbody>'+
+    all.slice(0, 10).map(x=>{
+      const hot = x.market !== 'Amazon' && r.cpt !== null && Math.abs(x.price - r.cpt) <= 3;
+      const nm = esc(String(x.name).slice(0, 60));
+      return `<tr><td>${esc(x.market)}</td><td>${esc(x.brand || '')}</td>`+
+        `<td>${x.link ? `<a href="${esc(x.link)}" target="_blank" rel="noopener">${nm}</a>` : nm}</td>`+
+        `<td class="num ${hot ? 'warn' : ''}">${usd(x.price)}</td></tr>`;
+    }).join('')+
+    '</tbody></table>'+
+    (all.length > 10 ? `<p class="mut" style="font-size:.78rem;margin-top:.3rem">Cheapest 10 of ${all.length} shown.</p>` : '');
+}
+
+function openCpt(r){
+  const d = document.getElementById('detail');
+  const steps = [];
+  r.h.forEach((x,i)=>{
+    const p = i ? r.h[i-1] : null;
+    const ours = x[2] === undefined ? null : x[2];
+    if(i === 0 || x[1] !== p[1] || ours !== (p[2] === undefined ? null : p[2]))
+      steps.push([x[0], x[1], p ? p[1] : null, ours]);
+  });
+
+  d.innerHTML =
+    `<h2>CPT tracker</h2>`+
+    `<h3>${esc(r.sku)} ${esc(r.name)}</h3>`+
+    '<dl>'+
+    `<dt>ASIN</dt><dd class="mono">${esc(r.asin)}</dd>`+
+    `<dt>Our price</dt><dd>${usd(r.ours)}${r.kOurs !== null ? '' : ' <span class="mut">(from ALM data, Keepa had none)</span>'}</dd>`+
+    `<dt>CPT today</dt><dd class="${r.gap > 0 ? 'warn' : 'ok'}">${usd(r.cpt)}</dd>`+
+    `<dt>Over by</dt><dd>${r.gap === null ? '\u2014' : r.gap > 0 ? usd(r.gap) + ' (' + r.pct + '%)' : 'Our price is at or under the CPT'}</dd>`+
+    `<dt>Buy Box</dt><dd>${usd(r.bb)}</dd>`+
+    '</dl>'+
+    sparkSvg(r.h)+
+    '<table class="hist"><thead><tr><th>Date</th><th class="num">Our price</th><th class="num">CPT</th><th class="num">CPT change</th></tr></thead><tbody>'+
+    steps.slice().reverse().map(x=>{
+      const ch = x[2] === null || x[1] === null ? '' : Math.round((x[1] - x[2]) * 100) / 100;
+      const over = x[3] !== null && x[1] !== null && x[3] > x[1];
+      return `<tr><td>${esc(x[0])}</td><td class="num ${over ? 'warn' : ''}">${usd(x[3])}</td><td class="num">${usd(x[1])}</td>`+
+             `<td class="num ${ch > 0 ? 'ok' : ch < 0 ? 'warn' : 'mut'}">${ch === '' ? (x[2] === null ? 'first seen' : '') : ch === 0 ? '' : (ch > 0 ? '+' : '') + usd(ch).replace('$-','-$')}</td></tr>`;
+    }).join('')+
+    '</tbody></table>'+
+    simBlock(r)+
+    `<div class="why">Only days when our price or the CPT changed are listed. Our price in red means it was above the CPT that day. Amazon does not say which retailer it used, so a step up or down is the clue to when its match changed.</div>`+
+    `<p style="margin-top:.9rem"><button class="work" id="phBtn">Open Pricing Health</button></p>`;
+
+  document.getElementById('phBtn').onclick = ()=>
+    window.open('https://sellercentral.amazon.com/pricing/health', '_blank', 'noopener');
+  document.getElementById('veil').hidden = false;
+}
+
+
 /* ---------- category view ---------- */
 
 const WHY = {
@@ -1508,8 +1942,14 @@ function caseText(row, check, ck){
 
 function render(){
 
+  const isCpt = S.view === 'cpt';
+  document.getElementById('cptView').hidden  = !isCpt;
+  document.getElementById('mainWrap').hidden = isCpt;
+  document.getElementById('bar').hidden      = isCpt;
+
   if(S.view === 'checklist'){ renderChecklist(); return; }
   if(S.view === 'cases'){ renderCases(); return; }
+  if(S.view === 'cpt'){ renderCpt(); return; }
   if(S.view === 'category'){ renderCategory(); return; }
 
   const rows = visible();
@@ -1888,18 +2328,32 @@ const catalogBtn = document.getElementById('catalogBtn');
 const quickCat   = document.getElementById('quickCat');
 
 const casesBtn = document.getElementById('casesBtn');
+const cptBtn   = document.getElementById('cptBtn');
+
+let PANEL_BEFORE_CPT = null;
 
 function go(view){
+  // The CPT view has its own controls, so the filter panel folds away while
+  // it is open and comes back as it was when you leave.
+  if(view === 'cpt' && S.view !== 'cpt'){
+    PANEL_BEFORE_CPT = !document.getElementById('panel').hidden;
+    setPanel(false);
+  } else if(view !== 'cpt' && S.view === 'cpt' && PANEL_BEFORE_CPT !== null){
+    setPanel(PANEL_BEFORE_CPT);
+    PANEL_BEFORE_CPT = null;
+  }
   S.view = view;
   if(view !== 'category'){ S.checks = null; S.taskName = ''; }
   homeBtn.setAttribute('aria-pressed', view === 'checklist');
   quickCat.setAttribute('aria-pressed', view === 'category');
   casesBtn.setAttribute('aria-pressed', view === 'cases');
+  cptBtn.setAttribute('aria-pressed', view === 'cpt');
   catalogBtn.setAttribute('aria-pressed', view === 'catalog');
   render();
 }
 
 casesBtn.onclick = ()=> go('cases');
+cptBtn.onclick   = ()=> go('cpt');
 
 homeBtn.onclick    = ()=> go('checklist');
 catalogBtn.onclick = ()=> go('catalog');
