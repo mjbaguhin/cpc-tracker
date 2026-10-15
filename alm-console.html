@@ -114,7 +114,7 @@ tr.cpt:hover td{background:var(--accent-soft)}
 .cpt-live i{width:.45rem;height:.45rem;border-radius:50%;background:#3fbf7f;display:inline-block}
 .cpt-live.stale i{background:#d9a13b}
 
-.cpt-tiles{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:.7rem}
+.cpt-tiles{display:grid;grid-template-columns:repeat(auto-fit,minmax(11.5rem,1fr));gap:.7rem}
 .cpt-tile{background:var(--c-night2);border:1px solid var(--c-night-line);border-radius:8px;padding:.8rem .95rem;min-width:0}
 .cpt-tile .k{font-size:.78rem;color:var(--c-night-mut);margin-bottom:.35rem}
 .cpt-tile .v{font-size:1.9rem;font-weight:700;line-height:1.05;font-variant-numeric:tabular-nums}
@@ -168,10 +168,55 @@ tr.cpt:hover td{background:var(--accent-soft)}
 .cpt-gh .gcount{color:var(--muted);margin-left:.5rem}
 .cpt-gh .gover{margin-left:.5rem;padding:.1rem .45rem;border-radius:5px;background:#fbe7e3;color:var(--warn);font-weight:700;font-size:.76rem}
 .cpt-gh .gok{margin-left:.5rem;padding:.1rem .45rem;border-radius:5px;background:#e4f3ee;color:var(--ok);font-weight:600;font-size:.76rem}
+.act-row{display:flex;flex-wrap:wrap;gap:.45rem;margin-top:.7rem}
+button.work.strong{background:#b42318;border-color:#b42318;color:#fff}
+button.work.strong:hover{background:#8f1d12;border-color:#8f1d12}
+.agh-b{display:flex;flex-wrap:wrap;gap:.4rem;margin-top:.55rem}
+.agh-b button{font-size:.78rem}
+.ac{display:inline-block;padding:.3rem .65rem;border-radius:6px;font-weight:700;font-size:.82rem;white-space:nowrap}
+.ac-open{background:#b42318;color:#fff}
+.ac-follow{background:#22456f;color:#fff}
+.ac-watch{background:#fdf1d8;color:#8a5a0b}
+.cpt-table tr.act-open td{background:#fff6f4}
+.cpt-table tr.act-open td:first-child{box-shadow:inset 4px 0 0 #b42318 !important}
+.cpt-table tr.act-follow td{background:#f4f8fd}
+.cpt-table tr.act-follow td:first-child{box-shadow:inset 4px 0 0 #22456f !important}
+.cpt-table tr.act-open:hover td{background:#ffece8}
+.cpt-table tr.act-follow:hover td{background:#e9f1fb}
+.cpt-table tr.agh td{padding:.75rem 1rem !important;border-bottom:1px solid var(--line)}
+.agh-t{font-weight:800;font-size:.95rem}
+.agh-n{display:inline-block;margin-left:.35rem;padding:0 .45rem;border-radius:9px;font-size:.78rem;color:#fff;background:#64748b}
+.agh-s{font-size:.78rem;color:var(--muted);margin-top:.15rem}
+.cpt-table tr.agh-open td{background:#fde7e3 !important;box-shadow:inset 6px 0 0 #b42318 !important}
+.cpt-table tr.agh-open .agh-t{color:#8f1d12}
+.cpt-table tr.agh-open .agh-n{background:#b42318}
+.cpt-table tr.agh-follow td{background:#e6eef8 !important;box-shadow:inset 6px 0 0 #22456f !important}
+.cpt-table tr.agh-follow .agh-t{color:#1b3a5f}
+.cpt-table tr.agh-follow .agh-n{background:#22456f}
+.cpt-table tr.agh-watch td{background:#fdf6e6 !important;box-shadow:inset 6px 0 0 #c8912e !important}
+.cpt-table tr.agh-none td{background:#f3f5f9 !important;box-shadow:inset 6px 0 0 #94a3b8 !important}
+.vd{display:inline-block;padding:.28rem .6rem;border-radius:6px;font-weight:700;font-size:.82rem;white-space:nowrap}
+.vd-strong{background:#7c2f28;color:#fff}
+.vd-possible{background:#fbe7e3;color:var(--warn)}
+.vd-price{background:#eef1f5;color:#475569}
+.vd-open{background:#e6eef8;color:var(--accent)}
+.cpt-table thead th.b-case{background:var(--c-move)}
+.why-list{margin:.2rem 0 0 1.1rem;font-size:.86rem;line-height:1.45}
+.why-list li{margin:.15rem 0}
+.fbadge{display:inline-block;margin-left:.3rem;padding:0 .35rem;border-radius:8px;background:var(--warn);color:#fff;font-size:.7rem}
+.cpt-filters{background:#fff;border-bottom:1px solid var(--line);padding:.75rem 1.25rem .9rem}
+.rf-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(20rem,1fr));gap:.55rem 1.5rem}
+.rf{display:flex;align-items:center;gap:.4rem}
+.rf label{font-size:.8rem;font-weight:600;color:var(--ink);min-width:6.5rem}
+.rf input{flex:0 0 5.4rem;width:5.4rem;min-width:0;font:inherit;font-size:.85rem;padding:.3rem .45rem;border:1px solid var(--line);border-radius:6px}
+.rf-row{display:flex;flex-wrap:wrap;align-items:center;gap:.4rem;margin-top:.7rem}
+.rf-row .lbl2{font-size:.8rem;font-weight:600;color:var(--muted);margin-right:.2rem}
+.rf-tip{margin-top:.6rem;font-size:.8rem;color:var(--muted)}
 .cpill.cpt{background:#e6eef8;border-color:#bccde6;color:var(--c-cpt)}
 .gap-badge{display:inline-block;font-size:.9rem;padding:.3rem .6rem;border-radius:6px;font-weight:700;font-variant-numeric:tabular-nums}
 .gap-badge.over{background:#fbe7e3;color:var(--warn)}
 .gap-badge.ok{background:#e4f3ee;color:var(--ok)}
+.gap-badge.held{background:#fdf1d8;color:#8a5a0b}
 .move{font-variant-numeric:tabular-nums}
 .move .ago{display:block;font-size:.76rem;color:var(--muted);margin-top:.15rem}
 .move .ago.hot{color:var(--warn);font-weight:700}
@@ -796,7 +841,7 @@ async function load(fresh){
 
   // CPT feed is small and independent, so it never holds up the first paint
   grab(CPT_SRC, 'json', fresh)
-    .then(j => { buildCpt(j); if(S.view === 'cpt') render(); })
+    .then(j => { buildCpt(j); if(S.view === 'cpt') render(); else chrome(); })
     .catch(e => { CPT_ERR = e.message; if(S.view === 'cpt') render(); });
   grab(SIM_SRC, 'json', fresh)
     .then(j => { SIM = (j && j.items) || []; SIM_META = {updated: j && j.updated || ''};
@@ -1525,6 +1570,20 @@ function matSize(text){
   const a = +m[1], b = +m[2];
   return Math.min(a,b) + 'x' + Math.max(a,b);
 }
+/* Size of one of our listings. The name is tried first ("(30x48, Border)").
+   Coir mats are named by length only ("Border 36\" Coir Mat"), so their SKU
+   suffix decides, matching the reference sheet: no suffix 17x30, -36 24x36,
+   -48 30x48, -72 36x72. Anything else falls back to its length in inches. */
+const COIR_SIZE = {'': '17x30', '36': '24x36', '48': '30x48', '72': '36x72'};
+function sizeOf(name, sku){
+  const full = matSize(name);
+  if(full) return full;
+  const m = /^DMC-[A-Z]+(?:-(\d{2}))?$/i.exec(sku || '');
+  if(m) return COIR_SIZE[m[1] || ''] || '';
+  const inch = /(\d{2})\s*(?:"|\u201d|in\b)/.exec(name || '') || /-(\d{2})(?:-|$)/.exec(sku || '');
+  return inch ? inch[1] + '"' : '';
+}
+
 function simFor(size){
   if(!size) return [];
   const sizes = size === '17x30' ? ['17x30','18x30'] : [size];
@@ -1551,7 +1610,7 @@ function buildCpt(j){
       }
     }
     return {asin:r.asin, sku:r.sku || '', name:r.name || '', cpt:num(r.cpt), bb:num(r.bb),
-            kOurs:num(r.ours), date:r.d || '', h, moved, from};
+            kOurs:num(r.ours), kList:num(r.list), cases:r.cases || [], date:r.d || '', h, moved, from};
   });
 }
 
@@ -1576,23 +1635,200 @@ function cptRows(){
     const ours = c.kOurs !== null ? c.kOurs : ourPrice(c.asin);
     const gap  = ours !== null ? Math.round((ours - c.cpt) * 100) / 100 : null;
     const pct  = gap !== null && c.cpt ? Math.round(gap / c.cpt * 100) : null;
-    const row  = ROWS.find(x=> x.asin === c.asin);
+    // Match on SKU first: one ASIN can sit on more than one SKU row (US and CA
+    // codes, old and new SKUs), and the wrong row brings the wrong prices
+    const row  = (c.sku && ROWS.find(x=> x.sku === c.sku)) || ROWS.find(x=> x.asin === c.asin);
     const name = c.name || (row && row.name) || '';
-    const size = matSize(name) || matSize(c.sku);
+    const size = sizeOf(name, c.sku || (row && row.sku) || '');
     // Similar mats only matter for listings held back by the CPT
-    const sim  = gap !== null && gap > 0 ? simFor(size) : [];
-    return Object.assign({}, c, {ours, gap, pct, size, sim, simLow: sim.length ? sim[0] : null,
+    const rowList = row && row.usList !== null ? row.usList : (c.kList !== undefined ? c.kList : null);
+    const heldNow = !(gap > 0) && rowList !== null && c.cpt && (rowList - c.cpt) / c.cpt * 100 >= 10;
+    const sim  = (gap !== null && gap > 0) || heldNow ? simFor(size) : [];
+    const r = Object.assign({}, c, {ours, gap, pct, size, sim, simLow: sim.length ? sim[0] : null,
       sku: c.sku || (row && row.sku) || '', name,
-      sale: row ? row.usSale : null, list: row ? row.usList : null,
+      sale: row ? row.usSale : null,
+      list: row && row.usList !== null ? row.usList : (c.kList !== undefined ? c.kList : null),
+      tier: row ? (row.tier || '') : '', avail: row ? row.usAvail : null,
       parent: row ? (row.parent || '') : '', psku: row ? (row.psku || '') : '', pasin: row ? (row.pasin || '') : ''});
+    // Held down: we already dropped the price to the CPT to keep the Buy Box,
+    // so we look fine today but sell well under our regular (list) price.
+    r.listGap = (r.list !== null && r.list !== undefined) ? Math.round((r.list - r.cpt) * 100) / 100 : null;
+    r.listPct = r.listGap !== null && r.list ? Math.round(r.listGap / r.list * 100) : null;
+    r.belowPct = r.gap > 0 && r.ours ? Math.round(r.gap / r.ours * 100) : null;   // CPT under our price
+    r.held = !(r.gap > 0) && r.listGap !== null && r.listPct >= CASE_RULES.heldPct;
+    r.verdict = caseVerdict(r);
+    r.action = cptAction(r);
+    return r;
   }).sort((a,b)=>{
-    const fa = a.gap !== null && a.gap > 0, fb = b.gap !== null && b.gap > 0;
-    if(fa !== fb) return fa ? -1 : 1;
-    return (b.pct === null ? -1e9 : b.pct) - (a.pct === null ? -1e9 : a.pct);
+    const ra = ACTIONS[a.action].rank, rb = ACTIONS[b.action].rank;
+    if(ra !== rb) return ra - rb;
+    const ua = a.gap > 0 ? a.pct : (a.held ? a.listPct : -1e9);
+    const ub = b.gap > 0 ? b.pct : (b.held ? b.listPct : -1e9);
+    return ub - ua;
   });
 }
 
-const CPT_F = {show:'all', q:'', group:'none', sort:'', dir:1};
+/* ---------- case finder ----------
+   Which flagged listings are worth a case with Amazon, rather than a price
+   change. The idea: a case can only win when the CPT is WRONG, meaning the bot
+   matched us to a different or smaller product. Each signal below points to a
+   wrong match, and the points add up to a verdict. Change the numbers in
+   CASE_RULES to tune it. */
+const CASE_RULES = {
+  bigGapPct:   20,   // our price is this % or more above the CPT: +2
+  midGapPct:   10,   // this % or more: +1
+  belowSimPct: 0,    // CPT is below the cheapest similar same-size mat: +2
+  medianPct:   15,   // CPT is this % or more under the similar median: +1
+  dropPct:     10,   // CPT fell this % or more in the last dropDays: +1
+  dropDays:    14,
+  heldPct:     10,   // CPT is this % or more under our list price while we sit at it
+  strong:      4,    // points for "Strong case"
+  possible:    2     // points for "Possible case"
+};
+
+function openCaseFor(asin){
+  return CASES.find(c=> c.asin && c.asin === asin) || null;
+}
+
+/* What MJ needs to do with a listing. One rule, the one Haris works by:
+   if we had to cut the price to the CPT to keep selling (or are stuck above
+   it), and the CPT is 10% or more under our regular price, it needs a case.
+   A case already on file (case tracker, or the Cases column of the
+   Reference Pricing tab) turns that into a follow-up. */
+const ACTIONS = {
+  open:   {rank:0, label:'Open a case',        group:'Open a case with Amazon'},
+  follow: {rank:1, label:'Follow up',          group:'Follow up on the case on file'},
+  watch:  {rank:2, label:'Small gap, watch',   group:'Small gap, no case yet'},
+  none:   {rank:3, label:'',                   group:'No action'}
+};
+function cptAction(r){
+  const under = r.gap > 0 ? r.pct : (r.held ? r.listPct : null);
+  const onFile = (r.cases && r.cases.length) ? r.cases : (openCaseFor(r.asin) ? [openCaseFor(r.asin).id] : []);
+  r.caseIds = onFile;
+  if(under !== null && under >= CASE_RULES.heldPct) return onFile.length ? 'follow' : 'open';
+  if(r.gap > 0) return 'watch';
+  return 'none';
+}
+
+function caseVerdict(r){
+  const why = [];
+  if(!(r.gap > 0) && !r.held) return {level:'none', label:'Not flagged', points:0, why};
+  let pts = 0;
+
+  const pct = r.gap > 0 ? r.pct : r.listPct;
+  if(r.held) why.push(`Held down: we lowered the price to ${usd(r.ours)} to keep the Buy Box, but our regular price is ${usd(r.list)}`);
+  if(pct >= CASE_RULES.bigGapPct){ pts += 2; why.push(`${r.held ? 'Regular price' : 'Our price'} is ${pct}% above the CPT, too far for a normal price difference`); }
+  else if(pct >= CASE_RULES.midGapPct){ pts += 1; why.push(`${r.held ? 'Regular price' : 'Our price'} is ${pct}% above the CPT`); }
+
+  const same = (r.sim || []).filter(x=> x.market !== 'Amazon');
+  const pool = same.length ? same : (r.sim || []);
+  if(pool.length){
+    const lo = pool[0].price, med = median(pool);
+    if(r.cpt < lo * (1 - CASE_RULES.belowSimPct / 100)){
+      pts += 2; why.push(`CPT ${usd(r.cpt)} is below every similar ${r.size} mat we found (cheapest ${usd(lo)}), so Amazon likely matched a smaller or different product`);
+    } else if(med && r.cpt <= med * (1 - CASE_RULES.medianPct / 100)){
+      pts += 1; why.push(`CPT is ${Math.round((1 - r.cpt / med) * 100)}% under the median similar ${r.size} mat (${usd(med)})`);
+    }
+  }
+
+  // A recent drop usually means a new match, which is the easiest to dispute
+  const cut = new Date(Date.now() - CASE_RULES.dropDays * 86400000).toISOString().slice(0,10);
+  const before = (r.h || []).filter(x=> x[0] < cut && x[1] !== null).slice(-1)[0];
+  if(before && before[1] && r.cpt <= before[1] * (1 - CASE_RULES.dropPct / 100)){
+    pts += 1; why.push(`CPT dropped from ${usd(before[1])} to ${usd(r.cpt)} in the last ${CASE_RULES.dropDays} days`);
+  }
+
+  if(r.tier === 'A' || r.tier === 'B'){ pts += 1; why.push(`Tier ${r.tier}, worth the effort`); }
+  if(r.avail === 0){ pts -= 1; why.push('Out of stock right now, lower priority'); }
+
+  const open = openCaseFor(r.asin);
+  if(open) return {level:'open', label:'Case open', points:pts, why, open};
+  if(pts >= CASE_RULES.strong)   return {level:'strong',   label:'Strong case',   points:pts, why};
+  if(pts >= CASE_RULES.possible) return {level:'possible', label:'Possible case', points:pts, why};
+  return {level:'price', label:'Price fix', points:pts,
+          why: why.concat(['Signals are weak, so a case is unlikely to win. This looks like a pricing call for Haris.'])};
+}
+
+/* Text for a case, built from the numbers on screen */
+function caseEvidence(r){
+  const pool = (r.sim || []).filter(x=> x.market !== 'Amazon');
+  const lines = [
+    `ASIN: ${r.asin}   SKU: ${r.sku}`,
+    `Product: ${r.name}${r.size ? ' (' + r.size + ' inches)' : ''}`,
+    `Our price: ${usd(r.ours)}${r.list ? '   Regular (list) price: ' + usd(r.list) : ''}`,
+    r.held ? `Competitive Price Threshold shown: ${usd(r.cpt)} (${r.listPct}% below our regular price). We cut our price to ${usd(r.ours)} to keep the Featured Offer.`
+           : `Competitive Price Threshold shown: ${usd(r.cpt)} (${r.belowPct}% below our price)`,
+  ];
+  if(r.moved) lines.push('', `The threshold moved from ${usd(r.from)} to ${usd(r.cpt)} on ${r.moved}.`);
+  if(pool.length){
+    lines.push('', `Comparable ${r.size} coir doormats sold outside Amazon:`);
+    pool.slice(0, 5).forEach(x=> lines.push(`- ${x.market}, ${x.brand || 'brand not listed'}: ${usd(x.price)}${x.link ? '  ' + x.link : ''}`));
+  }
+  const fair = r.size ? fairSiblings(r.size, [r.asin]) : [];
+  if(fair.length){
+    lines.push('', `Same brand, same material, same ${r.size} size, threshold at our regular price:`);
+    fair.slice(0, 6).forEach(x=> lines.push(`- ASIN ${x.asin} (${cptTitle(x)}): threshold ${usd(x.cpt)}, regular price ${usd(x.list || x.ours)}`));
+  }
+  lines.push('', 'We believe the threshold is based on a product of a different size or construction. '+
+    'Please re-validate the reference item against a ' + (r.size || 'same-size') + ' coir doormat and reset the threshold.');
+  return lines.join('\n');
+}
+
+let CPT_SHOWN = [];
+
+/* ---------- one-click actions: Gmail and Seller Central ----------
+   No connection or password needed. Each button opens Gmail or Seller
+   Central in a new tab with everything filled in, signed in as MJ's work
+   account. Nothing is sent until MJ presses Send. */
+const MAIL = {
+  account: 'mj.baguhin@crosspathcap.com',
+  jassy:   'ajassy@amazon.com',
+  cc:      'jack@crosspathcap.com,sam@crosspathcap.com'   // as on the earlier Jassy emails
+};
+function gmailCompose(to, cc, subject, body){
+  return 'https://mail.google.com/mail/?authuser=' + encodeURIComponent(MAIL.account) +
+    '&view=cm&fs=1&to=' + encodeURIComponent(to) + (cc ? '&cc=' + encodeURIComponent(cc) : '') +
+    '&su=' + encodeURIComponent(subject) + '&body=' + encodeURIComponent(body);
+}
+function gmailSearch(terms){
+  return 'https://mail.google.com/mail/?authuser=' + encodeURIComponent(MAIL.account) +
+    '#search/' + encodeURIComponent(terms.filter(Boolean).join(' OR '));
+}
+function caseLink(id){
+  return 'https://sellercentral.amazon.com/cu/case-dashboard/view-case?caseID=' + encodeURIComponent(id);
+}
+
+/* The email to the Andy Jassy team, in the same shape as MJ's earlier ones:
+   who we are, what is wrong, the proof, what we ask, past case numbers. */
+function jassyEmail(rows){
+  const list = rows.filter(r=> r.action === 'open' || r.action === 'follow' || r.gap > 0 || r.held);
+  if(!list.length) return null;
+  const one = list.length === 1 ? list[0] : null;
+  const subject = one
+    ? `Inaccurate Automated Competitive Price Threshold on ${one.asin} (${one.size || ''} ${cptTitle(one)})` +
+      (one.caseIds && one.caseIds.length ? `, Case ${one.caseIds[one.caseIds.length - 1]}` : '')
+    : `Inaccurate Automated Competitive Price Threshold on ${list.length} Barnyard Designs coir doormat ASINs`;
+  const ids = [...new Set(list.flatMap(r=> r.caseIds || []))];
+  const body = [
+    'Hello,', '',
+    `I am writing on behalf of Barnyard Designs, the brand owner and only seller of the ASIN${one ? '' : 's'} below. ` +
+    'Our brand account owner, Jack Fallon, is copied on this email.', '',
+    one ? caseEvidence(one) : groupEvidence(list), '',
+    ids.length ? 'Related cases: ' + ids.join(', ') + '. The replies so far kept the threshold without comparing a same-size item.' : '',
+    ids.length ? '' : '',
+    'Could a member of your team ask the pricing team for a manual review? Thank you for your help.', '',
+    'Best regards,', 'MJ Baguhin', 'Barnyard Designs, Cross Path Capital LLC'
+  ].filter((x,i,a)=> !(x === '' && a[i-1] === '')).join('\n');
+  return {subject, body};
+}
+const CPT_F = {show:'all', q:'', group:'action', sort:'', dir:1,
+  min:{}, max:{}, tiers:new Set(), sizes:new Set(), stockOnly:false, hideOpen:false, more:false};
+
+// Columns that take a min/max filter
+const CPT_RANGE = [
+  ['ours', 'Our price', '$'], ['sale', 'Sale price', '$'], ['list', 'List price', '$'],
+  ['cpt', 'CPT', '$'], ['gap', 'Gap', '$'], ['pct', 'Gap', '%']
+];
 
 // What each sortable CPT column sorts on
 const CPT_SORT = {
@@ -1602,7 +1838,8 @@ const CPT_SORT = {
   cpt:     r=> r.cpt,
   gap:     r=> r.gap,
   move:    r=> daysSince(r.moved),
-  sim:     r=> r.simLow ? r.simLow.price : null
+  sim:     r=> r.simLow ? r.simLow.price : null,
+  verdict: r=> ACTIONS[r.action].rank * 10 - (r.verdict.points || 0)
 };
 
 /* Tiny two-line trend for the row: CPT solid, our price dashed */
@@ -1656,6 +1893,23 @@ function renderCpt(){
   let rows = all;
   if(CPT_F.show === 'over')   rows = over;
   if(CPT_F.show === 'moved')  rows = recent;
+  if(CPT_F.show === 'held')   rows = all.filter(r=> r.held);
+  if(CPT_F.show === 'need')   rows = all.filter(r=> r.action === 'open' || r.action === 'follow');
+  if(CPT_F.show === 'cases')  rows = all.filter(r=> r.verdict.level === 'strong' || r.verdict.level === 'possible');
+  // Column filters: min and max per column, tier, stock, open cases
+  CPT_RANGE.forEach(c=>{
+    const k = c[0] + (c[2] === '%' ? '' : ''), lo = CPT_F.min[c[0] + c[2]], hi = CPT_F.max[c[0] + c[2]];
+    if(lo === undefined && hi === undefined) return;
+    rows = rows.filter(r=>{
+      const v = r[c[0]];
+      if(v === null || v === undefined) return false;
+      return (lo === undefined || v >= lo) && (hi === undefined || v <= hi);
+    });
+  });
+  if(CPT_F.tiers.size) rows = rows.filter(r=> CPT_F.tiers.has(r.tier || 'N'));
+  if(CPT_F.sizes.size) rows = rows.filter(r=> CPT_F.sizes.has(r.size || 'no size'));
+  if(CPT_F.stockOnly)  rows = rows.filter(r=> r.avail !== null && r.avail > 0);
+  if(CPT_F.hideOpen)   rows = rows.filter(r=> r.verdict.level !== 'open');
   if(CPT_F.q){
     const q = CPT_F.q.toLowerCase();
     rows = rows.filter(r=> (r.sku + ' ' + r.asin + ' ' + r.name).toLowerCase().indexOf(q) !== -1);
@@ -1663,6 +1917,7 @@ function renderCpt(){
   // A chosen column wins; otherwise flagged first, biggest gap on top.
   // Grouped views keep this order inside each family.
   if(CPT_F.sort && CPT_SORT[CPT_F.sort]) rows = sortBy(rows, CPT_SORT[CPT_F.sort], CPT_F.dir);
+  CPT_SHOWN = rows;
 
   const tile = (k, val, cls, note) =>
     `<div class="cpt-tile"><div class="k">${k}</div><div class="v ${cls || ''}">${val}</div>`+
@@ -1676,30 +1931,40 @@ function renderCpt(){
         (CPT_META.updated ? `<span class="cpt-live${fresh ? '' : ' stale'}"><i></i>Updated ${esc(CPT_META.updated)} ET, daily</span>` : '')+
       '</div>'+
       '<div class="cpt-tiles">'+
+        tile('Needs a case', all.filter(r=> r.action === 'open').length +
+             `<span style="font-size:1rem;color:var(--c-night-mut)"> new, ${all.filter(r=> r.action === 'follow').length} follow up</span>`,
+             all.some(r=> r.action === 'open' || r.action === 'follow') ? 'bad' : '',
+             esc(all.filter(r=> r.action === 'open' || r.action === 'follow').map(r=> r.sku).slice(0,4).join(', ')) || 'Nothing to raise today')+
         tile('Priced above the CPT', over.length, over.length ? 'bad' : '',
              over.length ? 'Featured Offer at risk on these' : 'None, every price is at or under')+
+        tile('Held at the CPT', all.filter(r=> r.held).length, all.some(r=> r.held) ? 'warn' : '',
+             'Price cut to the CPT, under our regular price')+
         tile('CPT moved, last 7 days', recent.length, recent.length ? 'warn' : '',
              recent.length ? recent.map(r=> esc(r.sku)).slice(0,3).join(', ') + (recent.length > 3 ? '\u2026' : '') : 'No changes this week')+
-        tile('Biggest gap', worst ? usd(worst.gap) : '\u2014', worst ? 'bad' : '',
-             worst ? esc(worst.sku) + ', ' + worst.pct + '% over' : 'Nothing over the threshold')+
         tile('ASINs with a CPT', all.length, '',
              none ? none + ' with no CPT today' : 'All ASINs have one')+
       '</div>'+
     '</section>'+
     '<div class="cpt-tools">'+
       '<div class="seg" id="cptSeg">'+
-        [['all','All ' + all.length], ['over','Over CPT ' + over.length], ['moved','Moved 7 days ' + recent.length]]
+        [['all','All ' + all.length],
+         ['need','Needs a case ' + all.filter(r=> r.action === 'open' || r.action === 'follow').length],
+         ['over','Over CPT ' + over.length], ['moved','Moved 7 days ' + recent.length],
+         ['held','Held at CPT ' + all.filter(r=> r.held).length]]
           .map(b=> `<button data-show="${b[0]}" aria-pressed="${CPT_F.show === b[0]}">${b[1]}</button>`).join('')+
       '</div>'+
       '<span class="mut" style="font-size:.8rem;margin-left:.3rem">Group by</span>'+
       '<div class="seg" id="cptGrp">'+
-        [['none','Flat list'], ['parent','Parent name'], ['psku','Parent SKU'], ['pasin','Parent ASIN']]
+        [['action','What to do'], ['none','Flat list'], ['parent','Parent name'], ['psku','Parent SKU'], ['pasin','Parent ASIN']]
           .map(b=> `<button data-g="${b[0]}" aria-pressed="${CPT_F.group === b[0]}">${b[1]}</button>`).join('')+
       '</div>'+
       `<input id="cptQ" type="search" placeholder="Search SKU, ASIN or product" value="${esc(CPT_F.q)}" aria-label="Search CPT tracker">`+
       (CPT_F.sort ? '<button id="cptUnsort" title="Back to the default order">Clear sort</button>' : '')+
+      (rows.some(r=> r.gap > 0 || r.held) ? `<button id="cptCaseAll" class="work">Copy one case for the ${rows.filter(r=> r.gap > 0 || r.held).length} shown</button>` : '')+
+      `<button id="cptMore" aria-pressed="${CPT_F.more}">Column filters${activeCptFilters() ? ' <span class="fbadge">' + activeCptFilters() + '</span>' : ''}</button>`+
       `<span class="count">${rows.length} of ${all.length}</span>`+
-    '</div>';
+    '</div>'+
+    (CPT_F.more ? cptFilterPanel() : '');
 
   if(!all.length){
     html += CPT_ERR
@@ -1719,6 +1984,7 @@ function renderCpt(){
       '<th>30-day trend</th>'+
       H('move', 'Last CPT move', 'b-move')+
       H('sim', 'Cheapest similar', 'b-sim')+
+      H('verdict', 'What to do', 'b-case')+
       '</tr></thead><tbody>'+
       cptBody(rows)+
       '</tbody></table>';
@@ -1730,9 +1996,115 @@ function renderCpt(){
 
 /* Rows, optionally under one header per parent family. A family header
    shows how many of its children are held above the CPT. */
+/* Sizes present in today's CPT rows, small to large */
+function cptSizes(){
+  const area = z=>{ const m = /^(\d+)x(\d+)$/.exec(z); return m ? m[1] * m[2] : 1e9; };
+  return [...new Set(cptRows().map(r=> r.size || 'no size'))].sort((a,b)=> area(a) - area(b));
+}
+
+/* Listings of the same size whose CPT equals our own price. Same brand, same
+   material, same size, yet Amazon's threshold is fine for them, which shows
+   the flagged ones were matched to something else. */
+function fairSiblings(size, except){
+  // Same product line only (DMC- coir with DMC- coir), so a rubber 2-pack
+  // never stands in as proof for a coir mat
+  const lines = new Set(cptRows().filter(r=> except.indexOf(r.asin) !== -1).map(r=> (r.sku || '').split('-')[0]));
+  return cptRows().filter(r=> r.size === size && except.indexOf(r.asin) === -1 &&
+    (!lines.size || lines.has((r.sku || '').split('-')[0])) &&
+    r.cpt !== null && (r.list || r.ours) !== null && r.cpt >= (r.list || r.ours) - 0.01);
+}
+
+/* One case for several ASINs at once, usually all flagged mats of one size */
+function groupEvidence(rows){
+  const flagged = rows.filter(r=> r.gap > 0 || r.held);
+  if(!flagged.length) return '';
+  const sizes = [...new Set(flagged.map(r=> r.size).filter(Boolean))];
+  const L = [];
+  L.push('Request: re-validate the Competitive Price Threshold on the ASINs below.', '');
+  L.push('We are Barnyard Designs, the brand owner and only seller of these coir doormats. '+
+         'Each listing below shows a threshold far under our price, while identical listings of the same size, '+
+         'material and brand are not flagged.', '');
+  flagged.forEach(r=>{
+    L.push(`ASIN ${r.asin} (SKU ${r.sku}), ${r.size || ''} ${cptTitle(r)}`);
+    if(r.held) L.push(`  Regular price ${usd(r.list)}. Threshold shown ${usd(r.cpt)}, ${r.listPct}% below it. We have had to cut the price to ${usd(r.ours)} to keep the Featured Offer.`);
+    else L.push(`  Our price ${usd(r.ours)}${r.list ? ', list price ' + usd(r.list) : ''}. Threshold shown ${usd(r.cpt)}, ${r.belowPct}% below our price.`);
+    if(r.moved) L.push(`  The threshold changed from ${usd(r.from)} to ${usd(r.cpt)} on ${r.moved}.`);
+  });
+  const same = {};
+  flagged.forEach(r=>{ if(r.size) (same[r.size] = same[r.size] || []).push(r.cpt); });
+  Object.keys(same).forEach(z=>{
+    const v = same[z];
+    if(v.length > 1 && v.every(x=> x === v[0]))
+      L.push('', `All ${v.length} flagged ${z} listings share the exact same threshold (${usd(v[0])}), even though their designs and prices differ. `+
+                 'That points to one generic reference item, not a match to our product.');
+  });
+  sizes.forEach(z=>{
+    const fair = fairSiblings(z, flagged.map(r=> r.asin));
+    if(fair.length){
+      L.push('', `For comparison, these ${z} listings from the same brand, same material and same size have a threshold at our regular price:`);
+      fair.slice(0, 8).forEach(r=> L.push(`  ASIN ${r.asin} (${cptTitle(r)}): threshold ${usd(r.cpt)}, regular price ${usd(r.list || r.ours)}`));
+    }
+    const out = SIM.filter(x=> x.size === z && x.market !== 'Amazon').sort((a,b)=> a.price - b.price);
+    if(out.length){
+      L.push('', `Comparable ${z} coir doormats sold outside Amazon:`);
+      out.slice(0, 5).forEach(x=> L.push(`  ${x.market}, ${x.brand || 'brand not listed'}: ${usd(x.price)}${x.link ? '  ' + x.link : ''}`));
+    }
+  });
+  L.push('', 'Our own website sells each of these at the same size and price as our Amazon listing: https://www.barnyarddesigns.com', '',
+         'Please have the pricing team compare each flagged ASIN with a reference item of the same size and construction, and reset the threshold.');
+  return L.join('\n');
+}
+
+function activeCptFilters(){
+  return Object.keys(CPT_F.min).length + Object.keys(CPT_F.max).length +
+    (CPT_F.tiers.size ? 1 : 0) + (CPT_F.sizes.size ? 1 : 0) + (CPT_F.stockOnly ? 1 : 0) + (CPT_F.hideOpen ? 1 : 0);
+}
+
+function cptFilterPanel(){
+  const box = c=>{
+    const id = c[0] + c[2], lo = CPT_F.min[id], hi = CPT_F.max[id];
+    return `<div class="rf"><label>${c[1]} <span class="mut">(${c[2]})</span></label>`+
+      `<input type="number" step="any" data-min="${id}" placeholder="min" value="${lo === undefined ? '' : lo}" aria-label="${c[1]} minimum">`+
+      `<span class="mut">to</span>`+
+      `<input type="number" step="any" data-max="${id}" placeholder="max" value="${hi === undefined ? '' : hi}" aria-label="${c[1]} maximum"></div>`;
+  };
+  return '<div class="cpt-filters">'+
+    '<div class="rf-grid">' + CPT_RANGE.map(box).join('') + '</div>'+
+    '<div class="rf-row">'+
+      '<span class="lbl2">Size</span>'+
+      cptSizes().map(z=> `<button data-size="${esc(z)}" aria-pressed="${CPT_F.sizes.has(z)}">${esc(z)}</button>`).join('')+
+    '</div>'+
+    '<div class="rf-row">'+
+      '<span class="lbl2">Tier</span>'+
+      ['A','B','N','C','X'].map(t=> `<button data-tier="${t}" aria-pressed="${CPT_F.tiers.has(t)}">${t}</button>`).join('')+
+      `<button id="fStock" aria-pressed="${CPT_F.stockOnly}">In stock only</button>`+
+      `<button id="fOpen" aria-pressed="${CPT_F.hideOpen}">Hide ones with a case open</button>`+
+      '<button id="fClear" class="act">Clear column filters</button>'+
+    '</div>'+
+    '<div class="rf-tip">Tip for case hunting: Gap % min 20, Tier A and B, In stock only, Hide ones with a case open. '+
+      'Or just tap <b>Needs a case</b> above.</div>'+
+  '</div>';
+}
+
 function cptBody(rows){
   const key = CPT_F.group;
   if(key === 'none') return rows.map(cptRowHtml).join('');
+  if(key === 'action'){
+    return ['open','follow','watch','none'].map(a=>{
+      const g = rows.filter(r=> r.action === a);
+      if(!g.length) return '';
+      const sub = a === 'open' ? 'Price cut to the CPT, or stuck above it, by 10% or more under our regular price. No case on file.'
+               : a === 'follow' ? 'Same, but a case is already on file. Reply on it with the latest numbers.'
+               : a === 'watch' ? 'Priced a little above the CPT, under 10%. A case is unlikely to win.'
+               : 'Our price and the CPT agree.';
+      const btns = (a === 'open' || a === 'follow')
+        ? `<div class="agh-b"><button class="work strong" data-gmail="${a}">Draft one Jassy email for these ${g.length}</button>`+
+          `<button class="work" data-gfind="${a}">Find related emails</button></div>` : '';
+      return `<tr class="gh agh agh-${a}"><td colspan="9"><div class="agh-t">${esc(ACTIONS[a].group)} `+
+             `<span class="agh-n">${g.length}</span></div><div class="agh-s">${sub}</div>${btns}</td></tr>` +
+             g.map(cptRowHtml).join('');
+    }).join('');
+  }
   const SOLO = '\uffffstandalone';
   const groups = {};
   rows.forEach(r=>{
@@ -1747,7 +2119,7 @@ function cptBody(rows){
   }).map(k=>{
     const g = groups[k], over = g.filter(r=> r.gap > 0).length;
     const gaps = g.filter(r=> r.gap > 0).map(r=> r.gap);
-    return parentHeader(k === SOLO ? g.map(r=> Object.assign({}, r, {parent:'', psku:'', pasin:''})) : g, 8, [
+    return parentHeader(k === SOLO ? g.map(r=> Object.assign({}, r, {parent:'', psku:'', pasin:''})) : g, 9, [
       over ? `<span class="pgh-tag bad">${over} over CPT</span>` : '<span class="pgh-tag ok">All at or under the CPT</span>',
       gaps.length ? `<span><span class="k">Biggest gap</span><b>${usd(Math.max(...gaps))}</b></span>` : ''
     ].filter(Boolean)) + g.map(cptRowHtml).join('');
@@ -1759,7 +2131,7 @@ function cptRowHtml(r){
         const n = daysSince(r.moved);
         const hot = n !== null && n <= CPT_RECENT;
         const brandDot = /barnyard/i.test(r.name) || /^DMC|^FM|^HD/i.test(r.sku) ? 'var(--byd)' : 'var(--sb)';
-        return `<tr class="row" tabindex="0" data-asin="${esc(r.asin)}">`+
+        return `<tr class="row act-${r.action}" tabindex="0" data-asin="${esc(r.asin)}">`+
           '<td class="prod">'+
             `<div class="p-name" title="${esc(r.name)}"><span class="dot" style="background:${brandDot}"></span>${esc(cptTitle(r).slice(0,48))}</div>`+
             `<div class="p-id"><span>SKU</span>${esc(r.sku)}</div>`+
@@ -1774,6 +2146,7 @@ function cptRowHtml(r){
           `<td class="c"><span class="cpill cpt">${usd(r.cpt)}</span></td>`+
           `<td class="c">${r.gap === null ? '<span class="mut">\u2014</span>' :
              bad ? `<span class="gap-badge over">+${usd(r.gap)} &middot; ${r.pct}%</span>`
+             : r.held ? `<span class="gap-badge held">Held at CPT</span><span class="was">${r.listPct}% under list</span>`
                  : '<span class="gap-badge ok">At or under</span>'}</td>`+
           `<td class="trend">${miniSpark(r.h)}</td>`+
           `<td class="move">${r.moved
@@ -1782,6 +2155,9 @@ function cptRowHtml(r){
           `<td class="sim">${r.simLow
               ? `<span class="lo">${usd(r.simLow.price)}</span><span class="where">${esc(r.simLow.market)}${r.simLow.brand ? ', ' + esc(r.simLow.brand) : ''}</span>`
               : '<span class="mut">\u2014</span>'}</td>`+
+          `<td>${r.action === 'none' ? '<span class="mut">\u2014</span>' :
+             `<span class="ac ac-${r.action}" title="${esc(r.verdict.why.join('. '))}">${esc(ACTIONS[r.action].label)}</span>`+
+             (r.action === 'follow' && r.caseIds.length ? `<span class="was mono">${esc(r.caseIds[r.caseIds.length - 1])}</span>` : '')}</td>`+
           '</tr>';
 }
 
@@ -1789,6 +2165,41 @@ function wireCpt(v, all){
   wireSort(v, CPT_F, renderCpt);
 
   [...v.querySelectorAll('#cptSeg button')].forEach(b=> b.onclick = ()=>{ CPT_F.show = b.dataset.show; renderCpt(); });
+  [...v.querySelectorAll('button[data-gmail]')].forEach(b=> b.onclick = e=>{
+    e.stopPropagation();
+    const m = jassyEmail(CPT_SHOWN.filter(r=> r.action === b.dataset.gmail));
+    if(m) window.open(gmailCompose(MAIL.jassy, MAIL.cc, m.subject, m.body), '_blank', 'noopener');
+  });
+  [...v.querySelectorAll('button[data-gfind]')].forEach(b=> b.onclick = e=>{
+    e.stopPropagation();
+    const g = CPT_SHOWN.filter(r=> r.action === b.dataset.gfind);
+    const terms = [...new Set(g.flatMap(r=> [r.asin].concat(r.caseIds || [])))];
+    window.open(gmailSearch(terms.length ? terms : ['Competitive Price Threshold']), '_blank', 'noopener');
+  });
+  const ca = document.getElementById('cptCaseAll');
+  if(ca) ca.onclick = ()=>{
+    const t = groupEvidence(CPT_SHOWN);
+    (navigator.clipboard ? navigator.clipboard.writeText(t) : Promise.reject())
+      .then(()=> ca.textContent = 'Copied, paste it into the case')
+      .catch(()=> window.prompt('Copy this text:', t));
+  };
+  [...v.querySelectorAll('button[data-size]')].forEach(b=> b.onclick = ()=>{
+    const z = b.dataset.size; CPT_F.sizes.has(z) ? CPT_F.sizes.delete(z) : CPT_F.sizes.add(z); renderCpt(); });
+  const mb = document.getElementById('cptMore');
+  if(mb) mb.onclick = ()=>{ CPT_F.more = !CPT_F.more; renderCpt(); };
+  [...v.querySelectorAll('input[data-min],input[data-max]')].forEach(inp=>{
+    inp.onchange = ()=>{
+      const id = inp.dataset.min || inp.dataset.max, bag = inp.dataset.min ? CPT_F.min : CPT_F.max;
+      if(inp.value === '' || isNaN(+inp.value)) delete bag[id]; else bag[id] = +inp.value;
+      renderCpt();
+    };
+  });
+  [...v.querySelectorAll('button[data-tier]')].forEach(b=> b.onclick = ()=>{
+    const t = b.dataset.tier; CPT_F.tiers.has(t) ? CPT_F.tiers.delete(t) : CPT_F.tiers.add(t); renderCpt(); });
+  const fs2 = document.getElementById('fStock'); if(fs2) fs2.onclick = ()=>{ CPT_F.stockOnly = !CPT_F.stockOnly; renderCpt(); };
+  const fo = document.getElementById('fOpen');  if(fo) fo.onclick  = ()=>{ CPT_F.hideOpen = !CPT_F.hideOpen; renderCpt(); };
+  const fc = document.getElementById('fClear'); if(fc) fc.onclick  = ()=>{
+    CPT_F.min = {}; CPT_F.max = {}; CPT_F.tiers.clear(); CPT_F.sizes.clear(); CPT_F.stockOnly = false; CPT_F.hideOpen = false; renderCpt(); };
   const un = document.getElementById('cptUnsort');
   if(un) un.onclick = ()=>{ CPT_F.sort = ''; CPT_F.dir = 1; renderCpt(); };
   [...v.querySelectorAll('#cptGrp button')].forEach(b=> b.onclick = ()=>{ CPT_F.group = b.dataset.g; renderCpt(); });
@@ -1834,8 +2245,31 @@ function sparkSvg(h){
     `<span style="color:var(--byd);font-weight:700">- -</span> Our price</div>`;
 }
 
+function caseBlock(r){
+  const v = r.verdict;
+  if(v.level === 'none') return '';
+  const strength = v.points >= CASE_RULES.strong ? 'Strong evidence' : v.points >= CASE_RULES.possible ? 'Some evidence' : 'Weak evidence';
+  return `<h2 style="margin-top:1.1rem">What to do</h2>`+
+    `<p style="margin:.2rem 0 .4rem"><span class="ac ac-${r.action}">${esc(ACTIONS[r.action].label || 'No action')}</span>`+
+    `<span class="mut" style="font-size:.8rem;margin-left:.5rem">${strength} for a wrong match (${v.points} points)</span></p>`+
+    (r.caseIds && r.caseIds.length ? `<p class="mut" style="font-size:.84rem">Case on file: <span class="mono">${esc(r.caseIds.join(', '))}</span>. Reply on the newest one with the evidence below.</p>` : '')+
+    (v.open ? `<p class="mut" style="font-size:.84rem">Case ${esc(v.open.id)} is already open for this ASIN (${esc(v.open.status || 'open')}). Reply on it instead of opening another.</p>` : '')+
+    '<ul class="why-list">' + v.why.map(w=> `<li>${esc(w)}</li>`).join('') + '</ul>'+
+    ((r.action === 'open' || r.action === 'follow')
+      ? '<div class="act-row">'+
+          `<button class="work strong" id="mailBtn">Draft email to Andy Jassy team</button>`+
+          `<button class="work" id="findBtn">Find emails about this ASIN</button>`+
+          (r.action === 'follow' && r.caseIds.length
+            ? `<button class="work" id="caseBtn">Open case ${esc(r.caseIds[r.caseIds.length - 1])} in Seller Central</button>`
+            : `<button class="work" id="caseBtn">Copy evidence and open a new case</button>`)+
+          '<button class="work" id="evBtn">Copy case evidence</button>'+
+        '</div>'+
+        '<p class="mut" style="font-size:.78rem;margin-top:.4rem">The email opens in Gmail as a draft with everything filled in. Nothing is sent until you press Send.</p>'
+      : '');
+}
+
 function simBlock(r){
-  if(!r.size || !(r.gap > 0)) return '';
+  if(!r.size || !(r.gap > 0 || r.held)) return '';
   const all = r.sim || [];
   const amz = all.filter(x=> x.market === 'Amazon'), out = all.filter(x=> x.market !== 'Amazon');
   if(!all.length) return `<h2 style="margin-top:1.1rem">Similar ${esc(r.size)} coir mats</h2>`+
@@ -1889,10 +2323,36 @@ function openCpt(r){
              `<td class="num ${ch > 0 ? 'ok' : ch < 0 ? 'warn' : 'mut'}">${ch === '' ? (x[2] === null ? 'first seen' : '') : ch === 0 ? '' : (ch > 0 ? '+' : '') + usd(ch).replace('$-','-$')}</td></tr>`;
     }).join('')+
     '</tbody></table>'+
+    caseBlock(r)+
     simBlock(r)+
     `<div class="why">Only days when our price or the CPT changed are listed. Our price in red means it was above the CPT that day. Amazon does not say which retailer it used, so a step up or down is the clue to when its match changed.</div>`+
     `<p style="margin-top:.9rem"><button class="work" id="phBtn">Open Pricing Health</button></p>`;
 
+  const mb2 = document.getElementById('mailBtn');
+  if(mb2) mb2.onclick = ()=>{
+    const m = jassyEmail([r]);
+    if(m) window.open(gmailCompose(MAIL.jassy, MAIL.cc, m.subject, m.body), '_blank', 'noopener');
+  };
+  const fb = document.getElementById('findBtn');
+  if(fb) fb.onclick = ()=> window.open(gmailSearch([r.asin].concat(r.caseIds || [])), '_blank', 'noopener');
+  const cb2 = document.getElementById('caseBtn');
+  if(cb2) cb2.onclick = ()=>{
+    if(r.action === 'follow' && r.caseIds.length){
+      window.open(caseLink(r.caseIds[r.caseIds.length - 1]), '_blank', 'noopener');
+      return;
+    }
+    // Open the tab first, then copy, so the pop-up blocker allows it
+    window.open(CASE_URL, '_blank', 'noopener');
+    const t = caseEvidence(r);
+    if(navigator.clipboard) navigator.clipboard.writeText(t).then(()=> cb2.textContent = 'Evidence copied, paste it into the case');
+  };
+  const ev = document.getElementById('evBtn');
+  if(ev) ev.onclick = ()=>{
+    const t = caseEvidence(r);
+    (navigator.clipboard ? navigator.clipboard.writeText(t) : Promise.reject())
+      .then(()=> ev.textContent = 'Copied, paste it into the case')
+      .catch(()=>{ window.prompt('Copy this text:', t); });
+  };
   document.getElementById('phBtn').onclick = ()=>
     window.open('https://sellercentral.amazon.com/pricing/health', '_blank', 'noopener');
   document.getElementById('veil').hidden = false;
@@ -2482,6 +2942,10 @@ function chrome(){
   document.getElementById('quickCat').innerHTML =
     'Category' + (nCat ? `<span class="badge">${nCat}</span>` : '');
 
+  if(CPT.length){
+    const need = cptRows().filter(r=> r.action === 'open' || r.action === 'follow').length;
+    document.getElementById('cptBtn').innerHTML = 'CPT tracker' + (need ? `<span class="badge">${need}</span>` : '');
+  }
   document.getElementById('casesBtn').innerHTML =
     'Cases' + (CASES.length ? `<span class="badge">${CASES.length}</span>` : '');
 }
