@@ -173,6 +173,25 @@ button.work.strong{background:#b42318;border-color:#b42318;color:#fff}
 button.work.strong:hover{background:#8f1d12;border-color:#8f1d12}
 .agh-b{display:flex;flex-wrap:wrap;gap:.4rem;margin-top:.55rem}
 .agh-b button{font-size:.78rem}
+.pguide{background:#fbfaff;border-bottom:1px solid var(--line);padding:.9rem 1.25rem}
+.pg-h{font-weight:800;font-size:.95rem;margin-bottom:.5rem;color:#3b1d8f}
+.pg-one{font-size:.88rem;margin:0 0 .6rem;padding:.55rem .7rem;border-radius:8px;background:#fff;border:1px solid #ddd6fe}
+.pg-row{display:grid;grid-template-columns:8.5rem 1fr;gap:.8rem;padding:.35rem 0;border-bottom:1px solid #ece8fb;font-size:.85rem}
+.pg-t{font-weight:700}
+.pg-d{color:#374151;line-height:1.45}
+.pg-steps{margin:.4rem 0 .3rem 1.2rem}
+.pg-steps li{margin:.15rem 0}
+.pg-end{font-weight:700;color:#8f1d12}
+.pg-ex{margin-top:.7rem;padding:.6rem .75rem;border-radius:8px;background:#ede9fe;font-size:.85rem;line-height:1.5}
+@media(max-width:600px){ .pg-row{grid-template-columns:1fr;gap:.15rem} }
+#tip{position:fixed;z-index:9999;background:#15181d;color:#f1f4f8;font-size:.82rem;line-height:1.45;
+  padding:.55rem .7rem;border-radius:8px;box-shadow:0 6px 20px rgba(0,0,0,.25);pointer-events:none;font-weight:500;text-transform:none;letter-spacing:0}
+#tip[hidden]{display:none}
+.qi{display:inline-flex;align-items:center;justify-content:center;width:1.05rem;height:1.05rem;margin-left:.35rem;
+  border-radius:50%;background:rgba(255,255,255,.22);color:inherit;font-size:.68rem;font-weight:800;cursor:help;vertical-align:middle}
+.qi:hover,.qi:focus{background:rgba(255,255,255,.4);outline:none}
+.cpt-tile .qi,.ov-tile .qi{background:rgba(255,255,255,.14)}
+[data-tip]:not(.qi){cursor:help}
 .mailst{display:block;margin-top:.3rem;font-size:.74rem;font-weight:700}
 .mailst span{font-weight:500;color:var(--muted)}
 .mailst.m-bad{color:#b42318}
@@ -1999,7 +2018,7 @@ function renderCpt(){
         tile('Amazon emails to answer', all.filter(r=> r.mail && r.mail.needsReply).length,
              all.some(r=> r.mail && r.mail.needsReply) ? 'warn' : '',
              all.some(r=> r.mail) ? esc(all.filter(r=> r.mail && r.mail.needsReply).map(r=> r.sku).slice(0,3).join(', ')) || 'All answered' : 'Gmail check runs every morning')+
-        tile('Priced above the CPT', over.length, over.length ? 'bad' : '',
+        tile('Priced above the CPT ' + qi('buybox'), over.length, over.length ? 'bad' : '',
              over.length ? 'Featured Offer at risk on these' : 'None, every price is at or under')+
         tile('Held at the CPT', all.filter(r=> r.held).length, all.some(r=> r.held) ? 'warn' : '',
              'Price cut to the CPT, under our regular price')+
@@ -2026,9 +2045,11 @@ function renderCpt(){
       `<input id="cptQ" type="search" placeholder="Search SKU, ASIN or product" value="${esc(CPT_F.q)}" aria-label="Search CPT tracker">`+
       (CPT_F.sort ? '<button id="cptUnsort" title="Back to the default order">Clear sort</button>' : '')+
       (rows.some(r=> r.gap > 0 || r.held) ? `<button id="cptCaseAll" class="work">Copy one case for the ${rows.filter(r=> r.gap > 0 || r.held).length} shown</button>` : '')+
+      `<button id="cptGuide" aria-pressed="${!!CPT_F.guide}">What do these prices mean?</button>`+
       `<button id="cptMore" aria-pressed="${CPT_F.more}">Column filters${activeCptFilters() ? ' <span class="fbadge">' + activeCptFilters() + '</span>' : ''}</button>`+
       `<span class="count">${rows.length} of ${all.length}</span>`+
     '</div>'+
+    (CPT_F.guide ? priceGuide() : '')+
     (CPT_F.more ? cptFilterPanel() : '');
 
   if(!all.length){
@@ -2039,14 +2060,14 @@ function renderCpt(){
     html += '<div class="cpt-empty"><b>Nothing matches</b>Clear the search or pick All.</div>';
   } else {
     const H = (k, label, cls, d) =>
-      `<th data-s="${k}" data-d="${d || 'asc'}" class="${cls || ''}">${label}${sortArrow(CPT_F, k)}</th>`;
+      `<th data-s="${k}" data-d="${d || 'asc'}" class="${cls || ''}">${label}${qi(TIP_BY_HEAD[label.toLowerCase()])}${sortArrow(CPT_F, k)}</th>`;
     html += '<table class="cpt-table"><thead><tr>'+
       H('product', 'Product')+
       H('ours', 'Our price', 'b-ours c', 'desc')+
       H('sale', 'Sale price', 'b-ours c', 'desc')+
       H('cpt', 'CPT', 'b-cpt c', 'desc')+
       H('gap', 'Gap', 'b-gap c', 'desc')+
-      '<th>30-day trend</th>'+
+      `<th>30-day trend${qi('trend')}</th>`+
       H('move', 'Last CPT move', 'b-move')+
       H('sim', 'Cheapest similar', 'b-sim')+
       H('verdict', 'What to do', 'b-case')+
@@ -2215,18 +2236,18 @@ function cptRowHtml(r){
             `<div class="p-id"><span>ASIN</span>${esc(r.asin)}</div>`+
             (r.size ? `<span class="p-size">${esc(r.size)}</span>` : '')+
           '</td>'+
-          `<td class="c"><span class="cpill ours">${usd(r.ours)}</span></td>`+
+          `<td class="c"><span class="cpill ours" data-tip="${esc(TIPS.ours)}">${usd(r.ours)}</span></td>`+
           `<td class="c">${r.sale !== null && r.sale !== undefined
-              ? `<span class="cpill sale">${usd(r.sale)}</span>` +
-                (r.list ? `<span class="was">List ${usd(r.list)}</span>` : '')
+              ? `<span class="cpill sale" data-tip="${esc(TIPS.sale)}">${usd(r.sale)}</span>` +
+                (r.list ? `<span class="was" data-tip="${esc(TIPS.list)}">List ${usd(r.list)}</span>` : '')
               : '<span class="mut">No sale</span>'}`+
-             (r.target !== null ? `<span class="tgt">Target ${usd(r.target)}</span>` : '')+'</td>'+
-          `<td class="c"><span class="cpill cpt">${usd(r.cpt)}</span></td>`+
+             (r.target !== null ? `<span class="tgt" data-tip="${esc(TIPS.target)}">Target ${usd(r.target)}</span>` : '')+'</td>'+
+          `<td class="c"><span class="cpill cpt" data-tip="${esc(TIPS.cpt)}">${usd(r.cpt)}</span></td>`+
           `<td class="c">${r.gap === null ? '<span class="mut">\u2014</span>' :
-             bad ? `<span class="gap-badge over">+${usd(r.gap)} &middot; ${r.pct}%</span>`
-             : r.target !== null && r.short > 0.005 ? `<span class="gap-badge over">CPT ${usd(r.short)} under target</span><span class="was">${r.shortPct}% below our sale price</span>`
-             : r.held ? `<span class="gap-badge held">Held at CPT</span><span class="was">${r.listPct}% under list</span>`
-                 : '<span class="gap-badge ok">At or under</span>'}</td>`+
+             bad ? `<span class="gap-badge over" data-tip="${esc(TIPS.over)}">+${usd(r.gap)} &middot; ${r.pct}%</span>`
+             : r.target !== null && r.short > 0.005 ? `<span class="gap-badge over" data-tip="${esc(TIPS.under)}">CPT ${usd(r.short)} too low</span><span class="was">${r.shortPct}% under Haris\u2019s price</span>`
+             : r.held ? `<span class="gap-badge held" data-tip="${esc(TIPS.held)}">Held at CPT</span><span class="was">${r.listPct}% under list</span>`
+                 : `<span class="gap-badge ok" data-tip="${esc(TIPS.ok)}">At or under</span>`}</td>`+
           `<td class="trend">${miniSpark(r.h)}</td>`+
           `<td class="move">${r.moved
               ? `${usd(r.from)} to ${usd(r.cpt)}<span class="ago${hot ? ' hot' : ''}">${n === 0 ? 'today' : n + ' days ago'}</span>`
@@ -2265,6 +2286,8 @@ function wireCpt(v, all){
   };
   [...v.querySelectorAll('button[data-size]')].forEach(b=> b.onclick = ()=>{
     const z = b.dataset.size; CPT_F.sizes.has(z) ? CPT_F.sizes.delete(z) : CPT_F.sizes.add(z); renderCpt(); });
+  const gd = document.getElementById('cptGuide');
+  if(gd) gd.onclick = ()=>{ CPT_F.guide = !CPT_F.guide; renderCpt(); };
   const mb = document.getElementById('cptMore');
   if(mb) mb.onclick = ()=>{ CPT_F.more = !CPT_F.more; renderCpt(); };
   [...v.querySelectorAll('input[data-min],input[data-max]')].forEach(inp=>{
@@ -2745,6 +2768,92 @@ function wireSort(scope, state, redraw){
   });
 }
 
+/* ---------- plain-words help ----------
+   Hover (or tap on a phone) any header with a small (?) or any price pill
+   for a one or two sentence explanation. Written for someone who does not
+   do pricing every day. */
+const TIPS = {
+  list:   'Full price. Our normal price, no discount.',
+  sale:   'Discount price. The lower price we set. Shoppers see the full price crossed out next to it.',
+  ours:   'Price today. What a shopper pays right now. If there is a sale, it is the sale price.',
+  target: 'The sale price Haris wants. 30" $24.95, 36" $49.95, 48" $69.95, 72" $119.95.',
+  cpt:    'Amazon\u2019s price limit. If our price is higher, Amazon hides our Add to Cart button.',
+  buybox: 'The Add to Cart button. No Buy Box means almost no sales.',
+  feat:   'The price on the Add to Cart button right now.',
+  gap:    'Our price compared with Amazon\u2019s limit. Red means there is a problem.',
+  held:   'We dropped our price to Amazon\u2019s limit just to keep selling. We make less on every sale.',
+  under:  'Amazon\u2019s limit is lower than the price Haris wants. Ask Amazon to raise it: open a case.',
+  over:   'Our price is above Amazon\u2019s limit. The Add to Cart button is probably gone.',
+  ok:     'All good. Nothing to do.',
+  trend:  'Last 30 days. Solid line: Amazon\u2019s limit. Dashed line: our price.',
+  move:   'When Amazon last changed its limit, and by how much.',
+  sim:    'The cheapest mat like ours, same size, that we found. Amazon may be copying this price.',
+  todo:   'Open a case: ask Amazon to raise its limit. Follow up: reply on the case we already opened. Price to target: no case needed, Haris fixes the price.',
+  avail:  'Units ready to ship.',
+  inbound:'Units on the way to Amazon.',
+  health: 'Amazon\u2019s stock check: OK, low, out of stock, or too much.'
+};
+// Header text to tip, used for every table in the console
+const TIP_BY_HEAD = {
+  'our price':'ours', 'your price':'list', 'target':'target', 'buy box':'buybox', 'sale price':'sale', 'sale':'sale', 'list':'list', 'list price':'list', 'cpt':'cpt', 'gap':'gap',
+  '30-day trend':'trend', 'last cpt move':'move', 'cheapest similar':'sim', 'what to do':'todo',
+  'feat':'feat', 'available':'avail', 'inbound':'inbound', 'health':'health'
+};
+/* All the price words in one place, with a real example, for the
+   "What do these prices mean?" button in the CPT tracker */
+function priceGuide(){
+  const ex = cptRows().find(r=> r.sku === 'DMC-WELDB-36') || cptRows().find(r=> r.target !== null && r.list) || null;
+  const row = (term, key) => `<div class="pg-row"><div class="pg-t">${term}</div><div class="pg-d">${esc(TIPS[key])}</div></div>`;
+  return '<div class="pguide">'+
+    '<div class="pg-h">What do these prices mean?</div>'+
+    '<div class="pg-one">In one line: <b>Amazon has a price limit (the CPT). When that limit is lower than the price Haris wants, we open a case to ask Amazon to raise it.</b></div>'+
+    row('List price', 'list') + row('Sale price', 'sale') + row('Our price', 'ours') +
+    row('Target', 'target') + row('CPT', 'cpt') + row('Buy Box', 'buybox') +
+    row('Held at CPT', 'held') + row('Too low', 'under') +
+    (ex ? '<div class="pg-ex"><b>Example: ' + esc(ex.sku) + '</b>'+
+      '<ol class="pg-steps">'+
+      `<li>Full price: <b>${usd(ex.list)}</b></li>`+
+      `<li>Haris wants it on sale for: <b>${usd(ex.target)}</b></li>`+
+      `<li>Amazon's limit (CPT): <b>${usd(ex.cpt)}</b></li>`+
+      `<li>So we sell it for: <b>${usd(ex.ours)}</b>, just to keep the Add to Cart button</li>`+
+      '</ol>'+
+      (ex.short > 0.005 ? `<div class="pg-end">Amazon's limit is <b>${usd(ex.short)} too low</b>. Open a case.</div>` : '<div class="pg-end">Amazon\u2019s limit is fine here. Nothing to do.</div>')+
+      '</div>' : '')+
+  '</div>';
+}
+
+function qi(key){ return TIPS[key] ? `<span class="qi" tabindex="0" data-tip="${esc(TIPS[key])}">?</span>` : ''; }
+
+// One floating tip for the whole page
+(function(){
+  const tip = document.createElement('div');
+  tip.id = 'tip'; tip.setAttribute('role', 'tooltip'); tip.hidden = true;
+  document.body.appendChild(tip);
+  let anchor = null;
+  function show(el){
+    anchor = el; tip.textContent = el.dataset.tip; tip.hidden = false;
+    const r = el.getBoundingClientRect(), w = Math.min(300, window.innerWidth - 24);
+    tip.style.maxWidth = w + 'px';
+    let x = r.left + r.width / 2 - w / 2;
+    x = Math.max(12, Math.min(x, window.innerWidth - w - 12));
+    tip.style.left = x + 'px';
+    const below = r.bottom + 8, h = tip.offsetHeight;
+    tip.style.top = (below + h > window.innerHeight - 8 ? r.top - h - 8 : below) + 'px';
+  }
+  function hide(){ anchor = null; tip.hidden = true; }
+  document.addEventListener('mouseover', e=>{ const el = e.target.closest && e.target.closest('[data-tip]'); if(el) show(el); });
+  document.addEventListener('mouseout',  e=>{ const el = e.target.closest && e.target.closest('[data-tip]'); if(el && !el.contains(e.relatedTarget)) hide(); });
+  document.addEventListener('focusin',   e=>{ if(e.target.dataset && e.target.dataset.tip) show(e.target); });
+  document.addEventListener('focusout',  hide);
+  // Phones: a tap on a (?) shows the tip instead of sorting the column
+  document.addEventListener('click', e=>{
+    const q = e.target.closest && e.target.closest('.qi');
+    if(q){ e.stopPropagation(); e.preventDefault(); anchor === q ? hide() : show(q); }
+    else if(anchor && !(e.target.closest && e.target.closest('[data-tip]'))) hide();
+  }, true);
+  window.addEventListener('scroll', hide, true);
+})();
+
 /* ---------- parent family header ---------- */
 
 /* One header row for a parent family. kids carry parent, psku and pasin.
@@ -2793,6 +2902,8 @@ function bandHeaders(){
     th.classList.remove('bd-rate','bd-price','bd-check','bd-case','bd-stock');
     const hit = BANDS.find(b=> b[0].test(t));
     if(hit) th.classList.add(hit[1]);
+    const key = TIP_BY_HEAD[t.toLowerCase()];
+    if(key && !th.querySelector('.qi')) th.insertAdjacentHTML('beforeend', qi(key));
     // Status is a case field in Cases, a catalog field everywhere else
     if(S.view === 'cases' && /^status$/i.test(t)) th.classList.add('bd-case');
   });
