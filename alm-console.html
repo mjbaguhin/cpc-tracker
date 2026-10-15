@@ -173,6 +173,12 @@ button.work.strong{background:#b42318;border-color:#b42318;color:#fff}
 button.work.strong:hover{background:#8f1d12;border-color:#8f1d12}
 .agh-b{display:flex;flex-wrap:wrap;gap:.4rem;margin-top:.55rem}
 .agh-b button{font-size:.78rem}
+.mailst{display:block;margin-top:.3rem;font-size:.74rem;font-weight:700}
+.mailst span{font-weight:500;color:var(--muted)}
+.mailst.m-bad{color:#b42318}
+.mailst.m-warn{color:#8a5a0b}
+.mailst.m-wait{color:#475569}
+.mailst.m-ok{color:var(--ok)}
 .ac{display:inline-block;padding:.3rem .65rem;border-radius:6px;font-weight:700;font-size:.82rem;white-space:nowrap}
 .ac-open{background:#b42318;color:#fff}
 .ac-follow{background:#22456f;color:#fff}
@@ -1611,7 +1617,8 @@ function buildCpt(j){
       }
     }
     return {asin:r.asin, sku:r.sku || '', name:r.name || '', cpt:num(r.cpt), bb:num(r.bb),
-            kOurs:num(r.ours), kList:num(r.list), cases:r.cases || [], date:r.d || '', h, moved, from};
+            kOurs:num(r.ours), kList:num(r.list), cases:r.cases || [], mail:r.mail || null,
+            date:r.d || '', h, moved, from};
   });
 }
 
@@ -1708,6 +1715,23 @@ function openCaseFor(asin){
 const SALE_TARGET = {'17x30': 24.95, '24x36': 49.95, '30x48': 69.95, '36x72': 119.95};
 function saleTarget(r){
   return /^DMC-/i.test(r.sku || '') && r.size && SALE_TARGET[r.size] ? SALE_TARGET[r.size] : null;
+}
+
+/* Amazon's latest email on a listing, from CPT Watch's morning Gmail check */
+const MAIL_KIND = {
+  rejected: ['Rejected',          'm-bad'],
+  resolved: ['Closed by Amazon',  'm-bad'],
+  replied:  ['Amazon replied',    'm-warn'],
+  received: ['Received, waiting', 'm-wait'],
+  waiting:  ['Waiting on Amazon', 'm-wait'],
+  fixed:    ['Fixed',             'm-ok']
+};
+function mailLine(r){
+  const m = r.mail;
+  if(!m || !MAIL_KIND[m.kind]) return '';
+  const k = MAIL_KIND[m.kind];
+  const when = m.days === 0 ? 'today' : m.days === 1 ? 'yesterday' : m.days + ' days ago';
+  return `<span class="mailst ${k[1]}">${k[0]}${m.needsReply ? ', reply' : ''} <span>${when}</span></span>`;
 }
 
 const ACTIONS = {
@@ -1930,6 +1954,7 @@ function renderCpt(){
   if(CPT_F.show === 'over')   rows = over;
   if(CPT_F.show === 'moved')  rows = recent;
   if(CPT_F.show === 'held')   rows = all.filter(r=> r.held);
+  if(CPT_F.show === 'reply')  rows = all.filter(r=> r.mail && r.mail.needsReply);
   if(CPT_F.show === 'need')   rows = all.filter(r=> r.action === 'open' || r.action === 'follow');
   if(CPT_F.show === 'cases')  rows = all.filter(r=> r.verdict.level === 'strong' || r.verdict.level === 'possible');
   // Column filters: min and max per column, tier, stock, open cases
@@ -1971,6 +1996,9 @@ function renderCpt(){
              `<span style="font-size:1rem;color:var(--c-night-mut)"> new, ${all.filter(r=> r.action === 'follow').length} follow up</span>`,
              all.some(r=> r.action === 'open' || r.action === 'follow') ? 'bad' : '',
              esc(all.filter(r=> r.action === 'open' || r.action === 'follow').map(r=> r.sku).slice(0,4).join(', ')) || 'Nothing to raise today')+
+        tile('Amazon emails to answer', all.filter(r=> r.mail && r.mail.needsReply).length,
+             all.some(r=> r.mail && r.mail.needsReply) ? 'warn' : '',
+             all.some(r=> r.mail) ? esc(all.filter(r=> r.mail && r.mail.needsReply).map(r=> r.sku).slice(0,3).join(', ')) || 'All answered' : 'Gmail check runs every morning')+
         tile('Priced above the CPT', over.length, over.length ? 'bad' : '',
              over.length ? 'Featured Offer at risk on these' : 'None, every price is at or under')+
         tile('Held at the CPT', all.filter(r=> r.held).length, all.some(r=> r.held) ? 'warn' : '',
@@ -1986,7 +2014,8 @@ function renderCpt(){
         [['all','All ' + all.length],
          ['need','Needs a case ' + all.filter(r=> r.action === 'open' || r.action === 'follow').length],
          ['over','Over CPT ' + over.length], ['moved','Moved 7 days ' + recent.length],
-         ['held','Held at CPT ' + all.filter(r=> r.held).length]]
+         ['held','Held at CPT ' + all.filter(r=> r.held).length],
+         ['reply','Needs a reply ' + all.filter(r=> r.mail && r.mail.needsReply).length]]
           .map(b=> `<button data-show="${b[0]}" aria-pressed="${CPT_F.show === b[0]}">${b[1]}</button>`).join('')+
       '</div>'+
       '<span class="mut" style="font-size:.8rem;margin-left:.3rem">Group by</span>'+
@@ -2207,7 +2236,8 @@ function cptRowHtml(r){
               : '<span class="mut">\u2014</span>'}</td>`+
           `<td>${r.action === 'none' ? '<span class="mut">\u2014</span>' :
              `<span class="ac ac-${r.action}" title="${esc(r.verdict.why.join('. '))}">${esc(ACTIONS[r.action].label)}</span>`+
-             (r.action === 'follow' && r.caseIds.length ? `<span class="was mono">${esc(r.caseIds[r.caseIds.length - 1])}</span>` : '')}</td>`+
+             (r.action === 'follow' && r.caseIds.length ? `<span class="was mono">${esc(r.caseIds[r.caseIds.length - 1])}</span>` : '')}`+
+             mailLine(r) + '</td>'+
           '</tr>';
 }
 
@@ -2305,6 +2335,12 @@ function caseBlock(r){
     (r.caseIds && r.caseIds.length ? `<p class="mut" style="font-size:.84rem">Case on file: <span class="mono">${esc(r.caseIds.join(', '))}</span>. Reply on the newest one with the evidence below.</p>` : '')+
     (v.open ? `<p class="mut" style="font-size:.84rem">Case ${esc(v.open.id)} is already open for this ASIN (${esc(v.open.status || 'open')}). Reply on it instead of opening another.</p>` : '')+
     '<ul class="why-list">' + v.why.map(w=> `<li>${esc(w)}</li>`).join('') + '</ul>'+
+    (r.mail ? `<h2 style="margin-top:1rem">Latest Amazon email</h2>`+
+      `<p style="margin:.2rem 0">${mailLine(r)}${r.mail.unread ? ' <span class="mailst m-warn">Unread</span>' : ''}</p>`+
+      `<p style="font-size:.84rem;margin:.3rem 0"><b>${esc(r.mail.subject)}</b><br><span class="mut">${esc(r.mail.date)}</span></p>`+
+      `<p style="font-size:.84rem;color:var(--muted)">${esc(r.mail.snippet)}\u2026</p>`+
+      `<p><button class="work" id="openMail">Open this email in Gmail</button></p>`
+      : `<p class="mut" style="font-size:.8rem;margin-top:.6rem">No Amazon email about this listing in the last 90 days. Amazon may have answered inside the Seller Central case.</p>`)+
     ((r.action === 'open' || r.action === 'follow')
       ? '<div class="act-row">'+
           `<button class="work strong" id="mailBtn">Draft email to Andy Jassy team</button>`+
@@ -2383,6 +2419,8 @@ function openCpt(r){
     const m = jassyEmail([r]);
     if(m) window.open(gmailCompose(MAIL.jassy, MAIL.cc, m.subject, m.body), '_blank', 'noopener');
   };
+  const om = document.getElementById('openMail');
+  if(om && r.mail) om.onclick = ()=> window.open(r.mail.link, '_blank', 'noopener');
   const fb = document.getElementById('findBtn');
   if(fb) fb.onclick = ()=> window.open(gmailSearch([r.asin].concat(r.caseIds || [])), '_blank', 'noopener');
   const cb2 = document.getElementById('caseBtn');
