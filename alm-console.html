@@ -1425,7 +1425,11 @@ function renderCases(){
   const tbl = document.getElementById('tbl');
   const tb  = document.getElementById('tbody');
 
-  const rows = CASES.slice().sort((a,b)=>{
+  const XS = S.caseS || (S.caseS = {sort:'', dir:1});
+  const CASE_GET = {'Case ID':c=> c.id, 'Age':c=> c.age, 'Type':c=> c.type, 'SKU':c=> c.sku,
+                    'ASIN':c=> c.asin, 'Summary':c=> c.summary, 'Status':c=> c.status};
+  // Default: grouped by type, oldest first. A chosen column shows one flat list.
+  const rows = XS.sort ? sortBy(CASES, CASE_GET[XS.sort], XS.dir) : CASES.slice().sort((a,b)=>{
     const ta = CASE_TYPES.indexOf(a.type), tb2 = CASE_TYPES.indexOf(b.type);
     if(ta !== tb2) return (ta===-1?99:ta) - (tb2===-1?99:tb2);
     return (b.age === null ? -1 : b.age) - (a.age === null ? -1 : a.age);
@@ -1445,7 +1449,10 @@ function renderCases(){
     ['Oldest open', oldest >= 0 ? oldest + 'd' : '\u2014', oldest >= CASE_DEAD ? 'bad' : '', 'Days since it was opened']
   ]);
   document.getElementById('bar').innerHTML =
-    '<span class="mut">Tap a case to open it in Seller Central.</span>';
+    '<span class="mut">Tap a case to open it in Seller Central. Tap a column header to sort.</span>'+
+    (XS.sort ? '<button id="caseUnsort">Back to grouped by type</button>' : '');
+  const cu = document.getElementById('caseUnsort');
+  if(cu) cu.onclick = ()=>{ XS.sort = ''; XS.dir = 1; render(); };
 
   if(!rows.length){
     tbl.hidden = true;
@@ -1460,13 +1467,14 @@ function renderCases(){
 
   document.getElementById('hrow').innerHTML =
     ['Case ID','Age','Type','SKU','ASIN','Summary','Status']
-      .map(h=>`<th>${esc(h)}</th>`).join('');
+      .map(h=>`<th data-s="${h}" data-d="${h === 'Age' ? 'desc' : 'asc'}">${esc(h)}${sortArrow(XS, h)}</th>`).join('');
+  wireSort(document.getElementById('hrow'), XS, render);
 
   let html = '', lastType = null;
 
   rows.forEach(c=>{
 
-    if(c.type !== lastType){
+    if(!XS.sort && c.type !== lastType){
       const n = rows.filter(x=> x.type === c.type).length;
       html += `<tr class="gh"><td colspan="7">${esc(c.type)}`+
               ` <span class="cnt">${n}</span></td></tr>`;
@@ -1584,7 +1592,18 @@ function cptRows(){
   });
 }
 
-const CPT_F = {show:'all', q:'', group:'none'};
+const CPT_F = {show:'all', q:'', group:'none', sort:'', dir:1};
+
+// What each sortable CPT column sorts on
+const CPT_SORT = {
+  product: r=> cptTitle(r),
+  ours:    r=> r.ours,
+  sale:    r=> r.sale,
+  cpt:     r=> r.cpt,
+  gap:     r=> r.gap,
+  move:    r=> daysSince(r.moved),
+  sim:     r=> r.simLow ? r.simLow.price : null
+};
 
 /* Tiny two-line trend for the row: CPT solid, our price dashed */
 function miniSpark(h){
@@ -1641,6 +1660,9 @@ function renderCpt(){
     const q = CPT_F.q.toLowerCase();
     rows = rows.filter(r=> (r.sku + ' ' + r.asin + ' ' + r.name).toLowerCase().indexOf(q) !== -1);
   }
+  // A chosen column wins; otherwise flagged first, biggest gap on top.
+  // Grouped views keep this order inside each family.
+  if(CPT_F.sort && CPT_SORT[CPT_F.sort]) rows = sortBy(rows, CPT_SORT[CPT_F.sort], CPT_F.dir);
 
   const tile = (k, val, cls, note) =>
     `<div class="cpt-tile"><div class="k">${k}</div><div class="v ${cls || ''}">${val}</div>`+
@@ -1675,6 +1697,7 @@ function renderCpt(){
           .map(b=> `<button data-g="${b[0]}" aria-pressed="${CPT_F.group === b[0]}">${b[1]}</button>`).join('')+
       '</div>'+
       `<input id="cptQ" type="search" placeholder="Search SKU, ASIN or product" value="${esc(CPT_F.q)}" aria-label="Search CPT tracker">`+
+      (CPT_F.sort ? '<button id="cptUnsort" title="Back to the default order">Clear sort</button>' : '')+
       `<span class="count">${rows.length} of ${all.length}</span>`+
     '</div>';
 
@@ -1685,15 +1708,17 @@ function renderCpt(){
   } else if(!rows.length){
     html += '<div class="cpt-empty"><b>Nothing matches</b>Clear the search or pick All.</div>';
   } else {
+    const H = (k, label, cls, d) =>
+      `<th data-s="${k}" data-d="${d || 'asc'}" class="${cls || ''}">${label}${sortArrow(CPT_F, k)}</th>`;
     html += '<table class="cpt-table"><thead><tr>'+
-      '<th>Product</th>'+
-      '<th class="b-ours c">Our price</th>'+
-      '<th class="b-ours c">Sale price</th>'+
-      '<th class="b-cpt c">CPT</th>'+
-      '<th class="b-gap c">Gap</th>'+
+      H('product', 'Product')+
+      H('ours', 'Our price', 'b-ours c', 'desc')+
+      H('sale', 'Sale price', 'b-ours c', 'desc')+
+      H('cpt', 'CPT', 'b-cpt c', 'desc')+
+      H('gap', 'Gap', 'b-gap c', 'desc')+
       '<th>30-day trend</th>'+
-      '<th class="b-move">Last CPT move</th>'+
-      '<th class="b-sim">Cheapest similar</th>'+
+      H('move', 'Last CPT move', 'b-move')+
+      H('sim', 'Cheapest similar', 'b-sim')+
       '</tr></thead><tbody>'+
       cptBody(rows)+
       '</tbody></table>';
@@ -1761,8 +1786,11 @@ function cptRowHtml(r){
 }
 
 function wireCpt(v, all){
+  wireSort(v, CPT_F, renderCpt);
 
   [...v.querySelectorAll('#cptSeg button')].forEach(b=> b.onclick = ()=>{ CPT_F.show = b.dataset.show; renderCpt(); });
+  const un = document.getElementById('cptUnsort');
+  if(un) un.onclick = ()=>{ CPT_F.sort = ''; CPT_F.dir = 1; renderCpt(); };
   [...v.querySelectorAll('#cptGrp button')].forEach(b=> b.onclick = ()=>{ CPT_F.group = b.dataset.g; renderCpt(); });
   const q = document.getElementById('cptQ');
   if(q){
@@ -1914,7 +1942,7 @@ function sdNote(){
 function renderCategory(){
 
   const set  = S.checks || CHECKS;
-  const rows = catFailing();
+  let rows = catFailing();
   const all  = catFailing(false);
   const tbl  = document.getElementById('tbl');
   const tb   = document.getElementById('tbody');
@@ -1946,9 +1974,19 @@ function renderCategory(){
   tbl.hidden = false;
   tbl.className = '';
 
+  // Sort: a check column puts failing rows first; Tier follows A, B, N, C, X
+  const CS = S.catS || (S.catS = {sort:'', dir:1});
+  const catGet = k =>
+    k === 'SKU' ? c=> c.sku : k === 'ASIN' ? c=> c.asin : k === 'Country' ? c=> c.country :
+    k === 'Product' ? c=> c.name : k === 'Tier' ? c=> (TIER_RANK[c.tier] !== undefined ? TIER_RANK[c.tier] : 9) :
+    k === 'Case' ? c=> c.caseId || null :
+    c=> { const st = (c.checks[k] || {}).state; return st === 'bad' ? 0 : st === 'ok' ? 2 : 1; };
+  if(CS.sort) rows = sortBy(rows, catGet(CS.sort), CS.dir);
+
   document.getElementById('hrow').innerHTML =
     ['SKU','ASIN','Country','Product','Tier'].concat(set).concat(['Case'])
-      .map(h=>`<th>${esc(h)}</th>`).join('');
+      .map(h=>`<th data-s="${esc(h)}">${esc(h)}${sortArrow(CS, h)}</th>`).join('');
+  wireSort(document.getElementById('hrow'), CS, render);
 
   tb.innerHTML = rows.map((c,i)=>
     '<tr>'+
@@ -2130,6 +2168,34 @@ function caseText(row, check, ck){
     'quotes the page is far harder to reject.';
 }
 
+
+/* ---------- column sorting (CPT, Category, Cases) ----------
+   Tap a header to sort by it, tap again to flip. Blanks always go last,
+   whichever way, so a missing value never floats to the top. */
+function sortBy(rows, getter, dir){
+  return rows.slice().sort((a,b)=>{
+    const x = getter(a), y = getter(b);
+    const xe = x === null || x === undefined || x === '', ye = y === null || y === undefined || y === '';
+    if(xe || ye) return xe === ye ? 0 : (xe ? 1 : -1);
+    if(typeof x === 'number' && typeof y === 'number') return (x - y) * dir;
+    return String(x).localeCompare(String(y), undefined, {numeric:true}) * dir;
+  });
+}
+function sortArrow(state, k){
+  return state.sort === k ? `<span class="ar"> ${state.dir > 0 ? '\u2191' : '\u2193'}</span>` : '';
+}
+function wireSort(scope, state, redraw){
+  [...scope.querySelectorAll('th[data-s]')].forEach(th=>{
+    th.style.cursor = 'pointer';
+    th.title = 'Sort by ' + th.textContent.trim();
+    th.onclick = ()=>{
+      const k = th.dataset.s;
+      if(state.sort === k) state.dir = -state.dir;
+      else { state.sort = k; state.dir = th.dataset.d === 'desc' ? -1 : 1; }
+      redraw();
+    };
+  });
+}
 
 /* ---------- parent family header ---------- */
 
