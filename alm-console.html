@@ -1765,9 +1765,15 @@ function caseEvidence(r){
     pool.slice(0, 5).forEach(x=> lines.push(`- ${x.market}, ${x.brand || 'brand not listed'}: ${usd(x.price)}${x.link ? '  ' + x.link : ''}`));
   }
   const fair = r.size ? fairSiblings(r.size, [r.asin]) : [];
+  // Other listings of the same size stuck at this exact threshold
+  const twins = r.size ? cptRows().filter(x=> x.asin !== r.asin && x.size === r.size && x.cpt === r.cpt &&
+                  (x.held || x.gap > 0) && (x.sku || '').split('-')[0] === (r.sku || '').split('-')[0]) : [];
+  if(twins.length) lines.push('', `${twins.map(x=> 'ASIN ' + x.asin + ' (SKU ' + x.sku + ', ' + cptTitle(x) + ')').join(' and ')} `+
+    `${twins.length > 1 ? 'are' : 'is'} held at the exact same ${usd(r.cpt)} threshold, although the design and price differ. `+
+    'That points to one generic reference item, not a match to our product.');
   if(fair.length){
-    lines.push('', `Same brand, same material, same ${r.size} size, threshold at our regular price:`);
-    fair.slice(0, 6).forEach(x=> lines.push(`- ASIN ${x.asin} (${cptTitle(x)}): threshold ${usd(x.cpt)}, regular price ${usd(x.list || x.ours)}`));
+    lines.push('', siblingHead(fair, r.size, [r.cpt]));
+    fair.slice(0, 6).forEach(x=> lines.push(`- ASIN ${x.asin} (SKU ${x.sku}, ${cptTitle(x)}): threshold ${usd(x.cpt)}`));
   }
   lines.push('', 'We believe the threshold is based on a product of a different size or construction. '+
     'Please re-validate the reference item against a ' + (r.size || 'same-size') + ' coir doormat and reset the threshold.');
@@ -2011,7 +2017,17 @@ function fairSiblings(size, except){
   const lines = new Set(cptRows().filter(r=> except.indexOf(r.asin) !== -1).map(r=> (r.sku || '').split('-')[0]));
   return cptRows().filter(r=> r.size === size && except.indexOf(r.asin) === -1 &&
     (!lines.size || lines.has((r.sku || '').split('-')[0])) &&
-    r.cpt !== null && (r.list || r.ours) !== null && r.cpt >= (r.list || r.ours) - 0.01);
+    r.cpt !== null && r.ours !== null && r.cpt >= r.ours - 0.01 && !r.held && !(r.gap > 0));
+}
+
+/* "Amazon's threshold for these is $59.95 to $69.95, while this one is held at $40.28" */
+function siblingHead(fair, size, held){
+  const v = fair.map(x=> x.cpt), lo = Math.min(...v), hi = Math.max(...v);
+  const range = lo === hi ? usd(lo) : usd(lo) + ' to ' + usd(hi);
+  const h = [...new Set(held)];
+  const heldTxt = h.length === 1 ? usd(h[0]) : h.map(usd).join(' and ');
+  return `Same brand, same material, same ${size} size. Amazon's threshold for these listings is ${range}, ` +
+         `while ${held.length > 1 ? 'the listings above are' : 'this one is'} held at ${heldTxt}:`;
 }
 
 /* One case for several ASINs at once, usually all flagged mats of one size */
@@ -2041,8 +2057,8 @@ function groupEvidence(rows){
   sizes.forEach(z=>{
     const fair = fairSiblings(z, flagged.map(r=> r.asin));
     if(fair.length){
-      L.push('', `For comparison, these ${z} listings from the same brand, same material and same size have a threshold at our regular price:`);
-      fair.slice(0, 8).forEach(r=> L.push(`  ASIN ${r.asin} (${cptTitle(r)}): threshold ${usd(r.cpt)}, regular price ${usd(r.list || r.ours)}`));
+      L.push('', siblingHead(fair, z, flagged.filter(r=> r.size === z).map(r=> r.cpt)));
+      fair.slice(0, 8).forEach(r=> L.push(`  ASIN ${r.asin} (SKU ${r.sku}, ${cptTitle(r)}): threshold ${usd(r.cpt)}`));
     }
     const out = SIM.filter(x=> x.size === z && x.market !== 'Amazon').sort((a,b)=> a.price - b.price);
     if(out.length){
@@ -2050,7 +2066,7 @@ function groupEvidence(rows){
       out.slice(0, 5).forEach(x=> L.push(`  ${x.market}, ${x.brand || 'brand not listed'}: ${usd(x.price)}${x.link ? '  ' + x.link : ''}`));
     }
   });
-  L.push('', 'Our own website sells each of these at the same size and price as our Amazon listing: https://www.barnyarddesigns.com', '',
+  L.push('', 'Each of these is also sold on our own brand website, barnyarddesigns.com, at a price at or above our Amazon price.', '',
          'Please have the pricing team compare each flagged ASIN with a reference item of the same size and construction, and reset the threshold.');
   return L.join('\n');
 }
