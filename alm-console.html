@@ -1800,6 +1800,7 @@ const MAIL_KIND = {
   rejected: ['Rejected',          'm-bad'],
   resolved: ['Closed by Amazon',  'm-bad'],
   replied:  ['Amazon replied',    'm-warn'],
+  restored: ['Buy Box back, CPT not fixed', 'm-warn'],
   received: ['Received, waiting', 'm-wait'],
   waiting:  ['Waiting on Amazon', 'm-wait'],
   fixed:    ['Fixed',             'm-ok']
@@ -1830,7 +1831,7 @@ function mailLine(r){
 const FOLLOW_DAYS = 3, JASSY_WAIT_DAYS = 7;
 const EV_LABEL = {
   sent: 'We sent', received: 'Amazon received it', rejected: 'Amazon rejected', resolved: 'Amazon closed the case',
-  replied: 'Amazon replied', fixed: 'Amazon fixed it'
+  replied: 'Amazon replied', fixed: 'Amazon fixed it', restored: 'Amazon says Buy Box is back'
 };
 function addDays(d, n){ const t = new Date(d + 'T12:00:00'); t.setDate(t.getDate() + n); return t.toISOString().slice(0,10); }
 function shortDate(d){ return d ? new Date(d + 'T12:00:00').toLocaleDateString('en-US', {month:'short', day:'numeric'}) : ''; }
@@ -1860,7 +1861,9 @@ function nextStep(r){
     if(rejects >= 2 && !jassyUsed) return {text:'Escalate to the Andy Jassy team (2 rejections)', due:'now', how:'Seller Support said no twice. Use Draft email to Andy Jassy team and list both case numbers.'};
     return {text:'Reply with new proof', due:'now', how:`Reply on case ${cid}. Point out the same-size mats with a higher CPT. Use Copy case evidence.`};
   }
-  if(last.kind === 'replied') return {text:"Read Amazon's reply and answer", due:'now', how:'Amazon may be asking for something. Open the email and reply today.'};
+  if(last.kind === 'restored') return {text:'Reply: we only have the Buy Box because we cut the price', due:'now',
+    how:`Amazon says the Buy Box is back, but the CPT is still ${usd(r.cpt)}${r.target ? ', under our ' + usd(r.target) + ' sale price' : ''}. Use Draft follow-up: it thanks them and asks to raise the CPT itself.`};
+  if(last.kind === 'replied') return {text:"Read Amazon's reply and answer", due:'now', how:'Amazon may be asking for something. Open the email and reply today, or ask Claude to read it and draft the answer.'};
   if(last.kind === 'fixed') return {text:'Amazon says fixed. Check the CPT tomorrow', due:addDays(last.d, 1), how:'If the CPT is still too low tomorrow, reply that it did not change.'};
   return null;
 }
@@ -1956,6 +1959,9 @@ function followUpEmail(r){
     `I am following up on ${cid ? 'case ' + cid : 'my earlier message'}${ev.d ? ' from ' + shortDate(ev.d) : ''}. ` +
     `As of today, the Competitive Price Threshold on ASIN ${r.asin} is still ${usd(r.cpt)}` +
     (r.target ? `, below our usual sale price of ${usd(r.target)} for this size.` : '.'), '',
+    ...(ev.kind === 'restored' ? [
+      'Thank you for checking. The listing has the Featured Offer, but only because we lowered our price to match the Competitive Price Threshold. '+
+      'Our request is about the threshold itself, which is set too low' + (r.target ? `: ${usd(r.cpt)}, while our usual sale price for this size is ${usd(r.target)}.` : '.'), ''] : []),
     ...(ev.ch === 'jassy' && ev.kind === 'rejected' ? [
       'Your reply said the price is not competitive compared with another retailer, and that the reference item cannot be shared. '+
       'We respect that, but the facts below show the threshold is not comparing like with like:', ''] : []),
