@@ -168,6 +168,11 @@ tr.cpt:hover td{background:var(--accent-soft)}
 .cpt-gh .gcount{color:var(--muted);margin-left:.5rem}
 .cpt-gh .gover{margin-left:.5rem;padding:.1rem .45rem;border-radius:5px;background:#fbe7e3;color:var(--warn);font-weight:700;font-size:.76rem}
 .cpt-gh .gok{margin-left:.5rem;padding:.1rem .45rem;border-radius:5px;background:#e4f3ee;color:var(--ok);font-weight:600;font-size:.76rem}
+.draft-btns{display:flex;flex-wrap:wrap;gap:.3rem;margin-top:.45rem}
+.fresh-btn{font-size:.76rem;padding:.25rem .55rem}
+.draft-l{font-size:.72rem;font-weight:800;letter-spacing:.04em;color:var(--muted);margin:.7rem 0 .25rem;text-transform:uppercase}
+.draft-s{padding:.5rem .6rem;border:1px solid var(--line);border-radius:6px;background:#f8fafc;font-weight:600;font-size:.88rem}
+.draft-t{width:100%;box-sizing:border-box;font:inherit;font-size:.84rem;line-height:1.45;padding:.6rem;border:1px solid var(--line);border-radius:6px;resize:vertical}
 .act-row{display:flex;flex-wrap:wrap;gap:.45rem;margin-top:.7rem}
 button.work.strong{background:#b42318;border-color:#b42318;color:#fff}
 button.work.strong:hover{background:#8f1d12;border-color:#8f1d12}
@@ -216,6 +221,11 @@ button.work.strong:hover{background:#8f1d12;border-color:#8f1d12}
 .mailst.m-warn{color:#8a5a0b}
 .mailst.m-wait{color:#475569}
 .mailst.m-ok{color:var(--ok)}
+.stk-tag{display:inline-block;margin:.3rem 0 0 .35rem;font-size:.72rem;font-weight:700;padding:.08rem .45rem;border-radius:4px;background:#e4f3ee;color:#1f6b4f}
+.stk-tag.low{background:#fdf1d8;color:#8a5a0b}
+.stk-tag.oos{background:#fbe7e3;color:#b42318}
+.ac-oos{background:#eef1f5;color:#475569}
+.cpt-table tr.agh-oos td{background:#f3f5f9 !important;box-shadow:inset 6px 0 0 #b42318 !important}
 .ac{display:inline-block;padding:.3rem .65rem;border-radius:6px;font-weight:700;font-size:.82rem;white-space:nowrap}
 .ac-open{background:#b42318;color:#fff}
 .ac-follow{background:#22456f;color:#fff}
@@ -1838,6 +1848,7 @@ function shortDate(d){ return d ? new Date(d + 'T12:00:00').toLocaleDateString('
 function todayStr(){ return new Date().toISOString().slice(0,10); }
 
 function nextStep(r){
+  if(r.action === 'oos') return {text:'Out of stock. No case until stock is back', due:'later', how:'There is nothing to sell, so a case would not help yet. The tracker will flag it again when stock arrives.'};
   const ev = r.events || [];
   if(!ev.length){
     if(r.action === 'open') return {text:'Open a case, or email the Andy Jassy team', due:'now', how:'Use Draft email to Andy Jassy team, or Copy evidence and open a new case.'};
@@ -1950,6 +1961,130 @@ function outsideRisk(r){
   return out.length ? out : null;
 }
 
+/* A brand new case: subject line, the strongest facts first, then the old
+   case numbers at the end so the new agent knows it is ongoing */
+function freshCase(r){
+  const ids = [...new Set((r.caseIds || []).concat((r.events || []).map(x=> x.cid).filter(Boolean)))];
+  return [
+    `Subject: Incorrect Competitive Price Threshold on ${r.asin} (${r.size || ''} ${cptTitle(r)})`, '',
+    'Hello,', '',
+    `We are Barnyard Designs, the brand owner and only seller of ASIN ${r.asin}. We are asking for a manual review of its Competitive Price Threshold. All numbers below are as of ${longToday()}.`, '',
+    caseEvidence(r), '',
+    ...caseHistory([r]), '',
+    ids.length ? 'Related earlier cases: ' + ids.join(', ') + '. Earlier replies kept the threshold without comparing a same-size item.' : '',
+    '', 'Thank you,', 'MJ Baguhin', 'Barnyard Designs, Cross Path Capital LLC'
+  ].filter((x,i,a)=> !(x === '' && a[i-1] === '')).join('\n');
+}
+
+/* One fresh case for several listings at once (all held 24x36 mats, say) */
+function freshCaseGroup(rows){
+  const list = rows.filter(r=> r.action === 'open' || r.action === 'follow');
+  if(!list.length) return '';
+  if(list.length === 1) return freshCase(list[0]);
+  const ids = [...new Set(list.flatMap(r=> (r.caseIds || []).concat((r.events || []).map(x=> x.cid).filter(Boolean))))];
+  const sizes = [...new Set(list.map(r=> r.size).filter(Boolean))];
+  // Strongest facts of the first listing of each size lead the case
+  // In a group case "this listing" is unclear, so each fact names its SKU
+  const lead = sizes.map(z=> list.find(r=> r.size === z)).filter(Boolean)
+    .flatMap(r=> strongFacts(r).slice(0, 3).map(f=> f.t.replace(/this listing/g, r.sku)));
+  return [
+    `Subject: Incorrect Competitive Price Threshold on ${list.length} Barnyard Designs ASINs (${list.map(r=> r.asin).join(', ')})`, '',
+    'Hello,', '',
+    `We are Barnyard Designs, the brand owner and only seller of the ASINs below. We are asking for a manual review of their Competitive Price Threshold. All numbers below are as of ${longToday()}.`, '',
+    'Key facts:', ...[...new Set(lead)].slice(0, 5).map((t,i)=> `${i + 1}. ${t}`), '',
+    'The listings:',
+    // groupEvidence opens with its own greeting and intro; skip those here
+    groupEvidence(list).split('\n').slice(4).join('\n'), '',
+    ...caseHistory(list), '',
+    ids.length ? 'Related earlier cases: ' + ids.join(', ') + '. Earlier replies kept the threshold without comparing a same-size item.' : '',
+    '', 'Thank you,', 'MJ Baguhin', 'Barnyard Designs, Cross Path Capital LLC'
+  ].filter((x,i,a)=> !(x === '' && a[i-1] === '')).join('\n');
+}
+
+/* One follow-up for several listings, strongest facts first */
+function followUpGroup(rows){
+  const list = rows.filter(r=> r.action === 'open' || r.action === 'follow');
+  if(!list.length) return null;
+  if(list.length === 1) return followUpEmail(list[0]);
+  const ids = [...new Set(list.flatMap(r=> (r.caseIds || []).concat((r.events || []).map(x=> x.cid).filter(Boolean))))];
+  const sizes = [...new Set(list.map(r=> r.size).filter(Boolean))];
+  const lead = sizes.map(z=> list.find(r=> r.size === z)).filter(Boolean)
+    .flatMap(r=> strongFacts(r).slice(0, 3).map(f=> f.t.replace(/this listing/g, r.sku)));
+  const restored = list.some(r=> ((r.events || [])[0] || {}).kind === 'restored');
+  // Reply on the newest case any of these listings has
+  const newest = list.flatMap(r=> r.events || []).filter(x=> x.cid).sort((a,b)=> a.d < b.d ? 1 : -1)[0];
+  if(newest){ const k = ids.indexOf(newest.cid); if(k > -1){ ids.splice(k, 1); ids.push(newest.cid); } }
+  const body = ['Hello,', '',
+    `I am following up on ${ids.length ? 'case ' + ids.slice(-1)[0] : 'our earlier request'} about ${list.map(r=> r.asin).join(', ')}.`, '',
+    restored ? 'Thank you for checking. The listings have the Featured Offer, but only because we lowered our prices to match the Competitive Price Threshold. Our request is about the threshold itself, which is set too low.' : `As of ${longToday()}, the Competitive Price Threshold on these listings is still below our usual sale price.`, '',
+    ...list.map(r=> `- ${r.asin} (${r.sku}): threshold ${usd(r.cpt)}${r.target ? ', our usual sale price ' + usd(r.target) : ''}`), '',
+    'Key facts:', ...[...new Set(lead)].slice(0, 5).map((t,i)=> `${i + 1}. ${t}`), '',
+    'Could you please ask the pricing team for a manual review and raise the threshold to at least our usual sale price for each size? Thank you.', '',
+    ...caseHistory(list), '',
+    ids.length ? 'Related cases: ' + ids.join(', ') : '', '',
+    'Best regards,', 'MJ Baguhin', 'Barnyard Designs, Cross Path Capital LLC'].filter((x,i,a)=> !(x === '' && a[i-1] === '')).join('\n');
+  return {subject: `Follow-up: Competitive Price Threshold on ${list.map(r=> r.asin).join(', ')}`, body,
+          toJassy: list.some(r=> ((r.events || [])[0] || {}).ch === 'jassy'), caseId: ids.slice(-1)[0] || ''};
+}
+
+/* Preview a drafted case before copying it, so MJ can read it first */
+function showDraft(title, text, opt){
+  opt = opt || {};
+  const d = document.getElementById('detail');
+  const subj = opt.subject || (text.match(/^Subject: (.*)$/m) || [])[1] || '';
+  const body = text.replace(/^Subject: .*\n+/m, '');
+  d.innerHTML =
+    `<h2>${opt.follow ? 'Follow-up draft' : 'Fresh case draft'}</h2><h3>${esc(title)}</h3>`+
+    `<p class="mut" style="font-size:.82rem">Everything is filled in from today\u2019s data. Read it once, then ${opt.follow ? 'send it as a reply on the case' : 'copy it into a new case'}.</p>`+
+    (subj ? `<div class="draft-l">Subject</div><div class="draft-s">${esc(subj)}</div>` : '')+
+    '<div class="draft-l">Description</div>'+
+    `<textarea class="draft-t" id="draftText" rows="18">${esc(body)}</textarea>`+
+    '<div class="act-row">'+
+      (opt.gmail ? '<button class="work strong" id="dGmail">Open as a Gmail draft</button>' : '')+
+      `<button class="work strong" id="dCopyOpen">${opt.caseId ? 'Copy and open case ' + esc(opt.caseId) : 'Copy and open Seller Central'}</button>`+
+      '<button class="work" id="dCopySubj">Copy subject only</button>'+
+      '<button class="work" id="dCopy">Copy description only</button>'+
+    '</div>'+
+    (opt.follow
+      ? '<p class="mut" style="font-size:.78rem;margin-top:.5rem">Paste it as a reply on the case. If the case only offers chat, paste this into the chat. If it only offers a call, read the first lines out loud.</p>'
+      : '<p class="mut" style="font-size:.78rem;margin-top:.5rem">In Seller Central: Help, Get support, Selling on Amazon, search "Featured Offer competitive price threshold". Paste the subject and the description. Pick email as the contact method if offered. The new case number is picked up from Gmail the next morning.</p>');
+  const copy = (t, btn, label)=> (navigator.clipboard ? navigator.clipboard.writeText(t) : Promise.reject())
+    .then(()=> btn.textContent = label).catch(()=> window.prompt('Copy this text:', t));
+  const ta = ()=> document.getElementById('draftText').value;
+  const gm = document.getElementById('dGmail');
+  if(gm) gm.onclick = ()=> window.open(gmailCompose(opt.gmail.to, opt.gmail.cc, subj, ta()), '_blank', 'noopener');
+  document.getElementById('dCopyOpen').onclick = e=>{
+    window.open(opt.caseId ? caseLink(opt.caseId) : CASE_URL, '_blank', 'noopener');
+    copy(ta(), e.target, 'Description copied. Paste it into the new case');
+  };
+  document.getElementById('dCopySubj').onclick = e=> copy(subj, e.target, 'Subject copied');
+  document.getElementById('dCopy').onclick = e=> copy(ta(), e.target, 'Description copied');
+  document.getElementById('veil').hidden = false;
+}
+
+/* Today's date written out, so every number in a draft is dated */
+function longToday(){ return new Date().toLocaleDateString('en-US', {month:'long', day:'numeric', year:'numeric'}); }
+
+/* Short case history for one or more listings, oldest first, one line per
+   event: date, what happened, case number. Auto replies are left out. */
+function caseHistory(rows){
+  const seen = {}, out = [];
+  rows.flatMap(r=> (r.events || []).map(x=> Object.assign({sku:r.sku}, x)))
+    .filter(x=> x.kind !== 'received')
+    // Same day: our message comes before Amazon's answer to it
+    .sort((a,b)=> a.d < b.d ? -1 : a.d > b.d ? 1 : (a.who === 'us' ? -1 : 0) - (b.who === 'us' ? -1 : 0))
+    .forEach(x=>{
+      const what = x.who === 'us'
+        ? (x.ch === 'jassy' ? 'We wrote to the Andy Jassy team' : 'We wrote on the case')
+        : ({rejected:'Amazon kept the threshold', resolved:'Amazon closed the case', restored:'Amazon said the Featured Offer is back, threshold unchanged',
+            replied:'Amazon replied', fixed:'Amazon said it was fixed'})[x.kind] || 'Amazon replied';
+      const key = x.d + what + (x.cid || '');
+      if(seen[key]) return; seen[key] = 1;
+      out.push(`- ${shortDate(x.d)}: ${what}${x.cid ? ' (case ' + x.cid + ')' : ''}`);
+    });
+  return out.length ? ['Case history:'].concat(out.slice(-10)) : [];
+}
+
 function followUpEmail(r){
   const ev = (r.events || [])[0] || {};
   const cid = ev.cid || (r.caseIds || []).slice(-1)[0] || '';
@@ -1957,7 +2092,7 @@ function followUpEmail(r){
     (ev.subj ? ev.subj.replace(/^(re|fw|fwd):\s*/i, '') : `Competitive Price Threshold on ${r.asin}`);
   const body = ['Hello,', '',
     `I am following up on ${cid ? 'case ' + cid : 'my earlier message'}${ev.d ? ' from ' + shortDate(ev.d) : ''}. ` +
-    `As of today, the Competitive Price Threshold on ASIN ${r.asin} is still ${usd(r.cpt)}` +
+    `As of ${longToday()}, the Competitive Price Threshold on ASIN ${r.asin} is still ${usd(r.cpt)}` +
     (r.target ? `, below our usual sale price of ${usd(r.target)} for this size.` : '.'), '',
     ...(ev.kind === 'restored' ? [
       'Thank you for checking. The listing has the Featured Offer, but only because we lowered our price to match the Competitive Price Threshold. '+
@@ -1969,6 +2104,7 @@ function followUpEmail(r){
     ...(likelyRefs(r).length ? ['We believe the reference is ' + refLine(likelyRefs(r)[0]) + '. If it is, please compare the two products side by side, and look at why only our listings with the same design name are held to its price.', ''] : []),
     'If the reference item cannot be shared, could the pricing team at least confirm it is a ' + (r.size || 'same-size') + ' coir doormat? '+
     'If it is not, please reset the threshold' + (r.target ? ' to at least ' + usd(r.target) + '.' : '.'), '',
+    ...caseHistory([r]), '',
     'Thank you for taking another look.', '',
     'Best regards,', 'MJ Baguhin', 'Barnyard Designs, Cross Path Capital LLC'].join('\n');
   return {subject, body, toJassy: ev.ch === 'jassy'};
@@ -1978,9 +2114,12 @@ const ACTIONS = {
   open:   {rank:0, label:'Open a case',        group:'Open a case with Amazon'},
   follow: {rank:1, label:'Follow up',          group:'Follow up on the case on file'},
   watch:  {rank:2, label:'Price to target',    group:'Priced above the CPT, no case needed'},
+  oos:    {rank:2.5, label:'Out of stock, skip', group:'Out of stock, no case for now'},
   none:   {rank:3, label:'',                   group:'No action'}
 };
 function cptAction(r){
+  // No stock, no sales to protect: do not spend time on a case until it is back
+  if(r.avail === 0 && (r.held || r.gap > 0 || (r.target !== null && r.short > 0.005))) return 'oos';
   const onFile = (r.cases && r.cases.length) ? r.cases : (openCaseFor(r.asin) ? [openCaseFor(r.asin).id] : []);
   r.caseIds = onFile;
   // Coir: any CPT under our sale price for the size needs a case ("we want the CPT up anyways")
@@ -2116,8 +2255,9 @@ function jassyEmail(rows){
   const body = [
     'Hello,', '',
     `I am writing on behalf of Barnyard Designs, the brand owner and only seller of the ASIN${one ? '' : 's'} below. ` +
-    'Our brand account owner, Jack Fallon, is copied on this email.', '',
+    `Our brand account owner, Jack Fallon, is copied on this email. All numbers below are as of ${longToday()}.`, '',
     one ? caseEvidence(one) : groupEvidence(list), '',
+    ...caseHistory(list), '',
     ids.length ? 'Related cases: ' + ids.join(', ') + '. The replies so far kept the threshold without comparing a same-size item.' : '',
     ids.length ? '' : '',
     'Could a member of your team ask the pricing team for a manual review? Thank you for your help.', '',
@@ -2131,7 +2271,7 @@ const CPT_F = {show:'all', q:'', group:'action', sort:'', dir:1,
 // Columns that take a min/max filter
 const CPT_RANGE = [
   ['ours', 'Our price', '$'], ['sale', 'Sale price', '$'], ['list', 'List price', '$'],
-  ['cpt', 'CPT', '$'], ['gap', 'Gap', '$'], ['pct', 'Gap', '%']
+  ['cpt', 'CPT', '$'], ['gap', 'Gap', '$'], ['pct', 'Gap', '%'], ['avail', 'Stock', 'units']
 ];
 
 // What each sortable CPT column sorts on
@@ -2143,7 +2283,8 @@ const CPT_SORT = {
   gap:     r=> r.gap,
   move:    r=> daysSince(r.moved),
   sim:     r=> r.simLow ? r.simLow.price : null,
-  verdict: r=> ACTIONS[r.action].rank * 10 - (r.verdict.points || 0)
+  verdict: r=> ACTIONS[r.action].rank * 10 - (r.verdict.points || 0),
+  stock:   r=> r.avail
 };
 
 /* Tiny two-line trend for the row: CPT solid, our price dashed */
@@ -2270,7 +2411,7 @@ function renderCpt(){
       '</div>'+
       `<input id="cptQ" type="search" placeholder="Search SKU, ASIN or product" value="${esc(CPT_F.q)}" aria-label="Search CPT tracker">`+
       (CPT_F.sort ? '<button id="cptUnsort" title="Back to the default order">Clear sort</button>' : '')+
-      (rows.some(r=> r.gap > 0 || r.held) ? `<button id="cptCaseAll" class="work">Copy one case for the ${rows.filter(r=> r.gap > 0 || r.held).length} shown</button>` : '')+
+      (rows.some(r=> r.action === 'open' || r.action === 'follow') ? `<button id="cptCaseAll" class="work">Copy one case for the ${rows.filter(r=> r.action === 'open' || r.action === 'follow').length} shown</button>` : '')+
       `<button id="cptGuide" aria-pressed="${!!CPT_F.guide}">What do these prices mean?</button>`+
       `<button id="cptMore" aria-pressed="${CPT_F.more}">Column filters${activeCptFilters() ? ' <span class="fbadge">' + activeCptFilters() + '</span>' : ''}</button>`+
       `<span class="count">${rows.length} of ${all.length}</span>`+
@@ -2418,15 +2559,19 @@ function cptBody(rows){
   const key = CPT_F.group;
   if(key === 'none') return rows.map(cptRowHtml).join('');
   if(key === 'action'){
-    return ['open','follow','watch','none'].map(a=>{
+    return ['open','follow','watch','oos','none'].map(a=>{
       const g = rows.filter(r=> r.action === a);
       if(!g.length) return '';
       const sub = a === 'open' ? 'The CPT is below our sale price for the size. No case on file.'
                : a === 'follow' ? 'Same, but a case is already on file. Reply on it with the latest numbers.'
                : a === 'watch' ? 'The CPT is at or above our sale price, so we can sell at the sale price without a case.'
+               : a === 'oos' ? 'The CPT is too low, but we have no stock to sell. Raise a case when stock is back.'
                : 'Our price and the CPT agree.';
       const btns = (a === 'open' || a === 'follow')
-        ? `<div class="agh-b"><button class="work strong" data-gmail="${a}">Draft one Jassy email for these ${g.length}</button>`+
+        ? `<div class="agh-b">`+
+          (a === 'follow' ? `<button class="work strong" data-gfu="${a}">Draft one follow-up for these ${g.length}</button>` : '')+
+          `<button class="work strong" data-gfresh="${a}">Draft one fresh case for these ${g.length}</button>`+
+          `<button class="work strong" data-gmail="${a}">Draft one Jassy email for these ${g.length}</button>`+
           `<button class="work" data-gfind="${a}">Find related emails</button></div>` : '';
       return `<tr class="gh agh agh-${a}"><td colspan="9"><div class="agh-t">${esc(ACTIONS[a].group)} `+
              `<span class="agh-n">${g.length}</span></div><div class="agh-s">${sub}</div>${btns}</td></tr>` +
@@ -2456,6 +2601,14 @@ function cptBody(rows){
   }).join('');
 }
 
+function stockTag(r){
+  const inb = (()=>{ const row = ROWS.find(x=> x.sku === r.sku); return row ? row.usInbound : null; })();
+  if(r.avail === null || r.avail === undefined) return '<span class="stk-tag">Stock unknown</span>';
+  if(r.avail === 0) return `<span class="stk-tag oos" data-tip="No units ready to ship. No case needed until stock is back.">Out of stock${inb ? ', ' + inb + ' on the way' : ''}</span>`;
+  const low = r.avail < 30;
+  return `<span class="stk-tag ${low ? 'low' : ''}" data-tip="${esc(TIPS.avail)}">${Number(r.avail).toLocaleString('en-US')} in stock${inb ? ', ' + inb + ' on the way' : ''}</span>`;
+}
+
 function cptRowHtml(r){
         const bad = r.gap !== null && r.gap > 0;
         const n = daysSince(r.moved);
@@ -2467,6 +2620,7 @@ function cptRowHtml(r){
             `<div class="p-id"><span>SKU</span>${esc(r.sku)}</div>`+
             `<div class="p-id"><span>ASIN</span>${esc(r.asin)}</div>`+
             (r.size ? `<span class="p-size">${esc(r.size)}</span>` : '')+
+            stockTag(r)+
           '</td>'+
           `<td class="c"><span class="cpill ours" data-tip="${esc(TIPS.ours)}">${usd(r.ours)}</span></td>`+
           `<td class="c">${r.sale !== null && r.sale !== undefined
@@ -2491,7 +2645,11 @@ function cptRowHtml(r){
           `<td>${r.action === 'none' ? '<span class="mut">\u2014</span>' :
              `<span class="ac ac-${r.action}" title="${esc(r.verdict.why.join('. '))}">${esc(ACTIONS[r.action].label)}</span>`+
              (r.action === 'follow' && r.caseIds.length ? `<span class="was mono">${esc(r.caseIds[r.caseIds.length - 1])}</span>` : '')}`+
-             nextLine(r) + '</td>'+
+             nextLine(r) +
+             ((r.action === 'open' || r.action === 'follow')
+               ? '<div class="draft-btns">'+
+                 ((r.action === 'follow' || (r.events || []).length) ? `<button class="work fresh-btn" data-fu="${esc(r.asin)}">Draft a follow-up</button>` : '')+
+                 `<button class="work fresh-btn" data-fresh="${esc(r.asin)}">Draft a fresh case</button></div>` : '') + '</td>'+
           `<td class="trend">${miniSpark(r.h)}</td>`+
           '</tr>';
 }
@@ -2500,6 +2658,32 @@ function wireCpt(v, all){
   wireSort(v, CPT_F, renderCpt);
 
   [...v.querySelectorAll('#cptSeg button')].forEach(b=> b.onclick = ()=>{ CPT_F.show = b.dataset.show; renderCpt(); });
+  const openFollow = (title, m)=> showDraft(title, m.body, {follow:true, subject:m.subject, caseId:m.toJassy ? '' : m.caseId,
+    gmail: m.toJassy ? {to:MAIL.jassy, cc:MAIL.cc} : null});
+  [...v.querySelectorAll('button[data-fu]')].forEach(b=> b.onclick = e=>{
+    e.stopPropagation();
+    const r = all.find(x=> x.asin === b.dataset.fu);
+    if(!r) return;
+    const m = followUpEmail(r), ev = (r.events || [])[0] || {};
+    m.caseId = ev.cid || (r.caseIds || []).slice(-1)[0] || '';
+    openFollow(`${r.sku} ${cptTitle(r)}`, m);
+  });
+  [...v.querySelectorAll('button[data-gfu]')].forEach(b=> b.onclick = e=>{
+    e.stopPropagation();
+    const g = CPT_SHOWN.filter(r=> r.action === b.dataset.gfu);
+    const m = followUpGroup(g);
+    if(m) openFollow(`${g.length} listings: ${g.map(r=> r.sku).join(', ')}`, m);
+  });
+  [...v.querySelectorAll('button[data-fresh]')].forEach(b=> b.onclick = e=>{
+    e.stopPropagation();
+    const r = all.find(x=> x.asin === b.dataset.fresh);
+    if(r) showDraft(`${r.sku} ${cptTitle(r)}`, freshCase(r));
+  });
+  [...v.querySelectorAll('button[data-gfresh]')].forEach(b=> b.onclick = e=>{
+    e.stopPropagation();
+    const g = CPT_SHOWN.filter(r=> r.action === b.dataset.gfresh);
+    showDraft(`${g.length} listings: ${g.map(r=> r.sku).join(', ')}`, freshCaseGroup(g));
+  });
   [...v.querySelectorAll('button[data-gmail]')].forEach(b=> b.onclick = e=>{
     e.stopPropagation();
     const m = jassyEmail(CPT_SHOWN.filter(r=> r.action === b.dataset.gmail));
@@ -2631,7 +2815,8 @@ function caseBlock(r){
           `<button class="work" id="findBtn">Find emails about this ASIN</button>`+
           (r.action === 'follow' && r.caseIds.length
             ? `<button class="work" id="caseBtn">Open case ${esc(r.caseIds[r.caseIds.length - 1])} in Seller Central</button>`
-            : `<button class="work" id="caseBtn">Copy evidence and open a new case</button>`)+
+            : '')+
+          `<button class="work strong" id="freshBtn">Draft a fresh case</button>`+
           '<button class="work" id="evBtn">Copy case evidence</button>'+
         '</div>'+
         '<p class="mut" style="font-size:.78rem;margin-top:.4rem">The email opens in Gmail as a draft with everything filled in. Nothing is sent until you press Send.</p>'
@@ -2705,14 +2890,10 @@ function openCpt(r){
   };
   const fu = document.getElementById('fuBtn');
   if(fu) fu.onclick = ()=>{
-    const m = followUpEmail(r);
-    if(m.toJassy) window.open(gmailCompose(MAIL.jassy, MAIL.cc, m.subject, m.body), '_blank', 'noopener');
-    else {
-      const ev = (r.events || [])[0] || {};
-      const cid = ev.cid || (r.caseIds || []).slice(-1)[0];
-      if(cid) window.open(caseLink(cid), '_blank', 'noopener');
-      if(navigator.clipboard) navigator.clipboard.writeText(m.body).then(()=> fu.textContent = 'Follow-up copied, paste it into the case');
-    }
+    const m = followUpEmail(r), ev = (r.events || [])[0] || {};
+    showDraft(`${r.sku} ${cptTitle(r)}`, m.body, {follow:true, subject:m.subject,
+      caseId: m.toJassy ? '' : (ev.cid || (r.caseIds || []).slice(-1)[0] || ''),
+      gmail: m.toJassy ? {to:MAIL.jassy, cc:MAIL.cc} : null});
   };
   const om = document.getElementById('openMail');
   if(om && r.mail) om.onclick = ()=> window.open(r.mail.link, '_blank', 'noopener');
@@ -2729,6 +2910,8 @@ function openCpt(r){
     const t = caseEvidence(r);
     if(navigator.clipboard) navigator.clipboard.writeText(t).then(()=> cb2.textContent = 'Evidence copied, paste it into the case');
   };
+  const fr = document.getElementById('freshBtn');
+  if(fr) fr.onclick = ()=> showDraft(`${r.sku} ${cptTitle(r)}`, freshCase(r));
   const ev = document.getElementById('evBtn');
   if(ev) ev.onclick = ()=>{
     const t = caseEvidence(r);
