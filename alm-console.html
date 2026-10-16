@@ -141,6 +141,11 @@ tr.cpt:hover td{background:var(--accent-soft)}
 .cpt-table th.c,.cpt-table td.c{text-align:center}
 /* The catalog table pins its first two columns; this one does not */
 .cpt-table th,.cpt-table td{position:static;min-width:0;max-width:none;box-shadow:none !important}
+/* The catalog pins its group rows to the top and its first column to the
+   left. In the CPT tracker both overlapped the rows while scrolling, so
+   nothing in its body sticks. Only the column header stays on top. */
+.cpt-table tbody td,.cpt-table tbody tr.gh td{position:static !important;top:auto !important;left:auto !important;z-index:auto !important}
+.cpt-table tbody td.prod{min-width:19rem !important;max-width:none !important}
 .cpt-table thead th{position:sticky}
 .cpt-table tr:hover td{background:transparent}
 .cpt-table td.c{font-family:inherit;font-size:inherit}
