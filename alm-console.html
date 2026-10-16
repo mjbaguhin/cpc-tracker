@@ -2426,6 +2426,7 @@ function renderCpt(){
       `<input id="cptQ" type="search" placeholder="Search SKU, ASIN or product" value="${esc(CPT_F.q)}" aria-label="Search CPT tracker">`+
       (CPT_F.sort ? '<button id="cptUnsort" title="Back to the default order">Clear sort</button>' : '')+
       (rows.some(r=> r.action === 'open' || r.action === 'follow') ? `<button id="cptCaseAll" class="work">Copy one case for the ${rows.filter(r=> r.action === 'open' || r.action === 'follow').length} shown</button>` : '')+
+      '<button id="cptLog">Price change log</button>'+
       `<button id="cptGuide" aria-pressed="${!!CPT_F.guide}">What do these prices mean?</button>`+
       `<button id="cptMore" aria-pressed="${CPT_F.more}">Column filters${activeCptFilters() ? ' <span class="fbadge">' + activeCptFilters() + '</span>' : ''}</button>`+
       `<span class="count">${rows.length} of ${all.length}</span>`+
@@ -2649,7 +2650,7 @@ function cptRowHtml(r){
              : r.held ? `<span class="gap-badge held" data-tip="${esc(TIPS.held)}">Held at CPT</span><span class="was">${r.listPct}% under list</span>`
                  : `<span class="gap-badge ok" data-tip="${esc(TIPS.ok)}">At or under</span>`}</td>`+
           `<td class="move">${r.moved
-              ? `${usd(r.from)} to ${usd(r.cpt)}<span class="ago${hot ? ' hot' : ''}">${n === 0 ? 'today' : n + ' days ago'}</span>`
+              ? `${usd(r.from)} to ${usd(r.cpt)}<span class="ago${hot ? ' hot' : ''}">${n === 0 ? 'today' : n === 1 ? 'yesterday' : n + ' days ago'}</span>`
               : '<span class="mut">No change seen</span>'}</td>`+
           `<td class="sim">${likelyRefs(r).length
               ? `<span class="lo" style="color:#b42318" data-tip="An outside item priced exactly at our CPT. Amazon most likely compared us with it.">Likely reference ${usd(likelyRefs(r)[0].price)}</span><span class="where">${esc(likelyRefs(r)[0].market)}, ${esc(likelyRefs(r)[0].brand || '')}</span>`
@@ -2718,6 +2719,8 @@ function wireCpt(v, all){
   };
   [...v.querySelectorAll('button[data-size]')].forEach(b=> b.onclick = ()=>{
     const z = b.dataset.size; CPT_F.sizes.has(z) ? CPT_F.sizes.delete(z) : CPT_F.sizes.add(z); renderCpt(); });
+  const lg = document.getElementById('cptLog');
+  if(lg) lg.onclick = openChangeLog;
   const gd = document.getElementById('cptGuide');
   if(gd) gd.onclick = ()=>{ CPT_F.guide = !CPT_F.guide; renderCpt(); };
   const mb = document.getElementById('cptMore');
@@ -2863,15 +2866,72 @@ function simBlock(r){
     (all.length > 10 ? `<p class="mut" style="font-size:.78rem;margin-top:.3rem">Cheapest 10 of ${all.length} shown.</p>` : '');
 }
 
+/* One row per day (the last reading of the day), with the change from the
+   day before for both our price and the CPT */
+function dailyRows(r){
+  const byDay = {};
+  (r.h || []).forEach(x=>{ byDay[x[0]] = {d:x[0], cpt:x[1], ours:x[2] === undefined ? null : x[2]}; });
+  const days = Object.keys(byDay).sort().map(k=> byDay[k]);
+  days.forEach((x,i)=>{
+    const p = i ? days[i-1] : null;
+    x.dCpt  = p && x.cpt !== null && p.cpt !== null ? Math.round((x.cpt - p.cpt) * 100) / 100 : null;
+    x.dOurs = p && x.ours !== null && p.ours !== null ? Math.round((x.ours - p.ours) * 100) / 100 : null;
+    x.first = !p;
+  });
+  return days;
+}
+const signed = v=> v === null || v === 0 ? '' : (v > 0 ? '+' : '-') + usd(Math.abs(v));
+
+function dailyTable(r, everyDay){
+  const rows = dailyRows(r).filter(x=> everyDay || x.first || x.dCpt || x.dOurs).reverse();
+  if(!rows.length) return '<p class="mut" style="font-size:.84rem">No readings yet.</p>';
+  return '<table class="hist"><thead><tr><th>Date</th><th class="num">Our price</th><th class="num">Change</th>'+
+    '<th class="num">CPT</th><th class="num">Change</th>'+(r.target ? '<th class="num">CPT vs target</th>' : '')+'</tr></thead><tbody>'+
+    rows.map(x=>{
+      const over = x.ours !== null && x.cpt !== null && x.ours > x.cpt + 0.005;
+      const vsT = r.target && x.cpt !== null ? Math.round((x.cpt - r.target) * 100) / 100 : null;
+      return `<tr><td>${esc(shortDate(x.d))}</td>`+
+        `<td class="num ${over ? 'warn' : ''}">${usd(x.ours)}</td>`+
+        `<td class="num ${x.dOurs > 0 ? 'ok' : x.dOurs < 0 ? 'warn' : 'mut'}">${x.first ? 'first day' : signed(x.dOurs)}</td>`+
+        `<td class="num"><b>${usd(x.cpt)}</b></td>`+
+        `<td class="num ${x.dCpt > 0 ? 'ok' : x.dCpt < 0 ? 'warn' : 'mut'}">${x.first ? 'first day' : signed(x.dCpt)}</td>`+
+        (r.target ? `<td class="num ${vsT < 0 ? 'warn' : 'ok'}">${vsT === null ? '' : vsT < 0 ? usd(-vsT) + ' too low' : 'OK'}</td>` : '')+'</tr>';
+    }).join('')+'</tbody></table>';
+}
+
+/* Every price and CPT change across all listings, newest first */
+function changeLog(days){
+  const since = addDays(todayStr(), -(days || 30)), out = [];
+  cptRows().forEach(r=> dailyRows(r).forEach(x=>{
+    if(x.d < since || x.first) return;
+    if(x.dCpt) out.push({d:x.d, r, what:'CPT', from:x.cpt - x.dCpt, to:x.cpt});
+    if(x.dOurs) out.push({d:x.d, r, what:'Our price', from:x.ours - x.dOurs, to:x.ours});
+  }));
+  return out.sort((a,b)=> a.d < b.d ? 1 : a.d > b.d ? -1 : a.r.sku.localeCompare(b.r.sku));
+}
+function openChangeLog(){
+  const log = changeLog(30), d = document.getElementById('detail');
+  d.innerHTML = '<h2>Price change log</h2><h3>Every CPT and price change, last 30 days</h3>'+
+    '<p class="mut" style="font-size:.82rem">Checked every morning. Green: went up. Red: went down. Tap Download for every day of every listing, for your own sheet.</p>'+
+    (log.length ? '<table class="hist"><thead><tr><th>Date</th><th>SKU</th><th>What</th><th class="num">From</th><th class="num">To</th><th class="num">Change</th></tr></thead><tbody>'+
+      log.map(x=>{ const ch = Math.round((x.to - x.from) * 100) / 100;
+        return `<tr><td>${esc(shortDate(x.d))}</td><td class="mono">${esc(x.r.sku)}</td><td>${x.what}</td>`+
+          `<td class="num">${usd(x.from)}</td><td class="num"><b>${usd(x.to)}</b></td><td class="num ${ch > 0 ? 'ok' : 'warn'}">${signed(ch)}</td></tr>`; }).join('')+
+      '</tbody></table>' : '<p class="mut">No changes yet. The first changes show up after a few mornings of tracking.</p>')+
+    '<p style="margin-top:.8rem"><button class="work" id="logCsv">Download every day (CSV)</button></p>';
+  document.getElementById('logCsv').onclick = ()=>{
+    const lines = [['Date','SKU','ASIN','Product','Our price','Our price change','CPT','CPT change','Target'].join(',')];
+    cptRows().forEach(r=> dailyRows(r).forEach(x=> lines.push([x.d, r.sku, r.asin, '"' + String(r.name).replace(/"/g,'""') + '"',
+      x.ours ?? '', x.dOurs ?? '', x.cpt ?? '', x.dCpt ?? '', r.target ?? ''].join(','))));
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(new Blob([lines.join('\n')], {type:'text/csv'}));
+    a.download = 'cpt-daily-' + todayStr() + '.csv'; a.click();
+  };
+  document.getElementById('veil').hidden = false;
+}
+
 function openCpt(r){
   const d = document.getElementById('detail');
-  const steps = [];
-  r.h.forEach((x,i)=>{
-    const p = i ? r.h[i-1] : null;
-    const ours = x[2] === undefined ? null : x[2];
-    if(i === 0 || x[1] !== p[1] || ours !== (p[2] === undefined ? null : p[2]))
-      steps.push([x[0], x[1], p ? p[1] : null, ours]);
-  });
 
   d.innerHTML =
     `<h2>CPT tracker</h2>`+
@@ -2884,19 +2944,19 @@ function openCpt(r){
     `<dt>Buy Box</dt><dd>${usd(r.bb)}</dd>`+
     '</dl>'+
     sparkSvg(r.h)+
-    '<table class="hist"><thead><tr><th>Date</th><th class="num">Our price</th><th class="num">CPT</th><th class="num">CPT change</th></tr></thead><tbody>'+
-    steps.slice().reverse().map(x=>{
-      const ch = x[2] === null || x[1] === null ? '' : Math.round((x[1] - x[2]) * 100) / 100;
-      const over = x[3] !== null && x[1] !== null && x[3] > x[1];
-      return `<tr><td>${esc(x[0])}</td><td class="num ${over ? 'warn' : ''}">${usd(x[3])}</td><td class="num">${usd(x[1])}</td>`+
-             `<td class="num ${ch > 0 ? 'ok' : ch < 0 ? 'warn' : 'mut'}">${ch === '' ? (x[2] === null ? 'first seen' : '') : ch === 0 ? '' : (ch > 0 ? '+' : '') + usd(ch).replace('$-','-$')}</td></tr>`;
-    }).join('')+
-    '</tbody></table>'+
+    '<h2 style="margin-top:.6rem">Daily price log</h2>'+
+    `<div class="seg" style="margin:.3rem 0 .4rem"><button id="dayChg" aria-pressed="${!CPT_F.everyDay}">Changes only</button>`+
+    `<button id="dayAll" aria-pressed="${!!CPT_F.everyDay}">Every day</button></div>`+
+    `<div id="dayTbl">${dailyTable(r, CPT_F.everyDay)}</div>`+
     caseBlock(r)+
     simBlock(r)+
-    `<div class="why">Only days when our price or the CPT changed are listed. Our price in red means it was above the CPT that day. Amazon does not say which retailer it used, so a step up or down is the clue to when its match changed.</div>`+
+    `<div class="why">Our price in red means it was above the CPT that day. Amazon does not say which retailer it used, so a step up or down is the clue to when its match changed.</div>`+
     `<p style="margin-top:.9rem"><button class="work" id="phBtn">Open Pricing Health</button></p>`;
 
+  const setDay = all=>{ CPT_F.everyDay = all; document.getElementById('dayTbl').innerHTML = dailyTable(r, all);
+    document.getElementById('dayChg').setAttribute('aria-pressed', !all); document.getElementById('dayAll').setAttribute('aria-pressed', all); };
+  document.getElementById('dayChg').onclick = ()=> setDay(false);
+  document.getElementById('dayAll').onclick = ()=> setDay(true);
   const mb2 = document.getElementById('mailBtn');
   if(mb2) mb2.onclick = ()=>{
     const m = jassyEmail([r]);
@@ -3254,7 +3314,7 @@ const TIPS = {
   under:  'Amazon\u2019s limit is lower than our usual sale price for this size. Ask Amazon to raise it: open a case.',
   over:   'Our price is above Amazon\u2019s limit. The Add to Cart button is probably gone.',
   ok:     'All good. Nothing to do.',
-  trend:  'Last 30 days. Solid line: Amazon\u2019s limit. Dashed line: our price.',
+  trend:  'A small picture of the last 30 days. Solid line: Amazon\u2019s limit (CPT). Dashed line: our price. A step means it changed. Tap a row for the daily numbers.',
   move:   'When Amazon last changed its limit, and by how much.',
   sim:    'The cheapest mat like ours, same size, that we found. Amazon may be copying this price.',
   todo:   'Open a case: ask Amazon to raise its limit. Follow up: reply on the case we already opened. Price to target: no case needed, Haris fixes the price.',
