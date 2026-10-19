@@ -1661,6 +1661,22 @@ function simForRow(asin, size){
   const own = SIM.filter(x=> x.forAsin === asin && num(x.price) !== null);
   return own.concat(simFor(size)).sort((a,b)=> a.price - b.price);
 }
+/* The similar item whose price is closest to our CPT (Oct 19, MJ): the CPT
+   is a copied price, so the item at that price is the one to look at, not
+   the cheapest one. Outside Amazon first, since the CPT comes from other
+   retailers; Amazon listings only when nothing outside was found. Our own
+   listings never count. */
+const MATCH_TOL = 0.05;
+function simMatch(r){
+  if(!r || r.cpt === null || r.cpt === undefined) return null;
+  const pool = (r.sim || []).filter(x=> num(x.price) !== null && !/barnyard|seedboy/i.test(x.brand || ''));
+  const best = list=> list.slice().sort((a,b)=> Math.abs(a.price - r.cpt) - Math.abs(b.price - r.cpt) || b.price - a.price)[0] || null;
+  const out = best(pool.filter(x=> x.market !== 'Amazon'));
+  const x = out || best(pool.filter(x=> x.market === 'Amazon'));
+  if(!x) return null;
+  const diff = Math.round((x.price - r.cpt) * 100) / 100;
+  return {item:x, diff, exact:Math.abs(diff) <= MATCH_TOL, onAmazon:x.market === 'Amazon'};
+}
 function simFor(size){
   if(!size) return [];
   const sizes = size === '17x30' ? ['17x30','18x30'] : [size];
@@ -1724,13 +1740,14 @@ function cptRows(){
     const rowList = row && row.usList !== null ? row.usList : (c.kList !== undefined ? c.kList : null);
     const heldNow = !(gap > 0) && rowList !== null && c.cpt && (rowList - c.cpt) / c.cpt * 100 >= 10;
     const sim  = (gap !== null && gap > 0) || heldNow ? simForRow(c.asin, size) : [];
-    const r = Object.assign({}, c, {ours, gap, pct, size, sim, simLow: sim.length ? sim[0] : null,
+    const r = Object.assign({}, c, {ours, gap, pct, size, sim, simLow: sim.length ? sim[0] : null, simMatch: null,
       sku: c.sku || (row && row.sku) || '', name,
       sale: row ? row.usSale : null,
       list: row && row.usList !== null ? row.usList : (c.kList !== undefined ? c.kList : null),
       tier: row ? (row.tier || '') : '', avail: row ? row.usAvail : null,
       units30: row ? row.units30 : null, rating: row ? row.cur : null, reviews: row ? row.rev : null,
       parent: row ? (row.parent || '') : '', psku: row ? (row.psku || '') : '', pasin: row ? (row.pasin || '') : ''});
+    r.simMatch = simMatch(r);
     // Held down: we already dropped the price to the CPT to keep the Buy Box,
     // so we look fine today but sell well under our regular (list) price.
     r.listGap = (r.list !== null && r.list !== undefined) ? Math.round((r.list - r.cpt) * 100) / 100 : null;
@@ -2072,6 +2089,8 @@ function followUpGroup(rows){
   const list = rows.filter(r=> r.action === 'open' || r.action === 'follow');
   if(!list.length) return null;
   if(list.length === 1) return followUpEmail(list[0]);
+  const newestRep = list.map(r=> r.latestReply).filter(Boolean).sort((a,b)=> a.d < b.d ? 1 : -1)[0];
+  if(newestRep && newestRep.ch === 'jassy') return jassyFollowUp(list);
   const ids = recentCaseIds(list);
   const sizes = [...new Set(list.map(r=> r.size).filter(Boolean))];
   const lead = sizes.map(z=> list.find(r=> r.size === z)).filter(Boolean)
@@ -2106,7 +2125,7 @@ function showDraft(title, text, opt){
   const body = noDash(text.replace(/^Subject: .*\n+/m, ''));
   const P = opt.pitch || null;
   const read = P && P.read;
-  const tab = P ? 'chat' : 'email';
+  const tab = P ? (opt.startTab || 'chat') : 'email';
   d.innerHTML =
     `<h2>${opt.follow ? 'Follow-up draft' : 'Fresh case draft'}</h2><h3>${esc(title)}</h3>`+
     (read ? `<div class="draft-l">Amazon\u2019s latest reply (${esc(shortDate(read.date))}, ${esc(read.who)})</div><div class="reply-q">${esc(read.quote)}</div>` : '')+
@@ -2233,7 +2252,94 @@ function readReply(rep, r){
 }
 function noDash(t){ return String(t).replace(/\s*[\u2013\u2014]\s*/g, ', '); }
 
+/* ---------- Andy Jassy team follow-up (Oct 19 fix) ----------
+   The first Jassy email already gave the full evidence. A follow-up must
+   not repeat it. It answers the team's latest reply, says what changed
+   since our last email, gives one key fact as a reminder, and asks for the
+   pricing team's answer. It goes back on the same [CASE] so no new case
+   is opened. */
+function hasJassy(r){ return (r.mailCases || []).some(c=> c.ch === 'jassy') || (r.events || []).some(x=> x.ch === 'jassy'); }
+function jassyInfo(rows){
+  const cases = rows.flatMap(r=> (r.mailCases || []).filter(c=> c.ch === 'jassy'));
+  const reps = cases.map(c=> c.reply && Object.assign({cid:c.cid, ch:'jassy'}, c.reply)).filter(Boolean)
+    .sort((a,b)=> a.d < b.d ? 1 : -1);
+  const sent = rows.flatMap(r=> (r.events || []).filter(x=> x.ch === 'jassy' && x.who === 'us')).sort((a,b)=> a.d < b.d ? 1 : -1);
+  const lastSent = sent[0] || null;
+  // A real answer from the team first. With none, the newest auto receipt,
+  // but only when it is not older than our last email (then it is old news)
+  let rep = reps.find(x=> x.kind !== 'received') || null;
+  if(!rep){ const rc = reps[0]; if(rc && (!lastSent || rc.d >= lastSent.d)) rep = rc; }
+  // The email that started this case: our first one with its number, or our
+  // last one before the team's reply when the case number came only in their reply
+  let firstSent = null;
+  if(rep && rep.cid){
+    const onCase = sent.filter(x=> x.cid === rep.cid);
+    // Their subject quotes ours ("Your Email to Andy Jassy - RE: <our subject>")
+    const quoted = sent.filter(x=> x.subj && String(rep.subject || '').indexOf(x.subj.replace(/^(re|fw|fwd):\s*/i, '').slice(0, 50)) !== -1);
+    firstSent = onCase.length ? onCase[onCase.length - 1] : quoted.length ? quoted[quoted.length - 1] : (sent.find(x=> x.d <= rep.d) || null);
+  } else firstSent = lastSent;
+  return {rep, firstSent, lastSent};
+}
+function cptOn(r, d){
+  const pts = (r.h || []).filter(x=> x[1] !== null && x[0] <= d);
+  return pts.length ? pts[pts.length - 1][1] : null;
+}
+function jassyFollowUp(rows){
+  const list = rows.filter(Boolean);
+  if(!list.length) return null;
+  const one = list.length === 1 ? list[0] : null;
+  const J = jassyInfo(list);
+  const rep = J.rep, read = rep && rep.kind !== 'received' ? readReply(rep, list[0]) : null;
+  const cid = (rep && rep.cid) || (J.lastSent && J.lastSent.cid) || '';
+  // "Since then" means since the team's reply, or our last email when they have not answered
+  let since = (read && rep.d) || (J.lastSent && J.lastSent.d) || (rep && rep.d) || '';
+  if(since >= todayStr()) since = '';
+  const subject = rep && rep.subject ? (/^re:/i.test(rep.subject) ? rep.subject : 'RE: ' + rep.subject)
+    : J.lastSent ? 'RE: ' + J.lastSent.subj.replace(/^(re|fw|fwd):\s*/i, '')
+    : `Follow-up: Inaccurate Automated Competitive Price Threshold on ${list.map(r=> r.asin).join(', ')}`;
+  const to = rep && /resolution-sellers@amazon\./i.test(rep.from || '') ? rep.from : MAIL.jassy;
+
+  // What changed since our last email, per listing
+  const changes = list.map(r=>{
+    const then = since ? cptOn(r, since) : null;
+    const lab = one ? 'The threshold' : `${r.asin} (${r.sku}):`;
+    if(then === null || then === r.cpt) return `${one ? lab : '- ' + lab} ${one ? 'is' : 'threshold'} still ${usd(r.cpt)}${since ? ' as of today, no change since ' + shortDate(since) : ''}${r.target ? ', below our usual sale price of ' + usd(r.target) : ''}.`;
+    return `${one ? lab : '- ' + lab} ${one ? 'moved' : 'threshold moved'} from ${usd(then)} on ${shortDate(since)} to ${usd(r.cpt)} today${r.target && r.cpt < r.target - 0.005 ? ', still below our usual sale price of ' + usd(r.target) : ''}.`;
+  });
+  const waited = since ? Math.max(0, Math.round((new Date(todayStr() + 'T12:00:00') - new Date(since + 'T12:00:00')) / 86400000)) : 0;
+  const pending = read && read.kinds[0] === 'pending';
+  const key = (one ? strongFacts(one) : list.flatMap(r=> strongFacts(r))).filter(f=> f.w >= 4)[0];
+  const ask = pending
+    ? 'Could you please share an update from the pricing team, and an expected date for their answer?'
+    : 'Could you please ask the pricing team for a manual reference price audit by a person, and reset the threshold' +
+      (one && one.target ? ` to at least ${usd(one.target)}?` : ' to at least our usual sale price for each size?');
+
+  const body = [
+    'Hello,', '',
+    `${read ? 'Thank you for your help on' : 'I am following up on'} ${cid ? 'case ' + cid : 'my earlier email'} about ${one ? 'ASIN ' + one.asin + ' (' + one.sku + ')' : 'our ' + list.length + ' coir doormat ASINs'}.` +
+      (J.firstSent ? ` My first email to Mr. Jassy on this was on ${shortDate(J.firstSent.d)}.` : ''), '',
+    ...(read ? [`On ${shortDate(read.date)} your team wrote: "${read.quote}"`, '', ...read.answers, ''] : []),
+    since ? 'What has changed since then:' : 'Where it stands today:',
+    ...changes,
+    ...(waited >= 2 ? [`It has been ${waited} days${since ? ' since ' + shortDate(since) : ''} and we have no answer from the pricing team yet.`] : []), '',
+    ...(key ? ['The key point from my first email, in short: ' + key.t, ''] : []),
+    ask, '',
+    'The full details are in my first email on this case, so I have not repeated them here. Our brand account owner, Jack Fallon, is copied.', '',
+    'Best regards,', 'MJ Baguhin', 'Barnyard Designs, Cross Path Capital LLC'
+  ].filter((x,i,a)=> !(x === '' && a[i-1] === '')).map(noDash).join('\n');
+  return {subject:noDash(subject), body, to, toJassy:true, caseId:cid, rep, read};
+}
+function openJassyDraft(rows, title){
+  const m = jassyFollowUp(rows);
+  if(!m) return;
+  showDraft(title, m.body, {follow:true, subject:m.subject, caseId:'', gmail:{to:m.to, cc:MAIL.cc}, rows,
+    pitch:buildPitch(rows, 'follow', m.rep), startTab:'email', jassy:true});
+}
+
 function followUpEmail(r){
+  // On a Jassy case, the follow-up is the Jassy follow-up above
+  const lr = r.latestReply;
+  if((lr && lr.ch === 'jassy') || (!lr && ((r.mailCases || [])[0] || {}).ch === 'jassy')) return jassyFollowUp([r]);
   const rep = r.latestReply || null;
   const c = (r.mailCases || [])[0] || null;
   const ev = (r.events || [])[0] || {};
@@ -2279,12 +2385,12 @@ function pitchFacts(list){
   const all = heads.flatMap(r=> strongFacts(r).filter(f=> f.w >= 3).slice(0, 3).map(f=> list.length > 1 ? f.t.replace(/this listing/g, r.sku) : f.t));
   return [...new Set(all)].slice(0, 3);
 }
-function buildPitch(rows, mode){
+function buildPitch(rows, mode, repOverride){
   const list = rows.filter(Boolean);
   if(!list.length) return null;
   const one = list.length === 1 ? list[0] : null;
   const r0 = list[0];
-  const rep = one ? one.latestReply : (list.map(r=> r.latestReply).filter(Boolean).sort((a,b)=> a.d < b.d ? 1 : -1)[0] || null);
+  const rep = repOverride !== undefined ? repOverride : one ? one.latestReply : (list.map(r=> r.latestReply).filter(Boolean).sort((a,b)=> a.d < b.d ? 1 : -1)[0] || null);
   const read = mode === 'follow' ? readReply(rep, r0) : null;
   const ids = recentCaseIds(list);
   const cid = mode === 'follow' ? ((rep && rep.cid) || ((r0.mailCases || [])[0] || {}).cid || ids.slice(-1)[0] || '') : '';
@@ -2508,7 +2614,7 @@ const CPT_SORT = {
   cpt:     r=> r.cpt,
   gap:     r=> r.gap,
   move:    r=> daysSince(r.moved),
-  sim:     r=> r.simLow ? r.simLow.price : null,
+  sim:     r=> r.simMatch ? Math.abs(r.simMatch.diff) : null,
   verdict: r=> ACTIONS[r.action].rank * 10 - (r.verdict.points || 0),
   stock:   r=> r.avail
 };
@@ -2662,7 +2768,7 @@ function renderCpt(){
       H('cpt', 'CPT', 'b-cpt c', 'desc')+
       H('gap', 'Gap', 'b-gap c', 'desc')+
       H('move', 'Last CPT move', 'b-move')+
-      H('sim', 'Cheapest similar', 'b-sim')+
+      H('sim', 'Similar at CPT price', 'b-sim')+
       H('verdict', 'What to do', 'b-case')+
       `<th>30-day trend${qi('trend')}</th>`+
       '</tr></thead><tbody>'+
@@ -2798,7 +2904,7 @@ function cptBody(rows){
         ? `<div class="agh-b">`+
           (a === 'follow' ? `<button class="work strong" data-gfu="${a}">Draft one follow-up for these ${g.length}</button>` : '')+
           `<button class="work strong" data-gfresh="${a}">Draft one fresh case for these ${g.length}</button>`+
-          `<button class="work strong" data-gmail="${a}">Draft one Jassy email for these ${g.length}</button>`+
+          `<button class="work strong" data-gmail="${a}">${g.some(hasJassy) ? 'Draft one Jassy follow-up for these ' : 'Draft one Jassy email for these '}${g.length}</button>`+
           `<button class="work" data-gfind="${a}">Find related emails</button></div>` : '';
       return `<tr class="gh agh agh-${a}"><td colspan="9"><div class="agh-t">${esc(ACTIONS[a].group)} `+
              `<span class="agh-n">${g.length}</span></div><div class="agh-s">${sub}</div>${btns}</td></tr>` +
@@ -2864,11 +2970,7 @@ function cptRowHtml(r){
           `<td class="move">${r.moved
               ? `${usd(r.from)} to ${usd(r.cpt)}<span class="ago${hot ? ' hot' : ''}">${n === 0 ? 'today' : n === 1 ? 'yesterday' : n + ' days ago'}</span>`
               : '<span class="mut">No change seen</span>'}</td>`+
-          `<td class="sim">${likelyRefs(r).length
-              ? `<span class="lo" style="color:#b42318" data-tip="An outside item priced exactly at our CPT. Amazon most likely compared us with it.">Likely reference ${usd(likelyRefs(r)[0].price)}</span><span class="where">${esc(likelyRefs(r)[0].market)}, ${esc(likelyRefs(r)[0].brand || '')}</span>`
-              : r.simLow
-              ? `<span class="lo">${usd(r.simLow.price)}</span><span class="where">${esc(r.simLow.market)}${r.simLow.brand ? ', ' + esc(r.simLow.brand) : ''}</span>`
-              : '<span class="mut">\u2014</span>'}</td>`+
+          `<td class="sim">${simCell(r)}</td>`+
           `<td>${r.action === 'none' ? '<span class="mut">\u2014</span>' :
              `<span class="ac ac-${r.action}" title="${esc(r.verdict.why.join('. '))}">${esc(ACTIONS[r.action].label)}</span>`+
              (r.action === 'follow' && r.caseIds.length ? `<span class="was mono">${esc(r.caseIds[r.caseIds.length - 1])}</span>` : '')}`+
@@ -2912,7 +3014,9 @@ function wireCpt(v, all){
   });
   [...v.querySelectorAll('button[data-gmail]')].forEach(b=> b.onclick = e=>{
     e.stopPropagation();
-    const m = jassyEmail(CPT_SHOWN.filter(r=> r.action === b.dataset.gmail));
+    const g = CPT_SHOWN.filter(r=> r.action === b.dataset.gmail);
+    if(g.some(hasJassy)) return openJassyDraft(g.filter(r=> r.gap > 0 || r.held || r.action === 'open' || r.action === 'follow'), `${g.length} listings: ${g.map(r=> r.sku).join(', ')}`);
+    const m = jassyEmail(g);
     if(m) window.open(gmailCompose(MAIL.jassy, MAIL.cc, m.subject, m.body), '_blank', 'noopener');
   });
   [...v.querySelectorAll('button[data-gfind]')].forEach(b=> b.onclick = e=>{
@@ -3049,7 +3153,7 @@ function caseBlock(r){
       : r.latestReply ? '' : `<p class="mut" style="font-size:.8rem;margin-top:.6rem">No Amazon email about this listing in the last 90 days. Amazon may have answered inside the Seller Central case.</p>`)+
     ((r.action === 'open' || r.action === 'follow')
       ? '<div class="act-row">'+
-          `<button class="work strong" id="mailBtn">Draft email to Andy Jassy team</button>`+
+          `<button class="work strong" id="mailBtn">${hasJassy(r) ? 'Draft follow-up to Andy Jassy team' : 'Draft email to Andy Jassy team'}</button>`+
           `<button class="work" id="findBtn">Find emails about this ASIN</button>`+
           (r.action === 'follow' && r.caseIds.length
             ? `<button class="work" id="caseBtn">Open case ${esc(r.caseIds[r.caseIds.length - 1])} in Seller Central</button>`
@@ -3059,6 +3163,17 @@ function caseBlock(r){
         '</div>'+
         '<p class="mut" style="font-size:.78rem;margin-top:.4rem">The email opens in Gmail as a draft with everything filled in. Nothing is sent until you press Send.</p>'
       : '');
+}
+
+function simCell(r){
+  const m = r.simMatch;
+  if(!m) return '<span class="mut">\u2014</span>';
+  const x = m.item, where = `<span class="where">${esc(x.market)}${x.brand ? ', ' + esc(x.brand) : ''}</span>`;
+  const name = `<span class="where">${esc(String(x.name || '').slice(0, 40))}</span>`;
+  const price = x.link ? `<a href="${esc(x.link)}" target="_blank" rel="noopener" onclick="event.stopPropagation()">${usd(x.price)}</a>` : usd(x.price);
+  if(m.exact) return `<span class="lo" style="color:#b42318" data-tip="Priced exactly at our CPT. Amazon most likely copied this price.">Matches CPT ${price}</span>${where}${name}`;
+  const note = (m.diff > 0 ? usd(m.diff) + ' above' : usd(-m.diff) + ' below') + ' the CPT' + (m.onAmazon ? ', on Amazon' : '');
+  return `<span class="lo">${price}</span><span class="was">Closest, ${note}</span>${where}${name}`;
 }
 
 function simBlock(r){
@@ -3073,10 +3188,11 @@ function simBlock(r){
     '<dl>'+
     `<dt>On Amazon</dt><dd>${amz.length ? amz.length + ' listings, lowest ' + usd(amz[0].price) + ', median ' + usd(median(amz)) : '<span class="mut">none yet</span>'}</dd>`+
     `<dt>Outside Amazon</dt><dd>${out.length ? out.length + ' listings, lowest ' + usd(out[0].price) + ', median ' + usd(median(out)) : '<span class="mut">none added</span>'}</dd>`+
+    (r.simMatch ? `<dt>Closest to the CPT</dt><dd${r.simMatch.exact ? ' class="warn"' : ''}>${esc(r.simMatch.item.market)}${r.simMatch.item.brand ? ', ' + esc(r.simMatch.item.brand) : ''}, ${usd(r.simMatch.item.price)}: ${r.simMatch.exact ? 'matches the CPT' : (r.simMatch.diff > 0 ? usd(r.simMatch.diff) + ' above' : usd(-r.simMatch.diff) + ' below') + ' the CPT'}</dd>` : '')+
     (near.length ? `<dt>Near the CPT</dt><dd class="warn">${near.length} priced within $3 of ${usd(r.cpt)}, possible source of the CPT</dd>` : '')+
     '</dl>'+
     '<table class="hist"><thead><tr><th>Where</th><th>Brand</th><th>Product</th><th class="num">Price</th></tr></thead><tbody>'+
-    all.slice(0, 10).map(x=>{
+    all.slice().sort((a,b)=> r.cpt === null ? a.price - b.price : Math.abs(a.price - r.cpt) - Math.abs(b.price - r.cpt)).slice(0, 10).map(x=>{
       const hot = x.market !== 'Amazon' && r.cpt !== null && Math.abs(x.price - r.cpt) <= 3;
       const nm = esc(String(x.name).slice(0, 60));
       return `<tr><td>${esc(x.market)}</td><td>${esc(x.brand || '')}</td>`+
@@ -3084,7 +3200,7 @@ function simBlock(r){
         `<td class="num ${hot ? 'warn' : ''}">${usd(x.price)}</td></tr>`;
     }).join('')+
     '</tbody></table>'+
-    (all.length > 10 ? `<p class="mut" style="font-size:.78rem;margin-top:.3rem">Cheapest 10 of ${all.length} shown.</p>` : '');
+    (all.length > 10 ? `<p class="mut" style="font-size:.78rem;margin-top:.3rem">The 10 closest to the CPT of ${all.length} shown.</p>` : '');
 }
 
 /* One row per day (the last reading of the day), with the change from the
@@ -3180,6 +3296,7 @@ function openCpt(r){
   document.getElementById('dayAll').onclick = ()=> setDay(true);
   const mb2 = document.getElementById('mailBtn');
   if(mb2) mb2.onclick = ()=>{
+    if(hasJassy(r)) return openJassyDraft([r], `${r.sku} ${cptTitle(r)}`);
     const m = jassyEmail([r]);
     if(m) window.open(gmailCompose(MAIL.jassy, MAIL.cc, m.subject, m.body), '_blank', 'noopener');
   };
@@ -3537,7 +3654,7 @@ const TIPS = {
   ok:     'All good. Nothing to do.',
   trend:  'A small picture of the last 30 days. Solid line: Amazon\u2019s limit (CPT). Dashed line: our price. A step means it changed. Tap a row for the daily numbers.',
   move:   'When Amazon last changed its limit, and by how much.',
-  sim:    'The cheapest mat like ours, same size, that we found. Amazon may be copying this price.',
+  sim:    'The similar same-size item whose price is closest to our CPT. Red means it matches the CPT to the cent, so Amazon most likely copied it.',
   todo:   'Open a case: ask Amazon to raise its limit. Follow up: reply on the case we already opened. Price to target: no case needed, Haris fixes the price.',
   avail:  'Units ready to ship.',
   inbound:'Units on the way to Amazon.',
@@ -3546,7 +3663,7 @@ const TIPS = {
 // Header text to tip, used for every table in the console
 const TIP_BY_HEAD = {
   'our price':'ours', 'your price':'list', 'target':'target', 'buy box':'buybox', 'sale price':'sale', 'sale':'sale', 'list':'list', 'list price':'list', 'cpt':'cpt', 'gap':'gap',
-  '30-day trend':'trend', 'last cpt move':'move', 'cheapest similar':'sim', 'what to do':'todo',
+  '30-day trend':'trend', 'last cpt move':'move', 'cheapest similar':'sim', 'similar at cpt price':'sim', 'what to do':'todo',
   'feat':'feat', 'available':'avail', 'inbound':'inbound', 'health':'health'
 };
 /* All the price words in one place, with a real example, for the
