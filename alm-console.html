@@ -181,6 +181,16 @@ tr.cpt:hover td{background:var(--accent-soft)}
 .draft-h b{display:block;margin-bottom:.15rem}
 .draft-t{width:100%;box-sizing:border-box;font:inherit;font-size:.84rem;line-height:1.45;padding:.6rem;border:1px solid var(--line);border-radius:6px;resize:vertical}
 .act-row{display:flex;flex-wrap:wrap;gap:.45rem;margin-top:.7rem}
+.fmt-tabs{display:flex;gap:.35rem;margin:.6rem 0 .2rem}
+.fmt-tabs button{font:inherit;font-size:.82rem;font-weight:700;padding:.35rem .8rem;border-radius:999px;border:1px solid var(--line);background:transparent;color:inherit;cursor:pointer}
+.fmt-tabs button[aria-pressed="true"]{background:var(--accent);border-color:var(--accent);color:#fff}
+.chat-msg{display:flex;gap:.5rem;align-items:flex-start;margin:.35rem 0}
+.chat-msg .cm-n{flex:none;font-size:.72rem;font-weight:800;color:var(--muted);width:1.4rem;padding-top:.45rem}
+.chat-msg textarea{flex:1}
+.chat-msg button{flex:none}
+.if-box{padding:.5rem .65rem;border-radius:6px;background:#fff7e6;color:#5b4a1f;font-size:.82rem;line-height:1.5;margin-top:.5rem}
+.if-box div{margin:.25rem 0}
+.reply-q{padding:.5rem .65rem;border-left:3px solid var(--accent);background:rgba(0,0,0,.03);font-size:.84rem;line-height:1.5;margin:.3rem 0;white-space:pre-wrap}
 button.work.strong{background:#b42318;border-color:#b42318;color:#fff}
 button.work.strong:hover{background:#8f1d12;border-color:#8f1d12}
 .agh-b{display:flex;flex-wrap:wrap;gap:.4rem;margin-top:.55rem}
@@ -1678,6 +1688,7 @@ function buildCpt(j){
     }
     return {asin:r.asin, sku:r.sku || '', name:r.name || '', cpt:num(r.cpt), bb:num(r.bb),
             kOurs:num(r.ours), kList:num(r.list), cases:r.cases || [], mail:r.mail || null, events:r.events || [],
+            mailCases:r.mailCases || [], latestReply:r.latestReply || null,
             ours90:num(r.ours90), bb90:num(r.bb90), sold:num(r.sold),
             date:r.d || '', h, moved, from};
   });
@@ -1819,6 +1830,7 @@ const MAIL_KIND = {
   replied:  ['Amazon replied',    'm-warn'],
   restored: ['Buy Box back, CPT not fixed', 'm-warn'],
   received: ['Received, waiting', 'm-wait'],
+  pending:  ['Pending, Amazon is checking', 'm-wait'],
   waiting:  ['Waiting on Amazon', 'm-wait'],
   fixed:    ['Fixed',             'm-ok']
 };
@@ -1848,13 +1860,55 @@ function mailLine(r){
 const FOLLOW_DAYS = 3, JASSY_WAIT_DAYS = 7;
 const EV_LABEL = {
   sent: 'We sent', received: 'Amazon received it', rejected: 'Amazon rejected', resolved: 'Amazon closed the case',
-  replied: 'Amazon replied', fixed: 'Amazon fixed it', restored: 'Amazon says Buy Box is back'
+  replied: 'Amazon replied', fixed: 'Amazon fixed it', restored: 'Amazon says Buy Box is back',
+  pending: 'Amazon is checking (pending)'
 };
 function addDays(d, n){ const t = new Date(d + 'T12:00:00'); t.setDate(t.getDate() + n); return t.toISOString().slice(0,10); }
 function shortDate(d){ return d ? new Date(d + 'T12:00:00').toLocaleDateString('en-US', {month:'short', day:'numeric'}) : ''; }
 function todayStr(){ return new Date().toISOString().slice(0,10); }
 
 function nextStep(r){
+  const pc = caseStep(r);
+  if(pc) return pc;
+  return nextStepOld(r);
+}
+
+/* Per case (Oct 19): one status per case number, from CPT Watch. The case
+   that needs us comes first, so a reply on one case is never hidden by a
+   newer email we sent on another one. */
+function caseStep(r){
+  if(r.action === 'oos') return null;
+  const list = r.mailCases || [];
+  if(!list.length) return null;
+  const c = list[0], who = c.ch === 'jassy' ? 'Andy Jassy team' : 'Seller Support';
+  const on = c.cid ? 'case ' + c.cid : 'the same email';
+  const wait = c.ch === 'jassy' ? JASSY_WAIT_DAYS : FOLLOW_DAYS;
+  const rejects = list.filter(x=> x.ch === 'case' && x.status === 'rejected').length +
+                  (r.events || []).filter(x=> x.kind === 'rejected' && x.ch === 'case' && !list.some(y=> y.cid && y.cid === x.cid)).length;
+  const jassyUsed = list.some(x=> x.ch === 'jassy') || (r.events || []).some(x=> x.ch === 'jassy');
+  if(c.status === 'waiting' || c.status === 'received' || c.status === 'pending'){
+    const from = c.status === 'waiting' ? c.lastUs : (c.lastAmazon || c.lastUs);
+    if(!from) return null;
+    const due = addDays(from, wait);
+    const what = c.status === 'pending' ? `${who} sent it to another team and will update us` :
+                 c.status === 'received' ? `${who} received it` : `Waiting for the ${who}`;
+    return due > todayStr()
+      ? {text:`${what}. Check in on ${shortDate(due)} if no update`, due, how:`Nothing to do yet on ${on}. If nothing by ${shortDate(due)}, use Draft follow-up. It asks for an update and repeats the strongest facts.`}
+      : {text:`Check in now, no update since ${shortDate(from)}`, due:'now', how:`Reply on ${on}. Use Draft follow-up.`};
+  }
+  if(c.status === 'resolved') return {text:'Reopen it: Amazon closed the case without fixing', due:'now', how:`Reply on ${on}. Replying reopens it. Use Draft follow-up.`};
+  if(c.status === 'rejected'){
+    if(c.ch === 'jassy') return {text:'Andy Jassy team said no. Reply today with new facts', due:'now', how:'Use Draft follow-up. It answers what they said and leads with the strongest facts.'};
+    if(rejects >= 2 && !jassyUsed) return {text:'Escalate to the Andy Jassy team (2 rejections)', due:'now', how:'Seller Support said no twice. Use Draft email to Andy Jassy team and list both case numbers.'};
+    return {text:'Reply with new proof', due:'now', how:`Reply on ${on}. Use Draft follow-up.`};
+  }
+  if(c.status === 'restored') return {text:'Reply: we only have the Buy Box because we cut the price', due:'now', how:`Use Draft follow-up on ${on}. It asks them to raise the CPT itself.`};
+  if(c.status === 'replied') return {text:`Read the ${who} reply and answer`, due:'now', how:`Their words are under Latest Amazon reply. Draft follow-up quotes them and answers.`};
+  if(c.status === 'fixed') return {text:'Amazon says fixed. Check the CPT tomorrow', due:addDays(c.lastAmazon, 1), how:'If the CPT is still too low tomorrow, use Draft follow-up. It says it did not change.'};
+  return null;
+}
+
+function nextStepOld(r){
   if(r.action === 'oos') return {text:'Out of stock. No case until stock is back', due:'later', how:'There is nothing to sell, so a case would not help yet. The tracker will flag it again when stock arrives.'};
   const ev = r.events || [];
   if(!ev.length){
@@ -1954,7 +2008,7 @@ function strongFacts(r){
   if(r.rating && r.reviews && r.rating >= 4.3) F.push({w:2, t:`The listing is rated ${r.rating} stars from ${Number(r.reviews).toLocaleString('en-US')} reviews.`});
 
   // 6. Outside prices, only when every one helps
-  const out = (r.sim || []).filter(x=> x.market !== 'Amazon');
+  const out = (r.sim || []).filter(x=> x.market !== 'Amazon' && !/barnyard/i.test(x.brand || '') && !/walmart/i.test(x.market || ''));
   if(out.length && out.every(x=> x.price > r.cpt)) F.push({w:3, t:`Every same-size coir mat we found outside Amazon (${out.length} listings) is priced above ${usd(r.cpt)}. The cheapest is ${usd(out[0].price)}.`});
 
   return F.sort((a,b)=> b.w - a.w);
@@ -2034,37 +2088,77 @@ function followUpGroup(rows){
     'Could you please ask the pricing team for a manual review and raise the threshold to at least our usual sale price for each size? Thank you.', '',
     ids.length ? 'Related cases: ' + ids.join(', ') : '', '',
     'Best regards,', 'MJ Baguhin', 'Barnyard Designs, Cross Path Capital LLC'].filter((x,i,a)=> !(x === '' && a[i-1] === '')).join('\n');
-  return {subject: `Follow-up: Competitive Price Threshold on ${list.map(r=> r.asin).join(', ')}`, body,
-          toJassy: list.some(r=> ((r.events || [])[0] || {}).ch === 'jassy'), caseId: ids.slice(-1)[0] || ''};
+  const lastRep = list.map(r=> r.latestReply).filter(Boolean).sort((a,b)=> a.d < b.d ? 1 : -1)[0] || null;
+  const toJassy = lastRep ? lastRep.ch === 'jassy' : list.some(r=> ((r.events || [])[0] || {}).ch === 'jassy');
+  return {subject: lastRep && lastRep.subject ? (/^re:/i.test(lastRep.subject) ? lastRep.subject : 'RE: ' + lastRep.subject)
+                   : `Follow-up: Competitive Price Threshold on ${list.map(r=> r.asin).join(', ')}`, body:body.split('\n').map(noDash).join('\n'),
+          toJassy, to: toJassy ? (lastRep && /@amazon\./i.test(lastRep.from || '') && lastRep.ch === 'jassy' ? lastRep.from : MAIL.jassy) : '',
+          caseId: (lastRep && lastRep.cid) || ids.slice(-1)[0] || ''};
 }
 
-/* Preview a drafted case before copying it, so MJ can read it first */
+/* Preview a drafted case before copying it, so MJ can read it first.
+   Three formats: Chat (opens first), Call, and Email. */
 function showDraft(title, text, opt){
   opt = opt || {};
   const hist = caseHistory(opt.rows || []).slice(1);
   const d = document.getElementById('detail');
-  const subj = opt.subject || (text.match(/^Subject: (.*)$/m) || [])[1] || '';
-  const body = text.replace(/^Subject: .*\n+/m, '');
+  const subj = noDash(opt.subject || (text.match(/^Subject: (.*)$/m) || [])[1] || '');
+  const body = noDash(text.replace(/^Subject: .*\n+/m, ''));
+  const P = opt.pitch || null;
+  const read = P && P.read;
+  const tab = P ? 'chat' : 'email';
   d.innerHTML =
     `<h2>${opt.follow ? 'Follow-up draft' : 'Fresh case draft'}</h2><h3>${esc(title)}</h3>`+
+    (read ? `<div class="draft-l">Amazon\u2019s latest reply (${esc(shortDate(read.date))}, ${esc(read.who)})</div><div class="reply-q">${esc(read.quote)}</div>` : '')+
+    (P ? '<div class="fmt-tabs" role="tablist"><button data-fmt="chat">Chat</button><button data-fmt="call">Call</button><button data-fmt="email">Email</button></div>' : '')+
+    (P ? '<div data-pane="chat">'+
+        '<p class="mut" style="font-size:.82rem">Paste one message at a time. Wait for the agent to answer before the next one.</p>'+
+        P.chat.map((m,i)=> `<div class="chat-msg"><span class="cm-n">${i + 1}</span><textarea class="draft-t" rows="${Math.min(7, Math.ceil(m.length / 70) + 1)}" data-cm="${i}">${esc(m)}</textarea><button class="work" data-cmcopy="${i}">Copy</button></div>`).join('')+
+        '<div class="if-box"><b>If they say...</b>' + P.ifSay.map((x,i)=> `<div>${esc(x[0])} <button class="work" data-ifcopy="${i}" style="font-size:.74rem;padding:.15rem .5rem">Copy answer</button><br>${esc(x[1])}</div>`).join('') + '</div>'+
+        '<div class="act-row">'+
+          `<button class="work strong" id="dChatAll">Copy all messages</button>`+
+          `<button class="work" id="dOpenSC">${P.cid ? 'Open case ' + esc(P.cid) : 'Open Seller Central help'}</button>`+
+        '</div></div>'+
+      '<div data-pane="call" hidden>'+
+        '<p class="mut" style="font-size:.82rem">In Seller Central, pick Phone and Call me now. Read this in order. Keep it on screen during the call.</p>'+
+        `<textarea class="draft-t" id="callText" rows="22">${esc(P.call)}</textarea>`+
+        '<div class="act-row">'+
+          '<button class="work strong" id="dCallCopy">Copy call script</button>'+
+          `<button class="work" id="dOpenSC2">${P.cid ? 'Open case ' + esc(P.cid) : 'Open Seller Central help'}</button>`+
+        '</div></div>' : '')+
+    `<div data-pane="email"${P ? ' hidden' : ''}>`+
     `<p class="mut" style="font-size:.82rem">Everything is filled in from today\u2019s data. Read it once, then ${opt.follow ? 'send it as a reply on the case' : 'copy it into a new case'}.</p>`+
     (subj ? `<div class="draft-l">Subject</div><div class="draft-s">${esc(subj)}</div>` : '')+
     '<div class="draft-l">Description</div>'+
     `<textarea class="draft-t" id="draftText" rows="18">${esc(body)}</textarea>`+
-    (hist.length ? '<div class="draft-l">For you only, not in the text above</div>'+
-      `<div class="draft-h"><b>Recent history</b>${hist.map(h=> `<div>${esc(h.replace(/^- /,''))}</div>`).join('')}</div>` : '')+
     '<div class="act-row">'+
-      (opt.gmail ? '<button class="work strong" id="dGmail">Open as a Gmail draft</button>' : '')+
+      (opt.gmail ? `<button class="work strong" id="dGmail">Open as a Gmail draft to ${esc(opt.gmail.to)}</button>` : '')+
       `<button class="work strong" id="dCopyOpen">${opt.caseId ? 'Copy and open case ' + esc(opt.caseId) : 'Copy and open Seller Central'}</button>`+
       '<button class="work" id="dCopySubj">Copy subject only</button>'+
       '<button class="work" id="dCopy">Copy description only</button>'+
     '</div>'+
-    (opt.follow
-      ? '<p class="mut" style="font-size:.78rem;margin-top:.5rem">Paste it as a reply on the case. If the case only offers chat, paste this into the chat. If it only offers a call, read the first lines out loud.</p>'
-      : '<p class="mut" style="font-size:.78rem;margin-top:.5rem">In Seller Central: Help, Get support, Selling on Amazon, search "Featured Offer competitive price threshold". Paste the subject and the description. Pick email as the contact method if offered. The new case number is picked up from Gmail the next morning.</p>');
+    (opt.gmail && /resolution-sellers|merch\.service/i.test(opt.gmail.to) ? '<p class="mut" style="font-size:.78rem;margin-top:.5rem">This goes back to the Andy Jassy team on the same case, with the [CASE] number in the subject, so it does not open a new case.</p>' : '')+
+    '</div>'+
+    (hist.length ? '<div class="draft-l">For you only, not in the text above</div>'+
+      `<div class="draft-h"><b>Recent history</b>${hist.map(h=> `<div>${esc(h.replace(/^- /,''))}</div>`).join('')}</div>` : '');
   const copy = (t, btn, label)=> (navigator.clipboard ? navigator.clipboard.writeText(t) : Promise.reject())
     .then(()=> btn.textContent = label).catch(()=> window.prompt('Copy this text:', t));
   const ta = ()=> document.getElementById('draftText').value;
+  const setTab = f=>{
+    [...d.querySelectorAll('[data-pane]')].forEach(x=> x.hidden = x.dataset.pane !== f);
+    [...d.querySelectorAll('.fmt-tabs button')].forEach(b=> b.setAttribute('aria-pressed', b.dataset.fmt === f));
+  };
+  [...d.querySelectorAll('.fmt-tabs button')].forEach(b=> b.onclick = ()=> setTab(b.dataset.fmt));
+  if(P){
+    setTab(tab);
+    const scUrl = P.cid ? caseLink(P.cid) : CASE_URL;
+    [...d.querySelectorAll('button[data-cmcopy]')].forEach(b=> b.onclick = ()=> copy(d.querySelector(`textarea[data-cm="${b.dataset.cmcopy}"]`).value, b, 'Copied'));
+    [...d.querySelectorAll('button[data-ifcopy]')].forEach(b=> b.onclick = ()=> copy(P.ifSay[+b.dataset.ifcopy][1], b, 'Copied'));
+    document.getElementById('dChatAll').onclick = e=> copy([...d.querySelectorAll('textarea[data-cm]')].map(x=> x.value).join('\n\n'), e.target, 'All messages copied');
+    document.getElementById('dCallCopy').onclick = e=> copy(document.getElementById('callText').value, e.target, 'Call script copied');
+    document.getElementById('dOpenSC').onclick = ()=> window.open(scUrl, '_blank', 'noopener');
+    document.getElementById('dOpenSC2').onclick = ()=> window.open(scUrl, '_blank', 'noopener');
+  }
   const gm = document.getElementById('dGmail');
   if(gm) gm.onclick = ()=> window.open(gmailCompose(opt.gmail.to, opt.gmail.cc, subj, ta()), '_blank', 'noopener');
   document.getElementById('dCopyOpen').onclick = e=>{
@@ -2101,28 +2195,146 @@ function caseHistory(rows){
   return out.length ? ['Recent history:'].concat(out.slice(-6)) : [];
 }
 
+/* ---------- answering Amazon's latest reply ----------
+   CPT Watch saves the text of Amazon's newest real reply (r.latestReply).
+   Every follow-up quotes the sentence that matters and answers that point,
+   instead of assuming what Amazon said. */
+const REASONS = [
+  {k:'retailer', re:/another retailer|other retailers?|external|outside (?:of )?amazon|off[- ]amazon|elsewhere/i,
+   a: r=> `The facts below show the reference is not a ${r.size || 'same-size'} coir doormat like ours.`},
+  {k:'noshare', re:/(?:cannot|can not|can't|unable to|not able to|not in a position to) (?:be )?shar|confidential|cannot disclose|unable to disclose/i,
+   a: r=> `We understand the reference item cannot be shared. We only ask the pricing team to confirm it is a ${r.size || 'same-size'} coir doormat. If it is not, please reset the threshold.`},
+  {k:'auto', re:/automated|automatic|algorithm|system[- ]generated|our systems?/i,
+   a: ()=> 'We know an automated system sets the threshold. That is why we are asking for a person, a Senior Specialist on the pricing team, to do a manual reference price audit.'},
+  {k:'lower', re:/lower (?:your|the) price|reduce (?:your|the) price|adjust (?:your|the) price|price (?:your|the) item|match the/i,
+   a: r=> `We already lowered our price to keep the Featured Offer. Our request is about the threshold itself, which is ${usd(r.cpt)}.`},
+  {k:'pending', re:/pending|internal request|appropriate team|will follow up|once we have an update|investigat/i,
+   a: ()=> 'Thank you for sending this to the pricing team. Could you share any update from them?'},
+  {k:'restored', re:/featured offer/i,
+   a: r=> `Thank you for checking. We have the Featured Offer only because we lowered our price to the threshold. The threshold itself is still too low at ${usd(r.cpt)}.`},
+  {k:'fixed', re:/eligible|reset|refreshed|updated/i,
+   a: r=> `Thank you. As of ${longToday()}, the threshold on ${r.asin} is still ${usd(r.cpt)}, so the change has not taken effect.`},
+  {k:'closed', re:/resolved|closed/i,
+   a: r=> `The case was closed, but the threshold has not changed. As of ${longToday()} it is still ${usd(r.cpt)}.`}
+];
+function sentences(t){ return String(t || '').split(/(?<=[.!?])\s+/).map(x=> x.trim()).filter(x=> x.length > 15 && !/^(hello|hi|dear|greetings|my name is|thank you for (?:contacting|writing|your patience)|best regards|sincerely)/i.test(x)); }
+function readReply(rep, r){
+  if(!rep || !rep.text) return null;
+  const ss = sentences(rep.text);
+  const kindOrder = {rejected:['noshare','retailer','auto','lower'], pending:['pending'], received:['pending'], restored:['restored'],
+                     fixed:['fixed'], resolved:['closed'], replied:['noshare','retailer','auto','lower','pending']};
+  const keys = kindOrder[rep.kind] || kindOrder.replied;
+  const hits = [];
+  keys.forEach(k=>{ const R = REASONS.find(x=> x.k === k); const s0 = ss.find(x=> R.re.test(x)); if(s0 && !hits.some(h=> h.s === s0)) hits.push({k, s:s0, a:R.a(r)}); });
+  // Rejections often give two reasons: answer up to two
+  const use = rep.kind === 'rejected' || rep.kind === 'replied' ? hits.slice(0, 2) : hits.slice(0, 1);
+  const quote = (use[0] ? use[0].s : (ss[0] || '')).replace(/["\u201c\u201d]/g, "'").slice(0, 240);
+  return {quote, answers:use.map(h=> h.a), kinds:use.map(h=> h.k), date:rep.d, who:rep.ch === 'jassy' ? 'the Andy Jassy team' : 'Seller Support'};
+}
+function noDash(t){ return String(t).replace(/\s*[\u2013\u2014]\s*/g, ', '); }
+
 function followUpEmail(r){
+  const rep = r.latestReply || null;
+  const c = (r.mailCases || [])[0] || null;
   const ev = (r.events || [])[0] || {};
-  const cid = ev.cid || (r.caseIds || []).slice(-1)[0] || '';
-  const subject = (ev.ch === 'jassy' && ev.kind === 'rejected' ? 'New facts: ' : 'Follow-up: ') +
-    (ev.subj ? ev.subj.replace(/^(re|fw|fwd):\s*/i, '') : `Competitive Price Threshold on ${r.asin}`);
+  // The case we answer: the one with the latest Amazon reply, never our own newest email
+  const cid = (rep && rep.cid) || (c && c.cid) || ev.cid || (r.caseIds || []).slice(-1)[0] || '';
+  const toJassy = rep ? rep.ch === 'jassy' : (c ? c.ch === 'jassy' : ev.ch === 'jassy');
+  const read = readReply(rep, r);
+  const subject = rep && rep.subject ? (/^re:/i.test(rep.subject) ? rep.subject : 'RE: ' + rep.subject)
+    : (ev.subj && ev.who !== 'us' ? 'RE: ' + ev.subj.replace(/^(re|fw|fwd):\s*/i, '') : `Follow-up: Incorrect Competitive Price Threshold on ${r.asin}${cid ? ', Case ' + cid : ''}`);
+  const facts = strongFacts(r).filter(f=> f.w >= 3).slice(0, 4);
   const body = ['Hello,', '',
-    `I am following up on ${cid ? 'case ' + cid : 'my earlier message'}${ev.d ? ' from ' + shortDate(ev.d) : ''}. ` +
-    `As of ${longToday()}, the Competitive Price Threshold on ASIN ${r.asin} is still ${usd(r.cpt)}` +
+    `I am following up on ${cid ? 'case ' + cid : 'our earlier request'} for ASIN ${r.asin} (${r.sku}). ` +
+    `As of ${longToday()}, the Competitive Price Threshold is still ${usd(r.cpt)}` +
     (r.target ? `, below our usual sale price of ${usd(r.target)} for this size.` : '.'), '',
-    ...(ev.kind === 'restored' ? [
-      'Thank you for checking. The listing has the Featured Offer, but only because we lowered our price to match the Competitive Price Threshold. '+
-      'Our request is about the threshold itself, which is set too low' + (r.target ? `: ${usd(r.cpt)}, while our usual sale price for this size is ${usd(r.target)}.` : '.'), ''] : []),
-    ...(ev.ch === 'jassy' && ev.kind === 'rejected' ? [
-      'Your reply said the price is not competitive compared with another retailer, and that the reference item cannot be shared. '+
-      'We respect that, but the facts below show the threshold is not comparing like with like:', ''] : []),
-    ...strongFacts(r).slice(0, 5).map((f,i)=> `${i + 1}. ${f.t}`), '',
-    ...(likelyRefs(r).length ? ['We believe the reference is ' + refLine(likelyRefs(r)[0]) + '. If it is, please compare the two products side by side, and look at why only our listings with the same design name are held to its price.', ''] : []),
-    'If the reference item cannot be shared, could the pricing team at least confirm it is a ' + (r.size || 'same-size') + ' coir doormat? '+
-    'If it is not, please reset the threshold' + (r.target ? ' to at least ' + usd(r.target) + '.' : '.'), '',
-    'Thank you for taking another look.', '',
-    'Best regards,', 'MJ Baguhin', 'Barnyard Designs, Cross Path Capital LLC'].join('\n');
-  return {subject, body, toJassy: ev.ch === 'jassy'};
+    ...(read ? [`On ${shortDate(read.date)}, ${read.who} wrote: "${read.quote}"`, '', ...read.answers, ''] : []),
+    ...(read && read.kinds[0] === 'pending' ? [] : ['The threshold comes from an automated system. These facts show it is not comparing like with like:', '']),
+    ...facts.map((f,i)=> `${i + 1}. ${f.t}`), '',
+    ...(likelyRefs(r).length ? ['We believe the reference is ' + refLine(likelyRefs(r)[0]) + '.', ''] : []),
+    `Please ask a Senior Specialist on the pricing team for a manual reference price audit, and reset the threshold` +
+      (r.target ? ` to at least ${usd(r.target)}.` : '.'), '',
+    'Thank you,', 'MJ Baguhin', 'Barnyard Designs, Cross Path Capital LLC'
+  ].filter((x,i,a)=> !(x === '' && a[i-1] === '')).map(noDash).join('\n');
+  const to = toJassy ? ((rep && /@amazon\./i.test(rep.from || '') && rep.ch === 'jassy') ? rep.from : MAIL.jassy) : '';
+  return {subject:noDash(subject), body, toJassy, to, caseId:cid, read};
+}
+
+/* ---------- chat and call versions ----------
+   Seller Support is reached by chat or phone, so every case draft also comes
+   as short chat messages (paste one at a time) and a call script (read it
+   out). Same strong case: who we are, the problem, what Amazon said last
+   and our answer, the three strongest facts, one clear ask. */
+const CHAT_MAX = 480;
+function chunk(t){
+  if(t.length <= CHAT_MAX) return [t];
+  const out = []; let cur = '';
+  t.split(/(?<=[.!?])\s+/).forEach(x=>{ if((cur + ' ' + x).trim().length > CHAT_MAX && cur){ out.push(cur.trim()); cur = x; } else cur = (cur + ' ' + x).trim(); });
+  if(cur) out.push(cur.trim());
+  return out;
+}
+function pitchFacts(list){
+  const sizes = [...new Set(list.map(r=> r.size).filter(Boolean))];
+  const heads = list.length > 1 ? (sizes.length ? sizes.map(z=> list.find(r=> r.size === z)) : [list[0]]) : list;
+  const all = heads.flatMap(r=> strongFacts(r).filter(f=> f.w >= 3).slice(0, 3).map(f=> list.length > 1 ? f.t.replace(/this listing/g, r.sku) : f.t));
+  return [...new Set(all)].slice(0, 3);
+}
+function buildPitch(rows, mode){
+  const list = rows.filter(Boolean);
+  if(!list.length) return null;
+  const one = list.length === 1 ? list[0] : null;
+  const r0 = list[0];
+  const rep = one ? one.latestReply : (list.map(r=> r.latestReply).filter(Boolean).sort((a,b)=> a.d < b.d ? 1 : -1)[0] || null);
+  const read = mode === 'follow' ? readReply(rep, r0) : null;
+  const ids = recentCaseIds(list);
+  const cid = mode === 'follow' ? ((rep && rep.cid) || ((r0.mailCases || [])[0] || {}).cid || ids.slice(-1)[0] || '') : '';
+  const asinTxt = one ? `ASIN ${one.asin} (SKU ${one.sku}, ${one.size ? one.size + ' ' : ''}${cptTitle(one)})` : `${list.length} ASINs: ${list.map(r=> r.asin + ' (' + r.sku + ')').join(', ')}`;
+  const priceTxt = one
+    ? `The Competitive Price Threshold is ${usd(one.cpt)}${one.target ? ', below our usual sale price of ' + usd(one.target) + ' for this size' : ''}.`
+    : 'Their Competitive Price Thresholds are set below our usual sale price for each size: ' + list.map(r=> `${r.asin} ${usd(r.cpt)}${r.target ? ' (sale price ' + usd(r.target) + ')' : ''}`).join(', ') + '.';
+  const target = one && one.target ? ` to at least ${usd(one.target)}` : (one ? '' : ' to at least our usual sale price for each size');
+  const facts = pitchFacts(list);
+  const ref = one && likelyRefs(one).length ? refLine(likelyRefs(one)[0]) : '';
+  const older = mode === 'fresh' && ids.length ? ` Earlier case: ${ids.slice(-2).join(', ')}.` : '';
+  const ask = `Please send this to the pricing team for a manual reference price audit by a Senior Specialist, and reset the threshold${target}.`;
+  const ifSay = [
+    ['"The reference item cannot be shared."', `I understand. Can the pricing team at least confirm it is a ${(one && one.size) || 'same-size'} coir doormat? If it is not, the threshold should be reset.`],
+    ['"It is set by an automated system, we cannot change it."', 'That is why I am asking for a person to check it. Please transfer this to the pricing team or a Senior Specialist for a manual reference price audit.'],
+    ['"Just lower your price."', `We already did, to keep the Featured Offer. The problem is the threshold itself${one ? ', ' + usd(one.cpt) : ''}.`],
+    ['"Your price is not competitive with another retailer."', `Please compare the same size and material. ${facts[0] ? 'For example: ' + facts[0] : ''}`]
+  ];
+
+  // Chat: short messages, one point each
+  const chat = [];
+  chat.push(...chunk(`Hi, I am MJ from Barnyard Designs, the brand owner and only seller of ${asinTxt}.` +
+    (cid ? ` This is about case ${cid}.` : older) + ` ${priceTxt} It is set by Amazon's automated system, so I am asking for a manual review by a person.`));
+  if(read) chat.push(...chunk(`On ${shortDate(read.date)}, ${read.who} said: "${read.quote}" ${read.answers.join(' ')}`));
+  facts.forEach((f,i)=> chat.push(...chunk(`Fact ${i + 1}: ${f}`)));
+  if(ref) chat.push(...chunk(`We believe the reference is ${ref}. If so, it is not the same product.`));
+  chat.push(ask + (cid ? ` Please add these notes to case ${cid}.` : ' Please open a case and send me the case number.'));
+
+  // Call: what to say, in order
+  const call = [
+    'BEFORE THE CALL',
+    `Have open: ${cid ? 'case ' + cid + ', ' : ''}this page, and the ASIN${one ? '' : 's'} above.`, '',
+    '1. SAY WHO YOU ARE',
+    `"Hi, my name is MJ Baguhin. I am calling for Barnyard Designs, the brand owner and only seller of ${asinTxt}.${cid ? ' I am calling about case ' + cid.split('').join(' ') + '.' : ''}"`, '',
+    '2. SAY THE PROBLEM',
+    `"${priceTxt} Amazon's automated system set it, and it is not comparing like with like. I need a person to review it."`, '',
+    ...(read ? ['3. ANSWER WHAT AMAZON SAID LAST',
+      `They wrote on ${shortDate(read.date)}: "${read.quote}"`,
+      `Say: "${read.answers.join(' ')}"`, ''] : []),
+    `${read ? 4 : 3}. GIVE THE FACTS (slowly, one at a time)`,
+    ...facts.map((f,i)=> `   ${String.fromCharCode(97 + i)}) "${f}"`),
+    ...(ref ? [`   ${String.fromCharCode(97 + facts.length)}) "We believe the reference is ${ref}."`] : []), '',
+    `${read ? 5 : 4}. MAKE THE ASK`,
+    `"${ask}"`, '',
+    `${read ? 6 : 5}. BEFORE YOU HANG UP`,
+    `Ask them to write the call notes on ${cid ? 'case ' + cid : 'a new case'} and to email you the update. Write down their name, the date, and any new case number.`, '',
+    'IF THEY SAY...',
+    ...ifSay.map(x=> `${x[0]}\n   Say: "${x[1]}"`)
+  ];
+  return {chat:chat.map(noDash), call:call.map(noDash).join('\n'), ifSay:ifSay.map(x=> [x[0], noDash(x[1])]), cid, read};
 }
 
 const ACTIONS = {
@@ -2241,7 +2453,7 @@ let CPT_SHOWN = [];
 const MAIL = {
   account: 'mj.baguhin@crosspathcap.com',
   jassy:   'ajassy@amazon.com',
-  cc:      'jack@crosspathcap.com,sam@crosspathcap.com'   // as on the earlier Jassy emails
+  cc:      'jack@crosspathcap.com,sam@crosspathcap.com,haris.atta@crosspathcap.com'   // as on the Oct 15 Jassy email
 };
 function gmailCompose(to, cc, subject, body){
   return 'https://mail.google.com/mail/?authuser=' + encodeURIComponent(MAIL.account) +
@@ -2674,13 +2886,12 @@ function wireCpt(v, all){
 
   [...v.querySelectorAll('#cptSeg button')].forEach(b=> b.onclick = ()=>{ CPT_F.show = b.dataset.show; renderCpt(); });
   const openFollow = (title, m, rows)=> showDraft(title, m.body, {follow:true, subject:m.subject, caseId:m.toJassy ? '' : m.caseId,
-    gmail: m.toJassy ? {to:MAIL.jassy, cc:MAIL.cc} : null, rows});
+    gmail: m.toJassy ? {to:m.to || MAIL.jassy, cc:MAIL.cc} : null, rows, pitch:buildPitch(rows, 'follow')});
   [...v.querySelectorAll('button[data-fu]')].forEach(b=> b.onclick = e=>{
     e.stopPropagation();
     const r = all.find(x=> x.asin === b.dataset.fu);
     if(!r) return;
-    const m = followUpEmail(r), ev = (r.events || [])[0] || {};
-    m.caseId = ev.cid || (r.caseIds || []).slice(-1)[0] || '';
+    const m = followUpEmail(r);
     openFollow(`${r.sku} ${cptTitle(r)}`, m, [r]);
   });
   [...v.querySelectorAll('button[data-gfu]')].forEach(b=> b.onclick = e=>{
@@ -2692,12 +2903,12 @@ function wireCpt(v, all){
   [...v.querySelectorAll('button[data-fresh]')].forEach(b=> b.onclick = e=>{
     e.stopPropagation();
     const r = all.find(x=> x.asin === b.dataset.fresh);
-    if(r) showDraft(`${r.sku} ${cptTitle(r)}`, freshCase(r), {rows:[r]});
+    if(r) showDraft(`${r.sku} ${cptTitle(r)}`, freshCase(r), {rows:[r], pitch:buildPitch([r], 'fresh')});
   });
   [...v.querySelectorAll('button[data-gfresh]')].forEach(b=> b.onclick = e=>{
     e.stopPropagation();
     const g = CPT_SHOWN.filter(r=> r.action === b.dataset.gfresh);
-    showDraft(`${g.length} listings: ${g.map(r=> r.sku).join(', ')}`, freshCaseGroup(g), {rows:g});
+    showDraft(`${g.length} listings: ${g.map(r=> r.sku).join(', ')}`, freshCaseGroup(g), {rows:g, pitch:buildPitch(g.filter(r=> r.action === 'open' || r.action === 'follow'), 'fresh')});
   });
   [...v.querySelectorAll('button[data-gmail]')].forEach(b=> b.onclick = e=>{
     e.stopPropagation();
@@ -2820,12 +3031,22 @@ function caseBlock(r){
     '<ul class="why-list">' + v.why.map(w=> `<li>${esc(w)}</li>`).join('') + '</ul>'+
     timelineBlock(r)+
     factsBlock(r)+
-    (r.mail ? `<h2 style="margin-top:1rem">Latest Amazon email</h2>`+
+    (r.latestReply ? `<h2 style="margin-top:1rem">Latest Amazon reply</h2>`+
+      `<p style="font-size:.84rem;margin:.2rem 0"><b>${esc(r.latestReply.ch === 'jassy' ? 'Andy Jassy team' : 'Seller Support')}</b>, ${esc(shortDate(r.latestReply.d))}`+
+      `${r.latestReply.cid ? ', case <span class="mono">' + esc(r.latestReply.cid) + '</span>' : ''} <span class="mailst ${(MAIL_KIND[r.latestReply.kind] || ['','m-wait'])[1]}">${esc((MAIL_KIND[r.latestReply.kind] || [r.latestReply.kind])[0])}</span>`+
+      `${r.latestReply.answered ? ' <span class="mailst m-wait">We answered after it</span>' : ''}</p>`+
+      `<div class="reply-q">${esc(r.latestReply.text)}</div>`+
+      `<p><a href="${esc(r.latestReply.link)}" target="_blank" rel="noopener">Open in Gmail</a></p>` : '')+
+    ((r.mailCases || []).length > 1 ? '<h2 style="margin-top:1rem">Each case</h2><ol class="tl">'+
+      r.mailCases.map(c=> `<li class="tl-${c.status === 'waiting' ? 'us' : 'amazon'}"><span class="tl-c mono">${esc(c.cid || 'no case no.')}</span>`+
+        `<span class="tl-k">${esc(c.ch === 'jassy' ? 'Andy Jassy team' : 'Seller Support')}: ${esc((MAIL_KIND[c.status] || [c.status])[0])}${c.needsReply ? ', we need to reply' : ''}</span>`+
+        `<span class="tl-d">${esc(shortDate(c.lastAmazon || c.lastUs))}</span></li>`).join('') + '</ol>' : '')+
+    (r.mail && !r.latestReply ? `<h2 style="margin-top:1rem">Latest Amazon email</h2>`+
       `<p style="margin:.2rem 0">${mailLine(r)}${r.mail.unread ? ' <span class="mailst m-warn">Unread</span>' : ''}</p>`+
       `<p style="font-size:.84rem;margin:.3rem 0"><b>${esc(r.mail.subject)}</b><br><span class="mut">${esc(r.mail.date)}</span></p>`+
       `<p style="font-size:.84rem;color:var(--muted)">${esc(r.mail.snippet)}\u2026</p>`+
       `<p><button class="work" id="openMail">Open this email in Gmail</button></p>`
-      : `<p class="mut" style="font-size:.8rem;margin-top:.6rem">No Amazon email about this listing in the last 90 days. Amazon may have answered inside the Seller Central case.</p>`)+
+      : r.latestReply ? '' : `<p class="mut" style="font-size:.8rem;margin-top:.6rem">No Amazon email about this listing in the last 90 days. Amazon may have answered inside the Seller Central case.</p>`)+
     ((r.action === 'open' || r.action === 'follow')
       ? '<div class="act-row">'+
           `<button class="work strong" id="mailBtn">Draft email to Andy Jassy team</button>`+
@@ -2964,10 +3185,10 @@ function openCpt(r){
   };
   const fu = document.getElementById('fuBtn');
   if(fu) fu.onclick = ()=>{
-    const m = followUpEmail(r), ev = (r.events || [])[0] || {};
+    const m = followUpEmail(r);
     showDraft(`${r.sku} ${cptTitle(r)}`, m.body, {follow:true, subject:m.subject,
-      caseId: m.toJassy ? '' : (ev.cid || (r.caseIds || []).slice(-1)[0] || ''),
-      gmail: m.toJassy ? {to:MAIL.jassy, cc:MAIL.cc} : null, rows:[r]});
+      caseId: m.toJassy ? '' : m.caseId,
+      gmail: m.toJassy ? {to:m.to || MAIL.jassy, cc:MAIL.cc} : null, rows:[r], pitch:buildPitch([r], 'follow')});
   };
   const om = document.getElementById('openMail');
   if(om && r.mail) om.onclick = ()=> window.open(r.mail.link, '_blank', 'noopener');
@@ -2985,7 +3206,7 @@ function openCpt(r){
     if(navigator.clipboard) navigator.clipboard.writeText(t).then(()=> cb2.textContent = 'Evidence copied, paste it into the case');
   };
   const fr = document.getElementById('freshBtn');
-  if(fr) fr.onclick = ()=> showDraft(`${r.sku} ${cptTitle(r)}`, freshCase(r));
+  if(fr) fr.onclick = ()=> showDraft(`${r.sku} ${cptTitle(r)}`, freshCase(r), {rows:[r], pitch:buildPitch([r], 'fresh')});
   const ev = document.getElementById('evBtn');
   if(ev) ev.onclick = ()=>{
     const t = caseEvidence(r);
