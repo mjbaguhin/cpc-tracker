@@ -728,6 +728,9 @@ a.work:hover{background:var(--accent);color:#fff}
 /* Fits the screen: no sideways scrolling needed on a laptop */
 .cpt-table.bb-table{min-width:0;table-layout:auto}
 #cptView .cpt-tile .n{white-space:normal}
+.bbtile{cursor:pointer;transition:border-color .15s}
+.bbtile:hover{border-color:#4a76b0}
+.bbtile.on{border-color:#6fa0e0;box-shadow:0 0 0 1px #6fa0e0 inset}
 .bb-table tbody td.prod{min-width:13rem !important}
 .bb-table td.prod .p-name{white-space:normal;max-width:16rem}
 .bb-table td,.bb-table th{padding-left:.5rem;padding-right:.5rem}
@@ -3658,6 +3661,7 @@ function renderBb(){
   const fresh = BB_META.updated && BB_META.updated.slice(0,10) >= new Date(Date.now() - 2*86400000).toISOString().slice(0,10);
 
   let rows = all;
+  if(BB_F.show === 'yes')    rows = yes;
   if(BB_F.show === 'no')     rows = no;
   if(BB_F.show === 'oos')    rows = by('oos');
   if(BB_F.show === 'seller') rows = no.filter(r=> r.why === 'amazon' || r.why === 'seller');
@@ -3669,7 +3673,9 @@ function renderBb(){
   rows = BB_F.sort && BB_SORT[BB_F.sort] ? sortBy(rows, BB_SORT[BB_F.sort], BB_F.dir)
        : sortBy(rows, r=> (r.has ? 1000 : Object.keys(BB_WHY).indexOf(r.why) * 10) + (TIER_RANK[r.tier] !== undefined ? TIER_RANK[r.tier] : 5), 1);
 
-  const tile = (k, val, cls, note)=> `<div class="cpt-tile"><div class="k">${k}</div><div class="v ${cls || ''}">${val}</div><div class="n">${note || '&nbsp;'}</div></div>`;
+  let tileShow = ['all', 'yes', 'no', 'oos', 'seller', 'other', 'amz'], tileN = 0;
+  const tile = (k, val, cls, note)=>{ const f = tileShow[tileN++] || 'all';
+    return `<div class="cpt-tile bbtile${BB_F.show === f ? ' on' : ''}" role="button" tabindex="0" data-show="${f}" title="Show these in the table"><div class="k">${k}</div><div class="v ${cls || ''}">${val}</div><div class="n">${note || '&nbsp;'}</div></div>`; };
   const list = a=> esc(a.map(r=> r.sku).slice(0,3).join(', ')) + (a.length > 3 ? '\u2026' : '');
   const oth = no.filter(r=> ['cpt','nooffer','unknown'].indexOf(r.why) !== -1);
   let html =
@@ -3731,6 +3737,11 @@ function renderBb(){
 
   wireSort(v, BB_F, renderBb);
   [...v.querySelectorAll('#bbSeg button')].forEach(b=> b.onclick = ()=>{ BB_F.show = b.dataset.show; renderBb(); });
+  [...v.querySelectorAll('.bbtile')].forEach(t=>{
+    const go = ()=>{ BB_F.show = t.dataset.show; renderBb();
+      const tb = document.querySelector('#cptView .bb-table, #cptView .cpt-empty'); if(tb && tb.scrollIntoView) tb.scrollIntoView({behavior:'smooth', block:'start'}); };
+    t.onclick = go; t.onkeydown = e=>{ if(e.key === 'Enter') go(); };
+  });
   [...v.querySelectorAll('#bbTier button')].forEach(b=> b.onclick = ()=>{ BB_F.tier = b.dataset.t; renderBb(); });
   const q = document.getElementById('bbQ');
   if(q) q.oninput = ()=>{ BB_F.q = q.value; const pos = q.selectionStart; renderBb(); const q2 = document.getElementById('bbQ'); q2.focus(); q2.setSelectionRange(pos, pos); };
