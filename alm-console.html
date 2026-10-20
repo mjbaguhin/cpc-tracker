@@ -68,6 +68,8 @@ header h1{
   background:transparent;color:#fff;border:1px solid #3a4652;
 }
 #homeBtn{margin-left:auto}
+#homeBtn[hidden],#casesBtn[hidden]{display:none !important}
+#quickCat{margin-left:auto}
 #homeBtn[aria-pressed="true"],#quickCat[aria-pressed="true"],
 #casesBtn[aria-pressed="true"],
 #cptBtn[aria-pressed="true"],#bbBtn[aria-pressed="true"],#lcBtn[aria-pressed="true"],#lpBtn[aria-pressed="true"],
@@ -754,6 +756,8 @@ mark.lc-extra{background:#fbd5cf;color:inherit;border-radius:2px}
 .bbno{background:#fbe2df;color:#a3261a}
 .bbstk{font-size:1.05rem;font-variant-numeric:tabular-nums}
 .bbstk.ok{color:#17694a}.bbstk.zero{color:#b42318}
+a.idl{color:inherit;text-decoration:none;border-bottom:1px dotted currentColor}
+a.idl:hover{color:var(--accent);border-bottom-style:solid}
 .cpy{display:inline-flex;align-items:center;justify-content:center;width:1.25rem;height:1.25rem;padding:0;margin-left:.3rem;
   border:1px solid transparent;border-radius:4px;background:transparent;color:#94a3b8;cursor:pointer;vertical-align:middle;line-height:1}
 .cpy:hover{color:var(--accent);border-color:var(--line);background:#fff}
@@ -765,9 +769,9 @@ mark.lc-extra{background:#fbd5cf;color:inherit;border-radius:2px}
 <header>
   <h1>ALM Console</h1>
   <span id="meta">Loading</span>
-  <button id="homeBtn">Checklist</button>
+  <button id="homeBtn" hidden>Checklist</button>
   <button id="quickCat">Category</button>
-  <button id="casesBtn">Cases</button>
+  <button id="casesBtn" hidden>Cases</button>
   <button id="cptBtn">CPT tracker</button>
   <button id="bbBtn">Buy Box</button>
   <button id="lcBtn">Listing Copy</button>
@@ -940,7 +944,7 @@ const COLS = [
 let ROWS = [];
 let META = {};
 const S = {
-  mk:'US', allCols:false, view:'checklist', checks:null, taskName:'',
+  mk:'US', allCols:false, view:'catalog', checks:null, taskName:'',
   brands:new Set(), statuses:new Set(), tiers:new Set(), ptiers:new Set(),
   stock:new Set(), price:new Set(),
   group:'none', q:'', sort:'sku', dir:1, open:new Set()
@@ -1679,8 +1683,8 @@ function renderCases(){
         `${st==='warn'?' style="color:#8a6417"':''}>`+
         `${c.age === null ? '\u2014' : c.age + 'd'}</span></td>`+
       `<td class="mut">${esc(c.type)}</td>`+
-      `<td class="mono">${esc(c.sku.slice(0,40))}${cpy(c.sku)}</td>`+
-      `<td class="mono">${esc(c.asin.slice(0,40))}${cpy(c.asin)}</td>`+
+      `<td class="mono">${skuL(c.sku, c.country)}${cpy(c.sku)}</td>`+
+      `<td class="mono">${asinL(c.asin, c.country)}${cpy(c.asin)}</td>`+
       `<td class="name">${esc(c.summary.slice(0,120))}</td>`+
       `<td class="mut">${esc(c.status.slice(0,40))}</td>`+
       '</tr>';
@@ -1793,6 +1797,26 @@ function ourPrice(asin){
 }
 
 const usd = v => v === null || v === undefined ? '\u2014' : '$' + Number(v).toFixed(2);
+
+
+/* Every ASIN opens its Amazon product page, every SKU opens Manage
+   Inventory in Seller Central, in a new tab. Canada rows go to the .ca sites. */
+function mkOf(m){ return /^ca/i.test(String(m || '')) ? 'CA' : 'US'; }
+function asinL(a, mk){
+  a = String(a || '').trim(); if(!a) return '';
+  const host = mkOf(mk) === 'CA' ? 'www.amazon.ca' : 'www.amazon.com';
+  return `<a class="idl" href="https://${host}/dp/${encodeURIComponent(a)}" target="_blank" rel="noopener" title="Open the product page">${esc(a)}</a>`;
+}
+function skuL(v, mk){
+  v = String(v || '').trim(); if(!v) return '';
+  const host = mkOf(mk) === 'CA' ? 'sellercentral.amazon.ca' : 'sellercentral.amazon.com';
+  return `<a class="idl" href="https://${host}/myinventory/inventory?searchTerm=${encodeURIComponent(v)}" target="_blank" rel="noopener" title="Open in Manage Inventory">${esc(v)}</a>`;
+}
+// A link click opens the page only, never the row underneath
+window.addEventListener('click', e=>{
+  const a = e.target.closest && e.target.closest('a.idl');
+  if(a) e.stopPropagation();
+}, true);
 
 /* Small copy icon next to any SKU or ASIN. One click handler for the whole
    page, run before row clicks so copying never opens the row. */
@@ -3040,8 +3064,8 @@ function cptRowHtml(r){
         return `<tr class="row act-${r.action}" tabindex="0" data-asin="${esc(r.asin)}">`+
           '<td class="prod">'+
             `<div class="p-name" title="${esc(r.name)}"><span class="dot" style="background:${brandDot}"></span>${esc(cptTitle(r).slice(0,48))}</div>`+
-            `<div class="p-id"><span>SKU</span>${esc(r.sku)}${cpy(r.sku)}</div>`+
-            `<div class="p-id"><span>ASIN</span>${esc(r.asin)}${cpy(r.asin)}</div>`+
+            `<div class="p-id"><span>SKU</span>${skuL(r.sku)}${cpy(r.sku)}</div>`+
+            `<div class="p-id"><span>ASIN</span>${asinL(r.asin)}${cpy(r.asin)}</div>`+
             (r.size ? `<span class="p-size">${esc(r.size)}</span>` : '')+
             stockTag(r)+
           '</td>'+
@@ -3342,7 +3366,7 @@ function openChangeLog(){
     '<p class="mut" style="font-size:.82rem">Checked every morning. Green: went up. Red: went down. Tap Download for every day of every listing, for your own sheet.</p>'+
     (log.length ? '<table class="hist"><thead><tr><th>Date</th><th>SKU</th><th>What</th><th class="num">From</th><th class="num">To</th><th class="num">Change</th></tr></thead><tbody>'+
       log.map(x=>{ const ch = Math.round((x.to - x.from) * 100) / 100;
-        return `<tr><td>${esc(shortDate(x.d))}</td><td class="mono">${esc(x.r.sku)}</td><td>${x.what}</td>`+
+        return `<tr><td>${esc(shortDate(x.d))}</td><td class="mono">${skuL(x.r.sku)}${cpy(x.r.sku)}</td><td>${x.what}</td>`+
           `<td class="num">${usd(x.from)}</td><td class="num"><b>${usd(x.to)}</b></td><td class="num ${ch > 0 ? 'ok' : 'warn'}">${signed(ch)}</td></tr>`; }).join('')+
       '</tbody></table>' : '<p class="mut">No changes yet. The first changes show up after a few mornings of tracking.</p>')+
     '<p style="margin-top:.8rem"><button class="work" id="logCsv">Download every day (CSV)</button></p>';
@@ -3362,9 +3386,9 @@ function openCpt(r){
 
   d.innerHTML =
     `<h2>CPT tracker</h2>`+
-    `<h3>${esc(r.sku)} ${esc(r.name)}</h3>`+
+    `<h3>${skuL(r.sku)} ${esc(r.name)}</h3>`+
     '<dl>'+
-    `<dt>ASIN</dt><dd class="mono">${esc(r.asin)}${cpy(r.asin)}</dd>`+
+    `<dt>ASIN</dt><dd class="mono">${asinL(r.asin)}${cpy(r.asin)}</dd>`+
     `<dt>Our price</dt><dd>${usd(r.ours)}${r.kOurs !== null ? '' : ' <span class="mut">(from ALM data, Keepa had none)</span>'}</dd>`+
     `<dt>CPT today</dt><dd class="${r.gap > 0 ? 'warn' : 'ok'}">${usd(r.cpt)}</dd>`+
     `<dt>Over by</dt><dd>${r.gap === null ? '\u2014' : r.gap > 0 ? usd(r.gap) + ' (' + r.pct + '%)' : 'Our price is at or under the CPT'}</dd>`+
@@ -3519,8 +3543,8 @@ function renderCategory(){
   tb.innerHTML = rows.map((c,i)=>
     '<tr>'+
     `<td class="mono id" data-sku="${esc(c.sku)}" data-asin="${esc(c.asin)}">`+
-      `${esc(c.sku)}${cpy(c.sku)}${stockLine(stockFor(c.sku, c.country))}</td>`+
-    `<td class="mono id" data-sku="${esc(c.sku)}" data-asin="${esc(c.asin)}">${esc(c.asin)}${cpy(c.asin)}</td>`+
+      `${skuL(c.sku, c.country)}${cpy(c.sku)}${stockLine(stockFor(c.sku, c.country))}</td>`+
+    `<td class="mono id" data-sku="${esc(c.sku)}" data-asin="${esc(c.asin)}">${asinL(c.asin, c.country)}${cpy(c.asin)}</td>`+
     `<td>${esc(c.country)}</td>`+
     `<td class="name">${esc(c.name)}</td>`+
     `<td>${c.tier ? `<span class="tier t${esc(c.tier)}">${esc(c.tier)}</span>` : ''}</td>`+
@@ -3548,10 +3572,10 @@ function openDetail(row, check){
 
   d.innerHTML =
     `<h2>${esc(check)} \u00b7 ${esc(row.country)}</h2>`+
-    `<h3>${esc(row.sku)} \u00b7 ${esc(row.name)}</h3>`+
+    `<h3>${skuL(row.sku, S.mk)} \u00b7 ${esc(row.name)}</h3>`+
     `<div class="why">${esc(WHY[check] || '')}</div>`+
     '<dl>'+
-    `<dt>ASIN</dt><dd class="mono">${esc(row.asin)}${cpy(row.asin)}</dd>`+
+    `<dt>ASIN</dt><dd class="mono">${asinL(row.asin)}${cpy(row.asin)}</dd>`+
     `<dt>Amazon has</dt><dd class="warn">${esc(ck.actual || '(blank)')}</dd>`+
     `<dt>Plytix says</dt><dd class="ok">${esc(ck.expected || '(blank)')}</dd>`+
     (row.caseId ? `<dt>Existing case</dt><dd class="mono">${esc(row.caseId)}`+
@@ -3803,7 +3827,7 @@ function bbTr(r){
   const whyTxt = r.why === 'seller' ? `${r.holder.name || 'Another seller'} has it` : w ? w.t : '';
   return `<tr class="row" tabindex="0" data-bb="${esc(r.asin)}">`+
     `<td class="prod"><div class="p-name"><span class="dot" style="background:${r.has ? '#1f9d55' : '#d64545'}"></span>${esc(String(r.name).slice(0, 60))}</div>`+
-      `<div class="p-id"><span>SKU</span>${esc(r.sku)}${cpy(r.sku)}</div><div class="p-id"><span>ASIN</span>${esc(r.asin)}${cpy(r.asin)}</div>`+
+      `<div class="p-id"><span>SKU</span>${skuL(r.sku)}${cpy(r.sku)}</div><div class="p-id"><span>ASIN</span>${asinL(r.asin)}${cpy(r.asin)}</div>`+
       `${r.tier ? `<span class="p-size">Tier ${esc(r.tier)}</span>` : ''}</td>`+
     `<td class="c">${r.has ? '<span class="bbyes">Yes</span>' : '<span class="bbno">No</span>'}</td>`+
     `<td>${r.has ? (r.shared ? `<span class="was" style="white-space:normal;max-width:15rem">Same price as ${esc(r.holder.name || 'another seller')}, we share it</span>` : '') :
@@ -3862,7 +3886,7 @@ function openBb(r){
   const sellers = [{name:'CPC Brands (us)', cls:'us', p90:r.win.d90, p30:r.win.d30}].concat(r.rivals || []);
   d.innerHTML =
     '<h2>Buy Box</h2>'+
-    `<h3>${esc(r.sku)} ${esc(r.name)}</h3>`+
+    `<h3>${skuL(r.sku)} ${esc(r.name)}</h3>`+
     '<dl>'+
       `<dt>Buy Box?</dt><dd class="${r.has ? 'ok' : 'warn'}">${r.has ? 'Yes, we have it' + (r.shared ? ' (shared with ' + esc(h.name) + ' at the same price)' : '') : 'No: ' + esc(r.why === 'seller' ? (h.name || 'another seller') + ' has it' : w ? w.t : '')}</dd>`+
       (r.next ? `<dt>Next step</dt><dd>${esc(r.next)}</dd>` : '')+
@@ -4003,7 +4027,7 @@ function renderLc(){
       '</tr></thead><tbody>'+
       rows.map(r=> `<tr class="row" tabindex="0" data-lc="${esc(r.asin)}">`+
         `<td class="prod"><div class="p-name"><span class="dot" style="background:${r.nolive ? '#94a3b8' : r.allOk ? '#1f9d55' : '#d64545'}"></span>${esc(String(r.name).slice(0, 60))}</div>`+
-          `<div class="p-id"><span>SKU</span>${esc(r.sku)}${cpy(r.sku)}</div><div class="p-id"><span>ASIN</span>${esc(r.asin)}${cpy(r.asin)}</div>`+
+          `<div class="p-id"><span>SKU</span>${skuL(r.sku)}${cpy(r.sku)}</div><div class="p-id"><span>ASIN</span>${asinL(r.asin)}${cpy(r.asin)}</div>`+
           `${r.tier ? `<span class="p-size">Tier ${esc(r.tier)}</span>` : ''}</td>`+
         `<td class="c">${r.nolive ? '<span class="mut">Not checked yet</span>' : r.pct === null ? '<span class="mut">\u2014</span>' : bbBar(r.pct)}</td>`+
         LC_COLS.map(c=> `<td class="c">${r.nolive ? '' : lcChip(r.f[c[0]])}</td>`).join('')+
@@ -4062,9 +4086,9 @@ function openLc(r){
   };
   d.innerHTML =
     '<h2>Listing Copy</h2>'+
-    `<h3>${esc(r.sku)} ${esc(r.name)}</h3>`+
+    `<h3>${skuL(r.sku)} ${esc(r.name)}</h3>`+
     '<dl>'+
-      `<dt>ASIN</dt><dd class="mono">${esc(r.asin)}${cpy(r.asin)}</dd>`+
+      `<dt>ASIN</dt><dd class="mono">${asinL(r.asin)}${cpy(r.asin)}</dd>`+
       `<dt>Correct %</dt><dd class="${r.allOk ? 'ok' : 'warn'}">${r.pct === null ? '\u2014' : r.pct + '%'}${r.checked ? ` (${r.ok} of ${r.checked} fields)` : ''}</dd>`+
       `<dt>To fix</dt><dd>${r.bad.length ? esc(r.bad.map(k=> LC_COLS.find(c=> c[0] === k)[1]).join(', ')) : 'Nothing'}</dd>`+
       `<dt>Last change</dt><dd>${r.since ? esc(shortDate(r.since)) : 'No change seen'}${r.liveChecked ? ', checked ' + esc(shortDate(r.liveChecked)) : ''}</dd>`+
@@ -4151,7 +4175,7 @@ function renderLp(){
       '</tr></thead><tbody>'+
       rows.map(r=> `<tr class="row">`+
         `<td class="prod"><div class="p-name"><span class="dot" style="background:${r.set ? '#1f9d55' : '#d64545'}"></span>${esc(String(r.name).slice(0, 60))}</div>`+
-          `<div class="p-id"><span>SKU</span>${esc(r.sku)}${cpy(r.sku)}</div><div class="p-id"><span>ASIN</span>${esc(r.asin)}${cpy(r.asin)}</div>${r.tier ? `<span class="p-size">Tier ${esc(r.tier)}</span>` : ''}</td>`+
+          `<div class="p-id"><span>SKU</span>${skuL(r.sku)}${cpy(r.sku)}</div><div class="p-id"><span>ASIN</span>${asinL(r.asin)}${cpy(r.asin)}</div>${r.tier ? `<span class="p-size">Tier ${esc(r.tier)}</span>` : ''}</td>`+
         `<td class="c">${r.set ? '<span class="bbyes">Yes</span>' : '<span class="bbno">Empty</span>'}</td>`+
         `<td class="c">${r.set ? '<b>' + usd(r.live) + '</b>' : '<span class="mut">none</span>'}</td>`+
         `<td class="c">${usd(r.ours)}</td>`+
@@ -4198,10 +4222,10 @@ function openIds(sku, asin){
 
   d.innerHTML =
     `<h2>Identifiers \u00b7 ${esc(S.mk)}</h2>`+
-    `<h3 class="mono">${esc(sku || '\u2014')}</h3>`+
+    `<h3 class="mono">${sku ? skuL(sku, S.mk) : '\u2014'}</h3>`+
     '<dl>'+
-    `<dt>SKU</dt><dd class="mono">${esc(sku || '\u2014')}${cpy(sku)}</dd>`+
-    `<dt>ASIN</dt><dd class="mono">${esc(asin || '\u2014')}${cpy(asin)}</dd>`+
+    `<dt>SKU</dt><dd class="mono">${sku ? skuL(sku, S.mk) : '\u2014'}${cpy(sku)}</dd>`+
+    `<dt>ASIN</dt><dd class="mono">${asin ? asinL(asin, S.mk) : '\u2014'}${cpy(asin)}</dd>`+
     '</dl>'+
     '<div class="actions">'+
       (sku  ? '<button id="cpSku" class="act">Copy SKU</button>' : '')+
@@ -4401,7 +4425,7 @@ function parentHeader(kids, colspan, extra){
   const name = solo ? 'Standalone SKUs' : (f.parent || f.psku || f.pasin);
   const bits = [];
   if(solo) bits.push('<span>Not part of a variation family</span>');
-  if(!solo && f.psku)  bits.push(`<span><span class="k">Parent SKU</span><span class="mono">${esc(f.psku)}</span>${cpy(f.psku)}</span>`);
+  if(!solo && f.psku)  bits.push(`<span><span class="k">Parent SKU</span><span class="mono">${skuL(f.psku, S.mk)}</span>${cpy(f.psku)}</span>`);
   if(!solo && f.pasin) bits.push(`<span><span class="k">Parent ASIN</span><a href="https://www.amazon.com/dp/${esc(f.pasin)}" target="_blank" rel="noopener">${esc(f.pasin)}</a>${cpy(f.pasin)}</span>`);
   bits.push(`<span><b>${kids.length}</b> ${solo ? (kids.length === 1 ? 'SKU' : 'SKUs') : (kids.length === 1 ? 'child' : 'children')}</span>`);
   (extra || []).forEach(x=> bits.push(x));
@@ -4548,10 +4572,10 @@ function openPriceDetail(row, kind){
 
   d.innerHTML =
     `<h2>${esc(w.title || kind)} \u00b7 ${esc(S.mk)}</h2>`+
-    `<h3>${esc(row.sku)} \u00b7 ${esc(row.name)}</h3>`+
+    `<h3>${skuL(row.sku, S.mk)} \u00b7 ${esc(row.name)}</h3>`+
     `<div class="why">${esc(w[st] || '')}</div>`+
     '<dl>'+
-    `<dt>ASIN</dt><dd class="mono">${esc(row.asin)}${cpy(row.asin)}</dd>`+
+    `<dt>ASIN</dt><dd class="mono">${asinL(row.asin)}${cpy(row.asin)}</dd>`+
     `<dt>List price</dt><dd>${money(row.list)}</dd>`+
     `<dt>Sale price</dt><dd>${money(row.sale)}</dd>`+
     `<dt>Featured offer</dt><dd>${money(row.feat)}</dd>`+
@@ -4584,7 +4608,7 @@ function tr(r, IDX){
     }
 
     if(c.k === 'sku' || c.k === 'asin'){
-      const body = v ? esc(v) : '<span class="mut">\u2014</span>';
+      const body = v ? (c.k === 'sku' ? skuL(v, S.mk) : asinL(v, S.mk)) : '<span class="mut">\u2014</span>';
 
       // Stock sits under the SKU only, not under the ASIN
       let stock = '';
@@ -4815,7 +4839,7 @@ setPanel(false);
 // Element looked up directly rather than through the const declared further
 // down. Referencing that const before its declaration line throws, which
 // stopped the script before load() was ever called.
-document.getElementById('homeBtn').setAttribute('aria-pressed', 'true');
+document.getElementById('catalogBtn').setAttribute('aria-pressed', 'true');
 
 
 /* Drag the divider to set the split yourself. Pointer events rather than
@@ -4883,6 +4907,7 @@ const lpBtn    = document.getElementById('lpBtn');
 let PANEL_BEFORE_CPT = null;
 
 function go(view){
+  if(view === 'checklist' || view === 'cases') view = 'catalog';
   // The CPT view has its own controls, so the filter panel folds away while
   // it is open and comes back as it was when you leave.
   // The CPT and Buy Box views both own the screen
