@@ -63,19 +63,19 @@ header h1{
 #meta{font-size:.7rem;color:#93a0b0;letter-spacing:.02em}
 #meta b{color:#ccd6e2;font-weight:600}
 
-#toggle,#fs,#homeBtn,#quickCat,#casesBtn,#catalogBtn,#cptBtn,#bbBtn{
+#toggle,#fs,#homeBtn,#quickCat,#casesBtn,#catalogBtn,#cptBtn,#bbBtn,#lcBtn{
   font-size:.74rem;padding:.24rem .6rem;
   background:transparent;color:#fff;border:1px solid #3a4652;
 }
 #homeBtn{margin-left:auto}
 #homeBtn[aria-pressed="true"],#quickCat[aria-pressed="true"],
 #casesBtn[aria-pressed="true"],
-#cptBtn[aria-pressed="true"],#bbBtn[aria-pressed="true"],
+#cptBtn[aria-pressed="true"],#bbBtn[aria-pressed="true"],#lcBtn[aria-pressed="true"],
 #catalogBtn[aria-pressed="true"]{
   background:#2f4a6d;border-color:#4a6fa5;
 }
-#toggle:hover,#fs:hover,#homeBtn:hover,#quickCat:hover,#casesBtn:hover,#catalogBtn:hover,#cptBtn:hover,#bbBtn:hover{background:#1c232b}
-#toggle .badge,#homeBtn .badge,#quickCat .badge,#casesBtn .badge,#cptBtn .badge,#bbBtn .badge{
+#toggle:hover,#fs:hover,#homeBtn:hover,#quickCat:hover,#casesBtn:hover,#catalogBtn:hover,#cptBtn:hover,#bbBtn:hover,#lcBtn:hover{background:#1c232b}
+#toggle .badge,#homeBtn .badge,#quickCat .badge,#casesBtn .badge,#cptBtn .badge,#bbBtn .badge,#lcBtn .badge{
   display:inline-block;margin-left:.35rem;padding:0 .32rem;
   background:#a83a26;border-radius:8px;font-size:.68rem;font-weight:700;
 }
@@ -599,10 +599,10 @@ header h1{font-size:.95rem;letter-spacing:.02em;text-transform:none;font-weight:
 header h1::after{content:"";display:inline-block;width:.42rem;height:.42rem;border-radius:50%;
   background:#3fbf7f;margin-left:.45rem;vertical-align:middle}
 #meta{font-family:ui-monospace,"SF Mono",Menlo,Consolas,monospace;font-size:.72rem}
-#toggle,#fs,#homeBtn,#quickCat,#casesBtn,#catalogBtn,#cptBtn,#bbBtn{
+#toggle,#fs,#homeBtn,#quickCat,#casesBtn,#catalogBtn,#cptBtn,#bbBtn,#lcBtn{
   font-size:.8rem;padding:.38rem .8rem;border-radius:7px;border-color:var(--night-line);color:#dfe5ee}
 #homeBtn[aria-pressed="true"],#quickCat[aria-pressed="true"],#casesBtn[aria-pressed="true"],
-#catalogBtn[aria-pressed="true"],#cptBtn[aria-pressed="true"],#bbBtn[aria-pressed="true"]{background:#2c4f7c;border-color:#4a76b0;color:#fff}
+#catalogBtn[aria-pressed="true"],#cptBtn[aria-pressed="true"],#bbBtn[aria-pressed="true"],#lcBtn[aria-pressed="true"]{background:#2c4f7c;border-color:#4a76b0;color:#fff}
 
 /* overview band */
 #ov{background:var(--night);color:#e8edf3;padding:1.05rem 1.25rem 1.15rem;flex:0 0 auto}
@@ -731,6 +731,20 @@ a.work:hover{background:var(--accent);color:#fff}
 .bbtile{cursor:pointer;transition:border-color .15s}
 .bbtile:hover{border-color:#4a76b0}
 .bbtile.on{border-color:#6fa0e0;box-shadow:0 0 0 1px #6fa0e0 inset}
+/* Listing Copy */
+.lcchip{display:inline-block;font-size:.74rem;font-weight:700;padding:.18rem .45rem;border-radius:5px;white-space:nowrap;cursor:help}
+.lc-ok{background:#e4f3ee;color:#17694a}.lc-small{background:#fdf1d8;color:#8a5a00}.lc-bad{background:#fbe2df;color:#a3261a}
+.lc-gray{background:#eef1f5;color:#64748b}.lc-none{color:#94a3b8}
+.lc-table td.c{padding-left:.3rem;padding-right:.3rem}
+.lcf{border:1px solid var(--line);border-radius:8px;padding:.6rem .7rem;margin:.55rem 0}
+.lcf-h{display:flex;align-items:center;gap:.45rem;flex-wrap:wrap}
+.lcf-h button{margin-left:auto;font-size:.74rem}
+.lcf-l{font-size:.7rem;font-weight:800;letter-spacing:.04em;text-transform:uppercase;color:var(--muted);margin:.5rem 0 .2rem}
+.lcf-t{font-size:.84rem;line-height:1.5;white-space:pre-wrap;word-break:break-word}
+.lcf-r{font-size:.78rem;color:#a3261a;margin-top:.3rem}
+mark.lc-miss{background:#fff1b8;color:inherit;border-radius:2px}
+mark.lc-extra{background:#fbd5cf;color:inherit;border-radius:2px}
+.lcleg{font-size:.76rem;color:var(--muted);margin:.4rem 0}
 .bb-table tbody td.prod{min-width:13rem !important}
 .bb-table td.prod .p-name{white-space:normal;max-width:16rem}
 .bb-table td,.bb-table th{padding-left:.5rem;padding-right:.5rem}
@@ -752,6 +766,7 @@ a.work:hover{background:var(--accent);color:#fff}
   <button id="casesBtn">Cases</button>
   <button id="cptBtn">CPT tracker</button>
   <button id="bbBtn">Buy Box</button>
+  <button id="lcBtn">Listing Copy</button>
   <button id="catalogBtn">Catalog</button>
   <button id="toggle" aria-expanded="true">Filters</button>
   <button id="fs" title="Fullscreen">Full screen</button>
@@ -865,6 +880,9 @@ const SIM_SRC = 'https://raw.githubusercontent.com/mjbaguhin/cpc-tracker/main/si
 // Buy Box per ASIN, written nightly by Buy Box Watch in the CPC Keepa Fetcher project
 const BB_SRC = 'https://raw.githubusercontent.com/mjbaguhin/cpc-tracker/main/buybox.json';
 
+// Live Amazon copy vs Plytix, written nightly by Buy Box Watch
+const LC_SRC = 'https://raw.githubusercontent.com/mjbaguhin/cpc-tracker/main/copy.json';
+
 // Amazon's case creation entry point
 const CASE_URL = 'https://sellercentral.amazon.com/help/center?redirectSource=HelpHub';
 
@@ -966,6 +984,9 @@ async function load(fresh){
   grab(BB_SRC, 'json', fresh)
     .then(j => { buildBb(j); if(S.view === 'bb') render(); else chrome(); })
     .catch(e => { BB_ERR = e.message; if(S.view === 'bb') render(); });
+  grab(LC_SRC, 'json', fresh)
+    .then(j => { buildLc(j); if(S.view === 'lc') render(); else chrome(); })
+    .catch(e => { LC_ERR = e.message; if(S.view === 'lc') render(); });
 
   // Ratings arrive after the first paint and trigger a rebuild
   grab(SRC, 'json', fresh)
@@ -3847,6 +3868,201 @@ function openBb(r){
   document.getElementById('veil').hidden = false;
 }
 
+/* ---------- Listing Copy module ----------
+   One row per active ASIN from copy.json (Buy Box Watch, nightly). Compares
+   the live Amazon copy with the correct copy in Plytix: title, item
+   highlight, bullets 1 to 5 and description. Generic keywords can't be read
+   from Amazon, so they are checked against Amazon's rules instead. */
+let LC = [], LC_META = {}, LC_ERR = '';
+const LC_F = {show:'all', q:'', sort:'', dir:1, tier:''};
+const LC_COLS = [['title','Title'], ['ih','Highlight'], ['b1','Bullet 1'], ['b2','Bullet 2'], ['b3','Bullet 3'],
+                 ['b4','Bullet 4'], ['b5','Bullet 5'], ['gk','Keywords'], ['desc','Description']];
+const LC_S = {
+  match:    ['OK', 'lc-ok', 'Same as Plytix'],
+  small:    ['Small diff', 'lc-small', 'Almost the same as Plytix, a few words differ'],
+  wrong:    ['Wrong', 'lc-bad', 'Different from Plytix'],
+  missing:  ['Missing', 'lc-bad', 'In Plytix but not on Amazon'],
+  noplytix: ['Blank in Plytix', 'lc-gray', 'Plytix has no correct copy for this field'],
+  cantread: ['Can\u2019t check', 'lc-gray', 'Amazon does not show this field on its own, so it can\u2019t be compared'],
+  hidden:   ['Hidden', 'lc-gray', 'Not visible on Amazon, usually because A+ content replaces the description'],
+  rulesok:  ['Rules OK', 'lc-ok', 'Backend only, so checked against Amazon\u2019s rules: under 249 bytes, no brand name'],
+  rule:     ['Rule issue', 'lc-bad', 'Breaks an Amazon rule'],
+  none:     ['\u2014', 'lc-none', 'Not used'],
+  nodata:   ['Not checked yet', 'lc-gray', 'No live copy from Amazon yet']
+};
+const LC_BAD = ['small', 'wrong', 'missing', 'rule'];
+
+function buildLc(j){ LC_ERR = ''; LC_META = {updated: j && j.updated || ''}; LC = (j && j.rows) || []; }
+
+function lcRows(){
+  return LC.map(c=>{
+    const row = (c.sku && ROWS.find(x=> x.sku === c.sku)) || ROWS.find(x=> x.asin === c.asin);
+    const f = c.f || {};
+    const bad = LC_COLS.filter(x=> f[x[0]] && (LC_BAD.indexOf(f[x[0]].s) !== -1 || f[x[0]].rule)).map(x=> x[0]);
+    const blank = LC_COLS.filter(x=> f[x[0]] && f[x[0]].s === 'noplytix').map(x=> x[0]);
+    return Object.assign({}, c, {name: (row && row.name) || c.name || c.asin, tier: c.tier || (row && row.tier) || '',
+      bad, blank, allOk: !c.nolive && !bad.length});
+  });
+}
+
+function lcChip(x){
+  if(!x) return '<span class="lcchip lc-none">\u2014</span>';
+  const s = x.rule && x.s !== 'rule' && x.s !== 'rulesok' ? 'rule' : x.s;
+  const d = LC_S[s] || LC_S.none;
+  const tip = x.rule ? x.rule : d[2];
+  return `<span class="lcchip ${d[1]}" data-tip="${esc(tip)}">${d[0]}</span>`;
+}
+
+const LC_SORT = { product: r=> r.name, pct: r=> r.pct, bad: r=> r.bad.length, since: r=> r.since || '' };
+
+function renderLc(){
+  document.getElementById('msg').hidden = true;
+  document.getElementById('bar').innerHTML = '';
+  const v = document.getElementById('cptView');
+  const all = lcRows();
+  const checked = all.reduce((t,r)=> t + (r.checked || 0), 0), ok = all.reduce((t,r)=> t + (r.ok || 0), 0);
+  const pct = checked ? Math.round(ok / checked * 1000) / 10 : 0;
+  const has = k=> all.filter(r=> r.bad.indexOf(k) !== -1);
+  const bul = all.filter(r=> r.bad.some(k=> /^b\d$/.test(k)));
+  const wrong = all.filter(r=> r.bad.length), good = all.filter(r=> r.allOk), blank = all.filter(r=> r.blank.length);
+  const gk = has('gk');
+
+  let rows = all;
+  const pick = {good, wrong, title: has('title'), bullets: bul, desc: has('desc'), gk, blank};
+  if(pick[LC_F.show]) rows = pick[LC_F.show];
+  if(LC_F.tier) rows = rows.filter(r=> (r.tier || 'N') === LC_F.tier);
+  if(LC_F.q){ const q = LC_F.q.toLowerCase(); rows = rows.filter(r=> (r.sku + ' ' + r.asin + ' ' + r.name).toLowerCase().indexOf(q) !== -1); }
+  rows = LC_F.sort && LC_SORT[LC_F.sort] ? sortBy(rows, LC_SORT[LC_F.sort], LC_F.dir)
+       : sortBy(rows, r=> (r.nolive ? 2000 : 0) + (r.pct === null ? 1000 : r.pct) * 10 + (TIER_RANK[r.tier] !== undefined ? TIER_RANK[r.tier] : 5), 1);
+
+  const order = ['all', 'good', 'wrong', 'title', 'bullets', 'desc', 'gk', 'blank']; let n = 0;
+  const tile = (k, val, cls, note)=>{ const f = order[n++];
+    return `<div class="cpt-tile bbtile${LC_F.show === f ? ' on' : ''}" role="button" tabindex="0" data-show="${f}" title="Show these in the table"><div class="k">${k}</div><div class="v ${cls || ''}">${val}</div><div class="n">${note || '&nbsp;'}</div></div>`; };
+  const list = a=> esc(a.map(r=> r.sku).slice(0,3).join(', ')) + (a.length > 3 ? '\u2026' : '');
+  const fresh = LC_META.updated && LC_META.updated.slice(0,10) >= new Date(Date.now() - 2*86400000).toISOString().slice(0,10);
+  let html =
+    '<section class="cpt-top"><div class="cpt-head"><h2>Listing Copy</h2>'+
+      `<span class="sub">Amazon US vs Plytix, ${all.length} active ASINs</span>`+
+      (LC_META.updated ? `<span class="cpt-live${fresh ? '' : ' stale'}"><i></i>Checked ${esc(LC_META.updated)} ET</span>` : '')+
+    '</div><div class="cpt-tiles">'+
+      tile('Correct copy %', pct + '%', pct >= 98 ? 'good' : pct >= 90 ? 'warn' : 'bad', `${ok} of ${checked} fields match Plytix`)+
+      tile('Listings 100% correct', `${good.length}<span style="font-size:1rem;color:var(--c-night-mut)"> of ${all.length}</span>`, good.length === all.length ? 'good' : 'warn', '')+
+      tile('Listings with wrong copy', wrong.length, wrong.length ? 'bad' : 'good', wrong.length ? list(wrong) : 'None')+
+      tile('Title wrong', has('title').length, has('title').length ? 'bad' : 'good', has('title').length ? list(has('title')) : 'None')+
+      tile('Bullets wrong', bul.length, bul.length ? 'bad' : 'good', bul.length ? list(bul) : 'None')+
+      tile('Description wrong', has('desc').length, has('desc').length ? 'bad' : 'good', has('desc').length ? list(has('desc')) : 'None')+
+      tile('Keyword rule issues', gk.length, gk.length ? 'bad' : 'good', gk.length ? list(gk) : 'All under 249 bytes')+
+      tile('Blank in Plytix', blank.length, blank.length ? 'warn' : 'good', blank.length ? 'Fields with no correct copy' : 'None')+
+    '</div></section>'+
+    '<div class="cpt-tools"><div class="seg" id="lcSeg">'+
+      [['all','All ' + all.length], ['wrong','Wrong copy ' + wrong.length], ['title','Title ' + has('title').length],
+       ['bullets','Bullets ' + bul.length], ['desc','Description ' + has('desc').length], ['gk','Keywords ' + gk.length],
+       ['blank','Blank in Plytix ' + blank.length]]
+        .map(b=> `<button data-show="${b[0]}" aria-pressed="${LC_F.show === b[0]}">${b[1]}</button>`).join('')+
+    '</div><div class="seg" id="lcTier">'+
+      ['', 'A', 'B', 'C', 'X', 'N'].map(t=> `<button data-t="${t}" aria-pressed="${LC_F.tier === t}">${t ? 'Tier ' + t : 'All tiers'}</button>`).join('')+
+    '</div>'+
+    `<input id="lcQ" type="search" placeholder="Search SKU, ASIN or product" value="${esc(LC_F.q)}" aria-label="Search Listing Copy">`+
+    (LC_F.sort ? '<button id="lcUnsort">Clear sort</button>' : '')+
+    `<span class="count">${rows.length} of ${all.length}</span></div>`;
+
+  if(!LC.length){
+    html += LC_ERR
+      ? '<div class="cpt-empty"><b>Listing copy feed not found yet</b>Run runListingCopyNow in the CPC Keepa Fetcher project. It creates copy.json.</div>'
+      : '<div class="cpt-empty"><b>Loading Listing Copy</b></div>';
+  } else if(!rows.length){
+    html += '<div class="cpt-empty"><b>Nothing here</b>Pick All or clear the search.</div>';
+  } else {
+    const H = (k, label, cls, tip, d)=> `<th data-s="${k}" data-d="${d || 'asc'}" class="${cls || ''}">${label}${tip ? `<span class="qi" tabindex="0" data-tip="${esc(tip)}">?</span>` : ''}${sortArrow(LC_F, k)}</th>`;
+    html += '<table class="cpt-table bb-table lc-table"><thead><tr>'+
+      H('product', 'Product')+
+      H('pct', 'Correct %', 'b-cpt c', 'Fields on Amazon that match Plytix, out of the fields we can compare.')+
+      LC_COLS.map(c=> `<th class="${c[0] === 'gk' ? 'b-sim' : 'b-gap'} c">${c[1]}</th>`).join('')+
+      H('since', 'Copy last changed', 'b-move', 'The day the live Amazon copy last changed, as Keepa saw it.', 'desc')+
+      '</tr></thead><tbody>'+
+      rows.map(r=> `<tr class="row" tabindex="0" data-lc="${esc(r.asin)}">`+
+        `<td class="prod"><div class="p-name"><span class="dot" style="background:${r.nolive ? '#94a3b8' : r.allOk ? '#1f9d55' : '#d64545'}"></span>${esc(String(r.name).slice(0, 60))}</div>`+
+          `<div class="p-id"><span>SKU</span>${esc(r.sku)}</div><div class="p-id"><span>ASIN</span>${esc(r.asin)}</div>`+
+          `${r.tier ? `<span class="p-size">Tier ${esc(r.tier)}</span>` : ''}</td>`+
+        `<td class="c">${r.nolive ? '<span class="mut">Not checked yet</span>' : r.pct === null ? '<span class="mut">\u2014</span>' : bbBar(r.pct)}</td>`+
+        LC_COLS.map(c=> `<td class="c">${r.nolive ? '' : lcChip(r.f[c[0]])}</td>`).join('')+
+        `<td>${r.since ? esc(shortDate(r.since)) : '<span class="mut">No change seen</span>'}${r.extra ? `<span class="was">${r.extra} extra bullet${r.extra > 1 ? 's' : ''} on Amazon</span>` : ''}</td>`+
+      '</tr>').join('')+
+      '</tbody></table>';
+  }
+  v.innerHTML = html;
+
+  wireSort(v, LC_F, renderLc);
+  const setShow = f=>{ LC_F.show = f; renderLc(); };
+  [...v.querySelectorAll('#lcSeg button')].forEach(b=> b.onclick = ()=> setShow(b.dataset.show));
+  [...v.querySelectorAll('.bbtile')].forEach(t=>{
+    const go = ()=>{ setShow(t.dataset.show); const tb = document.querySelector('#cptView .lc-table, #cptView .cpt-empty'); if(tb && tb.scrollIntoView) tb.scrollIntoView({behavior:'smooth', block:'start'}); };
+    t.onclick = go; t.onkeydown = e=>{ if(e.key === 'Enter') go(); };
+  });
+  [...v.querySelectorAll('#lcTier button')].forEach(b=> b.onclick = ()=>{ LC_F.tier = b.dataset.t; renderLc(); });
+  const q = document.getElementById('lcQ');
+  if(q) q.oninput = ()=>{ LC_F.q = q.value; const pos = q.selectionStart; renderLc(); const q2 = document.getElementById('lcQ'); q2.focus(); q2.setSelectionRange(pos, pos); };
+  const un = document.getElementById('lcUnsort');
+  if(un) un.onclick = ()=>{ LC_F.sort = ''; renderLc(); };
+  [...v.querySelectorAll('tr.row[data-lc]')].forEach(tr=>{
+    const open = ()=>{ const r = all.find(x=> x.asin === tr.dataset.lc); if(r) openLc(r); };
+    tr.onclick = open; tr.onkeydown = e=>{ if(e.key === 'Enter') open(); };
+  });
+}
+
+/* Words in one text that are not in the other, marked */
+function lcMark(text, other, cls){
+  const bag = {};
+  String(other || '').toLowerCase().split(/\s+/).forEach(w=>{ const k = w.replace(/[^\w%$]/g, ''); bag[k] = (bag[k] || 0) + 1; });
+  return String(text || '').split(/(\s+)/).map(w=>{
+    if(/^\s+$/.test(w)) return w;
+    const k = w.toLowerCase().replace(/[^\w%$]/g, '');
+    if(!k) return esc(w);
+    if(bag[k]){ bag[k]--; return esc(w); }
+    return `<mark class="${cls}">${esc(w)}</mark>`;
+  }).join('');
+}
+
+function openLc(r){
+  const d = document.getElementById('detail');
+  const block = (c)=>{
+    const x = r.f[c[0]] || {s:'none'};
+    if(x.s === 'none') return '';
+    const st = LC_S[x.rule && x.s !== 'rule' && x.s !== 'rulesok' ? 'rule' : x.s] || LC_S.none;
+    const showLive = x.l && x.s !== 'match';
+    return `<div class="lcf"><div class="lcf-h"><b>${c[1]}</b> ${lcChip(x)}`+
+      (x.c ? ` <button class="work" data-copy="${c[0]}">Copy correct</button>` : '')+'</div>'+
+      (x.rule ? `<div class="lcf-r">${esc(x.rule)}</div>` : '')+
+      (c[0] === 'gk' && x.c ? `<div class="lcf-r" style="color:var(--muted)">${x.bytes} of 249 bytes${x.dup ? `, ${x.dup} word${x.dup > 1 ? 's' : ''} already in the title or bullets` : ''}</div>` : '')+
+      (x.c ? `<div class="lcf-l">Correct (Plytix)</div><div class="lcf-t">${showLive ? lcMark(x.c, x.l, 'lc-miss') : esc(x.c)}</div>` : '')+
+      (showLive ? `<div class="lcf-l">Live on Amazon</div><div class="lcf-t">${lcMark(x.l, x.c, 'lc-extra')}</div>` : '')+
+      (x.s === 'small' || x.s === 'wrong' ? `<div class="lcf-r" style="color:var(--muted)">${Math.round((x.sim || 0) * 100)}% of the words match</div>` : '')+
+    '</div>';
+  };
+  d.innerHTML =
+    '<h2>Listing Copy</h2>'+
+    `<h3>${esc(r.sku)} ${esc(r.name)}</h3>`+
+    '<dl>'+
+      `<dt>ASIN</dt><dd class="mono">${esc(r.asin)}</dd>`+
+      `<dt>Correct %</dt><dd class="${r.allOk ? 'ok' : 'warn'}">${r.pct === null ? '\u2014' : r.pct + '%'}${r.checked ? ` (${r.ok} of ${r.checked} fields)` : ''}</dd>`+
+      `<dt>To fix</dt><dd>${r.bad.length ? esc(r.bad.map(k=> LC_COLS.find(c=> c[0] === k)[1]).join(', ')) : 'Nothing'}</dd>`+
+      `<dt>Last change</dt><dd>${r.since ? esc(shortDate(r.since)) : 'No change seen'}${r.liveChecked ? ', checked ' + esc(shortDate(r.liveChecked)) : ''}</dd>`+
+    '</dl>'+
+    '<div class="lcleg"><mark class="lc-miss">yellow</mark> = in Plytix, not on Amazon. <mark class="lc-extra">red</mark> = on Amazon, not in Plytix.</div>'+
+    LC_COLS.map(block).join('')+
+    '<div class="act-row">'+
+      `<a class="work" href="https://www.amazon.com/dp/${esc(r.asin)}" target="_blank" rel="noopener">Open on Amazon</a>`+
+      `<a class="work" href="https://sellercentral.amazon.com/myinventory/inventory?searchTerm=${encodeURIComponent(r.sku)}" target="_blank" rel="noopener">Open in Seller Central</a>`+
+    '</div>'+
+    '<div class="why">Live copy from Keepa\u2019s last check. Correct copy from Plytix. Generic keywords are backend only, so they are checked against Amazon\u2019s rules, not compared.</div>';
+  [...d.querySelectorAll('button[data-copy]')].forEach(b=> b.onclick = ()=>{
+    const t = (r.f[b.dataset.copy] || {}).c || '';
+    (navigator.clipboard ? navigator.clipboard.writeText(t) : Promise.reject())
+      .then(()=> b.textContent = 'Copied').catch(()=> window.prompt('Copy this text:', t));
+  });
+  document.getElementById('veil').hidden = false;
+}
+
 function closeDetail(){ document.getElementById('veil').hidden = true; }
 
 
@@ -4124,13 +4340,13 @@ function render(){
   TARGETS = null;      // re-read from today's data on every redraw
   renderView();
   chrome();
-  if(S.view === 'cpt' || S.view === 'bb') document.getElementById('ov').hidden = true;
+  if(S.view === 'cpt' || S.view === 'bb' || S.view === 'lc') document.getElementById('ov').hidden = true;
   else bandHeaders();
 }
 
 function renderView(){
 
-  const isCpt = S.view === 'cpt' || S.view === 'bb';
+  const isCpt = S.view === 'cpt' || S.view === 'bb' || S.view === 'lc';
   document.getElementById('cptView').hidden  = !isCpt;
   document.getElementById('mainWrap').hidden = isCpt;
   document.getElementById('bar').hidden      = isCpt;
@@ -4139,6 +4355,7 @@ function renderView(){
   if(S.view === 'cases'){ renderCases(); return; }
   if(S.view === 'cpt'){ renderCpt(); return; }
   if(S.view === 'bb'){ renderBb(); return; }
+  if(S.view === 'lc'){ renderLc(); return; }
   if(S.view === 'category'){ renderCategory(); return; }
 
   const rows = visible();
@@ -4360,6 +4577,10 @@ function chrome(){
     const lost = bbRows().filter(r=> !r.has).length;
     document.getElementById('bbBtn').innerHTML = 'Buy Box' + (lost ? `<span class="badge">${lost}</span>` : '');
   }
+  if(LC.length){
+    const nWrong = lcRows().filter(r=> r.bad.length).length;
+    document.getElementById('lcBtn').innerHTML = 'Listing Copy' + (nWrong ? `<span class="badge">${nWrong}</span>` : '');
+  }
   document.getElementById('casesBtn').innerHTML =
     'Cases' + (CASES.length ? `<span class="badge">${CASES.length}</span>` : '');
 }
@@ -4539,6 +4760,7 @@ const quickCat   = document.getElementById('quickCat');
 const casesBtn = document.getElementById('casesBtn');
 const cptBtn   = document.getElementById('cptBtn');
 const bbBtn    = document.getElementById('bbBtn');
+const lcBtn    = document.getElementById('lcBtn');
 
 let PANEL_BEFORE_CPT = null;
 
@@ -4546,7 +4768,7 @@ function go(view){
   // The CPT view has its own controls, so the filter panel folds away while
   // it is open and comes back as it was when you leave.
   // The CPT and Buy Box views both own the screen
-  const own = x=> x === 'cpt' || x === 'bb';
+  const own = x=> x === 'cpt' || x === 'bb' || x === 'lc';
   if(own(view) && !own(S.view)){
     PANEL_BEFORE_CPT = !document.getElementById('panel').hidden;
     setPanel(false);
@@ -4561,6 +4783,7 @@ function go(view){
   casesBtn.setAttribute('aria-pressed', view === 'cases');
   cptBtn.setAttribute('aria-pressed', view === 'cpt');
   bbBtn.setAttribute('aria-pressed', view === 'bb');
+  lcBtn.setAttribute('aria-pressed', view === 'lc');
   catalogBtn.setAttribute('aria-pressed', view === 'catalog');
   render();
 }
@@ -4568,6 +4791,7 @@ function go(view){
 casesBtn.onclick = ()=> go('cases');
 cptBtn.onclick   = ()=> go('cpt');
 bbBtn.onclick    = ()=> go('bb');
+lcBtn.onclick    = ()=> go('lc');
 
 homeBtn.onclick    = ()=> go('checklist');
 catalogBtn.onclick = ()=> go('catalog');
