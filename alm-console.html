@@ -727,6 +727,7 @@ a.work:hover{background:var(--accent);color:#fff}
 .bb-table td{vertical-align:top}
 /* Fits the screen: no sideways scrolling needed on a laptop */
 .cpt-table.bb-table{min-width:0;table-layout:auto}
+#cptView .cpt-tile .n{white-space:normal}
 .bb-table tbody td.prod{min-width:13rem !important}
 .bb-table td.prod .p-name{white-space:normal;max-width:16rem}
 .bb-table td,.bb-table th{padding-left:.5rem;padding-right:.5rem}
@@ -3566,7 +3567,7 @@ const BB_F = {show:'all', q:'', sort:'', dir:1, tier:''};
 const BB_CLS = {us:['Us', 'bbh-us'], amazon:['Amazon', 'bbh-amz'], other:['Other seller', 'bbh-oth'], none:['No Buy Box', 'bbh-none']};
 const BB_WHY = {
   oos:     {t:'Out of stock in the US', c:'bad'},
-  amazon:  {t:'Amazon.com has it', c:'bad'},
+  amazon:  {t:'Another seller has it (Amazon.com)', c:'bad'},
   seller:  {t:'Another seller has it', c:'bad'},
   cpt:     {t:'Our price is above the CPT', c:'bad'},
   nooffer: {t:'Our offer is not showing', c:'bad'},
@@ -3619,10 +3620,10 @@ function bbRows(){
 
 /* One plain next step. Price decisions stay with Jack and Sam. */
 function bbNext(r){
-  if(r.has) return r.amzOn ? 'Nothing now. Amazon also sells here, keep an eye on it.' : '';
+  if(r.has) return r.others.length ? 'Nothing now. Another seller is on this listing, keep an eye on it.' : '';
   return {
     oos:     r.usIn ? `Restock is on the way (${r.usIn} inbound).` : 'No US stock on the way. Plan a restock.',
-    amazon:  'Check the Reimbursements report, then flag it to Jack.',
+    amazon:  'Check who it is, then flag it to Jack.',
     seller:  'We have no resellers. Check who it is, then flag it to Jack.',
     cpt:     'Open it in the CPT tracker.',
     nooffer: 'Check the listing status in Seller Central.',
@@ -3653,7 +3654,7 @@ function renderBb(){
   const all = bbRows();
   const yes = all.filter(r=> r.has), no = all.filter(r=> !r.has);
   const by = k=> no.filter(r=> r.why === k);
-  const amzOn = all.filter(r=> r.amzOn);
+  const amzOn = all.filter(r=> r.others.length);
   const fresh = BB_META.updated && BB_META.updated.slice(0,10) >= new Date(Date.now() - 2*86400000).toISOString().slice(0,10);
 
   let rows = all;
@@ -3677,10 +3678,12 @@ function renderBb(){
       (BB_META.updated ? `<span class="cpt-live${fresh ? '' : ' stale'}"><i></i>Buy Box checked ${esc(BB_META.updated)} ET</span>` : '')+
       (META.srcUs ? `<span class="sub">Stock from ${esc(META.srcUs)}</span>` : '')+
     '</div><div class="cpt-tiles">'+
-      (()=>{ const avg = k=> all.length ? Math.round(all.reduce((t,r)=> t + (r.win ? r.win[k] || 0 : 0), 0) / all.length) : 0;
-             const p = avg('d30');
-             return tile('Buy Box %, active listings', p + '%', p >= 95 ? 'good' : p >= 85 ? 'warn' : 'bad',
-                         `30 days. 7 days ${avg('d7')}%, today ${all.length ? Math.round(yes.length / all.length * 100) : 0}%`); })()+
+      (()=>{ const avg = (list, k)=> list.length ? Math.round(list.reduce((t,r)=> t + (r.win ? r.win[k] || 0 : 0), 0) / list.length) : 0;
+             const inStock = all.filter(r=> r.why !== 'oos');
+             const p = avg(all, 'd30'), q = avg(inStock, 'd30');
+             const oos = all.length - inStock.length;
+             return tile('Buy Box %, 30 days', p + '%', p >= 95 ? 'good' : p >= 85 ? 'warn' : 'bad',
+                         oos ? `Not counting the ${oos} out of stock: <b style="color:#e8edf3">today ${inStock.length ? Math.round(inStock.filter(r=> r.has).length / inStock.length * 100) : 0}%</b>, 30 days ${q}%` : 'All listings in stock'); })()+
       tile('We have the Buy Box', `${yes.length}<span style="font-size:1rem;color:var(--c-night-mut)"> of ${all.length}</span>`, no.length ? 'warn' : 'good',
            all.length ? Math.round(yes.length / all.length * 100) + '% of listings' : '')+
       tile('We don\u2019t have it', no.length, no.length ? 'bad' : 'good', no.length ? 'Reasons in the next tiles' : 'All good')+
@@ -3688,19 +3691,20 @@ function renderBb(){
       tile('Because another seller has it', by('amazon').length + by('seller').length, (by('amazon').length + by('seller').length) ? 'bad' : 'good',
            (by('amazon').length + by('seller').length) ? list(by('amazon').concat(by('seller'))) : 'None')+
       tile('Other reason', oth.length, oth.length ? 'warn' : 'good', oth.length ? list(oth) : 'None')+
-      tile('Amazon also sells on our listing', amzOn.length, amzOn.length ? 'warn' : 'good',
-           amzOn.length ? `${amzOn.filter(r=> r.has).length} of these we still have` : 'None')+
+      tile('Other sellers on our listing', amzOn.length, amzOn.length ? 'warn' : 'good',
+           amzOn.length ? `We still have the Buy Box on ${amzOn.filter(r=> r.has).length}` : 'None')+
     '</div></section>'+
     '<div class="cpt-tools"><div class="seg" id="bbSeg">'+
       [['all','All ' + all.length], ['no','No Buy Box ' + no.length], ['oos','Out of stock ' + by('oos').length],
        ['seller','Another seller ' + (by('amazon').length + by('seller').length)], ['other','Other reason ' + oth.length],
-       ['amz','Amazon also selling ' + amzOn.length]]
+       ['amz','Other sellers on listing ' + amzOn.length]]
         .map(b=> `<button data-show="${b[0]}" aria-pressed="${BB_F.show === b[0]}">${b[1]}</button>`).join('')+
     '</div><div class="seg" id="bbTier">'+
       ['', 'A', 'B', 'C', 'X', 'N'].map(t=> `<button data-t="${t}" aria-pressed="${BB_F.tier === t}">${t ? 'Tier ' + t : 'All tiers'}</button>`).join('')+
     '</div>'+
     `<input id="bbQ" type="search" placeholder="Search SKU, ASIN or product" value="${esc(BB_F.q)}" aria-label="Search Buy Box">`+
     (BB_F.sort ? '<button id="bbUnsort">Clear sort</button>' : '')+
+    (no.length ? '<button id="bbSlack" class="work strong">Draft Slack to Haris</button>' : '')+
     `<span class="count">${rows.length} of ${all.length}</span></div>`;
 
   if(!BB.length){
@@ -3732,6 +3736,8 @@ function renderBb(){
   if(q) q.oninput = ()=>{ BB_F.q = q.value; const pos = q.selectionStart; renderBb(); const q2 = document.getElementById('bbQ'); q2.focus(); q2.setSelectionRange(pos, pos); };
   const un = document.getElementById('bbUnsort');
   if(un) un.onclick = ()=>{ BB_F.sort = ''; renderBb(); };
+  const sl = document.getElementById('bbSlack');
+  if(sl) sl.onclick = ()=> bbSlack(no);
   [...v.querySelectorAll('tr.row[data-bb]')].forEach(tr=>{
     const open = ()=>{ const r = all.find(x=> x.asin === tr.dataset.bb); if(r) openBb(r); };
     tr.onclick = open;
@@ -3747,7 +3753,7 @@ function bbTr(r){
       `<div class="p-id"><span>SKU</span>${esc(r.sku)}</div><div class="p-id"><span>ASIN</span>${esc(r.asin)}</div>`+
       `${r.tier ? `<span class="p-size">Tier ${esc(r.tier)}</span>` : ''}</td>`+
     `<td class="c">${r.has ? '<span class="bbyes">Yes</span>' : '<span class="bbno">No</span>'}</td>`+
-    `<td>${r.has ? (r.shared ? '<span class="was" style="white-space:normal;max-width:15rem">Same price as Amazon, we share it</span>' : '') :
+    `<td>${r.has ? (r.shared ? `<span class="was" style="white-space:normal;max-width:15rem">Same price as ${esc(r.holder.name || 'another seller')}, we share it</span>` : '') :
       `<span class="bbdo ${w ? w.c : 'warn'}">${esc(whyTxt)}</span>`}`+
       `${r.next ? `<span class="was" style="white-space:normal;max-width:16rem">${esc(r.next)}</span>` : ''}</td>`+
     `<td class="c">${bbStock(r.us, r.usIn)}</td>`+
@@ -3757,6 +3763,43 @@ function bbTr(r){
     `<td style="white-space:normal;max-width:14rem">${r.others.length ? r.others.map(x=> `<div>${esc(x)}</div>`).join('') : '<span class="mut">None</span>'}</td>`+
     `<td class="c">${bbBar(r.win && r.win.d30)}<span class="was">7 days ${Math.round(r.win ? r.win.d7 : 0)}%</span></td>`+
   '</tr>';
+}
+
+/* Short Slack note to Haris: which SKUs have no Buy Box and why. No
+   numbers in it (no stock counts, prices or percentages), as agreed for
+   messages to Haris. */
+function bbSlack(no){
+  const groups = [
+    ['oos', 'Out of stock'],
+    ['amazon', 'Another seller has it'], ['seller', 'Another seller has it'],
+    ['cpt', 'CPT issue (our price is above Amazon\u2019s price limit)'],
+    ['nooffer', 'Our offer is not showing'], ['unknown', 'No Buy Box, reason not clear']
+  ];
+  const lines = [], done = {};
+  groups.forEach(g=>{
+    const list = no.filter(r=> r.why === g[0]);
+    if(!list.length) return;
+    const label = g[1];
+    const skus = list.map(r=> r.sku + (g[0] === 'amazon' || g[0] === 'seller' ? ' (' + (r.holder.name || 'other seller') + ')' : ''));
+    if(done[label]) done[label].push(...skus); else { done[label] = skus; lines.push(label); }
+  });
+  const day = new Date().toLocaleDateString('en-US', {month:'short', day:'numeric'});
+  const text = [`*Buy Box check, ${day}*`, '', 'Hi @Haris,', '',
+    'Quick flag, these listings don\u2019t have the Buy Box today:', '',
+    ...lines.map(l=> `${l}: ${done[l].join(', ')}`), '',
+    no.some(r=> r.why === 'cpt') ? 'The CPT ones are in the CPT tracker. Let me know if you want to adjust anything.' : 'Let me know if you need anything from me.'
+  ].join('\n');
+  const d = document.getElementById('detail');
+  d.innerHTML = '<h2>Slack draft</h2><h3>To Haris</h3>'+
+    `<textarea class="draft-t" id="bbSlackT" rows="${Math.min(16, text.split('\n').length + 2)}">${esc(text)}</textarea>`+
+    '<div class="act-row"><button class="work strong" id="bbSlackC">Copy</button></div>'+
+    '<div class="why">Only SKUs and reasons, no numbers. Edit anything before you paste it in Slack.</div>';
+  document.getElementById('bbSlackC').onclick = e=>{
+    const t = document.getElementById('bbSlackT').value;
+    (navigator.clipboard ? navigator.clipboard.writeText(t) : Promise.reject())
+      .then(()=> e.target.textContent = 'Copied').catch(()=> window.prompt('Copy this text:', t));
+  };
+  document.getElementById('veil').hidden = false;
 }
 
 function openBb(r){
