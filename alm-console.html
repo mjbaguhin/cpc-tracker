@@ -63,19 +63,19 @@ header h1{
 #meta{font-size:.7rem;color:#93a0b0;letter-spacing:.02em}
 #meta b{color:#ccd6e2;font-weight:600}
 
-#toggle,#fs,#homeBtn,#quickCat,#casesBtn,#catalogBtn,#cptBtn{
+#toggle,#fs,#homeBtn,#quickCat,#casesBtn,#catalogBtn,#cptBtn,#bbBtn{
   font-size:.74rem;padding:.24rem .6rem;
   background:transparent;color:#fff;border:1px solid #3a4652;
 }
 #homeBtn{margin-left:auto}
 #homeBtn[aria-pressed="true"],#quickCat[aria-pressed="true"],
 #casesBtn[aria-pressed="true"],
-#cptBtn[aria-pressed="true"],
+#cptBtn[aria-pressed="true"],#bbBtn[aria-pressed="true"],
 #catalogBtn[aria-pressed="true"]{
   background:#2f4a6d;border-color:#4a6fa5;
 }
-#toggle:hover,#fs:hover,#homeBtn:hover,#quickCat:hover,#casesBtn:hover,#catalogBtn:hover,#cptBtn:hover{background:#1c232b}
-#toggle .badge,#homeBtn .badge,#quickCat .badge,#casesBtn .badge,#cptBtn .badge{
+#toggle:hover,#fs:hover,#homeBtn:hover,#quickCat:hover,#casesBtn:hover,#catalogBtn:hover,#cptBtn:hover,#bbBtn:hover{background:#1c232b}
+#toggle .badge,#homeBtn .badge,#quickCat .badge,#casesBtn .badge,#cptBtn .badge,#bbBtn .badge{
   display:inline-block;margin-left:.35rem;padding:0 .32rem;
   background:#a83a26;border-radius:8px;font-size:.68rem;font-weight:700;
 }
@@ -599,10 +599,10 @@ header h1{font-size:.95rem;letter-spacing:.02em;text-transform:none;font-weight:
 header h1::after{content:"";display:inline-block;width:.42rem;height:.42rem;border-radius:50%;
   background:#3fbf7f;margin-left:.45rem;vertical-align:middle}
 #meta{font-family:ui-monospace,"SF Mono",Menlo,Consolas,monospace;font-size:.72rem}
-#toggle,#fs,#homeBtn,#quickCat,#casesBtn,#catalogBtn,#cptBtn{
+#toggle,#fs,#homeBtn,#quickCat,#casesBtn,#catalogBtn,#cptBtn,#bbBtn{
   font-size:.8rem;padding:.38rem .8rem;border-radius:7px;border-color:var(--night-line);color:#dfe5ee}
 #homeBtn[aria-pressed="true"],#quickCat[aria-pressed="true"],#casesBtn[aria-pressed="true"],
-#catalogBtn[aria-pressed="true"],#cptBtn[aria-pressed="true"]{background:#2c4f7c;border-color:#4a76b0;color:#fff}
+#catalogBtn[aria-pressed="true"],#cptBtn[aria-pressed="true"],#bbBtn[aria-pressed="true"]{background:#2c4f7c;border-color:#4a76b0;color:#fff}
 
 /* overview band */
 #ov{background:var(--night);color:#e8edf3;padding:1.05rem 1.25rem 1.15rem;flex:0 0 auto}
@@ -699,6 +699,32 @@ tr.pgh.solo td{background:linear-gradient(90deg,#eef1f5,#f7f8fa) !important;bord
   box-shadow:inset 5px 0 0 #64748b !important}
 tr.pgh.solo .pgh-name{color:#334155}
 tr.pgh.solo .pgh-meta{color:#64748b}
+
+/* ---------- Buy Box module ---------- */
+.cpt-tile .v.good{color:#6fd3a3}
+.bbh{display:inline-block;font-size:.8rem;font-weight:700;padding:.22rem .55rem;border-radius:6px;white-space:nowrap;max-width:14rem;overflow:hidden;text-overflow:ellipsis}
+.bbh-us{background:#e4f3ee;color:#17694a}
+.bbh-amz{background:#fdebd3;color:#9a4a00}
+.bbh-oth{background:#fbe2df;color:#a3261a}
+.bbh-none{background:#e8ecf1;color:#475569}
+.bbbar{display:inline-block;width:3.6rem;height:.42rem;border-radius:4px;background:#e8ecf1;vertical-align:middle;overflow:hidden}
+.bbbar i{display:block;height:100%}
+.bbbar i.g{background:#1f9d55}.bbbar i.y{background:#d99a1e}.bbbar i.r{background:#d64545}
+.bbpct{font-size:.8rem;margin-left:.35rem;font-variant-numeric:tabular-nums}
+.bbpct.g{color:#17694a}.bbpct.y{color:#9a6a00}.bbpct.r{color:#b42318}
+.bbdo{display:inline-block;font-size:.8rem;font-weight:700;white-space:normal;max-width:18rem}
+.bbdo.bad{color:#b42318}.bbdo.warn{color:#9a6a00}.bbdo.ok{color:#17694a}
+.bbstrip{display:flex;gap:2px;flex-wrap:wrap;margin:.35rem 0}
+.bbs{display:inline-block;width:.8rem;height:1.2rem;border-radius:2px}
+.bbs.bbh-us{background:#1f9d55}.bbs.bbh-amz{background:#e88a1a}.bbs.bbh-oth{background:#d64545}.bbs.bbh-none{background:#cbd5e1}
+.bbleg{display:flex;gap:.9rem;font-size:.75rem;color:var(--muted);margin-bottom:.4rem}
+.bbleg .bbs{width:.6rem;height:.6rem;margin-right:.25rem;vertical-align:middle}
+table.bbsel{width:100%;border-collapse:collapse;font-size:.82rem;margin-top:.3rem}
+table.bbsel th{text-align:left;font-size:.7rem;color:var(--muted);text-transform:uppercase;padding:.3rem .4rem;border-bottom:1px solid var(--line)}
+table.bbsel td{padding:.35rem .4rem;border-bottom:1px solid var(--line-soft)}
+a.work{display:inline-block;text-decoration:none;font-size:.8rem;padding:.3rem .7rem;border:1px solid var(--accent);border-radius:7px;color:var(--accent)}
+a.work:hover{background:var(--accent);color:#fff}
+.bb-table td{vertical-align:top}
 </style>
 </head>
 <body>
@@ -710,6 +736,7 @@ tr.pgh.solo .pgh-meta{color:#64748b}
   <button id="quickCat">Category</button>
   <button id="casesBtn">Cases</button>
   <button id="cptBtn">CPT tracker</button>
+  <button id="bbBtn">Buy Box</button>
   <button id="catalogBtn">Catalog</button>
   <button id="toggle" aria-expanded="true">Filters</button>
   <button id="fs" title="Fullscreen">Full screen</button>
@@ -820,6 +847,9 @@ const CPT_SRC = 'https://raw.githubusercontent.com/mjbaguhin/cpc-tracker/main/cp
 // Outside Amazon tab (Walmart, Wayfair, Temu and so on, added by hand).
 const SIM_SRC = 'https://raw.githubusercontent.com/mjbaguhin/cpc-tracker/main/similar.json';
 
+// Buy Box per ASIN, written nightly by Buy Box Watch in the CPC Keepa Fetcher project
+const BB_SRC = 'https://raw.githubusercontent.com/mjbaguhin/cpc-tracker/main/buybox.json';
+
 // Amazon's case creation entry point
 const CASE_URL = 'https://sellercentral.amazon.com/help/center?redirectSource=HelpHub';
 
@@ -912,12 +942,15 @@ async function load(fresh){
 
   // CPT feed is small and independent, so it never holds up the first paint
   grab(CPT_SRC, 'json', fresh)
-    .then(j => { buildCpt(j); if(S.view === 'cpt') render(); else chrome(); })
+    .then(j => { buildCpt(j); if(S.view === 'cpt' || S.view === 'bb') render(); else chrome(); })
     .catch(e => { CPT_ERR = e.message; if(S.view === 'cpt') render(); });
   grab(SIM_SRC, 'json', fresh)
     .then(j => { SIM = (j && j.items) || []; SIM_META = {updated: j && j.updated || ''};
                  if(S.view === 'cpt') render(); })
     .catch(e => console.warn('similar.json unavailable:', e.message));
+  grab(BB_SRC, 'json', fresh)
+    .then(j => { buildBb(j); if(S.view === 'bb') render(); else chrome(); })
+    .catch(e => { BB_ERR = e.message; if(S.view === 'bb') render(); });
 
   // Ratings arrive after the first paint and trigger a rebuild
   grab(SRC, 'json', fresh)
@@ -1993,7 +2026,7 @@ function strongFacts(r){
     const unaffected = cptRows().filter(o=> o.size === r.size && (o.sku || '').split('-')[0] === line && o.cpt !== null && o.cpt > r.cpt + 0.005);
     F.push({w:6, ref:true, t:`The threshold of ${usd(r.cpt)} matches, to the cent, the ${x.market} price of ${x.brand ? x.brand + ' ' : ''}${x.name} (${usd(x.price)}). ` +
       (words.length ? `It carries the same design name as our listing (${words.map(w=> w.charAt(0).toUpperCase() + w.slice(1)).join(', ')}). ` : '') +
-      (sameAsUs.length && unaffected.length ? `Only our ${r.size} designs that share a name with that brand's mats are held at ${usd(r.cpt)}. Our other ${numw(unaffected.length).toLowerCase()} ${r.size} designs, same size, material and backing, are not. The threshold follows a design name, not the product.` : 'The threshold appears to come from that single item.')});
+      (sameAsUs.length && unaffected.length ? `Only our ${r.size} designs that share a name with that brand's mats are held at ${usd(r.cpt)}. Our other ${numw(unaffected.length).toLowerCase()} ${r.size} designs, same size, material and backing, are not. This shows the threshold is matched by a design name, not by the actual product.` : 'The threshold appears to come from that single item.')});
   }
   const same = cptRows().filter(x=> x.asin !== r.asin && x.size === r.size && (x.sku || '').split('-')[0] === line && x.cpt !== null);
 
@@ -3512,6 +3545,228 @@ function openDetail(row, check){
   document.getElementById('veil').hidden = false;
 }
 
+/* ---------- Buy Box module ----------
+   One row per active ASIN from buybox.json, written every night by Buy Box
+   Watch in the CPC Keepa Fetcher project. Answers: who has the Add to Cart
+   button now, how often we won it lately, who else wins it, whether Amazon
+   itself is selling on our listing, and what to do about it. */
+let BB = [], BB_META = {}, BB_ERR = '';
+const BB_F = {show:'all', q:'', sort:'', dir:1, tier:''};
+const BB_CLS = {us:['Us', 'bbh-us'], amazon:['Amazon', 'bbh-amz'], other:['Other seller', 'bbh-oth'], none:['No Buy Box', 'bbh-none']};
+
+function buildBb(j){
+  BB_ERR = '';
+  BB_META = {updated: j && j.updated || '', ourId: j && j.ourSellerId || ''};
+  BB = (j && j.rows) || [];
+}
+
+function bbRows(){
+  const cpt = CPT.length ? cptRows() : [];
+  return BB.map(b=>{
+    const row = (b.sku && ROWS.find(x=> x.sku === b.sku)) || ROWS.find(x=> x.asin === b.asin);
+    const c = cpt.find(x=> x.asin === b.asin);
+    const ours = b.ours !== null ? b.ours : (row ? (row.usSale !== null && (row.usList === null || row.usSale < row.usList) ? row.usSale : row.usList) : null);
+    const r = Object.assign({}, b, {
+      sku: b.sku || (row && row.sku) || '', name: (row && row.name) || (c && c.name) || b.asin,
+      tier: b.tier || (row && row.tier) || '', avail: row ? row.usAvail : null, ours,
+      cpt: c ? c.cpt : null, cptOver: !!(c && c.gap > 0),
+      amzOn: !!(b.amazon && b.amazon.price !== null),
+      amzBelow: !!(b.amazon && b.amazon.price !== null && ours !== null && b.amazon.price < ours - 0.005),
+      bbGap: b.bb !== null && ours !== null ? Math.round((ours - b.bb) * 100) / 100 : null,
+      newUp: b.offers && b.offers.n !== null && b.offers.n7 !== null && b.offers.n > b.offers.n7,
+      lost: b.holder && (b.holder.cls === 'amazon' || b.holder.cls === 'other')
+    });
+    r.todo = bbTodo(r);
+    return r;
+  });
+}
+
+/* What to do, most urgent first. Price decisions stay with Jack and Sam. */
+function bbTodo(r){
+  const h = r.holder ? r.holder.cls : 'none';
+  if(r.avail === 0) return {lv:'bad', t:'Out of stock: no Buy Box until stock is back', how:'Check the inbound shipment for this SKU.'};
+  if(h === 'amazon') return r.amzBelow
+    ? {lv:'bad', t:`Amazon has it, ${usd(r.ours - r.amazon.price)} cheaper than us`, how:'Check the Reimbursements report for lost or damaged units first. Any price change is Jack or Sam\u2019s call.'}
+    : {lv:'bad', t:'Amazon has it', how:'Check the Reimbursements report for lost or damaged units, then flag it to Jack.'};
+  if(h === 'other') return {lv:'bad', t:`Another seller has it: ${r.holder.name}`, how:'We have no resellers. Check the offer condition, consider a test buy, and report it in Brand Registry only if it is fake.'};
+  if(h === 'none') return r.cptOver
+    ? {lv:'bad', t:'No Buy Box: our price is above the CPT', how:'Open it in the CPT tracker.'}
+    : {lv:'warn', t:'No Buy Box shown', how:'Check Featured Offer eligibility for this SKU in Seller Central.'};
+  if(r.amzBelow) return {lv:'warn', t:`We have it, but Amazon is ${usd(r.ours - r.amazon.price)} cheaper`, how:`Amazon stock: ${r.amazon.stock || 'unknown'}. We may lose it when their stock arrives. Flag it to Jack.`};
+  if(r.amzOn) return {lv:'warn', t:'We have it. Amazon also sells on this listing', how:'Watch it daily. Check the Reimbursements report.'};
+  if(r.newUp) return {lv:'warn', t:`We have it. New offers went up (${r.offers.n7} to ${r.offers.n})`, how:'Open the offers on Amazon and see who joined.'};
+  if(r.win && r.win.d7 < 90) return {lv:'warn', t:`We have it, but only ${Math.round(r.win.d7)}% of the last 7 days`, how:'See who else won it in the detail.'};
+  return {lv:'ok', t:'We have it', how:''};
+}
+
+const BB_SORT = {
+  product: r=> r.name, holder: r=> ({other:0, amazon:1, none:2, us:3})[r.holder ? r.holder.cls : 'none'],
+  ours: r=> r.ours, bb: r=> r.bbGap, w7: r=> r.win ? r.win.d7 : null, w30: r=> r.win ? r.win.d30 : null,
+  w90: r=> r.win ? r.win.d90 : null, amz: r=> r.amazon ? r.amazon.price : null,
+  offers: r=> r.offers ? r.offers.n : null, rival: r=> r.rivals && r.rivals[0] ? r.rivals[0].p90 : null,
+  todo: r=> ({bad:0, warn:1, ok:2})[r.todo.lv]
+};
+
+function bbBar(p){
+  const v = Math.max(0, Math.min(100, Math.round(p || 0)));
+  const c = v >= 95 ? 'g' : v >= 80 ? 'y' : 'r';
+  return `<span class="bbbar"><i class="${c}" style="width:${v}%"></i></span><b class="bbpct ${c}">${v}%</b>`;
+}
+
+function renderBb(){
+  document.getElementById('msg').hidden = true;
+  document.getElementById('bar').innerHTML = '';
+  const v = document.getElementById('cptView');
+  const all = bbRows();
+  const cnt = k=> all.filter(r=> r.holder && r.holder.cls === k).length;
+  const us = cnt('us'), lostA = cnt('amazon'), lostO = cnt('other'), none = cnt('none');
+  const amzOn = all.filter(r=> r.amzOn), newUp = all.filter(r=> r.newUp);
+  const avg = k=> all.length ? Math.round(all.reduce((s,r)=> s + (r.win ? r.win[k] || 0 : 0), 0) / all.length) : 0;
+  const fresh = BB_META.updated && BB_META.updated.slice(0,10) >= new Date(Date.now() - 2*86400000).toISOString().slice(0,10);
+
+  let rows = all;
+  if(BB_F.show === 'lost')  rows = all.filter(r=> r.lost);
+  if(BB_F.show === 'none')  rows = all.filter(r=> r.holder && r.holder.cls === 'none');
+  if(BB_F.show === 'amz')   rows = amzOn;
+  if(BB_F.show === 'new')   rows = newUp;
+  if(BB_F.show === 'weak')  rows = all.filter(r=> r.holder && r.holder.cls === 'us' && r.win && r.win.d7 < 90);
+  if(BB_F.show === 'act')   rows = all.filter(r=> r.todo.lv !== 'ok');
+  if(BB_F.tier) rows = rows.filter(r=> (r.tier || 'N') === BB_F.tier);
+  if(BB_F.q){ const q = BB_F.q.toLowerCase(); rows = rows.filter(r=> (r.sku + ' ' + r.asin + ' ' + r.name).toLowerCase().indexOf(q) !== -1); }
+  rows = BB_F.sort && BB_SORT[BB_F.sort] ? sortBy(rows, BB_SORT[BB_F.sort], BB_F.dir)
+       : sortBy(rows, r=> ({bad:0, warn:1, ok:2})[r.todo.lv] * 10 + (TIER_RANK[r.tier] !== undefined ? TIER_RANK[r.tier] : 5), 1);
+
+  const tile = (k, val, cls, note)=> `<div class="cpt-tile"><div class="k">${k}</div><div class="v ${cls || ''}">${val}</div><div class="n">${note || '&nbsp;'}</div></div>`;
+  let html =
+    '<section class="cpt-top"><div class="cpt-head"><h2>Buy Box</h2>'+
+      `<span class="sub">Amazon US, ${all.length} active ASINs</span>`+
+      (BB_META.updated ? `<span class="cpt-live${fresh ? '' : ' stale'}"><i></i>Updated ${esc(BB_META.updated)} ET, nightly</span>` : '')+
+    '</div><div class="cpt-tiles">'+
+      tile('We hold it now', `${us}<span style="font-size:1rem;color:var(--c-night-mut)"> of ${all.length}</span>`, us === all.length ? 'good' : 'warn',
+           all.length ? Math.round(us / all.length * 100) + '% of listings' : '')+
+      tile('Lost to Amazon', lostA, lostA ? 'bad' : 'good', lostA ? esc(all.filter(r=> r.holder.cls === 'amazon').map(r=> r.sku).slice(0,3).join(', ')) : 'None')+
+      tile('Lost to another seller', lostO, lostO ? 'bad' : 'good', lostO ? esc(all.filter(r=> r.holder.cls === 'other').map(r=> r.sku).slice(0,3).join(', ')) : 'None')+
+      tile('No Buy Box shown', none, none ? 'warn' : 'good', none ? esc(all.filter(r=> r.holder.cls === 'none').map(r=> r.sku).slice(0,3).join(', ')) : 'None')+
+      tile('Amazon sells on our listing', amzOn.length, amzOn.length ? 'warn' : 'good',
+           amzOn.length ? amzOn.filter(r=> r.amzBelow).length + ' cheaper than us' : 'None')+
+      tile('Our win rate, 30 days', avg('d30') + '%', avg('d30') >= 95 ? 'good' : avg('d30') >= 85 ? 'warn' : 'bad', '7 days ' + avg('d7') + '%, 90 days ' + avg('d90') + '%')+
+      tile('More sellers this week', newUp.length, newUp.length ? 'warn' : 'good', newUp.length ? esc(newUp.map(r=> r.sku).slice(0,3).join(', ')) : 'No new offers')+
+    '</div></section>'+
+    '<div class="cpt-tools"><div class="seg" id="bbSeg">'+
+      [['all','All ' + all.length], ['act','Needs a look ' + all.filter(r=> r.todo.lv !== 'ok').length], ['lost','Lost ' + (lostA + lostO)],
+       ['amz','Amazon on listing ' + amzOn.length], ['none','No Buy Box ' + none], ['weak','Under 90% this week ' + all.filter(r=> r.holder && r.holder.cls === 'us' && r.win && r.win.d7 < 90).length],
+       ['new','New offers ' + newUp.length]]
+        .map(b=> `<button data-show="${b[0]}" aria-pressed="${BB_F.show === b[0]}">${b[1]}</button>`).join('')+
+    '</div><div class="seg" id="bbTier">'+
+      ['', 'A', 'B', 'N', 'C'].map(t=> `<button data-t="${t}" aria-pressed="${BB_F.tier === t}">${t ? 'Tier ' + t : 'All tiers'}</button>`).join('')+
+    '</div>'+
+    `<input id="bbQ" type="search" placeholder="Search SKU, ASIN or product" value="${esc(BB_F.q)}" aria-label="Search Buy Box">`+
+    (BB_F.sort ? '<button id="bbUnsort">Clear sort</button>' : '')+
+    `<span class="count">${rows.length} of ${all.length}</span></div>`;
+
+  if(!BB.length){
+    html += BB_ERR
+      ? '<div class="cpt-empty"><b>Buy Box feed not found yet</b>Add BuyBox_Watch.gs to the CPC Keepa Fetcher project and run setupBuyBoxWatchDaily. It creates buybox.json on its first run.</div>'
+      : '<div class="cpt-empty"><b>Loading Buy Box</b></div>';
+  } else if(!rows.length){
+    html += '<div class="cpt-empty"><b>Nothing matches</b>Clear the search or pick All.</div>';
+  } else {
+    const H = (k, label, cls, tip, d)=> `<th data-s="${k}" data-d="${d || 'asc'}" class="${cls || ''}">${label}${tip ? `<span class="qi" tabindex="0" data-tip="${esc(tip)}">?</span>` : ''}${sortArrow(BB_F, k)}</th>`;
+    html += '<div style="overflow-x:auto"><table class="cpt-table bb-table"><thead><tr>'+
+      H('product', 'Product')+
+      H('holder', 'Buy Box now', 'b-cpt', 'Who has the Add to Cart button right now, and since when.')+
+      H('ours', 'Our price', 'b-ours c', 'Our live price, sale included.', 'desc')+
+      H('bb', 'Buy Box price', 'b-ours c', 'The price on the Add to Cart button. Under it: how far our price is above or below it.', 'desc')+
+      H('w7', 'Win 7d', 'b-gap c', 'Share of the last 7 days we held the Buy Box.')+
+      H('w30', 'Win 30d', 'b-gap c', 'Share of the last 30 days we held the Buy Box.')+
+      H('w90', 'Win 90d', 'b-gap c', 'Keepa\u2019s 90-day share for us.')+
+      H('amz', 'Amazon offer', 'b-move', 'Amazon.com selling New on our listing: price, stock and since when.', 'desc')+
+      H('offers', 'Offers', 'b-sim c', 'New offers on the listing (change vs 7 days ago), and used offers.', 'desc')+
+      H('rival', 'Top rival', 'b-sim', 'The other seller that won the Buy Box most in 90 days.', 'desc')+
+      H('todo', 'What to do', 'b-case')+
+      '</tr></thead><tbody>'+
+      rows.map(bbTr).join('')+
+      '</tbody></table></div>';
+  }
+  v.innerHTML = html;
+
+  wireSort(v, BB_F, renderBb);
+  [...v.querySelectorAll('#bbSeg button')].forEach(b=> b.onclick = ()=>{ BB_F.show = b.dataset.show; renderBb(); });
+  [...v.querySelectorAll('#bbTier button')].forEach(b=> b.onclick = ()=>{ BB_F.tier = b.dataset.t; renderBb(); });
+  const q = document.getElementById('bbQ');
+  if(q) q.oninput = ()=>{ BB_F.q = q.value; const pos = q.selectionStart; renderBb(); const q2 = document.getElementById('bbQ'); q2.focus(); q2.setSelectionRange(pos, pos); };
+  const un = document.getElementById('bbUnsort');
+  if(un) un.onclick = ()=>{ BB_F.sort = ''; renderBb(); };
+  [...v.querySelectorAll('tr.row[data-bb]')].forEach(tr=>{
+    const open = ()=>{ const r = all.find(x=> x.asin === tr.dataset.bb); if(r) openBb(r); };
+    tr.onclick = open;
+    tr.onkeydown = e=>{ if(e.key === 'Enter') open(); };
+  });
+}
+
+function bbTr(r){
+  const h = r.holder || {cls:'none'}, hc = BB_CLS[h.cls] || BB_CLS.none;
+  const gap = r.bbGap === null ? '' : r.bbGap > 0.005 ? `<span class="was" style="color:#b42318">We are ${usd(r.bbGap)} above</span>`
+            : r.bbGap < -0.005 ? `<span class="was">We are ${usd(-r.bbGap)} below</span>` : '<span class="was">Same as ours</span>';
+  const amz = r.amzOn
+    ? `<b style="color:${r.amzBelow ? '#b42318' : 'inherit'}">${usd(r.amazon.price)}</b><span class="was">${esc(r.amazon.stock || 'stock unknown')}${r.amazon.since ? ', since ' + esc(shortDate(r.amazon.since)) : ''}</span>`+
+      (r.amz90 ? `<span class="was">Won ${Math.round(r.amz90)}% in 90 days</span>` : '')
+    : '<span class="mut">None</span>';
+  const o = r.offers || {};
+  const delta = o.n !== null && o.n7 !== null && o.n !== o.n7 ? ` <span style="color:${o.n > o.n7 ? '#b42318' : 'var(--ok)'}">${o.n > o.n7 ? '+' : ''}${o.n - o.n7}</span>` : '';
+  const riv = (r.rivals || []).filter(x=> x.p90 > 0)[0];
+  return `<tr class="row" tabindex="0" data-bb="${esc(r.asin)}">`+
+    `<td class="prod"><div class="p-name"><span class="dot" style="background:${h.cls === 'us' ? '#1f9d55' : h.cls === 'none' ? '#94a3b8' : '#d64545'}"></span>${esc(String(r.name).slice(0, 60))}</div>`+
+      `<div class="p-id"><span>SKU</span>${esc(r.sku)}</div><div class="p-id"><span>ASIN</span>${esc(r.asin)}</div>`+
+      `${r.tier ? `<span class="p-size">Tier ${esc(r.tier)}</span> ` : ''}${r.avail !== null ? `<span class="p-size" style="background:${r.avail > 0 ? '#e7f4ee' : '#fbe7e3'};color:${r.avail > 0 ? 'var(--c-ours)' : '#b42318'}">${r.avail.toLocaleString()} in stock</span>` : ''}</td>`+
+    `<td><span class="bbh ${hc[1]}">${esc(h.cls === 'other' ? (h.name || 'Other seller') : hc[0])}</span>`+
+      `${r.since ? `<span class="was">since ${esc(shortDate(r.since))}</span>` : ''}${r.flips7 >= 2 ? `<span class="was" style="color:#b45309">Changed hands ${r.flips7} times this week</span>` : ''}`+
+      `${r.used ? '<span class="was">A Used offer has it</span>' : ''}</td>`+
+    `<td class="c"><span class="cpill ours">${usd(r.ours)}</span></td>`+
+    `<td class="c"><span class="cpill">${usd(r.bb)}</span>${gap}</td>`+
+    `<td class="c">${bbBar(r.win && r.win.d7)}</td><td class="c">${bbBar(r.win && r.win.d30)}</td><td class="c">${bbBar(r.win && r.win.d90)}</td>`+
+    `<td>${amz}</td>`+
+    `<td class="c"><b>${o.n === null || o.n === undefined ? '\u2014' : o.n}</b> new${delta}<span class="was">${o.u ? o.u + ' used' : 'no used'}</span></td>`+
+    `<td>${riv ? `${esc(riv.name)}<span class="was">${Math.round(riv.p90)}% in 90 days${riv.p30 ? ', ' + Math.round(riv.p30) + '% in 30' : ''}</span>` : '<span class="mut">None</span>'}</td>`+
+    `<td><span class="bbdo ${r.todo.lv}">${esc(r.todo.t)}</span>${r.todo.how ? `<span class="was" style="white-space:normal;max-width:18rem">${esc(r.todo.how)}</span>` : ''}</td>`+
+  '</tr>';
+}
+
+function openBb(r){
+  const d = document.getElementById('detail'), h = r.holder || {cls:'none'};
+  const strip = (r.strip || []).map(x=> `<i class="bbs ${(BB_CLS[x[1]] || BB_CLS.none)[1]}" title="${esc(shortDate(x[0]))}: ${esc(x[1] === 'us' ? 'Us' : x[1] === 'none' ? 'No Buy Box' : x[2] || 'Other')}"></i>`).join('');
+  const sellers = [{name:'CPC Brands (us)', cls:'us', p90:r.win.d90, p30:r.win.d30}].concat(r.rivals || []);
+  d.innerHTML =
+    '<h2>Buy Box</h2>'+
+    `<h3>${esc(r.sku)} ${esc(r.name)}</h3>`+
+    '<dl>'+
+      `<dt>ASIN</dt><dd class="mono">${esc(r.asin)}</dd>`+
+      `<dt>Buy Box now</dt><dd>${esc(h.cls === 'us' ? 'Us' : h.cls === 'none' ? 'No Buy Box shown' : h.name)}${r.since ? ', since ' + esc(shortDate(r.since)) : ''}${r.fba ? ', FBA' : ''}${r.prime ? ', Prime' : ''}</dd>`+
+      `<dt>What to do</dt><dd class="${r.todo.lv === 'ok' ? 'ok' : 'warn'}">${esc(r.todo.t)}${r.todo.how ? '. ' + esc(r.todo.how) : ''}</dd>`+
+      `<dt>Our price</dt><dd>${usd(r.ours)}</dd>`+
+      `<dt>Buy Box price</dt><dd>${usd(r.bb)}</dd>`+
+      `<dt>Our win rate</dt><dd>7 days ${Math.round(r.win.d7)}%, 30 days ${Math.round(r.win.d30)}%, 90 days ${Math.round(r.win.d90)}%</dd>`+
+      `<dt>Amazon offer</dt><dd>${r.amzOn ? `${usd(r.amazon.price)}, ${esc(r.amazon.stock)}${r.amazon.since ? ', on the listing since ' + esc(shortDate(r.amazon.since)) : ''}` : 'None'}</dd>`+
+      `<dt>Offers</dt><dd>${r.offers.n === null ? '\u2014' : r.offers.n} new${r.offers.n7 !== null ? ' (' + r.offers.n7 + ' a week ago)' : ''}, ${r.offers.u || 0} used</dd>`+
+      (r.cpt !== null ? `<dt>CPT</dt><dd class="${r.cptOver ? 'warn' : ''}">${usd(r.cpt)}${r.cptOver ? ', our price is above it' : ''}</dd>` : '')+
+      `<dt>Sales rank</dt><dd>${r.bsr ? '#' + r.bsr.toLocaleString() : '\u2014'}${r.sold ? ', ' + r.sold + '+ bought past month' : ''}</dd>`+
+    '</dl>'+
+    '<h2 style="margin-top:.8rem">Last 30 days</h2>'+
+    `<div class="bbstrip">${strip || '<span class="mut">No history yet</span>'}</div>`+
+    '<div class="bbleg"><span><i class="bbs bbh-us"></i>Us</span><span><i class="bbs bbh-amz"></i>Amazon</span><span><i class="bbs bbh-oth"></i>Other seller</span><span><i class="bbs bbh-none"></i>No Buy Box</span></div>'+
+    '<h2 style="margin-top:.8rem">Who won it, 90 days</h2>'+
+    '<table class="bbsel"><thead><tr><th>Seller</th><th>90 days</th><th>30 days</th><th>Avg price</th><th>Last seen</th></tr></thead><tbody>'+
+      sellers.filter(s=> s.p90 > 0 || s.cls === 'us').map(s=> `<tr><td><span class="bbh ${(BB_CLS[s.cls] || BB_CLS.other)[1]}">${esc(s.name)}</span></td><td>${Math.round(s.p90 || 0)}%</td><td>${Math.round(s.p30 || 0)}%</td><td>${s.avg !== undefined ? usd(s.avg) : ''}</td><td>${esc(s.seen ? shortDate(s.seen) : '')}</td></tr>`).join('')+
+    '</tbody></table>'+
+    '<div class="act-row">'+
+      `<a class="work" href="https://www.amazon.com/dp/${esc(r.asin)}?aod=1" target="_blank" rel="noopener">See all offers on Amazon</a>`+
+      `<a class="work" href="https://sellercentral.amazon.com/myinventory/inventory?searchTerm=${encodeURIComponent(r.sku)}" target="_blank" rel="noopener">Open in Seller Central</a>`+
+      `<a class="work" href="https://keepa.com/#!product/1-${esc(r.asin)}" target="_blank" rel="noopener">Keepa history</a>`+
+    '</div>'+
+    '<div class="why">From Keepa, as it last saw the listing. Keepa checks each listing a few times a day, so a change in the last hours may not show yet.</div>';
+  document.getElementById('veil').hidden = false;
+}
+
 function closeDetail(){ document.getElementById('veil').hidden = true; }
 
 
@@ -3789,13 +4044,13 @@ function render(){
   TARGETS = null;      // re-read from today's data on every redraw
   renderView();
   chrome();
-  if(S.view === 'cpt') document.getElementById('ov').hidden = true;
+  if(S.view === 'cpt' || S.view === 'bb') document.getElementById('ov').hidden = true;
   else bandHeaders();
 }
 
 function renderView(){
 
-  const isCpt = S.view === 'cpt';
+  const isCpt = S.view === 'cpt' || S.view === 'bb';
   document.getElementById('cptView').hidden  = !isCpt;
   document.getElementById('mainWrap').hidden = isCpt;
   document.getElementById('bar').hidden      = isCpt;
@@ -3803,6 +4058,7 @@ function renderView(){
   if(S.view === 'checklist'){ renderChecklist(); return; }
   if(S.view === 'cases'){ renderCases(); return; }
   if(S.view === 'cpt'){ renderCpt(); return; }
+  if(S.view === 'bb'){ renderBb(); return; }
   if(S.view === 'category'){ renderCategory(); return; }
 
   const rows = visible();
@@ -4020,6 +4276,10 @@ function chrome(){
     const need = cptRows().filter(r=> r.action === 'open' || r.action === 'follow').length;
     document.getElementById('cptBtn').innerHTML = 'CPT tracker' + (need ? `<span class="badge">${need}</span>` : '');
   }
+  if(BB.length){
+    const lost = bbRows().filter(r=> r.todo.lv === 'bad').length;
+    document.getElementById('bbBtn').innerHTML = 'Buy Box' + (lost ? `<span class="badge">${lost}</span>` : '');
+  }
   document.getElementById('casesBtn').innerHTML =
     'Cases' + (CASES.length ? `<span class="badge">${CASES.length}</span>` : '');
 }
@@ -4198,16 +4458,19 @@ const quickCat   = document.getElementById('quickCat');
 
 const casesBtn = document.getElementById('casesBtn');
 const cptBtn   = document.getElementById('cptBtn');
+const bbBtn    = document.getElementById('bbBtn');
 
 let PANEL_BEFORE_CPT = null;
 
 function go(view){
   // The CPT view has its own controls, so the filter panel folds away while
   // it is open and comes back as it was when you leave.
-  if(view === 'cpt' && S.view !== 'cpt'){
+  // The CPT and Buy Box views both own the screen
+  const own = x=> x === 'cpt' || x === 'bb';
+  if(own(view) && !own(S.view)){
     PANEL_BEFORE_CPT = !document.getElementById('panel').hidden;
     setPanel(false);
-  } else if(view !== 'cpt' && S.view === 'cpt' && PANEL_BEFORE_CPT !== null){
+  } else if(!own(view) && own(S.view) && PANEL_BEFORE_CPT !== null){
     setPanel(PANEL_BEFORE_CPT);
     PANEL_BEFORE_CPT = null;
   }
@@ -4217,12 +4480,14 @@ function go(view){
   quickCat.setAttribute('aria-pressed', view === 'category');
   casesBtn.setAttribute('aria-pressed', view === 'cases');
   cptBtn.setAttribute('aria-pressed', view === 'cpt');
+  bbBtn.setAttribute('aria-pressed', view === 'bb');
   catalogBtn.setAttribute('aria-pressed', view === 'catalog');
   render();
 }
 
 casesBtn.onclick = ()=> go('cases');
 cptBtn.onclick   = ()=> go('cpt');
+bbBtn.onclick    = ()=> go('bb');
 
 homeBtn.onclick    = ()=> go('checklist');
 catalogBtn.onclick = ()=> go('catalog');
