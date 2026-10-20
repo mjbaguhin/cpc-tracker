@@ -63,19 +63,19 @@ header h1{
 #meta{font-size:.7rem;color:#93a0b0;letter-spacing:.02em}
 #meta b{color:#ccd6e2;font-weight:600}
 
-#toggle,#fs,#homeBtn,#quickCat,#casesBtn,#catalogBtn,#cptBtn,#bbBtn,#lcBtn{
+#toggle,#fs,#homeBtn,#quickCat,#casesBtn,#catalogBtn,#cptBtn,#bbBtn,#lcBtn,#lpBtn{
   font-size:.74rem;padding:.24rem .6rem;
   background:transparent;color:#fff;border:1px solid #3a4652;
 }
 #homeBtn{margin-left:auto}
 #homeBtn[aria-pressed="true"],#quickCat[aria-pressed="true"],
 #casesBtn[aria-pressed="true"],
-#cptBtn[aria-pressed="true"],#bbBtn[aria-pressed="true"],#lcBtn[aria-pressed="true"],
+#cptBtn[aria-pressed="true"],#bbBtn[aria-pressed="true"],#lcBtn[aria-pressed="true"],#lpBtn[aria-pressed="true"],
 #catalogBtn[aria-pressed="true"]{
   background:#2f4a6d;border-color:#4a6fa5;
 }
-#toggle:hover,#fs:hover,#homeBtn:hover,#quickCat:hover,#casesBtn:hover,#catalogBtn:hover,#cptBtn:hover,#bbBtn:hover,#lcBtn:hover{background:#1c232b}
-#toggle .badge,#homeBtn .badge,#quickCat .badge,#casesBtn .badge,#cptBtn .badge,#bbBtn .badge,#lcBtn .badge{
+#toggle:hover,#fs:hover,#homeBtn:hover,#quickCat:hover,#casesBtn:hover,#catalogBtn:hover,#cptBtn:hover,#bbBtn:hover,#lcBtn:hover,#lpBtn:hover{background:#1c232b}
+#toggle .badge,#homeBtn .badge,#quickCat .badge,#casesBtn .badge,#cptBtn .badge,#bbBtn .badge,#lcBtn .badge,#lpBtn .badge{
   display:inline-block;margin-left:.35rem;padding:0 .32rem;
   background:#a83a26;border-radius:8px;font-size:.68rem;font-weight:700;
 }
@@ -599,10 +599,10 @@ header h1{font-size:.95rem;letter-spacing:.02em;text-transform:none;font-weight:
 header h1::after{content:"";display:inline-block;width:.42rem;height:.42rem;border-radius:50%;
   background:#3fbf7f;margin-left:.45rem;vertical-align:middle}
 #meta{font-family:ui-monospace,"SF Mono",Menlo,Consolas,monospace;font-size:.72rem}
-#toggle,#fs,#homeBtn,#quickCat,#casesBtn,#catalogBtn,#cptBtn,#bbBtn,#lcBtn{
+#toggle,#fs,#homeBtn,#quickCat,#casesBtn,#catalogBtn,#cptBtn,#bbBtn,#lcBtn,#lpBtn{
   font-size:.8rem;padding:.38rem .8rem;border-radius:7px;border-color:var(--night-line);color:#dfe5ee}
 #homeBtn[aria-pressed="true"],#quickCat[aria-pressed="true"],#casesBtn[aria-pressed="true"],
-#catalogBtn[aria-pressed="true"],#cptBtn[aria-pressed="true"],#bbBtn[aria-pressed="true"],#lcBtn[aria-pressed="true"]{background:#2c4f7c;border-color:#4a76b0;color:#fff}
+#catalogBtn[aria-pressed="true"],#cptBtn[aria-pressed="true"],#bbBtn[aria-pressed="true"],#lcBtn[aria-pressed="true"],#lpBtn[aria-pressed="true"]{background:#2c4f7c;border-color:#4a76b0;color:#fff}
 
 /* overview band */
 #ov{background:var(--night);color:#e8edf3;padding:1.05rem 1.25rem 1.15rem;flex:0 0 auto}
@@ -754,6 +754,10 @@ mark.lc-extra{background:#fbd5cf;color:inherit;border-radius:2px}
 .bbno{background:#fbe2df;color:#a3261a}
 .bbstk{font-size:1.05rem;font-variant-numeric:tabular-nums}
 .bbstk.ok{color:#17694a}.bbstk.zero{color:#b42318}
+.cpy{display:inline-flex;align-items:center;justify-content:center;width:1.25rem;height:1.25rem;padding:0;margin-left:.3rem;
+  border:1px solid transparent;border-radius:4px;background:transparent;color:#94a3b8;cursor:pointer;vertical-align:middle;line-height:1}
+.cpy:hover{color:var(--accent);border-color:var(--line);background:#fff}
+.cpy.ok{color:#17694a;border-color:#b9dccb;background:#e4f3ee}
 </style>
 </head>
 <body>
@@ -767,6 +771,7 @@ mark.lc-extra{background:#fbd5cf;color:inherit;border-radius:2px}
   <button id="cptBtn">CPT tracker</button>
   <button id="bbBtn">Buy Box</button>
   <button id="lcBtn">Listing Copy</button>
+  <button id="lpBtn">List Price</button>
   <button id="catalogBtn">Catalog</button>
   <button id="toggle" aria-expanded="true">Filters</button>
   <button id="fs" title="Fullscreen">Full screen</button>
@@ -975,7 +980,7 @@ async function load(fresh){
 
   // CPT feed is small and independent, so it never holds up the first paint
   grab(CPT_SRC, 'json', fresh)
-    .then(j => { buildCpt(j); if(S.view === 'cpt' || S.view === 'bb') render(); else chrome(); })
+    .then(j => { buildCpt(j); if(S.view === 'cpt' || S.view === 'bb' || S.view === 'lp') render(); else chrome(); })
     .catch(e => { CPT_ERR = e.message; if(S.view === 'cpt') render(); });
   grab(SIM_SRC, 'json', fresh)
     .then(j => { SIM = (j && j.items) || []; SIM_META = {updated: j && j.updated || ''};
@@ -1674,8 +1679,8 @@ function renderCases(){
         `${st==='warn'?' style="color:#8a6417"':''}>`+
         `${c.age === null ? '\u2014' : c.age + 'd'}</span></td>`+
       `<td class="mut">${esc(c.type)}</td>`+
-      `<td class="mono">${esc(c.sku.slice(0,40))}</td>`+
-      `<td class="mono">${esc(c.asin.slice(0,40))}</td>`+
+      `<td class="mono">${esc(c.sku.slice(0,40))}${cpy(c.sku)}</td>`+
+      `<td class="mono">${esc(c.asin.slice(0,40))}${cpy(c.asin)}</td>`+
       `<td class="name">${esc(c.summary.slice(0,120))}</td>`+
       `<td class="mut">${esc(c.status.slice(0,40))}</td>`+
       '</tr>';
@@ -1788,6 +1793,22 @@ function ourPrice(asin){
 }
 
 const usd = v => v === null || v === undefined ? '\u2014' : '$' + Number(v).toFixed(2);
+
+/* Small copy icon next to any SKU or ASIN. One click handler for the whole
+   page, run before row clicks so copying never opens the row. */
+const CPY_SVG = '<svg viewBox="0 0 16 16" width="12" height="12" aria-hidden="true"><rect x="5" y="5" width="9" height="9" rx="1.5" fill="none" stroke="currentColor" stroke-width="1.5"/><path d="M3 11V3.5A1.5 1.5 0 0 1 4.5 2H11" fill="none" stroke="currentColor" stroke-width="1.5"/></svg>';
+function cpy(v){
+  v = String(v || '').trim();
+  return v ? `<button type="button" class="cpy" data-c="${esc(v)}" title="Copy ${esc(v)}" aria-label="Copy ${esc(v)}">${CPY_SVG}</button>` : '';
+}
+window.addEventListener('click', e=>{
+  const b = e.target.closest && e.target.closest('button.cpy');
+  if(!b) return;
+  e.preventDefault(); e.stopPropagation();
+  const t = b.dataset.c, done = ()=>{ b.classList.add('ok'); b.title = 'Copied'; setTimeout(()=>{ b.classList.remove('ok'); b.title = 'Copy ' + t; }, 1200); };
+  (navigator.clipboard ? navigator.clipboard.writeText(t) : Promise.reject()).then(done).catch(()=> window.prompt('Copy:', t));
+}, true);
+
 
 function daysSince(d){
   if(!d) return null;
@@ -3019,8 +3040,8 @@ function cptRowHtml(r){
         return `<tr class="row act-${r.action}" tabindex="0" data-asin="${esc(r.asin)}">`+
           '<td class="prod">'+
             `<div class="p-name" title="${esc(r.name)}"><span class="dot" style="background:${brandDot}"></span>${esc(cptTitle(r).slice(0,48))}</div>`+
-            `<div class="p-id"><span>SKU</span>${esc(r.sku)}</div>`+
-            `<div class="p-id"><span>ASIN</span>${esc(r.asin)}</div>`+
+            `<div class="p-id"><span>SKU</span>${esc(r.sku)}${cpy(r.sku)}</div>`+
+            `<div class="p-id"><span>ASIN</span>${esc(r.asin)}${cpy(r.asin)}</div>`+
             (r.size ? `<span class="p-size">${esc(r.size)}</span>` : '')+
             stockTag(r)+
           '</td>'+
@@ -3343,7 +3364,7 @@ function openCpt(r){
     `<h2>CPT tracker</h2>`+
     `<h3>${esc(r.sku)} ${esc(r.name)}</h3>`+
     '<dl>'+
-    `<dt>ASIN</dt><dd class="mono">${esc(r.asin)}</dd>`+
+    `<dt>ASIN</dt><dd class="mono">${esc(r.asin)}${cpy(r.asin)}</dd>`+
     `<dt>Our price</dt><dd>${usd(r.ours)}${r.kOurs !== null ? '' : ' <span class="mut">(from ALM data, Keepa had none)</span>'}</dd>`+
     `<dt>CPT today</dt><dd class="${r.gap > 0 ? 'warn' : 'ok'}">${usd(r.cpt)}</dd>`+
     `<dt>Over by</dt><dd>${r.gap === null ? '\u2014' : r.gap > 0 ? usd(r.gap) + ' (' + r.pct + '%)' : 'Our price is at or under the CPT'}</dd>`+
@@ -3498,8 +3519,8 @@ function renderCategory(){
   tb.innerHTML = rows.map((c,i)=>
     '<tr>'+
     `<td class="mono id" data-sku="${esc(c.sku)}" data-asin="${esc(c.asin)}">`+
-      `${esc(c.sku)}${stockLine(stockFor(c.sku, c.country))}</td>`+
-    `<td class="mono id" data-sku="${esc(c.sku)}" data-asin="${esc(c.asin)}">${esc(c.asin)}</td>`+
+      `${esc(c.sku)}${cpy(c.sku)}${stockLine(stockFor(c.sku, c.country))}</td>`+
+    `<td class="mono id" data-sku="${esc(c.sku)}" data-asin="${esc(c.asin)}">${esc(c.asin)}${cpy(c.asin)}</td>`+
     `<td>${esc(c.country)}</td>`+
     `<td class="name">${esc(c.name)}</td>`+
     `<td>${c.tier ? `<span class="tier t${esc(c.tier)}">${esc(c.tier)}</span>` : ''}</td>`+
@@ -3530,7 +3551,7 @@ function openDetail(row, check){
     `<h3>${esc(row.sku)} \u00b7 ${esc(row.name)}</h3>`+
     `<div class="why">${esc(WHY[check] || '')}</div>`+
     '<dl>'+
-    `<dt>ASIN</dt><dd class="mono">${esc(row.asin)}</dd>`+
+    `<dt>ASIN</dt><dd class="mono">${esc(row.asin)}${cpy(row.asin)}</dd>`+
     `<dt>Amazon has</dt><dd class="warn">${esc(ck.actual || '(blank)')}</dd>`+
     `<dt>Plytix says</dt><dd class="ok">${esc(ck.expected || '(blank)')}</dd>`+
     (row.caseId ? `<dt>Existing case</dt><dd class="mono">${esc(row.caseId)}`+
@@ -3782,7 +3803,7 @@ function bbTr(r){
   const whyTxt = r.why === 'seller' ? `${r.holder.name || 'Another seller'} has it` : w ? w.t : '';
   return `<tr class="row" tabindex="0" data-bb="${esc(r.asin)}">`+
     `<td class="prod"><div class="p-name"><span class="dot" style="background:${r.has ? '#1f9d55' : '#d64545'}"></span>${esc(String(r.name).slice(0, 60))}</div>`+
-      `<div class="p-id"><span>SKU</span>${esc(r.sku)}</div><div class="p-id"><span>ASIN</span>${esc(r.asin)}</div>`+
+      `<div class="p-id"><span>SKU</span>${esc(r.sku)}${cpy(r.sku)}</div><div class="p-id"><span>ASIN</span>${esc(r.asin)}${cpy(r.asin)}</div>`+
       `${r.tier ? `<span class="p-size">Tier ${esc(r.tier)}</span>` : ''}</td>`+
     `<td class="c">${r.has ? '<span class="bbyes">Yes</span>' : '<span class="bbno">No</span>'}</td>`+
     `<td>${r.has ? (r.shared ? `<span class="was" style="white-space:normal;max-width:15rem">Same price as ${esc(r.holder.name || 'another seller')}, we share it</span>` : '') :
@@ -3982,7 +4003,7 @@ function renderLc(){
       '</tr></thead><tbody>'+
       rows.map(r=> `<tr class="row" tabindex="0" data-lc="${esc(r.asin)}">`+
         `<td class="prod"><div class="p-name"><span class="dot" style="background:${r.nolive ? '#94a3b8' : r.allOk ? '#1f9d55' : '#d64545'}"></span>${esc(String(r.name).slice(0, 60))}</div>`+
-          `<div class="p-id"><span>SKU</span>${esc(r.sku)}</div><div class="p-id"><span>ASIN</span>${esc(r.asin)}</div>`+
+          `<div class="p-id"><span>SKU</span>${esc(r.sku)}${cpy(r.sku)}</div><div class="p-id"><span>ASIN</span>${esc(r.asin)}${cpy(r.asin)}</div>`+
           `${r.tier ? `<span class="p-size">Tier ${esc(r.tier)}</span>` : ''}</td>`+
         `<td class="c">${r.nolive ? '<span class="mut">Not checked yet</span>' : r.pct === null ? '<span class="mut">\u2014</span>' : bbBar(r.pct)}</td>`+
         LC_COLS.map(c=> `<td class="c">${r.nolive ? '' : lcChip(r.f[c[0]])}</td>`).join('')+
@@ -4043,7 +4064,7 @@ function openLc(r){
     '<h2>Listing Copy</h2>'+
     `<h3>${esc(r.sku)} ${esc(r.name)}</h3>`+
     '<dl>'+
-      `<dt>ASIN</dt><dd class="mono">${esc(r.asin)}</dd>`+
+      `<dt>ASIN</dt><dd class="mono">${esc(r.asin)}${cpy(r.asin)}</dd>`+
       `<dt>Correct %</dt><dd class="${r.allOk ? 'ok' : 'warn'}">${r.pct === null ? '\u2014' : r.pct + '%'}${r.checked ? ` (${r.ok} of ${r.checked} fields)` : ''}</dd>`+
       `<dt>To fix</dt><dd>${r.bad.length ? esc(r.bad.map(k=> LC_COLS.find(c=> c[0] === k)[1]).join(', ')) : 'Nothing'}</dd>`+
       `<dt>Last change</dt><dd>${r.since ? esc(shortDate(r.since)) : 'No change seen'}${r.liveChecked ? ', checked ' + esc(shortDate(r.liveChecked)) : ''}</dd>`+
@@ -4061,6 +4082,97 @@ function openLc(r){
       .then(()=> b.textContent = 'Copied').catch(()=> window.prompt('Copy this text:', t));
   });
   document.getElementById('veil').hidden = false;
+}
+
+/* ---------- List Price module ----------
+   One check: is a List Price set on the Amazon listing (the backend
+   list_price). From Keepa's daily read in CPT Watch (cpt.json). */
+const LP_F = {show:'all', q:'', sort:'', dir:1, tier:''};
+
+function lpRows(){
+  return CPT.map(c=>{
+    const row = (c.sku && ROWS.find(x=> x.sku === c.sku)) || ROWS.find(x=> x.asin === c.asin);
+    const live = c.kList !== undefined && c.kList !== null ? c.kList : null;
+    return {asin:c.asin, sku:c.sku || (row && row.sku) || '', name:(row && row.name) || c.name || c.asin,
+      tier:(row && row.tier) || '', live, ours:c.kOurs !== undefined ? c.kOurs : null, set: live !== null, date:c.date || ''};
+  });
+}
+
+const LP_SORT = {product: r=> r.name, set: r=> r.set ? 1 : 0, live: r=> r.live, ours: r=> r.ours};
+
+function renderLp(){
+  document.getElementById('msg').hidden = true;
+  document.getElementById('bar').innerHTML = '';
+  const v = document.getElementById('cptView');
+  const all = lpRows(), set = all.filter(r=> r.set), empty = all.filter(r=> !r.set);
+  const pct = all.length ? Math.round(set.length / all.length * 1000) / 10 : 0;
+  let rows = LP_F.show === 'set' ? set : LP_F.show === 'empty' ? empty : all;
+  if(LP_F.tier) rows = rows.filter(r=> (r.tier || 'N') === LP_F.tier);
+  if(LP_F.q){ const q = LP_F.q.toLowerCase(); rows = rows.filter(r=> (r.sku + ' ' + r.asin + ' ' + r.name).toLowerCase().indexOf(q) !== -1); }
+  rows = LP_F.sort && LP_SORT[LP_F.sort] ? sortBy(rows, LP_SORT[LP_F.sort], LP_F.dir)
+       : sortBy(rows, r=> (r.set ? 10 : 0) + (TIER_RANK[r.tier] !== undefined ? TIER_RANK[r.tier] : 5), 1);
+
+  const order = ['all','set','empty']; let n = 0;
+  const tile = (k, val, cls, note)=>{ const f = order[n++];
+    return `<div class="cpt-tile bbtile${LP_F.show === f ? ' on' : ''}" role="button" tabindex="0" data-show="${f}" title="Show these in the table"><div class="k">${k}</div><div class="v ${cls || ''}">${val}</div><div class="n">${note || '&nbsp;'}</div></div>`; };
+  const list = a=> esc(a.map(r=> r.sku).slice(0,3).join(', ')) + (a.length > 3 ? '\u2026' : '');
+  let html =
+    '<section class="cpt-top"><div class="cpt-head"><h2>List Price</h2>'+
+      `<span class="sub">Is a List Price set on Amazon US, ${all.length} active ASINs</span>`+
+      (CPT_META.updated ? `<span class="cpt-live"><i></i>Checked ${esc(CPT_META.updated)} ET</span>` : '')+
+    '</div><div class="cpt-tiles">'+
+      tile('List Price set %', pct + '%', pct >= 100 ? 'good' : pct >= 95 ? 'warn' : 'bad', `${set.length} of ${all.length} listings`)+
+      tile('List Price set', set.length, 'good', '')+
+      tile('List Price empty', empty.length, empty.length ? 'bad' : 'good', empty.length ? list(empty) : 'None')+
+    '</div></section>'+
+    '<div class="cpt-tools"><div class="seg" id="lpSeg">'+
+      [['all','All ' + all.length], ['empty','Empty ' + empty.length], ['set','Set ' + set.length]]
+        .map(b=> `<button data-show="${b[0]}" aria-pressed="${LP_F.show === b[0]}">${b[1]}</button>`).join('')+
+    '</div><div class="seg" id="lpTier">'+
+      ['', 'A', 'B', 'C', 'X', 'N'].map(t=> `<button data-t="${t}" aria-pressed="${LP_F.tier === t}">${t ? 'Tier ' + t : 'All tiers'}</button>`).join('')+
+    '</div>'+
+    `<input id="lpQ" type="search" placeholder="Search SKU, ASIN or product" value="${esc(LP_F.q)}" aria-label="Search List Price">`+
+    (LP_F.sort ? '<button id="lpUnsort">Clear sort</button>' : '')+
+    `<span class="count">${rows.length} of ${all.length}</span></div>`;
+
+  if(!CPT.length){
+    html += CPT_ERR ? '<div class="cpt-empty"><b>Price feed not found yet</b>Run runCptWatch in the CPC Keepa Fetcher project.</div>'
+                    : '<div class="cpt-empty"><b>Loading List Price</b></div>';
+  } else if(!rows.length){
+    html += '<div class="cpt-empty"><b>Nothing here</b>Pick All or clear the search.</div>';
+  } else {
+    const H = (k, label, cls, tip, d)=> `<th data-s="${k}" data-d="${d || 'asc'}" class="${cls || ''}">${label}${tip ? `<span class="qi" tabindex="0" data-tip="${esc(tip)}">?</span>` : ''}${sortArrow(LP_F, k)}</th>`;
+    html += '<table class="cpt-table bb-table lp-table"><thead><tr>'+
+      H('product', 'Product')+
+      H('set', 'List Price set?', 'b-cpt c', 'Does the Amazon listing have a List Price.')+
+      H('live', 'List Price on Amazon', 'b-ours c', 'The List Price as Keepa reads it from Amazon.', 'desc')+
+      H('ours', 'Our price now', 'b-gap c', 'What a shopper pays today, sale included.', 'desc')+
+      '<th class="b-move">What to do</th>'+
+      '</tr></thead><tbody>'+
+      rows.map(r=> `<tr class="row">`+
+        `<td class="prod"><div class="p-name"><span class="dot" style="background:${r.set ? '#1f9d55' : '#d64545'}"></span>${esc(String(r.name).slice(0, 60))}</div>`+
+          `<div class="p-id"><span>SKU</span>${esc(r.sku)}${cpy(r.sku)}</div><div class="p-id"><span>ASIN</span>${esc(r.asin)}${cpy(r.asin)}</div>${r.tier ? `<span class="p-size">Tier ${esc(r.tier)}</span>` : ''}</td>`+
+        `<td class="c">${r.set ? '<span class="bbyes">Yes</span>' : '<span class="bbno">Empty</span>'}</td>`+
+        `<td class="c">${r.set ? '<b>' + usd(r.live) + '</b>' : '<span class="mut">none</span>'}</td>`+
+        `<td class="c">${usd(r.ours)}</td>`+
+        `<td style="font-size:.82rem;white-space:normal">${r.set ? '' : 'Add a List Price in Seller Central (Offer tab).'}</td>`+
+      '</tr>').join('')+
+      '</tbody></table>';
+  }
+  v.innerHTML = html;
+
+  wireSort(v, LP_F, renderLp);
+  const setShow = f=>{ LP_F.show = f; renderLp(); };
+  [...v.querySelectorAll('#lpSeg button')].forEach(b=> b.onclick = ()=> setShow(b.dataset.show));
+  [...v.querySelectorAll('.bbtile')].forEach(t=>{
+    const go = ()=>{ setShow(t.dataset.show); const tb = document.querySelector('#cptView .lp-table, #cptView .cpt-empty'); if(tb && tb.scrollIntoView) tb.scrollIntoView({behavior:'smooth', block:'start'}); };
+    t.onclick = go; t.onkeydown = e=>{ if(e.key === 'Enter') go(); };
+  });
+  [...v.querySelectorAll('#lpTier button')].forEach(b=> b.onclick = ()=>{ LP_F.tier = b.dataset.t; renderLp(); });
+  const q = document.getElementById('lpQ');
+  if(q) q.oninput = ()=>{ LP_F.q = q.value; const pos = q.selectionStart; renderLp(); const q2 = document.getElementById('lpQ'); q2.focus(); q2.setSelectionRange(pos, pos); };
+  const un = document.getElementById('lpUnsort');
+  if(un) un.onclick = ()=>{ LP_F.sort = ''; renderLp(); };
 }
 
 function closeDetail(){ document.getElementById('veil').hidden = true; }
@@ -4088,8 +4200,8 @@ function openIds(sku, asin){
     `<h2>Identifiers \u00b7 ${esc(S.mk)}</h2>`+
     `<h3 class="mono">${esc(sku || '\u2014')}</h3>`+
     '<dl>'+
-    `<dt>SKU</dt><dd class="mono">${esc(sku || '\u2014')}</dd>`+
-    `<dt>ASIN</dt><dd class="mono">${esc(asin || '\u2014')}</dd>`+
+    `<dt>SKU</dt><dd class="mono">${esc(sku || '\u2014')}${cpy(sku)}</dd>`+
+    `<dt>ASIN</dt><dd class="mono">${esc(asin || '\u2014')}${cpy(asin)}</dd>`+
     '</dl>'+
     '<div class="actions">'+
       (sku  ? '<button id="cpSku" class="act">Copy SKU</button>' : '')+
@@ -4289,8 +4401,8 @@ function parentHeader(kids, colspan, extra){
   const name = solo ? 'Standalone SKUs' : (f.parent || f.psku || f.pasin);
   const bits = [];
   if(solo) bits.push('<span>Not part of a variation family</span>');
-  if(!solo && f.psku)  bits.push(`<span><span class="k">Parent SKU</span><span class="mono">${esc(f.psku)}</span></span>`);
-  if(!solo && f.pasin) bits.push(`<span><span class="k">Parent ASIN</span><a href="https://www.amazon.com/dp/${esc(f.pasin)}" target="_blank" rel="noopener">${esc(f.pasin)}</a></span>`);
+  if(!solo && f.psku)  bits.push(`<span><span class="k">Parent SKU</span><span class="mono">${esc(f.psku)}</span>${cpy(f.psku)}</span>`);
+  if(!solo && f.pasin) bits.push(`<span><span class="k">Parent ASIN</span><a href="https://www.amazon.com/dp/${esc(f.pasin)}" target="_blank" rel="noopener">${esc(f.pasin)}</a>${cpy(f.pasin)}</span>`);
   bits.push(`<span><b>${kids.length}</b> ${solo ? (kids.length === 1 ? 'SKU' : 'SKUs') : (kids.length === 1 ? 'child' : 'children')}</span>`);
   (extra || []).forEach(x=> bits.push(x));
   return `<tr class="gh pgh${solo ? ' solo' : ''}"><td colspan="${colspan}">`+
@@ -4340,13 +4452,13 @@ function render(){
   TARGETS = null;      // re-read from today's data on every redraw
   renderView();
   chrome();
-  if(S.view === 'cpt' || S.view === 'bb' || S.view === 'lc') document.getElementById('ov').hidden = true;
+  if(['cpt','bb','lc','lp'].indexOf(S.view) !== -1) document.getElementById('ov').hidden = true;
   else bandHeaders();
 }
 
 function renderView(){
 
-  const isCpt = S.view === 'cpt' || S.view === 'bb' || S.view === 'lc';
+  const isCpt = ['cpt','bb','lc','lp'].indexOf(S.view) !== -1;
   document.getElementById('cptView').hidden  = !isCpt;
   document.getElementById('mainWrap').hidden = isCpt;
   document.getElementById('bar').hidden      = isCpt;
@@ -4356,6 +4468,7 @@ function renderView(){
   if(S.view === 'cpt'){ renderCpt(); return; }
   if(S.view === 'bb'){ renderBb(); return; }
   if(S.view === 'lc'){ renderLc(); return; }
+  if(S.view === 'lp'){ renderLp(); return; }
   if(S.view === 'category'){ renderCategory(); return; }
 
   const rows = visible();
@@ -4438,7 +4551,7 @@ function openPriceDetail(row, kind){
     `<h3>${esc(row.sku)} \u00b7 ${esc(row.name)}</h3>`+
     `<div class="why">${esc(w[st] || '')}</div>`+
     '<dl>'+
-    `<dt>ASIN</dt><dd class="mono">${esc(row.asin)}</dd>`+
+    `<dt>ASIN</dt><dd class="mono">${esc(row.asin)}${cpy(row.asin)}</dd>`+
     `<dt>List price</dt><dd>${money(row.list)}</dd>`+
     `<dt>Sale price</dt><dd>${money(row.sale)}</dd>`+
     `<dt>Featured offer</dt><dd>${money(row.feat)}</dd>`+
@@ -4485,7 +4598,7 @@ function tr(r, IDX){
       }
 
       return `<td class="${cls.trim()}" data-sku="${esc(r.sku)}" `+
-             `data-asin="${esc(r.asin)}">${body}${stock}</td>`;
+             `data-asin="${esc(r.asin)}">${body}${cpy(v)}${stock}</td>`;
     }
 
     if(c.k === 'brand')
@@ -4580,6 +4693,10 @@ function chrome(){
   if(LC.length){
     const nWrong = lcRows().filter(r=> r.bad.length).length;
     document.getElementById('lcBtn').innerHTML = 'Listing Copy' + (nWrong ? `<span class="badge">${nWrong}</span>` : '');
+  }
+  if(CPT.length){
+    const nLp = lpRows().filter(r=> !r.set).length;
+    document.getElementById('lpBtn').innerHTML = 'List Price' + (nLp ? `<span class="badge">${nLp}</span>` : '');
   }
   document.getElementById('casesBtn').innerHTML =
     'Cases' + (CASES.length ? `<span class="badge">${CASES.length}</span>` : '');
@@ -4761,6 +4878,7 @@ const casesBtn = document.getElementById('casesBtn');
 const cptBtn   = document.getElementById('cptBtn');
 const bbBtn    = document.getElementById('bbBtn');
 const lcBtn    = document.getElementById('lcBtn');
+const lpBtn    = document.getElementById('lpBtn');
 
 let PANEL_BEFORE_CPT = null;
 
@@ -4768,7 +4886,7 @@ function go(view){
   // The CPT view has its own controls, so the filter panel folds away while
   // it is open and comes back as it was when you leave.
   // The CPT and Buy Box views both own the screen
-  const own = x=> x === 'cpt' || x === 'bb' || x === 'lc';
+  const own = x=> ['cpt','bb','lc','lp'].indexOf(x) !== -1;
   if(own(view) && !own(S.view)){
     PANEL_BEFORE_CPT = !document.getElementById('panel').hidden;
     setPanel(false);
@@ -4784,6 +4902,7 @@ function go(view){
   cptBtn.setAttribute('aria-pressed', view === 'cpt');
   bbBtn.setAttribute('aria-pressed', view === 'bb');
   lcBtn.setAttribute('aria-pressed', view === 'lc');
+  lpBtn.setAttribute('aria-pressed', view === 'lp');
   catalogBtn.setAttribute('aria-pressed', view === 'catalog');
   render();
 }
@@ -4792,6 +4911,7 @@ casesBtn.onclick = ()=> go('cases');
 cptBtn.onclick   = ()=> go('cpt');
 bbBtn.onclick    = ()=> go('bb');
 lcBtn.onclick    = ()=> go('lc');
+lpBtn.onclick    = ()=> go('lp');
 
 homeBtn.onclick    = ()=> go('checklist');
 catalogBtn.onclick = ()=> go('catalog');
