@@ -3658,7 +3658,7 @@ function renderBb(){
        ['new','New offers ' + newUp.length]]
         .map(b=> `<button data-show="${b[0]}" aria-pressed="${BB_F.show === b[0]}">${b[1]}</button>`).join('')+
     '</div><div class="seg" id="bbTier">'+
-      ['', 'A', 'B', 'N', 'C'].map(t=> `<button data-t="${t}" aria-pressed="${BB_F.tier === t}">${t ? 'Tier ' + t : 'All tiers'}</button>`).join('')+
+      ['', 'A', 'B', 'C', 'X', 'N'].map(t=> `<button data-t="${t}" aria-pressed="${BB_F.tier === t}">${t ? 'Tier ' + t : 'All tiers'}</button>`).join('')+
     '</div>'+
     `<input id="bbQ" type="search" placeholder="Search SKU, ASIN or product" value="${esc(BB_F.q)}" aria-label="Search Buy Box">`+
     (BB_F.sort ? '<button id="bbUnsort">Clear sort</button>' : '')+
