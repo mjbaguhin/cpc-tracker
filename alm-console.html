@@ -4258,6 +4258,7 @@ const CG_S = {
   nodata:   ['Not checked yet', 'lc-gray', 'No live data from Amazon yet']
 };
 const CG_BAD = ['wrong', 'leaf', 'missing'];
+const CG_SHARED_NOTE = 'Same browse node as the Master SKU sheet. This node sits under more than one path, and Amazon shows it under a different one. Amazon treats the two paths as the same, so this counts as correct. No case needed.';
 const CG_CASE = {gl:'GL', pt:'Product Type', path:'Category Path', itk:'ITK', node:'Category Path'};
 
 function buildCg(j){ CG_ERR = ''; CG_META = {updated: j && j.updated || ''}; CG = (j && j.rows) || []; }
@@ -4275,6 +4276,8 @@ function cgRows(mk){
 
 function cgChip(x, nolive){
   if(nolive) return '<span class="lcchip lc-gray">Not checked yet</span>';
+  // Shared browse node: correct, but marked so it is easy to remember why
+  if(x && x.shared) return `<span class="lcchip lc-ok" data-tip="${esc(x.note || CG_SHARED_NOTE)}">OK, shared node \u24d8</span>`;
   const d = CG_S[(x || {}).s] || CG_S.nomaster;
   return `<span class="lcchip ${d[1]}" data-tip="${esc((x && x.note) || d[2])}">${d[0]}</span>`;
 }
@@ -4330,6 +4333,8 @@ function renderCategory(){
     (rows.some(r=> r.bad.length) ? `<button id="cgAll" class="work strong">Draft one case for all ${rows.filter(r=> r.bad.length).length} wrong</button>` : '')+
     grpBtn(CG_F) + dlBtns('<button data-dlx="1">Download with listing copy</button>') + '<button id="cgTips">Why does this happen?</button>' + (rows.some(r=> r.bad.length) ? '<button id="cgFlatT">Download flat file values</button>' : '') +
     `<span class="count">${rows.length} of ${all.length}</span></div>`;
+  html += (()=>{ const n = all.filter(r=> r.c && r.c.path && r.c.path.shared).length;
+      return n ? `<div class="why"><b>${n} listing${n === 1 ? '' : 's'} marked \u201cOK, shared node\u201d:</b> in the correct browse node, shown by Amazon under a different path that it treats as the same. Counted as correct. No case needed.</div>` : ''; })();
 
   if(!CG.length){
     html += CG_ERR ? '<div class="cpt-empty"><b>Category feed not found yet</b>Run pushCategoryJson in the CPC Keepa Fetcher project. It creates category.json.</div>'
@@ -4398,7 +4403,8 @@ function openCg(r){
       '</div>'+
       `<div class="lcf-l">Master SKU says</div><div class="lcf-t">${x.e ? esc(x.e) : '<span class="mut">blank</span>'}</div>`+
       `<div class="lcf-l">Amazon has${x.src ? ' (' + esc(x.src) + ')' : ''}</div><div class="lcf-t">${x.a ? esc(x.a) : '<span class="mut">nothing</span>'}</div>`+
-      (x.note ? `<div class="lcf-r" style="color:var(--muted)">${esc(x.note)}</div>` : '')+
+      (x.shared ? `<div class="why" style="margin-top:.4rem"><b>Why this is OK:</b> ${esc(CG_SHARED_NOTE)}</div>`
+                : (x.note ? `<div class="lcf-r" style="color:var(--muted)">${esc(x.note)}</div>` : ''))+
     '</div>';
   };
   d.innerHTML =
@@ -4568,7 +4574,7 @@ function dlLp(rows){
 }
 function cgCells(r){
   const cells = [r.mk, r.sku, r.asin, `https://www.amazon.${r.mk === 'CA' ? 'ca' : 'com'}/dp/${r.asin}`, r.name, r.tier, r.pct];
-  CG_COLS.forEach(c=>{ const x = (r.c || {})[c[0]] || {}; cells.push((CG_S[x.s] || [x.s || ''])[0], x.e || '', x.a || ''); });
+  CG_COLS.forEach(c=>{ const x = (r.c || {})[c[0]] || {}; cells.push(x.shared ? 'OK, shared node (same browse node, Amazon shows another path; no case needed)' : (CG_S[x.s] || [x.s || ''])[0], x.e || '', x.a || ''); });
   const ci = cgCaseInfo(r); cells.push(ci ? ci.id : '', ci ? ci.notes : '');
   return cells;
 }
