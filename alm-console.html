@@ -2736,7 +2736,9 @@ const CPT_SORT = {
   move:    r=> daysSince(r.moved),
   sim:     r=> r.simMatch ? Math.abs(r.simMatch.diff) : null,
   verdict: r=> ACTIONS[r.action].rank * 10 - (r.verdict.points || 0),
-  stock:   r=> r.avail
+  stock:   r=> r.avail,
+  // CPT change over the last 30 days
+  trend:   r=>{ const p = (r.h || []).slice(-30).filter(x=> x[1] !== null && x[1] !== undefined); return p.length > 1 ? p[p.length - 1][1] - p[0][1] : null; }
 };
 
 /* Tiny two-line trend for the row: CPT solid, our price dashed */
@@ -2867,6 +2869,7 @@ function renderCpt(){
       '<button id="cptLog">Price change log</button>'+
       `<button id="cptGuide" aria-pressed="${!!CPT_F.guide}">What do these prices mean?</button>`+
       `<button id="cptMore" aria-pressed="${CPT_F.more}">Column filters${activeCptFilters() ? ' <span class="fbadge">' + activeCptFilters() + '</span>' : ''}</button>`+
+      dlBtns() +
       `<span class="count">${rows.length} of ${all.length}</span>`+
     '</div>'+
     (CPT_F.guide ? priceGuide() : '')+
@@ -2890,7 +2893,7 @@ function renderCpt(){
       H('move', 'Last CPT move', 'b-move')+
       H('sim', 'Similar at CPT price', 'b-sim')+
       H('verdict', 'What to do', 'b-case')+
-      `<th>30-day trend${qi('trend')}</th>`+
+      `<th data-s="trend" data-d="asc">30-day trend${qi('trend')}${sortArrow(CPT_F, 'trend')}</th>`+
       '</tr></thead><tbody>'+
       cptBody(rows)+
       '</tbody></table>';
@@ -3105,6 +3108,7 @@ function cptRowHtml(r){
 
 function wireCpt(v, all){
   wireSort(v, CPT_F, renderCpt);
+  { const cdl = v.querySelector('button[data-dl]'); if(cdl) cdl.onclick = ()=> dlCpt(CPT_SHOWN); }
 
   [...v.querySelectorAll('#cptSeg button')].forEach(b=> b.onclick = ()=>{ CPT_F.show = b.dataset.show; renderCpt(); });
   const openFollow = (title, m, rows)=> showDraft(title, m.body, {follow:true, subject:m.subject, caseId:m.toJassy ? '' : m.caseId,
@@ -3638,7 +3642,7 @@ function openDetail(row, check){
    not, why. Out of stock comes first, then another seller, then price.
    Stock is shown for the US and Canada side by side. */
 let BB = [], BB_META = {}, BB_ERR = '';
-const BB_F = {show:'all', q:'', sort:'', dir:1, tier:''};
+const BB_F = {show:'all', q:'', sort:'', dir:1, tier:'', group:false};
 const BB_CLS = {us:['Us', 'bbh-us'], amazon:['Amazon', 'bbh-amz'], other:['Other seller', 'bbh-oth'], none:['No Buy Box', 'bbh-none']};
 const BB_WHY = {
   oos:     {t:'Out of stock in the US', c:'bad'},
@@ -3708,7 +3712,8 @@ function bbNext(r){
 
 const BB_SORT = {
   product: r=> r.name, has: r=> r.has ? 1 : 0, why: r=> r.why ? Object.keys(BB_WHY).indexOf(r.why) : 99,
-  us: r=> r.us, ca: r=> r.ca, ours: r=> r.ours, bb: r=> r.bb, w30: r=> r.win ? r.win.d30 : null
+  us: r=> r.us, ca: r=> r.ca, ours: r=> r.ours, bb: r=> r.bb, w30: r=> r.win ? r.win.d30 : null,
+  others: r=> (r.others || []).length
 };
 
 function bbBar(p){
@@ -3783,6 +3788,7 @@ function renderBb(){
     `<input id="bbQ" type="search" placeholder="Search SKU, ASIN or product" value="${esc(BB_F.q)}" aria-label="Search Buy Box">`+
     (BB_F.sort ? '<button id="bbUnsort">Clear sort</button>' : '')+
     (no.length ? '<button id="bbSlack" class="work strong">Draft Slack to Haris</button>' : '')+
+    grpBtn(BB_F) + dlBtns() +
     `<span class="count">${rows.length} of ${all.length}</span></div>`;
 
   if(!BB.length){
@@ -3801,13 +3807,14 @@ function renderBb(){
       H('ca', 'CA stock', 'b-ours c', 'Available in Canada FBA. Under it: units on the way.', 'desc')+
       H('ours', 'Our price', 'b-gap c', 'Our live price on Amazon US.', 'desc')+
       H('bb', 'Buy Box price', 'b-gap c', 'The price on the Add to Cart button.', 'desc')+
-      '<th class="b-sim">Other sellers<span class="qi" tabindex="0" data-tip="Other New offers on our listing.">?</span></th>'+
+      H('others', 'Other sellers', 'b-sim', 'Other New offers on our listing.', 'desc')+
       H('w30', 'Buy Box %', 'b-sim c', 'Share of time we had the Buy Box: 30 days, and 7 days under it.')+
-      '</tr></thead><tbody>'+ rows.map(bbTr).join('') +'</tbody></table>';
+      '</tr></thead><tbody>'+ grpMap(BB_F, rows, 9, bbTr, r=> !r.has, 'without the Buy Box') +'</tbody></table>';
   }
   v.innerHTML = html;
 
   wireSort(v, BB_F, renderBb);
+  wireGrpDl(v, BB_F, renderBb, ()=> dlBb(rows));
   [...v.querySelectorAll('#bbSeg button')].forEach(b=> b.onclick = ()=>{ BB_F.show = b.dataset.show; renderBb(); });
   [...v.querySelectorAll('.bbtile')].forEach(t=>{
     const go = ()=>{ BB_F.show = t.dataset.show; renderBb();
@@ -3925,7 +3932,7 @@ function openBb(r){
    highlight, bullets 1 to 5 and description. Generic keywords can't be read
    from Amazon, so they are checked against Amazon's rules instead. */
 let LC = [], LC_META = {}, LC_ERR = '';
-const LC_F = {show:'all', q:'', sort:'', dir:1, tier:''};
+const LC_F = {show:'all', q:'', sort:'', dir:1, tier:'', group:false};
 const LC_COLS = [['title','Title'], ['ih','Highlight'], ['b1','Bullet 1'], ['b2','Bullet 2'], ['b3','Bullet 3'],
                  ['b4','Bullet 4'], ['b5','Bullet 5'], ['gk','Keywords'], ['desc','Description']];
 const LC_S = {
@@ -3942,6 +3949,8 @@ const LC_S = {
   nodata:   ['Not checked yet', 'lc-gray', 'No live copy from Amazon yet']
 };
 const LC_BAD = ['small', 'wrong', 'missing', 'rule'];
+const ST_RANK = {wrong:0, missing:1, rule:1, small:2, leaf:2, unknown:3, cantread:3, hidden:4, blank:4, noplytix:4, nodata:5, nomaster:6, none:6, rulesok:7, match:7};
+const stRank = x=> x ? (x.rule && x.s !== 'rule' && x.s !== 'rulesok' ? 1 : (ST_RANK[x.s] !== undefined ? ST_RANK[x.s] : 5)) : 9;
 
 function buildLc(j){ LC_ERR = ''; LC_META = {updated: j && j.updated || ''}; LC = (j && j.rows) || []; }
 
@@ -3965,6 +3974,7 @@ function lcChip(x){
 }
 
 const LC_SORT = { product: r=> r.name, pct: r=> r.pct, bad: r=> r.bad.length, since: r=> r.since || '' };
+LC_COLS.forEach(c=> LC_SORT['f_' + c[0]] = r=> r.nolive ? 9 : stRank((r.f || {})[c[0]]));
 
 function renderLc(){
   document.getElementById('msg').hidden = true;
@@ -4015,6 +4025,7 @@ function renderLc(){
     '</div>'+
     `<input id="lcQ" type="search" placeholder="Search SKU, ASIN or product" value="${esc(LC_F.q)}" aria-label="Search Listing Copy">`+
     (LC_F.sort ? '<button id="lcUnsort">Clear sort</button>' : '')+
+    grpBtn(LC_F) + dlBtns() +
     `<span class="count">${rows.length} of ${all.length}</span></div>`;
 
   if(!LC.length){
@@ -4028,22 +4039,23 @@ function renderLc(){
     html += '<table class="cpt-table bb-table lc-table"><thead><tr>'+
       H('product', 'Product')+
       H('pct', 'Correct %', 'b-cpt c', 'Fields on Amazon that match Plytix, out of the fields we can compare.')+
-      LC_COLS.map(c=> `<th class="${c[0] === 'gk' ? 'b-sim' : 'b-gap'} c">${c[1]}</th>`).join('')+
+      LC_COLS.map(c=> H('f_' + c[0], c[1], (c[0] === 'gk' ? 'b-sim' : 'b-gap') + ' c', 'Sort to bring problems to the top.')).join('')+
       H('since', 'Copy last changed', 'b-move', 'The day the live Amazon copy last changed, as Keepa saw it.', 'desc')+
       '</tr></thead><tbody>'+
-      rows.map(r=> `<tr class="row" tabindex="0" data-lc="${esc(r.asin)}">`+
+      grpMap(LC_F, rows, 12, r=> `<tr class="row" tabindex="0" data-lc="${esc(r.asin)}">`+
         `<td class="prod"><div class="p-name"><span class="dot" style="background:${r.nolive ? '#94a3b8' : r.allOk ? '#1f9d55' : '#d64545'}"></span>${esc(String(r.name).slice(0, 60))}</div>`+
           `<div class="p-id"><span>SKU</span>${skuL(r.sku)}${cpy(r.sku)}</div><div class="p-id"><span>ASIN</span>${asinL(r.asin)}${cpy(r.asin)}</div>`+
           `${r.tier ? `<span class="p-size">Tier ${esc(r.tier)}</span>` : ''}</td>`+
         `<td class="c">${r.nolive ? '<span class="mut">Not checked yet</span>' : r.pct === null ? '<span class="mut">\u2014</span>' : bbBar(r.pct)}</td>`+
         LC_COLS.map(c=> `<td class="c">${r.nolive ? '' : lcChip(r.f[c[0]])}</td>`).join('')+
         `<td>${r.since ? esc(shortDate(r.since)) : '<span class="mut">No change seen</span>'}${r.extra ? `<span class="was">${r.extra} extra bullet${r.extra > 1 ? 's' : ''} on Amazon</span>` : ''}</td>`+
-      '</tr>').join('')+
+      '</tr>', r=> r.bad.length, 'with wrong copy')+
       '</tbody></table>';
   }
   v.innerHTML = html;
 
   wireSort(v, LC_F, renderLc);
+  wireGrpDl(v, LC_F, renderLc, ()=> dlLc(rows));
   const setShow = f=>{ LC_F.show = f; renderLc(); };
   [...v.querySelectorAll('#lcSeg button')].forEach(b=> b.onclick = ()=> setShow(b.dataset.show));
   [...v.querySelectorAll('.bbtile')].forEach(t=>{
@@ -4117,7 +4129,7 @@ function openLc(r){
 /* ---------- List Price module ----------
    One check: is a List Price set on the Amazon listing (the backend
    list_price). From Keepa's daily read in CPT Watch (cpt.json). */
-const LP_F = {show:'all', q:'', sort:'', dir:1, tier:''};
+const LP_F = {show:'all', q:'', sort:'', dir:1, tier:'', group:false};
 
 function lpRows(){
   return CPT.map(c=>{
@@ -4128,7 +4140,7 @@ function lpRows(){
   });
 }
 
-const LP_SORT = {product: r=> r.name, set: r=> r.set ? 1 : 0, live: r=> r.live, ours: r=> r.ours};
+const LP_SORT = {product: r=> r.name, set: r=> r.set ? 1 : 0, live: r=> r.live, ours: r=> r.ours, todo: r=> r.set ? 1 : 0};
 
 function renderLp(){
   document.getElementById('msg').hidden = true;
@@ -4163,6 +4175,7 @@ function renderLp(){
     '</div>'+
     `<input id="lpQ" type="search" placeholder="Search SKU, ASIN or product" value="${esc(LP_F.q)}" aria-label="Search List Price">`+
     (LP_F.sort ? '<button id="lpUnsort">Clear sort</button>' : '')+
+    grpBtn(LP_F) + dlBtns() +
     `<span class="count">${rows.length} of ${all.length}</span></div>`;
 
   if(!CPT.length){
@@ -4177,21 +4190,22 @@ function renderLp(){
       H('set', 'List Price set?', 'b-cpt c', 'Does the Amazon listing have a List Price.')+
       H('live', 'List Price on Amazon', 'b-ours c', 'The List Price as Keepa reads it from Amazon.', 'desc')+
       H('ours', 'Our price now', 'b-gap c', 'What a shopper pays today, sale included.', 'desc')+
-      '<th class="b-move">What to do</th>'+
+      H('todo', 'What to do', 'b-move')+
       '</tr></thead><tbody>'+
-      rows.map(r=> `<tr class="row">`+
+      grpMap(LP_F, rows, 5, r=> `<tr class="row">`+
         `<td class="prod"><div class="p-name"><span class="dot" style="background:${r.set ? '#1f9d55' : '#d64545'}"></span>${esc(String(r.name).slice(0, 60))}</div>`+
           `<div class="p-id"><span>SKU</span>${skuL(r.sku)}${cpy(r.sku)}</div><div class="p-id"><span>ASIN</span>${asinL(r.asin)}${cpy(r.asin)}</div>${r.tier ? `<span class="p-size">Tier ${esc(r.tier)}</span>` : ''}</td>`+
         `<td class="c">${r.set ? '<span class="bbyes">Yes</span>' : '<span class="bbno">Empty</span>'}</td>`+
         `<td class="c">${r.set ? '<b>' + usd(r.live) + '</b>' : '<span class="mut">none</span>'}</td>`+
         `<td class="c">${usd(r.ours)}</td>`+
         `<td style="font-size:.82rem;white-space:normal">${r.set ? '' : 'Add a List Price in Seller Central (Offer tab).'}</td>`+
-      '</tr>').join('')+
+      '</tr>', r=> !r.set, 'empty')+
       '</tbody></table>';
   }
   v.innerHTML = html;
 
   wireSort(v, LP_F, renderLp);
+  wireGrpDl(v, LP_F, renderLp, ()=> dlLp(rows));
   const setShow = f=>{ LP_F.show = f; renderLp(); };
   [...v.querySelectorAll('#lpSeg button')].forEach(b=> b.onclick = ()=> setShow(b.dataset.show));
   [...v.querySelectorAll('.bbtile')].forEach(t=>{
@@ -4210,8 +4224,8 @@ function renderLp(){
    Watch, nightly): GL, Product Type, full path, ITK and browse node. The
    live value is from Keepa (and for the US GL, Sam's FBA report). The
    correct value is from the Master SKU sheet. */
-let CG = [], CG_META = {}, CG_ERR = '';
-const CG_F = {show:'all', q:'', sort:'', dir:1, tier:'', mk:'US'};
+let CG = [], CG_META = {}, CG_ERR = '', CG_VIEW = [];
+const CG_F = {show:'all', q:'', sort:'', dir:1, tier:'', mk:'US', group:false};
 const CG_COLS = [['gl','GL'], ['pt','Product Type'], ['path','Full path'], ['itk','ITK'], ['node','Browse node']];
 const CG_S = {
   match:    ['OK', 'lc-ok', 'Same as the Master SKU sheet'],
@@ -4245,7 +4259,9 @@ function cgChip(x, nolive){
   return `<span class="lcchip ${d[1]}" data-tip="${esc((x && x.note) || d[2])}">${d[0]}</span>`;
 }
 
-const CG_SORT = { product: r=> r.name, pct: r=> r.pct, since: r=> r.since || '' };
+const CG_SORT = { product: r=> r.name, pct: r=> r.pct, since: r=> r.since || '',
+  cs: r=> !r.bad.length ? 2 : cgCaseInfo(r) ? 1 : 0 };
+CG_COLS.forEach(c=> CG_SORT['f_' + c[0]] = r=> r.nolive ? 9 : stRank((r.c || {})[c[0]]));
 
 function renderCategory(){
   document.getElementById('msg').hidden = true;
@@ -4263,6 +4279,7 @@ function renderCategory(){
   if(CG_F.q){ const q = CG_F.q.toLowerCase(); rows = rows.filter(r=> (r.sku + ' ' + r.asin + ' ' + r.name).toLowerCase().indexOf(q) !== -1); }
   rows = CG_F.sort && CG_SORT[CG_F.sort] ? sortBy(rows, CG_SORT[CG_F.sort], CG_F.dir)
        : sortBy(rows, r=> (r.nolive ? 2000 : 0) + (r.pct === null ? 1000 : r.pct) * 10 + (TIER_RANK[r.tier] !== undefined ? TIER_RANK[r.tier] : 5), 1);
+  CG_VIEW = rows;
 
   const order = ['all','good','wrong','gl','pt','path','itk','node','blank']; let n = 0;
   const tile = (k, val, cls, note)=>{ const f = order[n++];
@@ -4290,6 +4307,8 @@ function renderCategory(){
     '</div>'+
     `<input id="cgQ" type="search" placeholder="Search SKU, ASIN or product" value="${esc(CG_F.q)}" aria-label="Search Category">`+
     (CG_F.sort ? '<button id="cgUnsort">Clear sort</button>' : '')+
+    (rows.some(r=> r.bad.length) ? `<button id="cgAll" class="work strong">Draft one case for all ${rows.filter(r=> r.bad.length).length} wrong</button>` : '')+
+    grpBtn(CG_F) + dlBtns('<button data-dlx="1">Download with listing copy</button>') + '<button id="cgTips">Why does this happen?</button>' + (rows.some(r=> r.bad.length) ? '<button id="cgFlatT">Download flat file values</button>' : '') +
     `<span class="count">${rows.length} of ${all.length}</span></div>`;
 
   if(!CG.length){
@@ -4303,22 +4322,29 @@ function renderCategory(){
     html += '<table class="cpt-table bb-table lc-table cg-table"><thead><tr>'+
       H('product', 'Product')+
       H('pct', 'Correct %', 'b-cpt c', 'Checks on Amazon that match the Master SKU sheet, out of the ones we can compare.')+
-      CG_COLS.map(c=> `<th class="b-gap c">${c[1]}</th>`).join('')+
+      CG_COLS.map(c=> H('f_' + c[0], c[1], 'b-gap c', 'Sort to bring problems to the top.')).join('')+
       H('since', 'Last changed on Amazon', 'b-move', 'The day any of these category values last changed on Amazon, as Keepa saw it.', 'desc')+
+      H('cs', 'Case', 'b-case', 'Needs a case first, then follow-ups, then fine.')+
       '</tr></thead><tbody>'+
-      rows.map(r=> `<tr class="row" tabindex="0" data-cg="${esc(r.asin)}">`+
+      grpMap(CG_F, rows, 9, r=> `<tr class="row" tabindex="0" data-cg="${esc(r.asin)}">`+
         `<td class="prod"><div class="p-name"><span class="dot" style="background:${r.nolive ? '#94a3b8' : r.allOk ? '#1f9d55' : '#d64545'}"></span>${esc(String(r.name).slice(0, 60))}</div>`+
           `<div class="p-id"><span>SKU</span>${skuL(r.sku, mk)}${cpy(r.sku)}</div><div class="p-id"><span>ASIN</span>${asinL(r.asin, mk)}${cpy(r.asin)}</div>`+
           `${r.tier ? `<span class="p-size">Tier ${esc(r.tier)}</span>` : ''}</td>`+
         `<td class="c">${r.nolive ? '<span class="mut">Not checked yet</span>' : r.pct === null ? '<span class="mut">\u2014</span>' : bbBar(r.pct)}</td>`+
         CG_COLS.map(c=> `<td class="c">${cgChip((r.c || {})[c[0]], r.nolive)}</td>`).join('')+
         `<td>${r.since ? esc(shortDate(r.since)) : '<span class="mut">No change seen</span>'}</td>`+
-      '</tr>').join('')+
+        `<td>${r.bad.length ? (()=>{ const ci = cgCaseInfo(r);
+            return `<button class="work strong" data-cgcase="${esc(r.asin)}">${ci ? 'Follow up' : 'Draft case'}</button>`+
+              (ci ? `<span class="was">Case ${esc(ci.id)}${ci.date ? ', ' + esc(shortDate(ci.date)) : ''}</span>` : ''); })() : ''}</td>`+
+      '</tr>', r=> r.bad.length, 'need a look', CG_F.mk)+
       '</tbody></table>';
   }
   v.innerHTML = html;
 
   wireSort(v, CG_F, renderCategory);
+  wireGrpDl(v, CG_F, renderCategory, ()=> dlCg(rows), ()=> dlCgCopy(rows));
+  const tp = document.getElementById('cgTips'); if(tp) tp.onclick = cgTips;
+  const ft = document.getElementById('cgFlatT'); if(ft) ft.onclick = ()=> dlCgFlat(rows);
   const setShow = f=>{ CG_F.show = f; renderCategory(); };
   [...v.querySelectorAll('#cgSeg button')].forEach(b=> b.onclick = ()=> setShow(b.dataset.show));
   [...v.querySelectorAll('#cgMk button')].forEach(b=> b.onclick = ()=>{ CG_F.mk = b.dataset.mk; renderCategory(); });
@@ -4331,6 +4357,12 @@ function renderCategory(){
   if(q) q.oninput = ()=>{ CG_F.q = q.value; const pos = q.selectionStart; renderCategory(); const q2 = document.getElementById('cgQ'); q2.focus(); q2.setSelectionRange(pos, pos); };
   const un = document.getElementById('cgUnsort');
   if(un) un.onclick = ()=>{ CG_F.sort = ''; renderCategory(); };
+  const ca = document.getElementById('cgAll');
+  if(ca) ca.onclick = ()=> cgDraft(rows);
+  [...v.querySelectorAll('button[data-cgcase]')].forEach(b=> b.onclick = e=>{
+    e.stopPropagation();
+    const r = all.find(x=> x.asin === b.dataset.cgcase); if(r) cgDraft([r]);
+  });
   [...v.querySelectorAll('tr.row[data-cg]')].forEach(tr=>{
     const open = ()=>{ const r = all.find(x=> x.asin === tr.dataset.cg); if(r) openCg(r); };
     tr.onclick = open; tr.onkeydown = e=>{ if(e.key === 'Enter') open(); };
@@ -4342,13 +4374,11 @@ function openCg(r){
   const block = c=>{
     const x = (r.c || {})[c[0]];
     if(!x || x.s === 'nomaster') return '';
-    const caseable = CG_BAD.indexOf(x.s) !== -1;
-    return `<div class="lcf"><div class="lcf-h"><b>${c[1]}</b> ${cgChip(x)}`+
-      (caseable ? ` <button class="work" data-case="${c[0]}">Draft a case</button>` : '')+'</div>'+
+      return `<div class="lcf"><div class="lcf-h"><b>${c[1]}</b> ${cgChip(x)}`+
+      '</div>'+
       `<div class="lcf-l">Master SKU says</div><div class="lcf-t">${x.e ? esc(x.e) : '<span class="mut">blank</span>'}</div>`+
       `<div class="lcf-l">Amazon has${x.src ? ' (' + esc(x.src) + ')' : ''}</div><div class="lcf-t">${x.a ? esc(x.a) : '<span class="mut">nothing</span>'}</div>`+
       (x.note ? `<div class="lcf-r" style="color:var(--muted)">${esc(x.note)}</div>` : '')+
-      `<div class="lcf-case" data-for="${c[0]}"></div>`+
     '</div>';
   };
   d.innerHTML =
@@ -4360,24 +4390,269 @@ function openCg(r){
       `<dt>To fix</dt><dd>${r.bad.length ? esc(r.bad.map(k=> CG_COLS.find(c=> c[0] === k)[1]).join(', ')) : 'Nothing'}</dd>`+
       `<dt>Last change</dt><dd>${r.since ? esc(shortDate(r.since)) : 'No change seen'}${r.liveChecked ? ', checked ' + esc(shortDate(r.liveChecked)) : ''}</dd>`+
     '</dl>'+
+    (r.bad.length ? (()=>{ const ci = cgCaseInfo(r);
+      return `<div class="act-row"><button class="work strong" id="cgOne">${ci ? 'Follow up on case ' + esc(ci.id) : 'Draft case'}</button><button class="work" id="cgAi">Copy for AI review</button><button class="work" id="cgWhy">Why does this happen?</button></div>`+
+        (ci && ci.notes ? `<div class="lcf-r" style="color:var(--muted)">Last note: ${esc(ci.notes)}</div>` : ''); })() : '')+
     (r.nolive ? '<div class="why">No live data from Amazon yet for this listing.</div>' : CG_COLS.map(block).join(''))+
     '<div class="act-row">'+
       `<a class="work" href="https://sellercentral.amazon.${mk === 'CA' ? 'ca' : 'com'}/hz/productclassify" target="_blank" rel="noopener">Check in the product classifier</a>`+
     '</div>'+
     '<div class="why">Amazon values from Keepa\u2019s last check. US GL from the FBA inventory report when it has one. Correct values from the Master SKU sheet.</div>';
-  [...d.querySelectorAll('button[data-case]')].forEach(b=> b.onclick = ()=>{
-    const k = b.dataset.case, x = r.c[k];
-    const row = {sku:r.sku, asin:r.asin, name:r.name, country:mk};
-    const label = CG_CASE[k];
-    const text = caseText(row, label, {expected: k === 'node' ? 'browse node ' + x.e : x.e, actual: k === 'node' ? 'browse node ' + (x.a || 'none') : x.a});
-    const box = d.querySelector(`.lcf-case[data-for="${k}"]`);
-    box.innerHTML = `<textarea class="draft-t" rows="10">${esc(text)}</textarea><div class="act-row"><button class="work strong">Copy and open the case form</button></div>`;
-    box.querySelector('button').onclick = e=>{
-      const t = box.querySelector('textarea').value;
-      (navigator.clipboard ? navigator.clipboard.writeText(t) : Promise.reject()).then(()=> e.target.textContent = 'Copied').catch(()=> window.prompt('Copy:', t));
-      window.open(CASE_URL, '_blank', 'noopener');
-    };
-  });
+  const one = document.getElementById('cgOne');
+  if(one) one.onclick = ()=> cgDraft([r]);
+  const wy = document.getElementById('cgWhy'); if(wy) wy.onclick = cgTips;
+  const ai = document.getElementById('cgAi');
+  if(ai) ai.onclick = ()=>{ const t = cgAiText(r);
+    (navigator.clipboard ? navigator.clipboard.writeText(t) : Promise.reject()).then(()=> ai.textContent = 'Copied. Paste it into the AI').catch(()=> window.prompt('Copy:', t)); };
+  document.getElementById('veil').hidden = false;
+}
+
+/* ---------- Category case drafts (chat first, then call, then case form) ----------
+   One listing or many. A listing with a case on file gets a follow-up that
+   names the case and answers Amazon's last note. Values come from the
+   Master SKU sheet (correct) and Keepa (live), never guessed. */
+const CG_LABEL = {gl:'GL', pt:'Product Type', path:'Browse path', itk:'Item type keyword', node:'Browse node'};
+function cgCaseInfo(r){
+  const withCase = CAT.filter(x=> x.caseId && (x.country || 'US') === r.mk);
+  const c = withCase.find(x=> x.sku === r.sku) || withCase.find(x=> x.asin === r.asin);
+  return c && c.caseId ? {id:c.caseId, date:c.caseDate, notes:c.caseNotes} : null;
+}
+function cgFixLine(r, k){
+  const x = r.c[k], ex = r.c;
+  if(k === 'node' || k === 'path'){
+    const node = ex.node && ex.node.e ? ex.node.e : '', path = ex.path && ex.path.e ? ex.path.e : '';
+    const now = ex.path && ex.path.a ? ex.path.a : '', nowNode = ex.node && ex.node.a ? ex.node.a : '';
+    return `It is in ${now || 'the wrong category'}${nowNode ? ' (node ' + nowNode + ')' : ''}. The correct one is ${path}${node ? ', browse node ' + node : ''}.`;
+  }
+  return `${CG_LABEL[k]}: it shows ${x.a || 'nothing'}. The correct value is ${x.e}.`;
+}
+function cgFacts(r){
+  const f = [];
+  if(r.c.pt && r.c.pt.e) f.push('product type ' + r.c.pt.e);
+  if(r.c.itk && r.c.itk.e) f.push('item type keyword ' + r.c.itk.e);
+  return f.length ? ' (' + f.join(', ') + ')' : '';
+}
+function cgPitch(list){
+  const mk = list[0].mk, site = mk === 'CA' ? 'amazon.ca' : 'amazon.com';
+  const one = list.length === 1 ? list[0] : null;
+  const cases = list.map(cgCaseInfo).filter(Boolean);
+  const caseIds = [...new Set(cases.map(c=> c.id))];
+  const note = cases.map(c=> c.notes).find(n=> n && n.length > 20) || '';
+  // Path and node are one fix; the rest are separate lines
+  const keysOf = r=> { const b = r.bad.filter(k=> k !== 'path' || r.bad.indexOf('node') === -1); return b.map(k=> k === 'path' ? 'node' : k).filter((k,i,a)=> a.indexOf(k) === i); };
+  const chat = [];
+  chat.push(`Hi, I'm MJ from Barnyard Designs, the brand owner. I need a category correction for ${one ? `ASIN ${one.asin} (SKU ${one.sku}), the ${one.name},` : list.length + ' ASINs'} on ${site}.` +
+    (caseIds.length ? (one ? ` This follows up on case ${caseIds.join(' and ')}.` : ` Some of these were raised before on case ${caseIds.join(' and ')}.`) : ''));
+  if(one){
+    keysOf(one).forEach(k=> chat.push(cgFixLine(one, k)));
+    if(cgFacts(one)) chat.push(`The product data backs this${cgFacts(one)}.`);
+  } else {
+    // Same fix, one message with the ASIN list
+    const groups = {};
+    list.forEach(r=> keysOf(r).forEach(k=>{ const line = cgFixLine(r, k).replace(/^It is/, 'They are'); (groups[line] = groups[line] || []).push(r); }));
+    Object.keys(groups).forEach(line=> chat.push(line + '\n' + groups[line].map(r=> `${r.asin} (${r.sku})`).join('\n')));
+  }
+  if(note) chat.push(`Your team replied before: "${note.slice(0, 220)}" We understand that. Our request is different: the listing still sits in the wrong node, so it does not show in the right category.`);
+  chat.push(`Please send this to the catalog team to correct it, add these notes to a case, and send me the case number.`);
+  const ifSay = [
+    ['"It is assigned based on the detail page and how customers find products."', 'The product type and item type keyword both point to the correct category. Please escalate to the catalog team for a manual review.'],
+    ['"Please use the browse node tool."', 'I would rather the catalog team makes the change, so the listing is not locked by repeated tool requests.'],
+    ['"It is already tied to the correct node."', 'The live page still shows the listing in the wrong category. Please check the browse node the detail page uses, not only the backend value.']
+  ];
+  const call = ['BEFORE THE CALL', `Have open: ${caseIds.length ? 'case ' + caseIds.join(', ') + ', ' : ''}this page, and the ASIN list.`, '',
+    '1. SAY WHO YOU ARE', `"Hi, my name is MJ Baguhin, calling for Barnyard Designs, the brand owner. I need a category correction on ${site}${caseIds.length ? ', following up on case ' + caseIds.join(' and ') : ''}."`, '',
+    '2. SAY THE PROBLEM', ...chat.slice(1, -1).map(m=> '"' + m.replace(/\n/g, ', ') + '"'), '',
+    '3. MAKE THE ASK', `"${chat[chat.length - 1]}"`, '',
+    '4. BEFORE YOU HANG UP', 'Ask for the case number and the agent\u2019s name. Write them down.', '',
+    'IF THEY SAY...', ...ifSay.map(x=> `${x[0]}\n   Say: "${x[1]}"`)].join('\n');
+  // Case form text (single paragraph, like the category-update skill)
+  const body = one
+    ? `I am writing to request a correction to the ${keysOf(one).map(k=> CG_LABEL[k]).join(' and ').toLowerCase()} assigned to ASIN ${one.asin} (SKU: ${one.sku}) on the ${mk} marketplace. This product is the ${one.name}${cgFacts(one)}. ${keysOf(one).map(k=> cgFixLine(one, k)).join(' ')}${caseIds.length ? ' This follows up on case ' + caseIds.join(' and ') + '.' : ''} Could you please correct it and confirm once the update has been applied?`
+    : `I am writing to request a category correction for ${list.length} ASINs on the ${mk} marketplace.${caseIds.length ? ' Some of these were raised before on case ' + caseIds.join(' and ') + '.' : ''}\n\n` + chat.slice(1, -1).join('\n\n') + '\n\nCould you please correct them and confirm once the update has been applied?';
+  const clean = t=> noDash(String(t));
+  return {chat:chat.map(clean), call:clean(call), ifSay:ifSay.map(x=> [x[0], clean(x[1])]), cid:caseIds[caseIds.length - 1] || '', read:null,
+          body:clean(body), subject: clean(`Category correction: ${one ? one.asin + ' (' + one.sku + ')' : list.length + ' ASINs'} on ${site}`), follow: !!caseIds.length};
+}
+function cgDraft(list){
+  list = list.filter(r=> r.bad.length);
+  if(!list.length) return;
+  const P = cgPitch(list);
+  showDraft(list.length === 1 ? `${list[0].sku} ${list[0].name}` : `${list.length} listings, ${list[0].mk}`, P.body,
+    {follow:P.follow, subject:P.subject, caseId:P.cid, rows:[], pitch:P});
+}
+
+/* ---------- Group by parent and Download, shared by the modules ---------- */
+function parentOf(r){
+  const row = (r.sku && ROWS.find(x=> x.sku === r.sku)) || ROWS.find(x=> x.asin === r.asin) || {};
+  return {psku: row.psku || '', pasin: row.pasin || '', pname: row.parent || ''};
+}
+// Rows stay in their sorted order; each parent family gets a violet band on top
+function grpMap(F, rows, ncols, trFn, needFn, needLabel, mk){
+  if(!F.group) return rows.map(trFn).join('');
+  const order = [], g = {};
+  rows.forEach(r=>{ const p = parentOf(r), k = p.psku || '\u0000solo'; if(!g[k]){ g[k] = {p, rows:[]}; order.push(k); } g[k].rows.push(r); });
+  // Families with problems first, then the rest, then listings with no parent
+  order.sort((a,b)=> (a === '\u0000solo') - (b === '\u0000solo') || g[b].rows.filter(needFn).length - g[a].rows.filter(needFn).length);
+  return order.map(k=>{
+    const G = g[k], solo = k === '\u0000solo', need = G.rows.filter(needFn).length;
+    const bits = [];
+    if(!solo){
+      bits.push(`<span><span class="k">Parent SKU</span><span class="mono">${skuL(G.p.psku, mk)}</span>${cpy(G.p.psku)}</span>`);
+      if(G.p.pasin) bits.push(`<span><span class="k">Parent ASIN</span>${asinL(G.p.pasin, mk)}${cpy(G.p.pasin)}</span>`);
+    }
+    bits.push(`<span><b>${G.rows.length}</b> ${solo ? 'listing' + (G.rows.length === 1 ? '' : 's') : 'children'}</span>`);
+    bits.push(need ? `<span class="pgh-tag bad">${need} ${needLabel}</span>` : '<span class="pgh-tag ok">All OK</span>');
+    return `<tr class="gh pgh${solo ? ' solo' : ''}"><td colspan="${ncols}"><div class="pgh-name">${solo ? '\u25a0 No parent' : '\u25bc ' + esc(G.p.pname || G.p.psku)}</div><div class="pgh-meta">${bits.join('')}</div></td></tr>` +
+      G.rows.map(trFn).join('');
+  }).join('');
+}
+function grpBtn(F){ return `<button data-grp="1" aria-pressed="${!!F.group}">Group by parent</button>`; }
+function dlBtns(extra){ return '<button data-dl="1">Download</button>' + (extra || ''); }
+function wireGrpDl(v, F, rerender, dlFn, extraFn){
+  const g = v.querySelector('button[data-grp]');
+  if(g) g.onclick = ()=>{ F.group = !F.group; rerender(); };
+  const d = v.querySelector('button[data-dl]');
+  if(d) d.onclick = dlFn;
+  const x = v.querySelector('button[data-dlx]');
+  if(x && extraFn) x.onclick = extraFn;
+}
+function csvSave(name, head, rows){
+  const q = v=> { const t = v === null || v === undefined ? '' : String(v); return /[",\n]/.test(t) ? '"' + t.replace(/"/g, '""') + '"' : t; };
+  const out = '\ufeff' + [head].concat(rows).map(r=> r.map(q).join(',')).join('\n');
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(new Blob([out], {type:'text/csv;charset=utf-8'}));
+  a.download = name + '-' + todayStr() + '.csv';
+  document.body.appendChild(a); a.click(); a.remove();
+}
+const withParent = (r, cells)=>{ const p = parentOf(r); return cells.concat([p.psku, p.pasin]); };
+
+/* What each module downloads: exactly the rows on screen, after filters */
+function dlBb(rows){
+  csvSave('buy-box', ['SKU','ASIN','Product','Tier','Buy Box?','Why not','Next step','US stock','CA stock','Our price','Buy Box price','Other sellers','Buy Box % 30d','Buy Box % 7d','Parent SKU','Parent ASIN'],
+    rows.map(r=> withParent(r, [r.sku, r.asin, r.name, r.tier, r.has ? 'Yes' : 'No', r.why ? (BB_WHY[r.why] || {}).t : '', r.next, r.us, r.ca, r.ours, r.bb,
+      (r.others || []).join('; '), r.win ? Math.round(r.win.d30) : '', r.win ? Math.round(r.win.d7) : ''])));
+}
+function lcVal(x, side){ if(!x) return ''; if(side === 'c') return x.c || ''; return x.l !== undefined ? x.l : (x.s === 'match' ? (x.c || '') : ''); }
+function dlLc(rows){
+  const head = ['SKU','ASIN','Product','Tier','Correct %'];
+  LC_COLS.forEach(c=> head.push(c[1] + ' check', c[1] + ' correct (Master SKU)', c[1] + ' on Amazon'));
+  csvSave('listing-copy', head.concat(['Parent SKU','Parent ASIN']), rows.map(r=>{
+    const cells = [r.sku, r.asin, r.name, r.tier, r.pct];
+    LC_COLS.forEach(c=>{ const x = (r.f || {})[c[0]]; cells.push(x ? (LC_S[x.s] || [x.s])[0] : '', lcVal(x, 'c'), c[0] === 'gk' ? '(backend, not visible)' : lcVal(x, 'l')); });
+    return withParent(r, cells);
+  }));
+}
+function dlLp(rows){
+  csvSave('list-price', ['SKU','ASIN','Product','Tier','List Price set?','List Price on Amazon','Our price now','Parent SKU','Parent ASIN'],
+    rows.map(r=> withParent(r, [r.sku, r.asin, r.name, r.tier, r.set ? 'Yes' : 'Empty', r.live, r.ours])));
+}
+function cgCells(r){
+  const cells = [r.mk, r.sku, r.asin, `https://www.amazon.${r.mk === 'CA' ? 'ca' : 'com'}/dp/${r.asin}`, r.name, r.tier, r.pct];
+  CG_COLS.forEach(c=>{ const x = (r.c || {})[c[0]] || {}; cells.push((CG_S[x.s] || [x.s || ''])[0], x.e || '', x.a || ''); });
+  const ci = cgCaseInfo(r); cells.push(ci ? ci.id : '', ci ? ci.notes : '');
+  return cells;
+}
+function cgHead(){
+  const h = ['Market','SKU','ASIN','Amazon link','Product','Tier','Correct %'];
+  CG_COLS.forEach(c=> h.push(c[1] + ' check', c[1] + ' correct (Master SKU)', c[1] + ' on Amazon'));
+  return h.concat(['Case ID','Last case note']);
+}
+function dlCg(rows){ csvSave('category-' + CG_F.mk.toLowerCase(), cgHead().concat(['Parent SKU','Parent ASIN']), rows.map(r=> withParent(r, cgCells(r)))); }
+// Category plus the listing copy, so an AI can look for words that pull the listing into the wrong category
+function cgAiText(r){
+  const L = ((LC.find(x=> x.asin === r.asin) || {}).f) || {};
+  const c = r.c || {}, site = r.mk === 'CA' ? 'amazon.ca' : 'amazon.com';
+  const v = (k, side)=> lcVal(L[k], side);
+  const lines = [
+    'Please check this Amazon listing copy for words or phrases that could make Amazon place the product in the wrong category, and tell me which ones to change.', '',
+    `ASIN: ${r.asin} (${site})`, `Link: https://www.${site}/dp/${r.asin}`, `SKU: ${r.sku}`, '',
+    `Correct category (where it belongs): ${(c.path || {}).e || ''}${(c.node || {}).e ? ', browse node ' + c.node.e : ''}`,
+    `Product type: ${(c.pt || {}).e || ''}. Item type keyword: ${(c.itk || {}).e || ''}`,
+    `Where Amazon has it now: ${(c.path || {}).a || ''}${(c.node || {}).a ? ', browse node ' + c.node.a : ''}`, '',
+    `Title: ${v('title', 'l') || v('title', 'c')}`
+  ];
+  ['b1','b2','b3','b4','b5'].forEach((k,i)=>{ const t = v(k, 'l') || v(k, 'c'); if(t) lines.push(`Bullet ${i + 1}: ${t}`); });
+  const d = v('desc', 'l') || v('desc', 'c'); if(d) lines.push(`Description: ${d}`);
+  const gk = v('gk', 'c'); if(gk) lines.push(`Backend search terms: ${gk}`);
+  if(!LC.length || !LC.find(x=> x.asin === r.asin)) lines.push('', '(Listing copy not loaded yet for this ASIN.)');
+  return lines.join('\n');
+}
+
+function dlCgCopy(rows){
+  const copy = {}; LC.forEach(x=> copy[x.asin] = x);
+  const fields = [['title','Title'], ['ih','Item highlight'], ['b1','Bullet 1'], ['b2','Bullet 2'], ['b3','Bullet 3'], ['b4','Bullet 4'], ['b5','Bullet 5'], ['desc','Description'], ['gk','Generic keywords (backend)']];
+  const head = cgHead().concat(fields.map(f=> f[1] + ' on Amazon')).concat(fields.map(f=> f[1] + ' correct (Master SKU)')).concat(['Parent SKU','Parent ASIN']);
+  csvSave('category-with-listing-copy-' + CG_F.mk.toLowerCase(), head, rows.map(r=>{
+    const L = (copy[r.asin] || {}).f || {};
+    const live = fields.map(f=> f[0] === 'gk' ? lcVal(L.gk, 'c') : lcVal(L[f[0]], 'l'));
+    const corr = fields.map(f=> lcVal(L[f[0]], 'c'));
+    return withParent(r, cgCells(r).concat(live, corr));
+  }));
+}
+function dlCpt(rows){
+  csvSave('cpt-tracker', ['SKU','ASIN','Product','Size','Our price','Sale price','CPT','Gap','Last CPT move','Similar at CPT price','What to do','Parent SKU','Parent ASIN'],
+    rows.map(r=> withParent(r, [r.sku, r.asin, cptTitle(r), r.size || '', r.ours, r.sale, r.cpt, r.gap, r.moved || '',
+      r.simMatch ? `${r.simMatch.item.market} ${r.simMatch.item.brand || ''} ${r.simMatch.item.price}` : '', (ACTIONS[r.action] || {}).label || ''])));
+}
+
+/* ---------- Category tips: why category problems happen ----------
+   Checked against sources before it went in. Each reason says how sure we
+   are: confirmed by Amazon on our own cases, or reported by sellers and
+   agencies. Anything we could not check was left out. */
+const CG_TIPS = [
+  {t:'The node is shared, so the page shows the other path', sure:'Confirmed by Amazon on our cases',
+   d:'Some nodes sit under two paths. Doormats (3742271) is under both Home & Kitchen and Patio, Lawn & Garden. Amazon told us the ASIN can be in the right node while the page shows the Patio, Lawn & Garden path.',
+   do:'Not a problem by itself. Only open a case if the page stops at a parent level (like Outdoor Décor with no Doormats).', src:[]},
+  {t:'The listing sits in a parent node, not the child node', sure:'Reported by agencies',
+   d:'If an ASIN is attached to a general or old node instead of the exact child node, it does not show when shoppers filter by subcategory, and it can lose its category rank.',
+   do:'Ask for the exact leaf node (for example 3742271, Doormats) and quote the product type and ITK.', src:[['Seller Candy', 'https://sellercandy.com/amazon-browse-nodes-brand-not-showing-search']]},
+  {t:'Big copy or attribute edits can trigger a new classification', sure:'Reported by agencies',
+   d:'Amazon\u2019s system keeps re-checking listings. Large edits to the title, backend keywords or attributes can move a listing to a different node without notice.',
+   do:'Check the category a few days after any big edit. Use Copy for AI review to look for words that point to the wrong category.', src:[['Seller Candy', 'https://sellercandy.com/amazon-browse-nodes-brand-not-showing-search']]},
+  {t:'Wrong or mismatched item type keyword or product type', sure:'Reported by sellers',
+   d:'The ITK is the backend value that places the listing in its subcategory. Sellers report Seller Support fixing an ITK that did not match between parent and child listings.',
+   do:'Make sure ITK - Backend and Product Type in the Master SKU sheet match what the listing should be, and match across the variation family.', src:[['Seller Forums', 'https://sellercentral.amazon.com/seller-forums/discussions/t/fe699c2d-0d13-414c-99b0-934a92e8e316']]},
+  {t:'Variation family out of step', sure:'Reported by one seller, not confirmed by Amazon',
+   d:'One seller saw browse nodes change on the parent or a child after unrelated updates, which split the family and caused warnings.',
+   do:'Use Group by parent. If only some children of a family are wrong, include the whole family in the case.', src:[['Seller Forums', 'https://sellercentral.amazon.com/seller-forums/discussions/t/fe699c2d-0d13-414c-99b0-934a92e8e316']]},
+  {t:'Amazon merged or split a category, or another seller changed it', sure:'Reported by agencies',
+   d:'When Amazon reorganizes its category tree, or another contributor sends category data for the ASIN, the listing can land in a different node.',
+   do:'If many listings moved on the same day, it is likely a category change on Amazon\u2019s side. Mention the date in the case.', src:[['Seller Candy', 'https://sellercandy.com/amazon-browse-nodes-brand-not-showing-search']]}
+];
+const CG_HOWTO = [
+  'Look at the category links at the top of the Amazon page. Note where they stop.',
+  'Try a flat file Partial Update first. Click Download flat file values below, then in Seller Central go to Catalog, Add Products via Upload, and download the inventory file for the product type. Copy the values into the matching columns, keep update_delete as PartialUpdate (it only changes the columns you fill), upload, and read the processing report.',
+  'In Seller Central Get Help, pick "Change a product\u2019s category browse node", or chat with Seller Support. Use Draft case here.',
+  'Give the exact node number, the full path, the product type and the ITK. Say you are not asking to change the display path when the node is shared.',
+  'Ask for the catalog team. Do not run the browse node tool again and again: sellers report it can lock the listing.',
+  'Write down the case number, then check the category again in 3 to 5 days.'
+];
+function dlCgFlat(rows){
+  const list = rows.filter(r=> r.bad.length);
+  csvSave('category-flat-file-values-' + CG_F.mk.toLowerCase(),
+    ['item_sku (Seller SKU)', 'update_delete', 'feed_product_type (Product Type)', 'item_type_keyword (Item Type Keyword)', 'recommended_browse_nodes (Browse Node)',
+     'ASIN', 'Marketplace', 'Correct path (for checking)', 'Where Amazon has it now', 'What is wrong'],
+    list.map(r=>{ const c = r.c || {};
+      return [r.sku, 'PartialUpdate', (c.pt || {}).e || '', (c.itk || {}).e || '', (c.node || {}).e || '', r.asin, r.mk === 'CA' ? 'amazon.ca' : 'amazon.com',
+        (c.path || {}).e || '', [(c.path || {}).a, (c.node || {}).a ? 'node ' + c.node.a : ''].filter(Boolean).join(', '),
+        r.bad.map(k=> CG_COLS.find(x=> x[0] === k)[1]).join(', ')]; }));
+}
+
+function cgTips(){
+  const d = document.getElementById('detail');
+  d.innerHTML = '<h2>Why category problems happen</h2><h3>Read this before you open a case</h3>'+
+    CG_TIPS.map((x,i)=> `<div class="lcf"><div class="lcf-h"><b>${i + 1}. ${esc(x.t)}</b> <span class="lcchip ${/Confirmed/.test(x.sure) ? 'lc-ok' : /one seller/.test(x.sure) ? 'lc-gray' : 'lc-small'}">${esc(x.sure)}</span></div>`+
+      `<div class="lcf-t" style="margin-top:.35rem">${esc(x.d)}</div>`+
+      `<div class="lcf-l">What to do</div><div class="lcf-t">${esc(x.do)}</div>`+
+      (x.src.length ? `<div class="lcf-r" style="color:var(--muted)">Source: ${x.src.map(s=> `<a href="${esc(s[1])}" target="_blank" rel="noopener">${esc(s[0])}</a>`).join(', ')}</div>` : '')+
+    '</div>').join('')+
+    '<h2 style="margin-top:1rem">How to fix it, step by step</h2>'+
+    `<ol style="font-size:.86rem;line-height:1.6;padding-left:1.2rem">${CG_HOWTO.map(s=> `<li>${esc(s)}</li>`).join('')}</ol>`+
+    '<div class="act-row"><button class="work strong" id="cgFlat">Download flat file values</button></div>'+
+    '<div class="lcf-r" style="color:var(--muted)">One row per wrong listing in your current view: Seller SKU, PartialUpdate, product type, item type keyword and browse node from the Master SKU sheet. Template column names can differ by product type, so match by the name in brackets. The last columns are only for checking.</div>'+
+    '<div class="why">Flat file steps checked against Amazon\u2019s Product Type Definitions guide (item_type_keyword, recommended_browse_nodes) and seller guides on PartialUpdate. Amazon does not publish why a listing moves. These are the reasons we could check: from Amazon\u2019s replies on our own cases, and from sellers and agencies.</div>';
+  const fb = document.getElementById('cgFlat');
+  if(fb) fb.onclick = ()=> dlCgFlat(CG_VIEW.length ? CG_VIEW : cgRows());
   document.getElementById('veil').hidden = false;
 }
 
