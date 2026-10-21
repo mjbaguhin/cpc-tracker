@@ -4458,46 +4458,101 @@ function cgFacts(r){
   if(r.c.itk && r.c.itk.e) f.push('item type keyword ' + r.c.itk.e);
   return f.length ? ' (' + f.join(', ') + ')' : '';
 }
+const CG_MAX_ASINS = 5;   // Amazon chat support (MJ, Oct 2026): 5 ASINs per case; for a family give the parent
+const leafName = p=> String(p || '').split(/\s*[›>]\s*/).filter(Boolean).pop() || '';
+/* Chat, call and case form for one listing or many, in MJ's case style:
+   who we are, which ASINs (parents when more than 5), where they are now and
+   where they belong (node first), the backing values, an answer to the shared
+   node reply when the node is shared, earlier cases, then the ask. */
 function cgPitch(list){
   const mk = list[0].mk, site = mk === 'CA' ? 'amazon.ca' : 'amazon.com';
   const one = list.length === 1 ? list[0] : null;
+  const allRows = cgRows(mk);
   const cases = list.map(cgCaseInfo).filter(Boolean);
   const caseIds = [...new Set(cases.map(c=> c.id))];
-  const note = cases.map(c=> c.notes).find(n=> n && n.length > 20) || '';
-  // Path and node are one fix; the rest are separate lines
-  const keysOf = r=> { const b = r.bad.filter(k=> k !== 'path' || r.bad.indexOf('node') === -1); return b.map(k=> k === 'path' ? 'node' : k).filter((k,i,a)=> a.indexOf(k) === i); };
+  const nodeFix = r=> r.bad.indexOf('node') !== -1 || r.bad.indexOf('path') !== -1;
+  const otherFix = r=> r.bad.filter(k=> k !== 'node' && k !== 'path');
+  const sharedNodes = new Set(allRows.filter(r=> r.c && r.c.path && r.c.path.shared).map(r=> String(r.c.node.e)));
+  const ifSay = [], extra = [];
   const chat = [];
-  chat.push(`Hi, I'm MJ from Barnyard Designs, the brand owner. I need a category correction for ${one ? `ASIN ${one.asin} (SKU ${one.sku}), the ${one.name},` : list.length + ' ASINs'} on ${site}.` +
-    (caseIds.length ? (one ? ` This follows up on case ${caseIds.join(' and ')}.` : ` Some of these were raised before on case ${caseIds.join(' and ')}.`) : ''));
-  if(one){
-    keysOf(one).forEach(k=> chat.push(cgFixLine(one, k)));
-    if(cgFacts(one)) chat.push(`The product data backs this${cgFacts(one)}.`);
-  } else {
-    // Same fix, one message with the ASIN list
-    const groups = {};
-    list.forEach(r=> keysOf(r).forEach(k=>{ const line = cgFixLine(r, k).replace(/^It is/, 'They are'); (groups[line] = groups[line] || []).push(r); }));
-    Object.keys(groups).forEach(line=> chat.push(line + '\n' + groups[line].map(r=> `${r.asin} (${r.sku})`).join('\n')));
+
+  // Families: parent ASIN -> rows in this request, plus siblings that are already right
+  const fam = {};
+  list.forEach(r=>{ const p = parentOf(r), k = p.pasin || ('solo:' + r.asin); (fam[k] = fam[k] || {p, rows:[]}).rows.push(r); });
+  const famKeys = Object.keys(fam);
+  const useParents = list.length > CG_MAX_ASINS;
+
+  const who = one ? `ASIN ${one.asin} (SKU ${one.sku}), the ${one.name},`
+    : useParents ? (famKeys.filter(k=> !k.startsWith('solo:')).length > 1 ? `${famKeys.length} variation families` : 'one variation family')
+    : `${list.length} ASINs` + (famKeys.length === 1 && !famKeys[0].startsWith('solo:') ? `, children of parent ASIN ${famKeys[0]} (${fam[famKeys[0]].p.pname || fam[famKeys[0]].p.psku})` : '');
+  chat.push(`Hi, I'm MJ from Barnyard Designs, the brand owner. I need a ${list.some(nodeFix) ? 'browse node' : 'category'} correction for ${who} on ${site}.`);
+
+  // Which ASINs
+  if(!one){
+    if(useParents){
+      chat.push(famKeys.map(k=> k.startsWith('solo:') ? `ASIN ${fam[k].rows[0].asin} (${fam[k].rows[0].sku})` : `Parent ASIN ${k} (${fam[k].p.pname || fam[k].p.psku}), ${fam[k].rows.length} children`).join('\n'));
+      famKeys.filter(k=> !k.startsWith('solo:')).forEach(k=> ifSay.push([`"Please send the list of children for ${k}."`, fam[k].rows.map(r=> `${r.asin} (${r.sku})`).join(', ')]));
+      if(famKeys.length > CG_MAX_ASINS) ifSay.unshift(['Before you start', `This is ${famKeys.length} parents or ASINs. Amazon chat takes ${CG_MAX_ASINS} per case, so split it into ${Math.ceil(famKeys.length / CG_MAX_ASINS)} cases.`]);
+    } else chat.push(list.map(r=> `${r.asin} (${r.sku})`).join('\n'));
   }
-  if(note) chat.push(`Your team replied before: "${note.slice(0, 220)}" We understand that. Our request is different: the listing still sits in the wrong node, so it does not show in the right category.`);
-  chat.push(`Please send this to the catalog team to correct it, add these notes to a case, and send me the case number.`);
-  const ifSay = [
+
+  // Where they are and where they belong, grouped by the same move
+  const moves = {};
+  list.filter(nodeFix).forEach(r=>{
+    const c = r.c, key = [c.path.a, c.node.a, c.node.e].join('|');
+    (moves[key] = moves[key] || {now:c.path.a, nowNode:c.node.a, node:c.node.e, path:c.path.e, rows:[]}).rows.push(r);
+  });
+  const subj = one ? 'It is' : useParents ? 'The children are' : 'They are';
+  Object.values(moves).forEach(m=>{
+    const siblingsOk = !one && famKeys.some(k=> !k.startsWith('solo:') && allRows.some(x=> parentOf(x).pasin === k && x.c && x.c.node && x.c.node.s === 'match' && String(x.c.node.e) === String(m.node)));
+    chat.push(`${subj} in ${m.now || 'the wrong category'}${m.nowNode ? ', browse node ' + m.nowNode : ''}. ${one ? 'It belongs' : 'They belong'} in ${leafName(m.path) || 'the correct category'}, browse node ${m.node}${siblingsOk ? ', like the other children in the same family' : ''}.` +
+      (Object.keys(moves).length > 1 && !useParents && !one ? '\n' + m.rows.map(r=> `${r.asin} (${r.sku})`).join('\n') : ''));
+  });
+  list.forEach(r=> otherFix(r).forEach(k=> chat.push((one ? '' : `${r.asin} (${r.sku}): `) + cgFixLine(r, k))));
+
+  // Backing values when they are the same for all
+  const pts = [...new Set(list.map(r=> (r.c.pt || {}).e).filter(Boolean))], itks = [...new Set(list.map(r=> (r.c.itk || {}).e).filter(Boolean))];
+  const facts = [];
+  if(pts.length === 1) facts.push(`product type is ${pts[0]}`);
+  if(itks.length === 1) facts.push(`item type keyword is ${itks[0]}`);
+  if(facts.length) chat.push(facts.join(' and ').replace(/^./, c=> c.toUpperCase()) + '.');
+
+  // Shared node: say it before they do, then the difference
+  const shared = Object.values(moves).find(m=> sharedNodes.has(String(m.node)));
+  const saidOk = cases.some(c=> /already|correct|tied to|redirect|shared/i.test(c.notes || ''));
+  const stopAt = leafName(shared ? shared.now : (Object.values(moves)[0] || {}).now) || 'the wrong category';
+  const prevLine = !caseIds.length ? '' : saidOk
+    ? ` On case${caseIds.length > 1 ? 's' : ''} ${caseIds.join(' and ')} your team said the node was correct, but the page${one ? '' : 's'} still ${one ? 'stops' : 'stop'} at ${stopAt}.`
+    : ` This was raised before on case${caseIds.length > 1 ? 's' : ''} ${caseIds.join(' and ')}, and the page${one ? '' : 's'} still ${one ? 'stops' : 'stop'} at ${stopAt}.`;
+  if(shared) chat.push(`We understand node ${shared.node} is shared and the page can show a different path. That is fine. The problem is ${one ? 'this listing is' : 'these are'} not in node ${shared.node} at all.` + prevLine);
+  else if(prevLine) chat.push(prevLine.trim());
+
+  // Children of the same family that are already right
+  if(!one) famKeys.filter(k=> !k.startsWith('solo:')).forEach(k=>{
+    const fine = allRows.filter(x=> parentOf(x).pasin === k && list.indexOf(x) === -1 && x.c && !x.bad.length && x.c.node && x.c.node.s === 'match');
+    if(fine.length) ifSay.push([`"What about the other children?"`, `${fine.map(x=> `${x.asin} (${x.sku})`).join(', ')} ${fine.length === 1 ? 'is' : 'are'} already in node ${fine[0].c.node.e}, so ${fine.length === 1 ? 'it is' : 'they are'} not in this request.`]);
+  });
+
+  const target = Object.values(moves).length === 1 ? ` to browse node ${Object.values(moves)[0].node}` : '';
+  chat.push(`Please send this to the catalog team to ${list.some(nodeFix) ? 'move ' + (one ? 'it' : useParents ? 'the children' : 'them') + target : 'correct ' + (one ? 'it' : 'them')}, add these notes to a case, and send me the case number.`);
+
+  ifSay.push(
     ['"It is assigned based on the detail page and how customers find products."', 'The product type and item type keyword both point to the correct category. Please escalate to the catalog team for a manual review.'],
     ['"Please use the browse node tool."', 'I would rather the catalog team makes the change, so the listing is not locked by repeated tool requests.'],
-    ['"It is already tied to the correct node."', 'The live page still shows the listing in the wrong category. Please check the browse node the detail page uses, not only the backend value.']
-  ];
+    ['"It is already tied to the correct node."', 'The live page still shows the listing in the wrong category. Please check the browse node the detail page uses, not only the backend value.']);
+
   const call = ['BEFORE THE CALL', `Have open: ${caseIds.length ? 'case ' + caseIds.join(', ') + ', ' : ''}this page, and the ASIN list.`, '',
-    '1. SAY WHO YOU ARE', `"Hi, my name is MJ Baguhin, calling for Barnyard Designs, the brand owner. I need a category correction on ${site}${caseIds.length ? ', following up on case ' + caseIds.join(' and ') : ''}."`, '',
+    '1. SAY WHO YOU ARE', `"${chat[0].replace("Hi, I'm MJ", 'Hi, my name is MJ Baguhin, calling')}"`, '',
     '2. SAY THE PROBLEM', ...chat.slice(1, -1).map(m=> '"' + m.replace(/\n/g, ', ') + '"'), '',
     '3. MAKE THE ASK', `"${chat[chat.length - 1]}"`, '',
     '4. BEFORE YOU HANG UP', 'Ask for the case number and the agent\u2019s name. Write them down.', '',
     'IF THEY SAY...', ...ifSay.map(x=> `${x[0]}\n   Say: "${x[1]}"`)].join('\n');
-  // Case form text (single paragraph, like the category-update skill)
-  const body = one
-    ? `I am writing to request a correction to the ${keysOf(one).map(k=> CG_LABEL[k]).join(' and ').toLowerCase()} assigned to ASIN ${one.asin} (SKU: ${one.sku}) on the ${mk} marketplace. This product is the ${one.name}${cgFacts(one)}. ${keysOf(one).map(k=> cgFixLine(one, k)).join(' ')}${caseIds.length ? ' This follows up on case ' + caseIds.join(' and ') + '.' : ''} Could you please correct it and confirm once the update has been applied?`
-    : `I am writing to request a category correction for ${list.length} ASINs on the ${mk} marketplace.${caseIds.length ? ' Some of these were raised before on case ' + caseIds.join(' and ') + '.' : ''}\n\n` + chat.slice(1, -1).join('\n\n') + '\n\nCould you please correct them and confirm once the update has been applied?';
+  const body = `I am writing to request a ${list.some(nodeFix) ? 'browse node' : 'category'} correction on the ${mk} marketplace.\n\n` + chat.slice(1, -1).join('\n\n') +
+    (useParents ? '\n\nChildren:\n' + famKeys.filter(k=> !k.startsWith('solo:')).map(k=> `${k}: ` + fam[k].rows.map(r=> `${r.asin} (${r.sku})`).join(', ')).join('\n') : '') +
+    `\n\nCould you please correct ${one ? 'it' : 'them'} and confirm once the update has been applied?`;
   const clean = t=> noDash(String(t));
   return {chat:chat.map(clean), call:clean(call), ifSay:ifSay.map(x=> [x[0], clean(x[1])]), cid:caseIds[caseIds.length - 1] || '', read:null,
-          body:clean(body), subject: clean(`Category correction: ${one ? one.asin + ' (' + one.sku + ')' : list.length + ' ASINs'} on ${site}`), follow: !!caseIds.length};
+          body:clean(body), subject: clean(`Browse node correction: ${one ? one.asin + ' (' + one.sku + ')' : useParents ? famKeys.filter(k=> !k.startsWith('solo:')).map(k=> 'parent ' + k).join(', ') : list.length + ' ASINs'} on ${site}`), follow: !!caseIds.length};
 }
 function cgDraft(list){
   list = list.filter(r=> r.bad.length);
@@ -4509,6 +4564,8 @@ function cgDraft(list){
 
 /* ---------- Group by parent and Download, shared by the modules ---------- */
 function parentOf(r){
+  // Category rows carry their own marketplace parent (CA families differ from US)
+  if(r.par && (r.par.pasin || r.par.psku)) return {psku: r.par.psku || '', pasin: r.par.pasin || '', pname: r.par.pname || ''};
   const row = (r.sku && ROWS.find(x=> x.sku === r.sku)) || ROWS.find(x=> x.asin === r.asin) || {};
   return {psku: row.psku || '', pasin: row.pasin || '', pname: row.parent || ''};
 }
