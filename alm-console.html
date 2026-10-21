@@ -729,6 +729,7 @@ a.work:hover{background:var(--accent);color:#fff}
 .bb-table td{vertical-align:top}
 /* Fits the screen: no sideways scrolling needed on a laptop */
 .cpt-table.bb-table{min-width:0;table-layout:auto}
+.stk-alert{background:#fbe2df;color:#7a1a10;border:1px solid #f0b4ab;border-radius:8px;padding:.6rem .9rem;margin:.6rem 1rem;font-size:.86rem;line-height:1.5}
 #cptView .cpt-tile .n{white-space:normal}
 .bbtile{cursor:pointer;transition:border-color .15s}
 .bbtile:hover{border-color:#4a76b0}
@@ -1206,7 +1207,9 @@ function build(j, pub, warnNote){
   META = {
     when: j.fetched_at_et || j.fetched_at || 'unknown',
     tokens: j.tokens_left, skus: pub.length, note: warnNote || '',
-    srcUs: src('US_Source'), srcCa: src('CA_Source')
+    srcUs: src('US_Source'), srcCa: src('CA_Source'),
+    // BigQuery stock status from the ALM script: ok, old: ..., or failed: ...
+    stUs: src('US_Status'), stCa: src('CA_Status')
   };
 
   // Parent tier: the strongest tier among children sharing a parent SKU.
@@ -1301,7 +1304,22 @@ function ageDays(stamp){
 /* One short line about where the stock numbers came from and how stale they
    are. Silent when the file is current, because a note you always see is a
    note you stop reading. */
+/* Stock comes from BigQuery only. When the read failed or the data is old,
+   say so in red everywhere stock is shown. */
+function stockStatus(mk){
+  const st = String((mk === 'CA' ? META.stCa : META.stUs) || '');
+  if(!st || st === 'ok') return null;
+  return {bad: /^failed/i.test(st), text: st.replace(/^(failed|old):\s*/i, '')};
+}
+function stockAlert(){
+  const a = [['US', stockStatus('US')], ['CA', stockStatus('CA')]].filter(x=> x[1]);
+  if(!a.length) return '';
+  return '<div class="stk-alert">' + a.map(x=> `<div><b>${x[0]} stock ${x[1].bad ? 'problem' : 'is old'}:</b> ${esc(x[1].text)}</div>`).join('') + '</div>';
+}
+
 function sourceNote(){
+  const ss = stockStatus(S.mk === 'CA' ? 'CA' : 'US');
+  if(ss) return `<span class="warn" style="color:#ffb4a8;font-weight:700">${ss.bad ? 'Stock problem' : 'Stock is old'}: ${esc(ss.text)}</span>`;
   const stamp = S.mk === 'CA' ? META.srcCa : META.srcUs;
   if(!stamp) return '';
   const d = ageDays(stamp);
@@ -2824,7 +2842,7 @@ function renderCpt(){
     `<div class="cpt-tile"><div class="k">${k}</div><div class="v ${cls || ''}">${val}</div>`+
     `<div class="n">${note || '&nbsp;'}</div></div>`;
 
-  let html =
+  let html = stockAlert() +
     '<section class="cpt-top">'+
       '<div class="cpt-head">'+
         '<h2>CPT tracker</h2>'+
@@ -3058,7 +3076,7 @@ function cptBody(rows){
 }
 
 function stockTag(r){
-  const inb = (()=>{ const row = ROWS.find(x=> x.sku === r.sku); return row ? row.usInbound : null; })();
+  const inb = null;   // live data only: inbound is from the uploaded FBA CSV, so it is not used
   if(r.avail === null || r.avail === undefined) return '<span class="stk-tag">Stock unknown</span>';
   if(r.avail === 0) return `<span class="stk-tag oos" data-tip="No units ready to ship. No case needed until stock is back.">Out of stock${inb ? ', ' + inb + ' on the way' : ''}</span>`;
   const low = r.avail < 30;
@@ -3669,6 +3687,7 @@ function bbRows(){
     const r = Object.assign({}, b, {
       sku: b.sku || (row && row.sku) || '', name: (row && row.name) || (c && c.name) || b.asin,
       tier: b.tier || (row && row.tier) || '',
+      // Inbound now comes only from BigQuery (blank until Sam's pull carries it)
       us: row ? row.usAvail : null, usIn: row ? row.usInbound : null,
       ca: row ? row.caAvail : null, caIn: row ? row.caInbound : null,
       cpt: c ? c.cpt : null, cptOver: !!(c && c.gap > 0),
@@ -3701,7 +3720,7 @@ function bbRows(){
 function bbNext(r){
   if(r.has) return r.others.length ? 'Nothing now. Another seller is on this listing, keep an eye on it.' : '';
   return {
-    oos:     r.usIn ? `Restock is on the way (${r.usIn} inbound).` : 'No US stock on the way. Plan a restock.',
+    oos:     r.usIn ? `Restock is on the way (${r.usIn} inbound).` : 'Out of stock in the US. Check the restock plan.',
     amazon:  'Check who it is, then flag it to Jack.',
     seller:  'We have no resellers. Check who it is, then flag it to Jack.',
     cpt:     'Open it in the CPT tracker.',
@@ -3756,6 +3775,7 @@ function renderBb(){
   const list = a=> esc(a.map(r=> r.sku).slice(0,3).join(', ')) + (a.length > 3 ? '\u2026' : '');
   const oth = no.filter(r=> ['cpt','nooffer','unknown'].indexOf(r.why) !== -1);
   let html =
+    stockAlert() +
     '<section class="cpt-top"><div class="cpt-head"><h2>Buy Box</h2>'+
       `<span class="sub">Amazon US, ${all.length} active ASINs</span>`+
       (BB_META.updated ? `<span class="cpt-live${fresh ? '' : ' stale'}"><i></i>Buy Box checked ${esc(BB_META.updated)} ET</span>` : '')+
@@ -4392,12 +4412,12 @@ function openCg(r){
     '</dl>'+
     (r.bad.length ? (()=>{ const ci = cgCaseInfo(r);
       return `<div class="act-row"><button class="work strong" id="cgOne">${ci ? 'Follow up on case ' + esc(ci.id) : 'Draft case'}</button><button class="work" id="cgAi">Copy for AI review</button><button class="work" id="cgWhy">Why does this happen?</button></div>`+
-        (ci && ci.notes ? `<div class="lcf-r" style="color:var(--muted)">Last note: ${esc(ci.notes)}</div>` : ''); })() : '')+
+        (ci && ci.notes ? `<div class="lcf-r" style="color:var(--muted)">Amazon\u2019s last reply (${esc(shortDate(ci.date))}): ${esc(ci.notes)}${ci.link ? ` <a href="${esc(ci.link)}" target="_blank" rel="noopener">Open in Gmail</a>` : ''}</div>` : ''); })() : '')+
     (r.nolive ? '<div class="why">No live data from Amazon yet for this listing.</div>' : CG_COLS.map(block).join(''))+
     '<div class="act-row">'+
       `<a class="work" href="https://sellercentral.amazon.${mk === 'CA' ? 'ca' : 'com'}/hz/productclassify" target="_blank" rel="noopener">Check in the product classifier</a>`+
     '</div>'+
-    '<div class="why">Amazon values from Keepa\u2019s last check. US GL from the FBA inventory report when it has one. Correct values from the Master SKU sheet.</div>';
+    '<div class="why">Path, node, ITK and product type: Keepa\u2019s last check, as Keepa sees it, not the page itself. GL: only from a live source (BigQuery); it shows Can\u2019t check when there is none. Case number and last reply: Gmail. Correct values: the Master SKU sheet.</div>';
   const one = document.getElementById('cgOne');
   if(one) one.onclick = ()=> cgDraft([r]);
   const wy = document.getElementById('cgWhy'); if(wy) wy.onclick = cgTips;
@@ -4413,9 +4433,9 @@ function openCg(r){
    Master SKU sheet (correct) and Keepa (live), never guessed. */
 const CG_LABEL = {gl:'GL', pt:'Product Type', path:'Browse path', itk:'Item type keyword', node:'Browse node'};
 function cgCaseInfo(r){
-  const withCase = CAT.filter(x=> x.caseId && (x.country || 'US') === r.mk);
-  const c = withCase.find(x=> x.sku === r.sku) || withCase.find(x=> x.asin === r.asin);
-  return c && c.caseId ? {id:c.caseId, date:c.caseDate, notes:c.caseNotes} : null;
+  // Live only: the case number and Amazon's latest reply come from Gmail (Category Watch)
+  const k = r.kase;
+  return k && k.id ? {id:k.id, date:k.replyDate || k.d, notes:k.reply || '', link:k.link || '', kind:k.kind || ''} : null;
 }
 function cgFixLine(r, k){
   const x = r.c[k], ex = r.c;
@@ -5160,7 +5180,7 @@ function chrome(){
     'Checklist' + (open ? `<span class="badge">${open}</span>` : '');
 
   const nCat = catFailing(true, CHECKS).length;
-  const nCg = CG.length ? cgRows('US').concat(cgRows('CA')).filter(r=> r.bad.length).length : nCat;
+  const nCg = CG.length ? cgRows('US').concat(cgRows('CA')).filter(r=> r.bad.length).length : 0;
   document.getElementById('quickCat').innerHTML =
     'Category' + (nCg ? `<span class="badge">${nCg}</span>` : '');
 
