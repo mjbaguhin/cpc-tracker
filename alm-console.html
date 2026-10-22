@@ -4158,7 +4158,13 @@ function rbChip(hits){
   if(!hits.length) return '<span class="lcchip lc-ok" data-tip="Passes every rule in the rulebook">OK</span>';
   const a = hits.filter(h=> h.sev === 'amazon').length, b = hits.filter(h=> h.sev === 'brand').length, g = hits.length - a - b;
   const tip = hits.slice(0, 6).map(h=> `${(RB_SEV[h.sev] || [''])[0]}: ${h.rule.text.split('. ')[0]}`).join(' \u2022 ');
-  return `<span class="lcchip ${a ? 'lc-bad' : b ? 'lc-small' : 'lc-gray'}" data-tip="${esc(tip)}">${[a ? a + ' Amazon' : '', b ? b + ' brand' : '', g ? g + ' guidance' : ''].filter(Boolean).join(', ')}</span>`;
+  // The reasons, right under the chip: worst first, two shown, the rest in the panel
+  const ord = {amazon:0, brand:1, check:2, guide:3};
+  const top = hits.slice().sort((x,y)=> (ord[x.sev] || 0) - (ord[y.sev] || 0));
+  const why = top.slice(0, 2).map(h=>{ const t = `${RB_FNAME[h.field] || h.field}: ${h.live || h.corr}`; return t.length > 70 ? t.slice(0, 68) + '\u2026' : t; });
+  return `<span class="lcchip ${a ? 'lc-bad' : b ? 'lc-small' : 'lc-gray'}" data-tip="${esc(tip)}">${[a ? a + ' Amazon' : '', b ? b + ' brand' : '', g ? g + ' guidance' : ''].filter(Boolean).join(', ')}</span>`+
+    why.map(w=> `<span class="was" style="white-space:normal;max-width:16rem;text-align:left">${esc(w)}</span>`).join('') +
+    (hits.length > 2 ? `<span class="was">+${hits.length - 2} more, open the row</span>` : '');
 }
 const RB_FNAME = {price:'Price', node:'Browse node', itk:'Item type keyword', title:'Title', ih:'Item Highlights', b1:'Bullet 1', b2:'Bullet 2', b3:'Bullet 3', b4:'Bullet 4', b5:'Bullet 5', gk:'Backend keywords', desc:'Description', theme:'Variation theme', value:'Variation value'};
 function rbBlock(hits){
