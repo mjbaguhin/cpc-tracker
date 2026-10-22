@@ -4392,7 +4392,7 @@ function renderCategory(){
         `<td>${r.bad.length ? (()=>{ const ci = cgCaseInfo(r);
             return `<button class="work strong" data-cgcase="${esc(r.asin)}">${ci ? 'Follow up' : 'Draft case'}</button>`+
               (ci ? `<span class="was">Case ${esc(ci.id)}${ci.date ? ', ' + esc(shortDate(ci.date)) : ''}</span>` : ''); })() : ''}</td>`+
-      '</tr>', r=> r.bad.length, 'need a look', CG_F.mk)+
+      '</tr>', r=> r.bad.length, 'need a look', CG_F.mk, p=> `<button class="work strong" data-cgfam="${esc(p.pasin || p.psku)}">Draft case for this family</button>`)+
       '</tbody></table>';
   }
   v.innerHTML = html;
@@ -4415,6 +4415,11 @@ function renderCategory(){
   if(un) un.onclick = ()=>{ CG_F.sort = ''; renderCategory(); };
   const ca = document.getElementById('cgAll');
   if(ca) ca.onclick = ()=> cgDraft(rows);
+  // One case per parent: every child of that family with a problem, in this marketplace
+  [...v.querySelectorAll('button[data-cgfam]')].forEach(b=> b.onclick = e=>{
+    e.stopPropagation();
+    cgDraft(cgFamilyRows(b.dataset.cgfam, CG_F.mk));
+  });
   [...v.querySelectorAll('button[data-cgcase]')].forEach(b=> b.onclick = e=>{
     e.stopPropagation();
     const r = all.find(x=> x.asin === b.dataset.cgcase); if(r) cgDraft([r]);
@@ -4448,7 +4453,8 @@ function openCg(r){
       `<dt>Last change</dt><dd>${r.since ? esc(shortDate(r.since)) : 'No change seen'}${r.liveChecked ? ', checked ' + esc(shortDate(r.liveChecked)) : ''}</dd>`+
     '</dl>'+
     (r.bad.length ? (()=>{ const ci = cgCaseInfo(r);
-      return `<div class="act-row"><button class="work strong" id="cgOne">${ci ? 'Follow up on case ' + esc(ci.id) : 'Draft case'}</button><button class="work" id="cgAi">Copy for AI review</button><button class="work" id="cgWhy">Why does this happen?</button></div>`+
+      return `<div class="act-row"><button class="work strong" id="cgOne">${ci ? 'Follow up on case ' + esc(ci.id) : 'Draft case'}</button>${(()=>{ const p = parentOf(r), k = p.pasin || p.psku; const n = k ? cgFamilyRows(k, r.mk).length : 0;
+        return n > 1 ? `<button class="work strong" id="cgFamOne" data-k="${esc(k)}">Draft case for the whole family (${n})</button>` : ''; })()}<button class="work" id="cgAi">Copy for AI review</button><button class="work" id="cgWhy">Why does this happen?</button></div>`+
         (ci && ci.notes ? `<div class="lcf-r" style="color:var(--muted)">Amazon\u2019s last reply (${esc(shortDate(ci.date))}): ${esc(ci.notes)}${ci.link ? ` <a href="${esc(ci.link)}" target="_blank" rel="noopener">Open in Gmail</a>` : ''}</div>` : ''); })() : '')+
     (r.nolive ? '<div class="why">No live data from Amazon yet for this listing.</div>' : CG_COLS.map(block).join(''))+
     '<div class="act-row">'+
@@ -4457,6 +4463,8 @@ function openCg(r){
     '<div class="why">Path, node, ITK and product type: Keepa\u2019s last check, as Keepa sees it, not the page itself. GL: only from a live source (BigQuery); it shows Can\u2019t check when there is none. Case number and last reply: Gmail. Correct values: the Master SKU sheet.</div>';
   const one = document.getElementById('cgOne');
   if(one) one.onclick = ()=> cgDraft([r]);
+  const fo = document.getElementById('cgFamOne');
+  if(fo) fo.onclick = ()=> cgDraft(cgFamilyRows(fo.dataset.k, r.mk));
   const wy = document.getElementById('cgWhy'); if(wy) wy.onclick = cgTips;
   const ai = document.getElementById('cgAi');
   if(ai) ai.onclick = ()=>{ const t = cgAiText(r);
@@ -4491,99 +4499,126 @@ function cgFacts(r){
 }
 const CG_MAX_ASINS = 5;   // Amazon chat support (MJ, Oct 2026): 5 ASINs per case; for a family give the parent
 const leafName = p=> String(p || '').split(/\s*[›>]\s*/).filter(Boolean).pop() || '';
-/* Chat, call and case form for one listing or many, in MJ's case style:
-   who we are, which ASINs (parents when more than 5), where they are now and
-   where they belong (node first), the backing values, an answer to the shared
-   node reply when the node is shared, earlier cases, then the ask. */
+/* The correct values for one listing, everything a catalog specialist asks
+   for: GL, product type, search department, ITK, browse node, browse path.
+   All from the Master SKU sheet. */
+function cgCorrect(r){
+  const e = r.exp || {}, c = r.c || {};
+  return {gl: e.gl || (c.gl || {}).e || '', pt: e.pt || (c.pt || {}).e || '', sd: e.sd || '',
+          itk: e.itk || (c.itk || {}).e || '', node: e.node || (c.node || {}).e || '', path: e.path || (c.path || {}).e || ''};
+}
+function cgCorrectLines(v){
+  return [v.gl && `GL: ${v.gl}`, v.pt && `Product type: ${v.pt}`, v.itk && `Item type keyword: ${v.itk}`,
+          v.sd && `Search department: ${v.sd}`, v.node && `Browse node: ${v.node}`, v.path && `Browse path: ${v.path}`].filter(Boolean).join('\n');
+}
+/* What Amazon shows now, only the parts that are wrong, plus the GL we cannot see */
+function cgNowLines(rows){
+  const r = rows[0], c = r.c || {}, L = [];
+  if(c.node && c.node.a && c.node.s !== 'match') L.push(`Browse node: ${c.node.a}`);
+  if(c.path && c.path.a && c.path.s !== 'match') L.push(`Browse path: ${c.path.a}`);
+  if(c.pt && c.pt.s === 'wrong') L.push(`Product type: ${c.pt.a}`);
+  if(c.itk && (c.itk.s === 'wrong' || c.itk.s === 'missing')) L.push(`Item type keyword: ${c.itk.a || 'none'}`);
+  if(c.gl && c.gl.s === 'wrong') L.push(`GL: ${c.gl.a}`);
+  return L.join('\n');
+}
 function cgPitch(list){
   const mk = list[0].mk, site = mk === 'CA' ? 'amazon.ca' : 'amazon.com';
   const one = list.length === 1 ? list[0] : null;
   const allRows = cgRows(mk);
   const cases = list.map(cgCaseInfo).filter(Boolean);
   const caseIds = [...new Set(cases.map(c=> c.id))];
-  const nodeFix = r=> r.bad.indexOf('node') !== -1 || r.bad.indexOf('path') !== -1;
-  const otherFix = r=> r.bad.filter(k=> k !== 'node' && k !== 'path');
   const sharedNodes = new Set(allRows.filter(r=> r.c && r.c.path && r.c.path.shared).map(r=> String(r.c.node.e)));
-  const ifSay = [], extra = [];
-  const chat = [];
+  const glSeen = list.some(r=> r.c && r.c.gl && (r.c.gl.s === 'match' || r.c.gl.s === 'wrong'));
+  const ifSay = [], chat = [];
 
-  // Families: parent ASIN -> rows in this request, plus siblings that are already right
+  // Families: the parent for this marketplace, with the children in this request
   const fam = {};
   list.forEach(r=>{ const p = parentOf(r), k = p.pasin || ('solo:' + r.asin); (fam[k] = fam[k] || {p, rows:[]}).rows.push(r); });
-  const famKeys = Object.keys(fam);
+  const famKeys = Object.keys(fam), parents = famKeys.filter(k=> !k.startsWith('solo:'));
   const useParents = list.length > CG_MAX_ASINS;
+  const kids = rows=> rows.map(r=> `${r.asin} (SKU ${r.sku})`).join('\n');
 
-  const who = one ? `ASIN ${one.asin} (SKU ${one.sku}), the ${one.name},`
-    : useParents ? (famKeys.filter(k=> !k.startsWith('solo:')).length > 1 ? `${famKeys.length} variation families` : 'one variation family')
-    : `${list.length} ASINs` + (famKeys.length === 1 && !famKeys[0].startsWith('solo:') ? `, children of parent ASIN ${famKeys[0]} (${fam[famKeys[0]].p.pname || fam[famKeys[0]].p.psku})` : '');
-  chat.push(`Hi, I'm MJ from Barnyard Designs, the brand owner. I need a ${list.some(nodeFix) ? 'browse node' : 'category'} correction for ${who} on ${site}.`);
+  // Groups that need the same correct values
+  const groups = {};
+  list.forEach(r=>{ const v = cgCorrect(r), k = JSON.stringify(v) + '|' + cgNowLines([r]); (groups[k] = groups[k] || {v, rows:[]}).rows.push(r); });
+  const gKeys = Object.keys(groups);
 
-  // Which ASINs
-  if(!one){
-    if(useParents){
-      chat.push(famKeys.map(k=> k.startsWith('solo:') ? `ASIN ${fam[k].rows[0].asin} (${fam[k].rows[0].sku})` : `Parent ASIN ${k} (${fam[k].p.pname || fam[k].p.psku}), ${fam[k].rows.length} children`).join('\n'));
-      famKeys.filter(k=> !k.startsWith('solo:')).forEach(k=> ifSay.push([`"Please send the list of children for ${k}."`, fam[k].rows.map(r=> `${r.asin} (${r.sku})`).join(', ')]));
-      if(famKeys.length > CG_MAX_ASINS) ifSay.unshift(['Before you start', `This is ${famKeys.length} parents or ASINs. Amazon chat takes ${CG_MAX_ASINS} per case, so split it into ${Math.ceil(famKeys.length / CG_MAX_ASINS)} cases.`]);
-    } else chat.push(list.map(r=> `${r.asin} (${r.sku})`).join('\n'));
+  // 1. Who and what
+  chat.push(`Hi, I'm MJ from Barnyard Designs, the brand owner. I need a category correction on ${site} for ` +
+    (one ? `ASIN ${one.asin} (SKU ${one.sku}), ${one.name}` :
+     useParents ? `${list.length} child ASINs in ${parents.length === 1 ? 'one variation family' : parents.length + ' variation families'}` :
+     `${list.length} ASINs`) + '. The details are below.');
+
+  // 2. Parent and children
+  const famLine = k=> k.startsWith('solo:')
+    ? `Standalone ASIN ${fam[k].rows[0].asin} (SKU ${fam[k].rows[0].sku}), no parent`
+    : `Parent ASIN ${k}, parent SKU ${fam[k].p.psku || 'n/a'} (${fam[k].p.pname || 'variation family'}): ${fam[k].rows.length} ${fam[k].rows.length === 1 ? 'child' : 'children'} in this request`;
+  if(!one || parents.length){
+    chat.push((parents.length > 1 ? 'Variation families:\n' : parents.length ? 'Variation family:\n' : 'ASINs:\n') + famKeys.map(k=> famLine(k) + (useParents ? '' : '\n' + kids(fam[k].rows))).join('\n\n'));
+    if(useParents) parents.forEach(k=> ifSay.push([`"Please send the list of children for ${k}."`, kids(fam[k].rows).replace(/\n/g, ', ')]));
+    if(famKeys.length > CG_MAX_ASINS) ifSay.unshift(['Before you start', `This is ${famKeys.length} parents or ASINs. Amazon chat takes ${CG_MAX_ASINS} per case, so split it into ${Math.ceil(famKeys.length / CG_MAX_ASINS)} cases.`]);
   }
 
-  // Where they are and where they belong, grouped by the same move
-  const moves = {};
-  list.filter(nodeFix).forEach(r=>{
-    const c = r.c, key = [c.path.a, c.node.a, c.node.e].join('|');
-    (moves[key] = moves[key] || {now:c.path.a, nowNode:c.node.a, node:c.node.e, path:c.path.e, rows:[]}).rows.push(r);
+  // 3. Correct values, and what the pages show now, per group
+  gKeys.forEach(k=>{
+    const g = groups[k];
+    const gPar = [...new Set(g.rows.map(r=> parentOf(r).pasin || ''))];
+    const label = gKeys.length === 1 ? (one ? '' : ' for every ASIN in this request')
+      : gPar.length === 1 && gPar[0] && fam[gPar[0]] && fam[gPar[0]].rows.length === g.rows.length ? ` for the children of parent ${gPar[0]}`
+      : ` for ${g.rows.map(r=> r.sku).join(', ')}`;
+    chat.push(`Correct category${label} (from our catalog):\n` + cgCorrectLines(g.v));
+    const now = cgNowLines(g.rows);
+    if(now) chat.push(`What ${one ? 'the page shows' : 'the pages show'} now:\n` + now);
   });
-  const subj = one ? 'It is' : useParents ? 'The children are' : 'They are';
-  Object.values(moves).forEach(m=>{
-    const siblingsOk = !one && famKeys.some(k=> !k.startsWith('solo:') && allRows.some(x=> parentOf(x).pasin === k && x.c && x.c.node && x.c.node.s === 'match' && String(x.c.node.e) === String(m.node)));
-    chat.push(`${subj} in ${m.now || 'the wrong category'}${m.nowNode ? ', browse node ' + m.nowNode : ''}. ${one ? 'It belongs' : 'They belong'} in ${leafName(m.path) || 'the correct category'}, browse node ${m.node}${siblingsOk ? ', like the other children in the same family' : ''}.` +
-      (Object.keys(moves).length > 1 && !useParents && !one ? '\n' + m.rows.map(r=> `${r.asin} (${r.sku})`).join('\n') : ''));
-  });
-  list.forEach(r=> otherFix(r).forEach(k=> chat.push((one ? '' : `${r.asin} (${r.sku}): `) + cgFixLine(r, k))));
+  if(!glSeen) chat.push(`Please also confirm the GL on ${one ? 'this ASIN' : 'these ASINs'} is ${[...new Set(list.map(r=> cgCorrect(r).gl).filter(Boolean))].join(' / ') || 'correct'}. We cannot see the GL on our side.`);
 
-  // Backing values when they are the same for all
-  const pts = [...new Set(list.map(r=> (r.c.pt || {}).e).filter(Boolean))], itks = [...new Set(list.map(r=> (r.c.itk || {}).e).filter(Boolean))];
-  const facts = [];
-  if(pts.length === 1) facts.push(`product type is ${pts[0]}`);
-  if(itks.length === 1) facts.push(`item type keyword is ${itks[0]}`);
-  if(facts.length) chat.push(facts.join(' and ').replace(/^./, c=> c.toUpperCase()) + '.');
-
-  // Shared node: say it before they do, then the difference
-  const shared = Object.values(moves).find(m=> sharedNodes.has(String(m.node)));
+  // 4. Shared node and earlier cases
+  const node0 = cgCorrect(list[0]).node;
+  const stopAt = leafName((list[0].c.path || {}).a) || 'the wrong category';
   const saidOk = cases.some(c=> /already|correct|tied to|redirect|shared/i.test(c.notes || ''));
-  const stopAt = leafName(shared ? shared.now : (Object.values(moves)[0] || {}).now) || 'the wrong category';
-  const prevLine = !caseIds.length ? '' : saidOk
+  const prev = !caseIds.length ? '' : saidOk
     ? ` On case${caseIds.length > 1 ? 's' : ''} ${caseIds.join(' and ')} your team said the node was correct, but the page${one ? '' : 's'} still ${one ? 'stops' : 'stop'} at ${stopAt}.`
     : ` This was raised before on case${caseIds.length > 1 ? 's' : ''} ${caseIds.join(' and ')}, and the page${one ? '' : 's'} still ${one ? 'stops' : 'stop'} at ${stopAt}.`;
-  if(shared) chat.push(`We understand node ${shared.node} is shared and the page can show a different path. That is fine. The problem is ${one ? 'this listing is' : 'these are'} not in node ${shared.node} at all.` + prevLine);
-  else if(prevLine) chat.push(prevLine.trim());
+  if(sharedNodes.has(String(node0)))
+    chat.push(`We understand browse node ${node0} is shared and the page can show a different path for it. That is fine. The problem is ${one ? 'this ASIN is' : 'these ASINs are'} not in node ${node0} at all.` + prev);
+  else if(prev) chat.push(prev.trim());
 
-  // Children of the same family that are already right
-  if(!one) famKeys.filter(k=> !k.startsWith('solo:')).forEach(k=>{
+  // Children of the same family that are already right: proof the values work
+  famKeys.filter(k=> !k.startsWith('solo:')).forEach(k=>{
     const fine = allRows.filter(x=> parentOf(x).pasin === k && list.indexOf(x) === -1 && x.c && !x.bad.length && x.c.node && x.c.node.s === 'match');
-    if(fine.length) ifSay.push([`"What about the other children?"`, `${fine.map(x=> `${x.asin} (${x.sku})`).join(', ')} ${fine.length === 1 ? 'is' : 'are'} already in node ${fine[0].c.node.e}, so ${fine.length === 1 ? 'it is' : 'they are'} not in this request.`]);
+    if(fine.length) chat.push(`In the same family, ${fine.map(x=> `${x.asin} (SKU ${x.sku})`).join(', ')} ${fine.length === 1 ? 'already has' : 'already have'} these values and ${fine.length === 1 ? 'shows' : 'show'} correctly. Please match the others to ${fine.length === 1 ? 'it' : 'them'}.`);
   });
 
-  const target = Object.values(moves).length === 1 ? ` to browse node ${Object.values(moves)[0].node}` : '';
-  chat.push(`Please send this to the catalog team to ${list.some(nodeFix) ? 'move ' + (one ? 'it' : useParents ? 'the children' : 'them') + target : 'correct ' + (one ? 'it' : 'them')}, add these notes to a case, and send me the case number.`);
+  // 5. The ask
+  chat.push(`Please send this to the catalog team to update ${one ? 'this ASIN' : useParents ? 'all the children listed' : 'these ASINs'} to the values above, add these notes to a case, and send me the case number.`);
 
   ifSay.push(
-    ['"It is assigned based on the detail page and how customers find products."', 'The product type and item type keyword both point to the correct category. Please escalate to the catalog team for a manual review.'],
+    ['"It is assigned based on the detail page and how customers find products."', 'The product type, item type keyword and browse node in our catalog all point to the correct category. Please escalate to the catalog team for a manual review.'],
     ['"Please use the browse node tool."', 'I would rather the catalog team makes the change, so the listing is not locked by repeated tool requests.'],
-    ['"It is already tied to the correct node."', 'The live page still shows the listing in the wrong category. Please check the browse node the detail page uses, not only the backend value.']);
+    ['"It is already tied to the correct node."', `The live page still shows ${stopAt}. Please check the browse node the detail page uses, not only the backend value.`],
+    ['"Please upload a flat file."', 'Download flat file values in the Category module, make a PartialUpdate, then come back with the processing report if it does not change.']);
 
-  const call = ['BEFORE THE CALL', `Have open: ${caseIds.length ? 'case ' + caseIds.join(', ') + ', ' : ''}this page, and the ASIN list.`, '',
+  const call = ['BEFORE THE CALL', `Have open: ${caseIds.length ? 'case ' + caseIds.join(', ') + ', ' : ''}this page, and the children list.`, '',
     '1. SAY WHO YOU ARE', `"${chat[0].replace("Hi, I'm MJ", 'Hi, my name is MJ Baguhin, calling')}"`, '',
-    '2. SAY THE PROBLEM', ...chat.slice(1, -1).map(m=> '"' + m.replace(/\n/g, ', ') + '"'), '',
+    '2. GIVE THE DETAILS', ...chat.slice(1, -1).map(m=> '"' + m.replace(/\n/g, '; ') + '"'), '',
     '3. MAKE THE ASK', `"${chat[chat.length - 1]}"`, '',
     '4. BEFORE YOU HANG UP', 'Ask for the case number and the agent\u2019s name. Write them down.', '',
     'IF THEY SAY...', ...ifSay.map(x=> `${x[0]}\n   Say: "${x[1]}"`)].join('\n');
-  const body = `I am writing to request a ${list.some(nodeFix) ? 'browse node' : 'category'} correction on the ${mk} marketplace.\n\n` + chat.slice(1, -1).join('\n\n') +
-    (useParents ? '\n\nChildren:\n' + famKeys.filter(k=> !k.startsWith('solo:')).map(k=> `${k}: ` + fam[k].rows.map(r=> `${r.asin} (${r.sku})`).join(', ')).join('\n') : '') +
-    `\n\nCould you please correct ${one ? 'it' : 'them'} and confirm once the update has been applied?`;
+
+  // Case form: everything in one place, children always listed in full
+  const body = [`I am requesting a category correction on the ${mk} marketplace for Barnyard Designs, where we are the brand owner.`, '',
+    ...famKeys.flatMap(k=> [famLine(k) + ':', kids(fam[k].rows), '']),
+    ...gKeys.flatMap(k=> { const g = groups[k], now = cgNowLines(g.rows);
+      return [`Correct category${gKeys.length > 1 ? ' for ' + g.rows.map(r=> r.sku).join(', ') : ''}:`, cgCorrectLines(g.v), '', ...(now ? ['What the detail page shows now:', now, ''] : [])]; }),
+    ...chat.slice(2 + gKeys.length * 2, -1).filter(m=> !/^Correct category|^What the page/.test(m)).flatMap(m=> [m, '']),
+    `Could you please update ${one ? 'this ASIN' : 'these ASINs'} to the values above and confirm once the change has been applied?`, '',
+    'Thank you,', 'MJ Baguhin', 'Barnyard Designs, Cross Path Capital LLC'].join('\n').replace(/\n{3,}/g, '\n\n');
   const clean = t=> noDash(String(t));
   return {chat:chat.map(clean), call:clean(call), ifSay:ifSay.map(x=> [x[0], clean(x[1])]), cid:caseIds[caseIds.length - 1] || '', read:null,
-          body:clean(body), subject: clean(`Browse node correction: ${one ? one.asin + ' (' + one.sku + ')' : useParents ? famKeys.filter(k=> !k.startsWith('solo:')).map(k=> 'parent ' + k).join(', ') : list.length + ' ASINs'} on ${site}`), follow: !!caseIds.length};
+          body:clean(body), subject: clean(`Category correction: ${one ? one.asin + ' (' + one.sku + ')' : parents.length ? parents.map(k=> 'parent ' + k).join(', ') : list.length + ' ASINs'} on ${site}`), follow: !!caseIds.length};
+}
+function cgFamilyRows(key, mk){
+  return cgRows(mk).filter(r=>{ const p = parentOf(r); return (p.pasin && p.pasin === key) || (!p.pasin && p.psku === key); }).filter(r=> r.bad.length);
 }
 function cgDraft(list){
   list = list.filter(r=> r.bad.length);
@@ -4601,7 +4636,7 @@ function parentOf(r){
   return {psku: row.psku || '', pasin: row.pasin || '', pname: row.parent || ''};
 }
 // Rows stay in their sorted order; each parent family gets a violet band on top
-function grpMap(F, rows, ncols, trFn, needFn, needLabel, mk){
+function grpMap(F, rows, ncols, trFn, needFn, needLabel, mk, headBtn){
   if(!F.group) return rows.map(trFn).join('');
   const order = [], g = {};
   rows.forEach(r=>{ const p = parentOf(r), k = p.psku || '\u0000solo'; if(!g[k]){ g[k] = {p, rows:[]}; order.push(k); } g[k].rows.push(r); });
@@ -4616,6 +4651,7 @@ function grpMap(F, rows, ncols, trFn, needFn, needLabel, mk){
     }
     bits.push(`<span><b>${G.rows.length}</b> ${solo ? 'listing' + (G.rows.length === 1 ? '' : 's') : 'children'}</span>`);
     bits.push(need ? `<span class="pgh-tag bad">${need} ${needLabel}</span>` : '<span class="pgh-tag ok">All OK</span>');
+    if(headBtn && !solo && need) bits.push(headBtn(G.p));
     return `<tr class="gh pgh${solo ? ' solo' : ''}"><td colspan="${ncols}"><div class="pgh-name">${solo ? '\u25a0 No parent' : '\u25bc ' + esc(G.p.pname || G.p.psku)}</div><div class="pgh-meta">${bits.join('')}</div></td></tr>` +
       G.rows.map(trFn).join('');
   }).join('');
