@@ -729,6 +729,7 @@ a.work:hover{background:var(--accent);color:#fff}
 .bb-table td{vertical-align:top}
 /* Fits the screen: no sideways scrolling needed on a laptop */
 .cpt-table.bb-table{min-width:0;table-layout:auto}
+.pc{font-size:.72rem;margin-top:.25rem;font-weight:600}.pc-ok{color:var(--ok)}.pc-bad{color:var(--warn)}
 .stk-alert{background:#fbe2df;color:#7a1a10;border:1px solid #f0b4ab;border-radius:8px;padding:.6rem .9rem;margin:.6rem 1rem;font-size:.86rem;line-height:1.5}
 #cptView .cpt-tile .n{white-space:normal}
 .bbtile{cursor:pointer;transition:border-color .15s}
@@ -4024,7 +4025,7 @@ function lcChip(x){
   return `<span class="lcchip ${d[1]}" data-tip="${esc(tip)}">${d[0]}</span>`;
 }
 
-const LC_SORT = { product: r=> r.name, pct: r=> r.pct, bad: r=> r.bad.length, since: r=> r.since || '' };
+const LC_SORT = { product: r=> r.name, stock: r=> stockOf(r, 'US'), pct: r=> r.pct, bad: r=> r.bad.length, since: r=> r.since || '' };
 LC_COLS.forEach(c=> LC_SORT['f_' + c[0]] = r=> r.nolive ? 9 : stRank((r.f || {})[c[0]]));
 
 function renderLc(){
@@ -4089,14 +4090,16 @@ function renderLc(){
     const H = (k, label, cls, tip, d)=> `<th data-s="${k}" data-d="${d || 'asc'}" class="${cls || ''}">${label}${tip ? `<span class="qi" tabindex="0" data-tip="${esc(tip)}">?</span>` : ''}${sortArrow(LC_F, k)}</th>`;
     html += '<table class="cpt-table bb-table lc-table"><thead><tr>'+
       H('product', 'Product')+
+      H('stock', 'US stock', 'num', 'Available units in FBA, from BigQuery. Sort to see empty first.')+
       H('pct', 'Correct %', 'b-cpt c', 'Fields on Amazon that match Plytix, out of the fields we can compare.')+
       LC_COLS.map(c=> H('f_' + c[0], c[1], (c[0] === 'gk' ? 'b-sim' : 'b-gap') + ' c', 'Sort to bring problems to the top.')).join('')+
       H('since', 'Copy last changed', 'b-move', 'The day the live Amazon copy last changed, as Keepa saw it.', 'desc')+
       '</tr></thead><tbody>'+
-      grpMap(LC_F, rows, 12, r=> `<tr class="row" tabindex="0" data-lc="${esc(r.asin)}">`+
+      grpMap(LC_F, rows, 13, r=> `<tr class="row" tabindex="0" data-lc="${esc(r.asin)}">`+
         `<td class="prod"><div class="p-name"><span class="dot" style="background:${r.nolive ? '#94a3b8' : r.allOk ? '#1f9d55' : '#d64545'}"></span>${esc(String(r.name).slice(0, 60))}</div>`+
           `<div class="p-id"><span>SKU</span>${skuL(r.sku)}${cpy(r.sku)}</div><div class="p-id"><span>ASIN</span>${asinL(r.asin)}${cpy(r.asin)}</div>`+
           `${r.tier ? `<span class="p-size">Tier ${esc(r.tier)}</span>` : ''}</td>`+
+        stockTd(r, 'US')+
         `<td class="c">${r.nolive ? '<span class="mut">Not checked yet</span>' : r.pct === null ? '<span class="mut">\u2014</span>' : bbBar(r.pct)}</td>`+
         LC_COLS.map(c=> `<td class="c">${r.nolive ? '' : lcChip(r.f[c[0]])}</td>`).join('')+
         `<td>${r.since ? esc(shortDate(r.since)) : '<span class="mut">No change seen</span>'}${r.extra ? `<span class="was">${r.extra} extra bullet${r.extra > 1 ? 's' : ''} on Amazon</span>` : ''}</td>`+
@@ -4191,7 +4194,7 @@ function lpRows(){
   });
 }
 
-const LP_SORT = {product: r=> r.name, set: r=> r.set ? 1 : 0, live: r=> r.live, ours: r=> r.ours, todo: r=> r.set ? 1 : 0};
+const LP_SORT = {product: r=> r.name, stock: r=> stockOf(r, 'US'), set: r=> r.set ? 1 : 0, live: r=> r.live, ours: r=> r.ours, todo: r=> r.set ? 1 : 0};
 
 function renderLp(){
   document.getElementById('msg').hidden = true;
@@ -4238,14 +4241,16 @@ function renderLp(){
     const H = (k, label, cls, tip, d)=> `<th data-s="${k}" data-d="${d || 'asc'}" class="${cls || ''}">${label}${tip ? `<span class="qi" tabindex="0" data-tip="${esc(tip)}">?</span>` : ''}${sortArrow(LP_F, k)}</th>`;
     html += '<table class="cpt-table bb-table lp-table"><thead><tr>'+
       H('product', 'Product')+
+      H('stock', 'US stock', 'num', 'Available units in FBA, from BigQuery. Sort to see empty first.')+
       H('set', 'List Price set?', 'b-cpt c', 'Does the Amazon listing have a List Price.')+
       H('live', 'List Price on Amazon', 'b-ours c', 'The List Price as Keepa reads it from Amazon.', 'desc')+
       H('ours', 'Our price now', 'b-gap c', 'What a shopper pays today, sale included.', 'desc')+
       H('todo', 'What to do', 'b-move')+
       '</tr></thead><tbody>'+
-      grpMap(LP_F, rows, 5, r=> `<tr class="row">`+
+      grpMap(LP_F, rows, 6, r=> `<tr class="row">`+
         `<td class="prod"><div class="p-name"><span class="dot" style="background:${r.set ? '#1f9d55' : '#d64545'}"></span>${esc(String(r.name).slice(0, 60))}</div>`+
           `<div class="p-id"><span>SKU</span>${skuL(r.sku)}${cpy(r.sku)}</div><div class="p-id"><span>ASIN</span>${asinL(r.asin)}${cpy(r.asin)}</div>${r.tier ? `<span class="p-size">Tier ${esc(r.tier)}</span>` : ''}</td>`+
+        stockTd(r, 'US')+
         `<td class="c">${r.set ? '<span class="bbyes">Yes</span>' : '<span class="bbno">Empty</span>'}</td>`+
         `<td class="c">${r.set ? '<b>' + usd(r.live) + '</b>' : '<span class="mut">none</span>'}</td>`+
         `<td class="c">${usd(r.ours)}</td>`+
@@ -4292,7 +4297,30 @@ const CG_BAD = ['wrong', 'leaf', 'missing'];
 const CG_SHARED_NOTE = 'Same browse node as the Master SKU sheet. This node sits under more than one path, and Amazon shows it under a different one. Amazon treats the two paths as the same, so this counts as correct. No case needed.';
 const CG_CASE = {gl:'GL', pt:'Product Type', path:'Category Path', itk:'ITK', node:'Category Path'};
 
-function buildCg(j){ CG_ERR = ''; CG_META = {updated: j && j.updated || ''}; CG = (j && j.rows) || []; }
+function buildCg(j){ CG_ERR = ''; CG_META = {updated: j && j.updated || '', pcUrl: j && j.pagecheckUrl || ''}; CG = (j && j.rows) || []; }
+/* Page checks: MJ looked at the product page. Saved to the "Page Checks" tab
+   of the Reference Pricing sheet through the Keepa Fetcher web app; this
+   browser keeps a copy only until the next category.json has it. */
+const PC_KEY = 'cpc-page-check';
+function pcLocal(){ try { return JSON.parse(localStorage.getItem('cg_pagechecks') || '{}'); } catch(e){ return {}; } }
+function pcOf(r){
+  const loc = pcLocal()[r.mk + '|' + r.asin];
+  if(loc && (!r.page || loc.d > r.page.d)) return loc.res === 'clear' ? null : Object.assign({local:true}, loc);
+  return r.page || null;
+}
+function pcSave(r, res, note){
+  const d = new Date().toISOString().slice(0, 16).replace('T', ' ');
+  try { const all = pcLocal(); all[r.mk + '|' + r.asin] = {d, res, note: note || ''}; localStorage.setItem('cg_pagechecks', JSON.stringify(all)); } catch(e){}
+  if(CG_META.pcUrl){
+    const q = new URLSearchParams({action:'pagecheck', key:PC_KEY, mk:r.mk, sku:r.sku, asin:r.asin, res, note: note || ''});
+    fetch(CG_META.pcUrl + '?' + q.toString(), {mode:'no-cors'}).catch(()=>{});
+  }
+}
+function pcBadge(r){
+  const k = pcOf(r); if(!k) return '';
+  const when = shortDate(k.d.slice(0, 10));
+  return `<div class="pc ${k.res === 'ok' ? 'pc-ok' : 'pc-bad'}" title="${esc(k.note || '')}">\u2714 Page checked ${esc(when)}: path ${k.res === 'ok' ? 'OK' : 'wrong'}${k.stale ? ' (Amazon data changed since, check again)' : ''}</div>`;
+}
 
 function cgRows(mk){
   return CG.filter(r=> r.mk === (mk || CG_F.mk)).map(r=>{
@@ -4309,11 +4337,12 @@ function cgChip(x, nolive){
   if(nolive) return '<span class="lcchip lc-gray">Not checked yet</span>';
   // Shared browse node: correct, but marked so it is easy to remember why
   if(x && x.shared) return `<span class="lcchip lc-ok" data-tip="${esc(x.note || CG_SHARED_NOTE)}">OK, shared node \u24d8</span>`;
+  if(x && x.inNode) return `<span class="lcchip lc-ok" data-tip="${esc(x.note)}">OK, correct node \u24d8</span>`;
   const d = CG_S[(x || {}).s] || CG_S.nomaster;
   return `<span class="lcchip ${d[1]}" data-tip="${esc((x && x.note) || d[2])}">${d[0]}</span>`;
 }
 
-const CG_SORT = { product: r=> r.name, pct: r=> r.pct, since: r=> r.since || '',
+const CG_SORT = { product: r=> r.name, stock: r=> stockOf(r, CG_F.mk), pct: r=> r.pct, since: r=> r.since || '',
   cs: r=> !r.bad.length ? 2 : cgCaseInfo(r) ? 1 : 0 };
 CG_COLS.forEach(c=> CG_SORT['f_' + c[0]] = r=> r.nolive ? 9 : stRank((r.c || {})[c[0]]));
 
@@ -4377,17 +4406,19 @@ function renderCategory(){
     const mk = CG_F.mk;
     html += '<table class="cpt-table bb-table lc-table cg-table"><thead><tr>'+
       H('product', 'Product')+
+      H('stock', CG_F.mk === 'CA' ? 'CA stock' : 'US stock', 'num', 'Available units in FBA, from BigQuery. Sort to see empty first.')+
       H('pct', 'Correct %', 'b-cpt c', 'Checks on Amazon that match the Master SKU sheet, out of the ones we can compare.')+
       CG_COLS.map(c=> H('f_' + c[0], c[1], 'b-gap c', 'Sort to bring problems to the top.')).join('')+
       H('since', 'Last changed on Amazon', 'b-move', 'The day any of these category values last changed on Amazon, as Keepa saw it.', 'desc')+
       H('cs', 'Case', 'b-case', 'Needs a case first, then follow-ups, then fine.')+
       '</tr></thead><tbody>'+
-      grpMap(CG_F, rows, 9, r=> `<tr class="row" tabindex="0" data-cg="${esc(r.asin)}">`+
+      grpMap(CG_F, rows, 10, r=> `<tr class="row" tabindex="0" data-cg="${esc(r.asin)}">`+
         `<td class="prod"><div class="p-name"><span class="dot" style="background:${r.nolive ? '#94a3b8' : r.allOk ? '#1f9d55' : '#d64545'}"></span>${esc(String(r.name).slice(0, 60))}</div>`+
           `<div class="p-id"><span>SKU</span>${skuL(r.sku, mk)}${cpy(r.sku)}</div><div class="p-id"><span>ASIN</span>${asinL(r.asin, mk)}${cpy(r.asin)}</div>`+
           `${r.tier ? `<span class="p-size">Tier ${esc(r.tier)}</span>` : ''}</td>`+
+        stockTd(r, mk)+
         `<td class="c">${r.nolive ? '<span class="mut">Not checked yet</span>' : r.pct === null ? '<span class="mut">\u2014</span>' : bbBar(r.pct)}</td>`+
-        CG_COLS.map(c=> `<td class="c">${cgChip((r.c || {})[c[0]], r.nolive)}</td>`).join('')+
+        CG_COLS.map(c=> `<td class="c">${cgChip((r.c || {})[c[0]], r.nolive)}${c[0] === 'path' ? pcBadge(r) : ''}</td>`).join('')+
         `<td>${r.since ? esc(shortDate(r.since)) : '<span class="mut">No change seen</span>'}</td>`+
         `<td>${r.bad.length ? (()=>{ const ci = cgCaseInfo(r);
             return `<button class="work strong" data-cgcase="${esc(r.asin)}">${ci ? 'Follow up' : 'Draft case'}</button>`+
@@ -4439,8 +4470,11 @@ function openCg(r){
       '</div>'+
       `<div class="lcf-l">Master SKU says</div><div class="lcf-t">${x.e ? esc(x.e) : '<span class="mut">blank</span>'}</div>`+
       `<div class="lcf-l">Amazon has${x.src ? ' (' + esc(x.src) + ')' : ''}</div><div class="lcf-t">${x.a ? esc(x.a) : '<span class="mut">nothing</span>'}</div>`+
-      (x.shared ? `<div class="why" style="margin-top:.4rem"><b>Why this is OK:</b> ${esc(CG_SHARED_NOTE)}</div>`
+      (x.shared || x.inNode ? `<div class="why" style="margin-top:.4rem"><b>Why this is OK:</b> ${esc(x.shared ? CG_SHARED_NOTE : x.note)}</div>`
                 : (x.note ? `<div class="lcf-r" style="color:var(--muted)">${esc(x.note)}</div>` : ''))+
+      (c[0] === 'path' ? `<div class="lcf-l">Product page</div>${pcBadge(r) || '<div class="lcf-r" style="color:var(--muted)">Not checked yet. Open the ASIN link, look at the category links at the top, then click one:</div>'}`+
+        `<div class="act-row"><button class="work" data-pc="ok">Page checked: path OK</button><button class="work" data-pc="wrong">Page checked: path wrong</button>${pcOf(r) ? '<button data-pc="clear">Clear check</button>' : ''}</div>`+
+        `<input id="pcNote" type="text" placeholder="Optional: what the page shows" style="width:100%;margin-top:.3rem" aria-label="Page check note">` : '')+
     '</div>';
   };
   d.innerHTML =
@@ -4463,6 +4497,11 @@ function openCg(r){
     '<div class="why">Path, node, ITK and product type: Keepa\u2019s last check, as Keepa sees it, not the page itself. GL: only from a live source (BigQuery); it shows Can\u2019t check when there is none. Case number and last reply: Gmail. Correct values: the Master SKU sheet.</div>';
   const one = document.getElementById('cgOne');
   if(one) one.onclick = ()=> cgDraft([r]);
+  [...d.querySelectorAll('button[data-pc]')].forEach(b=> b.onclick = ()=>{
+    const n = (document.getElementById('pcNote') || {}).value || '';
+    pcSave(r, b.dataset.pc, n);
+    openCg(r); if(typeof renderCategory === 'function' && document.getElementById('cptView')) renderCategory();
+  });
   const fo = document.getElementById('cgFamOne');
   if(fo) fo.onclick = ()=> cgDraft(cgFamilyRows(fo.dataset.k, r.mk));
   const wy = document.getElementById('cgWhy'); if(wy) wy.onclick = cgTips;
@@ -4568,7 +4607,8 @@ function cgPitch(list){
       : ` for ${g.rows.map(r=> r.sku).join(', ')}`;
     chat.push(`Correct category${label} (from our catalog):\n` + cgCorrectLines(g.v));
     const now = cgNowLines(g.rows);
-    if(now) chat.push(`What ${one ? 'the page shows' : 'the pages show'} now:\n` + now);
+    const seen = g.rows.every(r=>{ const k = pcOf(r); return k && k.res === 'wrong' && !k.stale; });
+    if(now) chat.push((seen ? `What ${one ? 'the page shows' : 'the pages show'} now (checked):\n` : `What our category data shows now:\n`) + now);
   });
   if(!glSeen) chat.push(`Please also confirm the GL on ${one ? 'this ASIN' : 'these ASINs'} is ${[...new Set(list.map(r=> cgCorrect(r).gl).filter(Boolean))].join(' / ') || 'correct'}. We cannot see the GL on our side.`);
 
@@ -4585,7 +4625,8 @@ function cgPitch(list){
 
   // Children of the same family that are already right: proof the values work
   famKeys.filter(k=> !k.startsWith('solo:')).forEach(k=>{
-    const fine = allRows.filter(x=> parentOf(x).pasin === k && list.indexOf(x) === -1 && x.c && !x.bad.length && x.c.node && x.c.node.s === 'match');
+    // Only siblings with the SAME correct values are proof (pumpkin and pea differ)
+    const fine = allRows.filter(x=> parentOf(x).pasin === k && list.indexOf(x) === -1 && x.c && !x.bad.length && x.c.node && x.c.node.s === 'match' && JSON.stringify(cgCorrect(x)) === JSON.stringify(cgCorrect(fam[k].rows[0])));
     if(fine.length) chat.push(`In the same family, ${fine.map(x=> `${x.asin} (SKU ${x.sku})`).join(', ')} ${fine.length === 1 ? 'already has' : 'already have'} these values and ${fine.length === 1 ? 'shows' : 'show'} correctly. Please match the others to ${fine.length === 1 ? 'it' : 'them'}.`);
   });
 
@@ -4636,6 +4677,18 @@ function parentOf(r){
   return {psku: row.psku || '', pasin: row.pasin || '', pname: row.parent || ''};
 }
 // Rows stay in their sorted order; each parent family gets a violet band on top
+/* Stock for any module row: BigQuery numbers from the ALM Console Data sheet */
+function stockOf(r, mk){
+  const row = (r.usSku && ROWS.find(x=> x.sku === r.usSku)) || ROWS.find(x=> x.sku === r.sku) || ROWS.find(x=> x.asin === r.asin);
+  if(!row) return null;
+  const v = mk === 'CA' ? row.caAvail : row.usAvail;
+  return v === undefined || v === '' ? null : v;
+}
+function stockTd(r, mk){
+  const v = stockOf(r, mk), st = stockStatus(mk);
+  if(v === null) return `<td class="num"><span class="mut" title="${st ? esc(st.text) : 'No stock data for this SKU'}">No data</span></td>`;
+  return `<td class="num">${v > 0 ? '<b>' + v.toLocaleString() + '</b>' : '<span class="bbno">Out of stock</span>'}</td>`;
+}
 function grpMap(F, rows, ncols, trFn, needFn, needLabel, mk, headBtn){
   if(!F.group) return rows.map(trFn).join('');
   const order = [], g = {};
@@ -4684,26 +4737,26 @@ function dlBb(rows){
 }
 function lcVal(x, side){ if(!x) return ''; if(side === 'c') return x.c || ''; return x.l !== undefined ? x.l : (x.s === 'match' ? (x.c || '') : ''); }
 function dlLc(rows){
-  const head = ['SKU','ASIN','Product','Tier','Correct %'];
+  const head = ['SKU','ASIN','Product','Tier','US stock','Correct %'];
   LC_COLS.forEach(c=> head.push(c[1] + ' check', c[1] + ' correct (Master SKU)', c[1] + ' on Amazon'));
   csvSave('listing-copy', head.concat(['Parent SKU','Parent ASIN']), rows.map(r=>{
-    const cells = [r.sku, r.asin, r.name, r.tier, r.pct];
+    const cells = [r.sku, r.asin, r.name, r.tier, stockOf(r, 'US'), r.pct];
     LC_COLS.forEach(c=>{ const x = (r.f || {})[c[0]]; cells.push(x ? (LC_S[x.s] || [x.s])[0] : '', lcVal(x, 'c'), c[0] === 'gk' ? '(backend, not visible)' : lcVal(x, 'l')); });
     return withParent(r, cells);
   }));
 }
 function dlLp(rows){
-  csvSave('list-price', ['SKU','ASIN','Product','Tier','List Price set?','List Price on Amazon','Our price now','Parent SKU','Parent ASIN'],
-    rows.map(r=> withParent(r, [r.sku, r.asin, r.name, r.tier, r.set ? 'Yes' : 'Empty', r.live, r.ours])));
+  csvSave('list-price', ['SKU','ASIN','Product','Tier','US stock','List Price set?','List Price on Amazon','Our price now','Parent SKU','Parent ASIN'],
+    rows.map(r=> withParent(r, [r.sku, r.asin, r.name, r.tier, stockOf(r, 'US'), r.set ? 'Yes' : 'Empty', r.live, r.ours])));
 }
 function cgCells(r){
-  const cells = [r.mk, r.sku, r.asin, `https://www.amazon.${r.mk === 'CA' ? 'ca' : 'com'}/dp/${r.asin}`, r.name, r.tier, r.pct];
-  CG_COLS.forEach(c=>{ const x = (r.c || {})[c[0]] || {}; cells.push(x.shared ? 'OK, shared node (same browse node, Amazon shows another path; no case needed)' : (CG_S[x.s] || [x.s || ''])[0], x.e || '', x.a || ''); });
+  const cells = [r.mk, r.sku, r.asin, `https://www.amazon.${r.mk === 'CA' ? 'ca' : 'com'}/dp/${r.asin}`, r.name, r.tier, stockOf(r, r.mk), r.pct];
+  CG_COLS.forEach(c=>{ const x = (r.c || {})[c[0]] || {}; cells.push(x.shared ? 'OK, shared node (same browse node, Amazon shows another path; no case needed)' : x.inNode ? 'OK, correct node (Keepa reports another path; check the page)' : (CG_S[x.s] || [x.s || ''])[0], x.e || '', x.a || ''); });
   const ci = cgCaseInfo(r); cells.push(ci ? ci.id : '', ci ? ci.notes : '');
   return cells;
 }
 function cgHead(){
-  const h = ['Market','SKU','ASIN','Amazon link','Product','Tier','Correct %'];
+  const h = ['Market','SKU','ASIN','Amazon link','Product','Tier','Stock','Correct %'];
   CG_COLS.forEach(c=> h.push(c[1] + ' check', c[1] + ' correct (Master SKU)', c[1] + ' on Amazon'));
   return h.concat(['Case ID','Last case note']);
 }
