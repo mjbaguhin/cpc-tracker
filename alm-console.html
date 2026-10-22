@@ -63,7 +63,7 @@ header h1{
 #meta{font-size:.7rem;color:#93a0b0;letter-spacing:.02em}
 #meta b{color:#ccd6e2;font-weight:600}
 
-#toggle,#fs,#homeBtn,#quickCat,#casesBtn,#catalogBtn,#cptBtn,#bbBtn,#lcBtn,#lpBtn,#vrBtn{
+#toggle,#fs,#homeBtn,#quickCat,#casesBtn,#catalogBtn,#cptBtn,#bbBtn,#lcBtn,#lpBtn,#vrBtn,#bsBtn{
   font-size:.74rem;padding:.24rem .6rem;
   background:transparent;color:#fff;border:1px solid #3a4652;
 }
@@ -72,12 +72,12 @@ header h1{
 #quickCat{margin-left:auto}
 #homeBtn[aria-pressed="true"],#quickCat[aria-pressed="true"],
 #casesBtn[aria-pressed="true"],
-#cptBtn[aria-pressed="true"],#bbBtn[aria-pressed="true"],#lcBtn[aria-pressed="true"],#lpBtn[aria-pressed="true"],#vrBtn[aria-pressed="true"],
+#cptBtn[aria-pressed="true"],#bbBtn[aria-pressed="true"],#lcBtn[aria-pressed="true"],#lpBtn[aria-pressed="true"],#vrBtn[aria-pressed="true"],#bsBtn[aria-pressed="true"],
 #catalogBtn[aria-pressed="true"]{
   background:#2f4a6d;border-color:#4a6fa5;
 }
-#toggle:hover,#fs:hover,#homeBtn:hover,#quickCat:hover,#casesBtn:hover,#catalogBtn:hover,#cptBtn:hover,#bbBtn:hover,#lcBtn:hover,#lpBtn:hover,#vrBtn:hover{background:#1c232b}
-#toggle .badge,#homeBtn .badge,#quickCat .badge,#casesBtn .badge,#cptBtn .badge,#bbBtn .badge,#lcBtn .badge,#lpBtn .badge,#vrBtn .badge{
+#toggle:hover,#fs:hover,#homeBtn:hover,#quickCat:hover,#casesBtn:hover,#catalogBtn:hover,#cptBtn:hover,#bbBtn:hover,#lcBtn:hover,#lpBtn:hover,#vrBtn:hover,#bsBtn:hover{background:#1c232b}
+#toggle .badge,#homeBtn .badge,#quickCat .badge,#casesBtn .badge,#cptBtn .badge,#bbBtn .badge,#lcBtn .badge,#lpBtn .badge,#vrBtn .badge,#bsBtn .badge{
   display:inline-block;margin-left:.35rem;padding:0 .32rem;
   background:#a83a26;border-radius:8px;font-size:.68rem;font-weight:700;
 }
@@ -601,10 +601,10 @@ header h1{font-size:.95rem;letter-spacing:.02em;text-transform:none;font-weight:
 header h1::after{content:"";display:inline-block;width:.42rem;height:.42rem;border-radius:50%;
   background:#3fbf7f;margin-left:.45rem;vertical-align:middle}
 #meta{font-family:ui-monospace,"SF Mono",Menlo,Consolas,monospace;font-size:.72rem}
-#toggle,#fs,#homeBtn,#quickCat,#casesBtn,#catalogBtn,#cptBtn,#bbBtn,#lcBtn,#lpBtn,#vrBtn{
+#toggle,#fs,#homeBtn,#quickCat,#casesBtn,#catalogBtn,#cptBtn,#bbBtn,#lcBtn,#lpBtn,#vrBtn,#bsBtn{
   font-size:.8rem;padding:.38rem .8rem;border-radius:7px;border-color:var(--night-line);color:#dfe5ee}
 #homeBtn[aria-pressed="true"],#quickCat[aria-pressed="true"],#casesBtn[aria-pressed="true"],
-#catalogBtn[aria-pressed="true"],#cptBtn[aria-pressed="true"],#bbBtn[aria-pressed="true"],#lcBtn[aria-pressed="true"],#lpBtn[aria-pressed="true"],#vrBtn[aria-pressed="true"]{background:#2c4f7c;border-color:#4a76b0;color:#fff}
+#catalogBtn[aria-pressed="true"],#cptBtn[aria-pressed="true"],#bbBtn[aria-pressed="true"],#lcBtn[aria-pressed="true"],#lpBtn[aria-pressed="true"],#vrBtn[aria-pressed="true"],#bsBtn[aria-pressed="true"]{background:#2c4f7c;border-color:#4a76b0;color:#fff}
 
 /* overview band */
 #ov{background:var(--night);color:#e8edf3;padding:1.05rem 1.25rem 1.15rem;flex:0 0 auto}
@@ -787,6 +787,7 @@ a.idl:hover{color:var(--accent);border-bottom-style:solid}
   <button id="lcBtn">Listing Copy</button>
   <button id="lpBtn">List Price</button>
   <button id="vrBtn">Variation</button>
+  <button id="bsBtn">BSR</button>
   <button id="catalogBtn">Catalog</button>
   <button id="toggle" aria-expanded="true">Filters</button>
   <button id="fs" title="Fullscreen">Full screen</button>
@@ -908,6 +909,7 @@ const CG_SRC = 'https://raw.githubusercontent.com/mjbaguhin/cpc-tracker/main/cat
 const VR_SRC = 'https://raw.githubusercontent.com/mjbaguhin/cpc-tracker/main/variation.json';
 const RB_SRC = 'https://raw.githubusercontent.com/mjbaguhin/cpc-tracker/main/rules.json';
 const CA_SRC = 'https://raw.githubusercontent.com/mjbaguhin/cpc-tracker/main/ca.json';
+const BS_SRC = 'https://raw.githubusercontent.com/mjbaguhin/cpc-tracker/main/bsr.json';
 
 // Amazon's case creation entry point
 const CASE_URL = 'https://sellercentral.amazon.com/help/center?redirectSource=HelpHub';
@@ -1016,11 +1018,14 @@ async function load(fresh){
   grab(CG_SRC, 'json', fresh)
     .then(j => { buildCg(j); if(S.view === 'category') render(); else chrome(); })
     .catch(e => { CG_ERR = e.message; if(S.view === 'category') render(); });
+  grab(BS_SRC, 'json', fresh)
+    .then(j => { buildBs(j); if(S.view === 'bs' || S.view === 'catalog') render(); else chrome(); })
+    .catch(e => { BS_ERR = e.message; if(S.view === 'bs') render(); });
   grab(CA_SRC, 'json', fresh)
     .then(j => { buildCa(j); if(['lc','lp','bb','cpt','catalog'].indexOf(S.view) !== -1) render(); else chrome(); })
     .catch(e => { CA_ERR = e.message; if(MK2 === 'CA') render(); });
   grab(RB_SRC, 'json', fresh)
-    .then(j => { buildRb(j); if(['lc','vr','catalog','cg','category','lp','bb','cpt'].indexOf(S.view) !== -1) render(); })
+    .then(j => { buildRb(j); if(['lc','vr','catalog','cg','category','lp','bb','cpt','bs'].indexOf(S.view) !== -1) render(); })
     .catch(e => { RB_ERR = e.message; if(['lc','vr','catalog','category','lp','bb','cpt'].indexOf(S.view) !== -1) render(); });
   grab(VR_SRC, 'json', fresh)
     .then(j => { buildVr(j); if(S.view === 'vr') render(); else chrome(); })
@@ -4146,6 +4151,8 @@ function rbScreenRow(module, r){
     }
     if(ru.kind === 'aboveCpt' && r.cpt !== null && r.cpt !== undefined && r.ours !== null && r.ours !== undefined && r.ours > r.cpt + 0.005)
       msg = `Our price ${rbUsd(r.ours)} is above Amazon\u2019s threshold ${rbUsd(r.cpt)}.`;
+    if(ru.kind === 'ratingMin' && r.cur !== null && r.cur !== undefined && r.cur < ru.value && (r.rev === 0 || (r.rev || 0) >= (ru.minReviews || 0))){ field = 'rating';
+      msg = `Star rating ${Number(r.cur).toFixed(1)} with ${r.rev === null ? 'unknown' : Number(r.rev).toLocaleString('en-US')} ratings, under ${ru.value.toFixed(1)}.`; }
     if(ru.kind === 'cgNode' && r.c && r.c.node && (r.c.node.s === 'wrong' || r.c.node.s === 'missing')){ field = 'node';
       msg = r.c.node.s === 'missing' ? 'No browse node on Amazon' : `Amazon has node ${r.c.node.a}, the correct one is ${r.c.node.e}`; }
     if(ru.kind === 'cgItk' && r.c && r.c.itk && (r.c.itk.s === 'blank' || r.c.itk.s === 'missing')){ field = 'itk';
@@ -4180,7 +4187,7 @@ function rbChip(hits){
     why.map(w=> `<span class="was" style="white-space:normal;max-width:16rem;text-align:left">${esc(w)}</span>`).join('') +
     (hits.length > 2 ? `<span class="was">+${hits.length - 2} more, open the row</span>` : '');
 }
-const RB_FNAME = {price:'Price', node:'Browse node', itk:'Item type keyword', title:'Title', ih:'Item Highlights', b1:'Bullet 1', b2:'Bullet 2', b3:'Bullet 3', b4:'Bullet 4', b5:'Bullet 5', gk:'Backend keywords', desc:'Description', theme:'Variation theme', value:'Variation value'};
+const RB_FNAME = {rating:'Star rating', price:'Price', node:'Browse node', itk:'Item type keyword', title:'Title', ih:'Item Highlights', b1:'Bullet 1', b2:'Bullet 2', b3:'Bullet 3', b4:'Bullet 4', b5:'Bullet 5', gk:'Backend keywords', desc:'Description', theme:'Variation theme', value:'Variation value'};
 function rbBlock(hits){
   if(!RB) return `<div class="why"><b>Rule screening off:</b> rules.json not loaded${RB_ERR ? ' (' + esc(RB_ERR) + ')' : ''}.</div>`;
   const head = `<div class="lcf-l" style="margin-top:.8rem">Rule screening, rulebook checked ${esc(shortDate(RB.verified))}${rbStale() ? ' <b style="color:var(--warn)">(due for a re-check)</b>' : ''}</div>`;
@@ -4202,8 +4209,8 @@ function rbBanner(){
 function openRulebook(){
   const d = document.getElementById('detail');
   if(!RB){ d.innerHTML = '<h2>Rulebook</h2>' + rbBanner(); document.getElementById('veil').hidden = false; return; }
-  const grp = [['lc', 'Listing Copy'], ['vr', 'Variation'], ['cg', 'Category'], ['lp', 'List Price'], ['bb', 'Buy Box'], ['cpt', 'CPT tracker']];
-  const ask = `Please re-check the ALM Console rulebook (rules.json in mjbaguhin/cpc-tracker, last checked ${RB.verified}). Search for any Amazon policy changes since then (titles, Item Highlights, bullets, description, backend search terms, variations, review sharing, categories and browse nodes, List Price and reference prices, Featured Offer and fair pricing), check every rule below is still current, and give me an updated rules.json with sources and today's date.\n\n` +
+  const grp = [['lc', 'Listing Copy'], ['vr', 'Variation'], ['cg', 'Category'], ['lp', 'List Price'], ['bb', 'Buy Box'], ['cpt', 'CPT tracker'], ['bsr', 'BSR']];
+  const ask = `Please re-check the ALM Console rulebook (rules.json in mjbaguhin/cpc-tracker, last checked ${RB.verified}). Search for any Amazon policy changes since then (titles, Item Highlights, bullets, description, backend search terms, variations, review sharing, categories and browse nodes, List Price and reference prices, Featured Offer and fair pricing, star ratings, reviews and Best Sellers Rank, deals eligibility), check every rule below is still current, and give me an updated rules.json with sources and today's date.\n\n` +
     RB.rules.map(r=> `- ${r.id}: ${r.text}`).join('\n');
   d.innerHTML = '<h2>Rulebook</h2>'+
     `<h3>Checked against Amazon ${esc(shortDate(RB.verified))} (${rbAgeDays()} days ago). Re-check every ${RB.recheckDays || 30} days.</h3>`+
@@ -5186,7 +5193,9 @@ function cgTips(){
    Master SKU sheet. */
 let VR = [], VR_FAMS = [], VR_META = {}, VR_ERR = '', VR_VIEW = [];
 const VR_F = {show:'all', q:'', sort:'', dir:1, tier:'', mk:'US', group:false};
-const VR_COLS = [['fam','Family'], ['theme','Theme'], ['value','Value'], ['rev','Reviews shared']];
+// Theme and value checks are off for now (MJ, Oct 22). Set VR_TV to true to bring them back.
+const VR_TV = false;
+const VR_COLS = VR_TV ? [['fam','Family'], ['theme','Theme'], ['value','Value'], ['rev','Reviews shared']] : [['fam','Family'], ['rev','Reviews shared']];
 const VR_S = {
   match:   ['OK', 'lc-ok', 'Same as the Master SKU sheet'],
   wrong:   ['Wrong', 'lc-bad', 'Different from the Master SKU sheet'],
@@ -5213,7 +5222,11 @@ function vrRows(mk){
     const blank = VR_COLS.filter(x=> c[x[0]] && c[x[0]].s === 'blank').map(x=> x[0]);
     const core = bad.filter(k=> k !== 'rev');
     const fam = r.exp && r.exp.pasin ? VR.filter(x=> x.mk === r.mk && x.exp && x.exp.pasin === r.exp.pasin) : [];
-    const rb = rbScreenVr(r, fam);
+    const rb = rbScreenVr(r, fam).filter(h=> VR_TV || h.id === 'vr-share');
+    if(!VR_TV && r.c){
+      const fs = r.c.fam ? r.c.fam.s : '';
+      r = Object.assign({}, r, fs === 'match' ? {checked:1, ok:1, pct:100} : (fs === 'wrong' || fs === 'split') ? {checked:1, ok:0, pct:0} : {checked:0, ok:0, pct:null});
+    }
     return Object.assign({}, r, {name: (row && row.name) || r.name || r.asin, tier: r.tier || (row && row.tier) || '',
       rb, rbA: rb.filter(h=> h.sev === 'amazon'),
       bad, core, blank, allOk: !r.nolive && !core.length, fullOk: !r.nolive && !bad.length,
@@ -5272,15 +5285,15 @@ function renderVariation(){
       `<span class="sub">Amazon ${VR_F.mk} vs the Master SKU sheet, ${all.length} active listings in ${fams.length} families</span>`+
       (VR_META.updated ? `<span class="cpt-live"><i></i>Checked ${esc(VR_META.updated)} ET</span>` : '')+
     '</div><div class="cpt-tiles">'+
-      tile('Variation correct %', pct + '%', pct >= 98 ? 'good' : pct >= 90 ? 'warn' : 'bad', `${ok} of ${checked} checks match (family, theme, value)`, 'all')+
+      tile('Variation correct %', pct + '%', pct >= 98 ? 'good' : pct >= 90 ? 'warn' : 'bad', `${ok} of ${checked} checks match (${VR_TV ? 'family, theme, value' : 'family'})`, 'all')+
       tile('Listings 100% correct', `${good.length}<span style="font-size:1rem;color:var(--c-night-mut)"> of ${all.length}</span>`, good.length === all.length ? 'good' : 'warn', 'Reviews shared included', 'good')+
       t1('Split off from family', split, 'split') + t1('In the wrong family', other, 'other') +
-      t1('Theme wrong', has('theme'), 'theme') + t1('Value wrong', has('value'), 'value') +
+      (VR_TV ? t1('Theme wrong', has('theme'), 'theme') + t1('Value wrong', has('value'), 'value') : '') +
       (isCA ? tile('Reviews shared', '\u2014', '', 'No live review counts for Canada', 'all')
             : t1('Reviews not shared', has('rev'), 'rev')) +
       t1('Theme may split reviews', risk, 'risk', true) +
       tile('Blank in Master SKU', blank.length, blank.length ? 'warn' : 'good', blank.length ? 'Correct value missing' : 'None', 'blank')+
-      tile('Breaks a variation rule', RB ? rbA.length : '\u2014', !RB ? '' : rbA.length ? 'bad' : 'good', !RB ? 'Rulebook not loaded' : rbA.length ? list(rbA) : 'Themes and values OK in the Master SKU sheet', 'rba')+
+      (!VR_TV ? '' : tile('Breaks a variation rule', RB ? rbA.length : '\u2014', !RB ? '' : rbA.length ? 'bad' : 'good', !RB ? 'Rulebook not loaded' : rbA.length ? list(rbA) : 'Themes and values OK in the Master SKU sheet', 'rba'))+
     '</div></section>'+
     rbBanner()+
     '<div class="cpt-tools"><div class="seg" id="vrMk">'+
@@ -5295,7 +5308,7 @@ function renderVariation(){
     `<input id="vrQ" type="search" placeholder="Search SKU, ASIN, parent or product" value="${esc(VR_F.q)}" aria-label="Search Variation">`+
     (VR_F.sort ? '<button id="vrUnsort">Clear sort</button>' : '')+
     grpBtn(VR_F) + dlBtns() + '<button id="vrTips">Why does this happen?</button><button data-rbopen="1">Rulebook</button>' +
-    (rows.some(r=> r.core.some(k=> k === 'theme' || k === 'value' || k === 'fam')) ? '<button id="vrFlatT">Download flat file values</button>' : '') +
+    (VR_TV && rows.some(r=> r.core.some(k=> k === 'theme' || k === 'value' || k === 'fam')) ? '<button id="vrFlatT">Download flat file values</button>' : '') +
     `<span class="count">${rows.length} of ${all.length}</span></div>`;
 
   if(VR_META.revErr && !isCA) html += `<div class="why"><b>Review counts not loaded:</b> ${esc(VR_META.revErr)}. Reviews shared shows Can\u2019t check until the next run.</div>`;
@@ -5314,7 +5327,7 @@ function renderVariation(){
     html += '<table class="cpt-table bb-table lc-table cg-table"><thead><tr>'+
       H('product', 'Product')+
       H('stock', isCA ? 'CA stock' : 'US stock', 'num', 'Available units in FBA, from BigQuery. Sort to see empty first.')+
-      H('pct', 'Correct %', 'b-cpt c', 'Family, theme and value checks that match the Master SKU sheet, out of the ones we can compare. Reviews shared is not in this number.')+
+      H('pct', 'Correct %', 'b-cpt c', (VR_TV ? 'Family, theme and value checks' : 'The family check') + ' against the Master SKU sheet. Reviews shared is not in this number.')+
       VR_COLS.map(c=> H('f_' + c[0], c[1], 'b-gap c', c[0] === 'rev' ? 'Same review count as most siblings, as Keepa sees it. US only.' : 'Sort to bring problems to the top.')).join('')+
       H('since', 'Last changed on Amazon', 'b-move', 'The day the family, theme or value last changed on Amazon, as Keepa saw it.', 'desc')+
       H('cs', 'Case', 'b-case', 'A case is for a child out of its family or reviews not shared. Wrong theme or value: flat file.')+
@@ -5330,7 +5343,7 @@ function renderVariation(){
         `<td>${r.caseable.length ? (()=>{ const ci = vrCaseInfo(r);
             return `<button class="work strong" data-vrcase="${esc(r.asin)}">${ci ? 'Follow up' : 'Draft case'}</button>`+
               (ci ? `<span class="was">Case ${esc(ci.id)}${ci.date ? ', ' + esc(shortDate(ci.date)) : ''}</span>` : ''); })()
-          : r.core.length ? '<span class="mut">Flat file</span>' : ''}</td>`+
+          : r.core.length && VR_TV ? '<span class="mut">Flat file</span>' : ''}</td>`+
       '</tr>', r=> r.bad.length, 'need a look', VR_F.mk,
       p=> vrFamilyRows(p.pasin || p.psku, VR_F.mk).length ? `<button class="work strong" data-vrfam="${esc(p.pasin || p.psku)}">Draft case for this family</button>` : '')+
       '</tbody></table>';
@@ -5395,7 +5408,7 @@ function openVr(r){
       (famN > 1 ? `<button class="work strong" id="vrFamOne">Draft case for the whole family (${famN})</button>` : '')+
       '<button class="work" id="vrWhy">Why does this happen?</button></div>'+
       (ci && ci.notes ? `<div class="lcf-r" style="color:var(--muted)">Amazon\u2019s last reply (${esc(shortDate(ci.date))}): ${esc(ci.notes)}${ci.link ? ` <a href="${esc(ci.link)}" target="_blank" rel="noopener">Open in Gmail</a>` : ''}</div>` : '') : '')+
-    (r.core.some(k=> k !== 'rev') && !r.caseable.length ? '<div class="act-row"><button class="work strong" id="vrFlatOne">Download flat file values</button><button class="work" id="vrWhy">Why does this happen?</button></div>' : '')+
+    (VR_TV && r.core.some(k=> k !== 'rev') && !r.caseable.length ? '<div class="act-row"><button class="work strong" id="vrFlatOne">Download flat file values</button><button class="work" id="vrWhy">Why does this happen?</button></div>' : '')+
     (r.nolive ? '<div class="why">No live data from Amazon yet for this listing.</div>' : VR_COLS.map(block).join(''))+
     rbBlock(r.rb)+
     '<div class="why">Family, theme and value: Keepa\u2019s last read, as Keepa sees it, not the page itself. Reviews: the review counts from the nightly rating run (Keepa). Case number and last reply: Gmail. Correct values: the Master SKU sheet.</div>';
@@ -5570,6 +5583,242 @@ function vrTips(){
   document.getElementById('veil').hidden = false;
 }
 
+/* ---------- BSR module ----------
+   Star rating, ratings count, Best Sellers Rank and units bought, US and CA,
+   from bsr.json (BSR Watch, daily). US ratings: the nightly rating run (Keepa).
+   BSR history: the daily Buy Box read (US) and CA Watch (CA), both Keepa. */
+let BS = [], BS_META = {}, BS_ERR = '', BS_VIEW = [];
+const BS_F = {show:'all', q:'', sort:'', dir:1, tier:'', mk:'US', group:false};
+function buildBs(j){
+  BS_ERR = '';
+  BS_META = {updated: j && j.updated || '', usFrom: j && j.usRatingsFrom || '', usErr: j && j.usRatingsError || ''};
+  BS = (j && j.rows) || [];
+}
+const bsNum = v=> v === null || v === undefined || isNaN(v) ? null : Number(v);
+const bsInt = v=> v === null || v === undefined ? '\u2014' : Number(v).toLocaleString('en-US');
+function bsRows(mk){
+  return BS.filter(r=> r.mk === (mk || BS_F.mk)).map(r=>{
+    const row = ROWS.find(x=> x.asin === r.asin);
+    const rt = r.rt || {}, rk = r.rk || {};
+    const cur = bsNum(rt.cur), r30 = bsNum(rt.r30), r90 = bsNum(rt.r90);
+    const d30 = cur !== null && r30 !== null ? Math.round((cur - r30) * 10) / 10 : null;
+    const d90 = cur !== null && r90 !== null ? Math.round((cur - r90) * 10) / 10 : null;
+    const bsr = bsNum(rk.bsr), avg30 = bsNum(rk.avg30);
+    // Positive trend = a higher rank number = selling slower than its 30-day average
+    const trend = bsr && avg30 && (rk.days || 0) >= 7 ? Math.round((bsr - avg30) / avg30 * 100) : null;
+    const o = Object.assign({}, r, {name: (row && row.name) || r.name || r.asin, tier: r.tier || (row && row.tier) || '',
+      cur, r30, r90, d30, d90, rev: bsNum(rt.rev), rev30: bsNum(rt.rev30), bsr, avg30, trend, sold: bsNum(rk.sold), days: rk.days || 0});
+    o.flags = [];
+    if(cur !== null && cur < 4) o.flags.push('low');
+    if(d30 !== null && d30 <= -0.1) o.flags.push('drop');
+    if(!bsr && !r.nolive) o.flags.push('nobsr');
+    if(trend !== null && trend >= 25) o.flags.push('slow');
+    o.rb = rbScreenRow('bsr', Object.assign({}, o, {mk: o.mk}));
+    o.ok = cur !== null && cur >= 4 && !!bsr && !(d30 !== null && d30 <= -0.1);
+    return o;
+  });
+}
+const BS_SORT = { product: r=> r.name, stock: r=> stockOf(r, BS_F.mk), cur: r=> r.cur, d30: r=> r.d30, rev: r=> r.rev, rev30: r=> r.rev30,
+  bsr: r=> r.bsr || 1e12, avg30: r=> r.avg30 || 1e12, trend: r=> r.trend, sold: r=> r.sold, rb: r=> -((r.rb || []).length) };
+const bsStars = v=> v === null ? '<span class="mut">No rating</span>' :
+  `<b style="color:${v >= 4.5 ? 'var(--ok)' : v >= 4 ? 'inherit' : v >= 3 ? 'var(--warn)' : 'var(--bad)'}">${v.toFixed(1)}</b> <span class="mut">\u2605</span>`;
+const bsDelta = (v, unit)=> v === null ? '<span class="mut">\u2014</span>' : v === 0 ? '<span class="mut">no change</span>' :
+  `<span style="color:${v > 0 ? 'var(--ok)' : 'var(--bad)'}">${v > 0 ? '+' : ''}${unit === '%' ? v + '%' : v.toFixed(1)}</span>`;
+function bsSpark(a){
+  const v = (a || []).filter(x=> x); if(v.length < 3) return '';
+  const lo = Math.min(...v), hi = Math.max(...v), w = 70, h = 18;
+  const pts = (a || []).map((x,i)=> x ? `${Math.round(i / Math.max(1, a.length - 1) * w)},${hi === lo ? h / 2 : Math.round((x - lo) / (hi - lo) * h)}` : null).filter(Boolean).join(' ');
+  return `<svg width="${w}" height="${h}" viewBox="0 0 ${w} ${h}" style="display:block;margin-top:2px" aria-label="BSR, last 30 days (higher on the chart = better rank)"><polyline fill="none" stroke="currentColor" stroke-width="1.5" points="${pts}"/></svg>`;
+}
+
+function renderBsr(){
+  document.getElementById('msg').hidden = true;
+  document.getElementById('bar').innerHTML = '';
+  const v = document.getElementById('cptView'), mk = BS_F.mk;
+  const all = bsRows(), rated = all.filter(r=> r.cur !== null);
+  const avg = rated.length ? Math.round(rated.reduce((t,r)=> t + r.cur, 0) / rated.length * 100) / 100 : null;
+  const f = k=> all.filter(r=> r.flags.indexOf(k) !== -1);
+  const good = all.filter(r=> r.cur !== null && r.cur >= 4), low = f('low'), drop = f('drop'), nobsr = f('nobsr'), slow = f('slow');
+  const under3 = rated.filter(r=> r.cur < 3);
+  const gained = all.reduce((t,r)=> t + (r.rev30 || 0), 0);
+  const pick = {good, low, drop, nobsr, slow, under3, rb: all.filter(r=> (r.rb || []).length), any: all.filter(r=> r.flags.length)};
+
+  let rows = pick[BS_F.show] || all;
+  if(BS_F.tier) rows = rows.filter(r=> (r.tier || 'N') === BS_F.tier);
+  if(BS_F.q){ const q = BS_F.q.toLowerCase(); rows = rows.filter(r=> (r.sku + ' ' + r.asin + ' ' + r.name + ' ' + ((r.par || {}).pasin || '')).toLowerCase().indexOf(q) !== -1); }
+  rows = BS_F.sort && BS_SORT[BS_F.sort] ? sortBy(rows, BS_SORT[BS_F.sort], BS_F.dir)
+       : sortBy(rows, r=> (r.flags.length ? 0 : 1000) + (r.cur === null ? 500 : r.cur * 10) + (TIER_RANK[r.tier] !== undefined ? TIER_RANK[r.tier] : 5) / 10, 1);
+  BS_VIEW = rows;
+
+  const tile = (k, val, cls, note, fl)=>
+    `<div class="cpt-tile bbtile${BS_F.show === fl ? ' on' : ''}" role="button" tabindex="0" data-show="${fl}" title="Show these in the table"><div class="k">${k}</div><div class="v ${cls || ''}">${val}</div><div class="n">${note || '&nbsp;'}</div></div>`;
+  const list = a=> esc(a.map(r=> r.sku).slice(0,3).join(', ')) + (a.length > 3 ? '\u2026' : '');
+  const t1 = (label, a, fl, warn)=> tile(label, a.length, a.length ? (warn ? 'warn' : 'bad') : 'good', a.length ? list(a) : 'None', fl);
+  let html =
+    '<section class="cpt-top"><div class="cpt-head"><h2>BSR</h2>'+
+      `<span class="sub">Star rating, ratings and Best Sellers Rank on Amazon ${mk}, ${all.length} active listings</span>`+
+      (BS_META.updated ? `<span class="cpt-live"><i></i>Built ${esc(BS_META.updated)} ET</span>` : '')+
+    '</div><div class="cpt-tiles">'+
+      tile('Average star rating', avg === null ? '\u2014' : avg.toFixed(2), avg === null ? '' : avg >= 4.5 ? 'good' : avg >= 4 ? 'warn' : 'bad', `${rated.length} rated listings`, 'all')+
+      tile('Rated 4.0 or higher', `${good.length}<span style="font-size:1rem;color:var(--c-night-mut)"> of ${rated.length}</span>`, good.length === rated.length ? 'good' : 'warn', rated.length ? Math.round(good.length / rated.length * 100) + '%' : '', 'good')+
+      t1('Below 4.0', low, 'low') + t1('Below 3.0 (no deals)', under3, 'under3') +
+      t1('Rating dropped (30 days)', drop, 'drop') + t1('BSR 25% worse than its 30-day average', slow, 'slow', true) +
+      t1('No BSR on Amazon', nobsr, 'nobsr') +
+      tile('New ratings (30 days)', bsInt(gained), 'good', 'All listings together', 'all') +
+      rbTile(all, 'Breaks a BSR rule') +
+    '</div></section>'+
+    rbBanner()+
+    (BS_META.usErr && mk === 'US' ? `<div class="why"><b>US ratings not loaded:</b> ${esc(BS_META.usErr)}.</div>` : '')+
+    (mk === 'CA' && !all.some(r=> r.cur !== null) && all.length ? '<div class="why"><b>No CA ratings yet:</b> they come from CA Watch. Replace CA_Watch.gs with the new version, and they show after its next run.</div>' : '')+
+    '<div class="cpt-tools"><div class="seg" id="bsMk">'+
+      ['US','CA'].map(m=> `<button data-mk="${m}" aria-pressed="${mk === m}">${m === 'US' ? 'Amazon US' : 'Amazon CA'}</button>`).join('')+
+    '</div><div class="seg" id="bsSeg">'+
+      [['all','All ' + all.length], ['any','Needs a look ' + pick.any.length]].map(b=> `<button data-show="${b[0]}" aria-pressed="${BS_F.show === b[0]}">${b[1]}</button>`).join('')+
+    '</div><div class="seg" id="bsTier">'+
+      ['', 'A', 'B', 'C', 'X', 'N'].map(t=> `<button data-t="${t}" aria-pressed="${BS_F.tier === t}">${t ? 'Tier ' + t : 'All tiers'}</button>`).join('')+
+    '</div>'+
+    `<input id="bsQ" type="search" placeholder="Search SKU, ASIN, parent or product" value="${esc(BS_F.q)}" aria-label="Search BSR">`+
+    (BS_F.sort ? '<button id="bsUnsort">Clear sort</button>' : '')+
+    grpBtn(BS_F) + dlBtns() + '<button id="bsTips">Why does this happen?</button><button data-rbopen="1">Rulebook</button>' +
+    `<span class="count">${rows.length} of ${all.length}</span></div>`;
+
+  if(!BS.length){
+    html += BS_ERR ? '<div class="cpt-empty"><b>BSR feed not found yet</b>Run setupBsrWatchDaily in the CPC Keepa Fetcher project. It builds bsr.json from data the project already reads.</div>'
+                   : '<div class="cpt-empty"><b>Loading BSR</b></div>';
+  } else if(!rows.length){
+    html += '<div class="cpt-empty"><b>Nothing here</b>Pick All or clear the search.</div>';
+  } else {
+    const H = (k, label, cls, tip, d)=> `<th data-s="${k}" data-d="${d || 'asc'}" class="${cls || ''}">${label}${tip ? `<span class="qi" tabindex="0" data-tip="${esc(tip)}">?</span>` : ''}${sortArrow(BS_F, k)}</th>`;
+    html += '<table class="cpt-table bb-table lc-table cg-table"><thead><tr>'+
+      H('product', 'Product')+
+      H('stock', mk + ' stock', 'num', 'Available units in FBA, from BigQuery.')+
+      H('cur', 'Star rating', 'b-cpt c', 'The star rating Amazon shows, from Keepa.')+
+      H('d30', '30-day change', 'b-cpt c', 'Star rating now minus 30 days ago.')+
+      H('rev', 'Ratings', 'b-gap c', 'Ratings count Amazon shows. Variation families share one count when reviews are pooled.', 'desc')+
+      H('rev30', 'New (30 days)', 'b-gap c', 'Ratings added in the last 30 days.', 'desc')+
+      H('bsr', 'BSR', 'b-sim c', 'Best Sellers Rank in the main category. Lower is better.')+
+      H('avg30', '30-day average', 'b-sim c', 'Average daily BSR over the last 30 days we have.')+
+      H('trend', 'BSR vs average', 'b-sim c', 'BSR now against its 30-day average. Red means selling slower than usual. Needs 7 days of history.', 'desc')+
+      H('sold', 'Bought past month', 'b-move c', 'Amazon\u2019s \u201cbought in past month\u201d count, when Amazon shows one.', 'desc')+
+      H('rb', 'Rules', 'b-gap c', 'Screened every day against the rulebook.')+
+      '<th class="b-case">Case</th>'+
+      '</tr></thead><tbody>'+
+      grpMap(BS_F, rows, 13, r=> `<tr class="row" tabindex="0" data-bs="${esc(r.asin)}">`+
+        `<td class="prod"><div class="p-name"><span class="dot" style="background:${r.nolive ? '#94a3b8' : r.flags.length ? '#d64545' : '#1f9d55'}"></span>${esc(String(r.name).slice(0, 60))}</div>`+
+          `<div class="p-id"><span>SKU</span>${skuL(r.sku, mk)}${cpy(r.sku)}</div><div class="p-id"><span>ASIN</span>${asinL(r.asin, mk)}${cpy(r.asin)}</div>`+
+          `${r.tier ? `<span class="p-size">Tier ${esc(r.tier)}</span>` : ''}</td>`+
+        stockTd(r, mk)+
+        `<td class="c">${bsStars(r.cur)}</td>`+
+        `<td class="c">${bsDelta(r.d30)}</td>`+
+        `<td class="c">${bsInt(r.rev)}</td>`+
+        `<td class="c">${r.rev30 === null ? '<span class="mut">\u2014</span>' : r.rev30 ? '+' + bsInt(r.rev30) : '<span class="mut">0</span>'}</td>`+
+        `<td class="c">${r.bsr ? '#' + bsInt(r.bsr) : '<span class="lcchip lc-bad">No BSR</span>'}${bsSpark((r.rk || {}).spark)}</td>`+
+        `<td class="c">${r.avg30 ? '#' + bsInt(r.avg30) : '<span class="mut">\u2014</span>'}</td>`+
+        `<td class="c">${r.trend === null ? '<span class="mut">' + (r.days < 7 ? 'needs 7 days' : '\u2014') + '</span>' : bsDelta(-r.trend, '%')}</td>`+
+        `<td class="c">${r.sold === null ? '<span class="mut">\u2014</span>' : bsInt(r.sold) + '+'}</td>`+
+        `<td class="c"><span data-rbrow="${esc(r.asin)}" style="cursor:pointer">${rbChip(r.rb || [])}</span></td>`+
+        `<td>${r.flags.indexOf('nobsr') !== -1 ? `<button class="work strong" data-bscase="${esc(r.asin)}">Draft case</button>` : ''}</td>`+
+      '</tr>', r=> r.flags.length, 'need a look', mk)+
+      '</tbody></table>';
+  }
+  v.innerHTML = stockAlert() + html;
+
+  wireSort(v, BS_F, renderBsr);
+  wireGrpDl(v, BS_F, renderBsr, ()=> dlBs(rows));
+  [...v.querySelectorAll('[data-rbopen]')].forEach(b=> b.onclick = openRulebook);
+  [...v.querySelectorAll('[data-rbrow]')].forEach(b=> b.onclick = e=>{ e.stopPropagation(); const r = all.find(x=> x.asin === b.dataset.rbrow); if(r) rbOpenRow(`${r.sku} ${r.name}`, r.rb || []); });
+  const tp = document.getElementById('bsTips'); if(tp) tp.onclick = bsTips;
+  const setShow = fl=>{ BS_F.show = fl; renderBsr(); };
+  [...v.querySelectorAll('#bsSeg button')].forEach(b=> b.onclick = ()=> setShow(b.dataset.show));
+  [...v.querySelectorAll('#bsMk button')].forEach(b=> b.onclick = ()=>{ BS_F.mk = b.dataset.mk; renderBsr(); });
+  [...v.querySelectorAll('.bbtile')].forEach(t=>{
+    const go = ()=>{ setShow(t.dataset.show); const tb = document.querySelector('#cptView .cg-table, #cptView .cpt-empty'); if(tb && tb.scrollIntoView) tb.scrollIntoView({behavior:'smooth', block:'start'}); };
+    t.onclick = go; t.onkeydown = e=>{ if(e.key === 'Enter') go(); };
+  });
+  [...v.querySelectorAll('#bsTier button')].forEach(b=> b.onclick = ()=>{ BS_F.tier = b.dataset.t; renderBsr(); });
+  const q = document.getElementById('bsQ');
+  if(q) q.oninput = ()=>{ BS_F.q = q.value; const pos = q.selectionStart; renderBsr(); const q2 = document.getElementById('bsQ'); q2.focus(); q2.setSelectionRange(pos, pos); };
+  const un = document.getElementById('bsUnsort'); if(un) un.onclick = ()=>{ BS_F.sort = ''; renderBsr(); };
+  [...v.querySelectorAll('button[data-bscase]')].forEach(b=> b.onclick = e=>{ e.stopPropagation(); const r = all.find(x=> x.asin === b.dataset.bscase); if(r) bsDraft(r); });
+  [...v.querySelectorAll('tr.row[data-bs]')].forEach(tr=>{
+    const open = ()=>{ const r = all.find(x=> x.asin === tr.dataset.bs); if(r) openBs(r); };
+    tr.onclick = open; tr.onkeydown = e=>{ if(e.key === 'Enter') open(); };
+  });
+}
+
+function openBs(r){
+  const d = document.getElementById('detail'), mk = r.mk;
+  const why = {low:'Star rating below 4.0', drop:'Star rating dropped in the last 30 days', nobsr:'No Best Sellers Rank on Amazon', slow:'BSR 25% or more worse than its 30-day average'};
+  d.innerHTML =
+    `<h2>BSR \u00b7 ${esc(mk)}</h2><h3>${skuL(r.sku, mk)} ${esc(r.name)}</h3>`+
+    '<dl>'+
+      `<dt>ASIN</dt><dd class="mono">${asinL(r.asin, mk)}${cpy(r.asin)}</dd>`+
+      (r.par && r.par.pasin ? `<dt>Parent</dt><dd class="mono">${asinL(r.par.pasin, mk)}${cpy(r.par.pasin)} ${esc(r.par.psku || '')}</dd>` : '')+
+      `<dt>Star rating</dt><dd>${bsStars(r.cur)} &nbsp; 30 days ago ${r.r30 === null ? '\u2014' : r.r30.toFixed(1)}, 90 days ago ${r.r90 === null ? '\u2014' : r.r90.toFixed(1)}</dd>`+
+      `<dt>Ratings</dt><dd>${bsInt(r.rev)}${r.rev30 !== null ? ` (+${bsInt(r.rev30)} in 30 days)` : ''}</dd>`+
+      `<dt>BSR</dt><dd>${r.bsr ? '#' + bsInt(r.bsr) : 'None showing'}${r.avg30 ? `, 30-day average #${bsInt(r.avg30)}` : ''}${(r.rk || {}).best90 ? `, best in 90 days #${bsInt(r.rk.best90)}` : ''}</dd>`+
+      `<dt>Bought past month</dt><dd>${r.sold === null ? 'Not shown by Amazon' : bsInt(r.sold) + '+'}</dd>`+
+      `<dt>Needs a look</dt><dd>${r.flags.length ? esc(r.flags.map(k=> why[k]).join(', ')) : 'Nothing'}</dd>`+
+    '</dl>'+
+    (r.flags.indexOf('nobsr') !== -1 ? '<div class="act-row"><button class="work strong" id="bsOne">Draft case</button></div>' : '')+
+    (r.flags.indexOf('low') !== -1 || r.flags.indexOf('drop') !== -1 ? '<div class="why">For low or falling ratings, check the newest negative reviews in the NR Log, and the Variation module in case reviews split from the family.</div>' : '')+
+    rbBlock(r.rb || [])+
+    `<div class="why">Star rating and ratings: Keepa (${mk === 'US' ? 'the nightly rating run' : 'CA Watch'}). BSR and units bought: Keepa\u2019s daily read. As Keepa sees it, not the page itself.</div>`;
+  const one = document.getElementById('bsOne'); if(one) one.onclick = ()=> bsDraft(r);
+  document.getElementById('veil').hidden = false;
+}
+
+/* A listing with no Best Sellers Rank: chat first, then call, then case form */
+function bsDraft(r){
+  const site = r.mk === 'CA' ? 'amazon.ca' : 'amazon.com', brand = r.brand || 'Barnyard Designs';
+  const chat = [
+    `Hi, I'm MJ from ${brand}, the brand owner. Our listing on ${site} has no Best Sellers Rank showing. The details are below.`,
+    `ASIN ${r.asin}, SKU ${r.sku} (${r.name}).${r.par && r.par.pasin ? ` Parent ASIN ${r.par.pasin}.` : ''}`,
+    `What our catalog data shows now (${longToday()}): no Best Sellers Rank on the detail page${(r.rk || {}).best90 ? `. It had a rank of #${bsInt(r.rk.best90)} in the last 90 days` : ''}.`,
+    'Please check why the Best Sellers Rank is not showing, and whether the listing is placed in a ranked category. Please add these notes to a case and send me the case number.'];
+  const ifSay = [
+    ['"A rank only shows after a sale."', r.sold ? `Amazon shows ${bsInt(r.sold)}+ bought in the past month on this listing.` : 'Please check the sales on this ASIN. If it has sales, the rank should show.'],
+    ['"The category is not ranked."', 'Which category is it in now? Our correct category is in the Category module. Please move it to a ranked one, or tell me which one you need.']];
+  const call = ['1. SAY WHO YOU ARE', `"${chat[0].replace("Hi, I'm MJ", 'Hi, my name is MJ Baguhin, calling')}"`, '',
+    '2. GIVE THE DETAILS', ...chat.slice(1, -1).map(m=> `"${m}"`), '', '3. MAKE THE ASK', `"${chat[chat.length - 1]}"`, '',
+    '4. BEFORE YOU HANG UP', 'Ask for the case number and the agent\u2019s name. Write them down.', '',
+    'IF THEY SAY...', ...ifSay.map(x=> `${x[0]}\n   Say: "${x[1]}"`)].join('\n');
+  const body = [`I am requesting help with a listing on the ${r.mk} marketplace for ${brand}, where we are the brand owner.`, '',
+    chat[1], '', chat[2], '', 'Could you please check why the Best Sellers Rank is not showing, and confirm once it is fixed?', '',
+    'Thank you,', 'MJ Baguhin', `${brand}, Cross Path Capital LLC`].join('\n');
+  const clean = t=> noDash(String(t));
+  showDraft(`${r.sku} ${r.name}`, clean(body), {subject: clean(`No Best Sellers Rank: ${r.asin} on ${site}`), rows: [],
+    pitch: {chat: chat.map(clean), call: clean(call), ifSay: ifSay.map(x=> [x[0], clean(x[1])]), cid: '', read: null, body: clean(body), follow: false,
+            subject: clean(`No Best Sellers Rank: ${r.asin} on ${site}`)}});
+}
+
+function dlBs(rows){
+  csvSave('bsr-' + BS_F.mk.toLowerCase(), ['Market','SKU','ASIN','Amazon link','Product','Tier','Stock','Star rating','Rating 30 days ago','Rating 90 days ago',
+    '30-day change','Ratings','New ratings (30 days)','BSR','BSR 30-day average','BSR best (90 days)','BSR vs average %','Bought past month','Needs a look','Rule issues','Parent SKU','Parent ASIN'],
+    rows.map(r=> withParent(r, [r.mk, r.sku, r.asin, `https://www.amazon.${r.mk === 'CA' ? 'ca' : 'com'}/dp/${r.asin}`, r.name, r.tier, stockOf(r, r.mk),
+      r.cur, r.r30, r.r90, r.d30, r.rev, r.rev30, r.bsr, r.avg30, (r.rk || {}).best90, r.trend, r.sold, r.flags.join(', '),
+      (r.rb || []).map(h=> h.live + ' (' + h.rule.id + ')').join('; ')])));
+}
+
+const BS_TIPS = [
+  {t:'Reviews split from the family', sure:'Confirmed by Amazon (Feb 2026 update)',
+   d:'Since Feb 12 2026, reviews stay pooled only for small differences between children (color, pattern, size with the same function, pack size). A child moved out of the pool shows its own, smaller ratings count and can show a different star rating.',
+   do:'If a child\u2019s ratings count dropped suddenly, check the Variation module, Reviews shared column.',
+   src:[['PPC Land', 'https://ppc.land/amazon-splits-variation-reviews-in-bid-to-stop-misleading-ratings/']]},
+  {t:'Below 3 stars: no deals', sure:'Confirmed by Amazon (Deals Guide, Australia version)',
+   d:'Amazon\u2019s Deals Guide requires an average rating of 3 stars for Lightning Deals and Best Deals, where the product has at least 5 reviews or none.',
+   do:'Check listings under 3.0 before planning a deal.',
+   src:[['Amazon Deals Guide', 'https://m.media-amazon.com/images/G/35/sp-marketing-toolkit/Sellerfacingguides/Deals/Deals_Guide.pdf']]}
+];
+function bsTips(){
+  const d = document.getElementById('detail');
+  d.innerHTML = '<h2>Why ratings and BSR change</h2><h3>Checked sources only</h3>'+
+    BS_TIPS.map((x,i)=> `<div class="lcf"><div class="lcf-h"><b>${i + 1}. ${esc(x.t)}</b> <span class="lcchip lc-ok">${esc(x.sure)}</span></div>`+
+      `<div class="lcf-t" style="margin-top:.35rem">${esc(x.d)}</div><div class="lcf-l">What to do</div><div class="lcf-t">${esc(x.do)}</div>`+
+      `<div class="lcf-r" style="color:var(--muted)">Source: ${x.src.map(s=> `<a href="${esc(s[1])}" target="_blank" rel="noopener">${esc(s[0])}</a>`).join(', ')}</div></div>`).join('');
+  document.getElementById('veil').hidden = false;
+}
+
 /* ---------- Catalog overview: every module on one page ----------
    One card per module with its main percentage, the reasons behind it, and
    a button to open the module. Numbers come from the same live data the
@@ -5691,6 +5940,19 @@ function renderOverview(){
   }
     for(let k = n0; k < cards.length; k++) cards[k] = cards[k].replace(/data-go="(\w+)"/, 'data-go="$1" data-mk2go="CA"');
   });
+  // BSR, US and CA: main % = rated 4.0+, strict = 4.0+, not dropping, BSR showing
+  ['US','CA'].forEach(mk=>{
+    if(!BS.length){ if(mk === 'US') cards.push(ovCard('BSR', null, 'BSR feed not loaded', [], 'bsBtn')); return; }
+    const all = bsRows(mk), rated = all.filter(r=> r.cur !== null), good = rated.filter(r=> r.cur >= 4), strict = all.filter(r=> r.ok);
+    const avgR = rated.length ? (rated.reduce((t,r)=> t + r.cur, 0) / rated.length).toFixed(2) : '\u2014';
+    if(!rated.length && !all.some(r=> r.bsr)){ cards.push(ovCard(`BSR ${mk}`, null, 'No ratings or BSR yet for this marketplace', [], 'bsBtn')); return; }
+    cards.push(ovCard(`BSR ${mk}`, ovPct(good.length, rated.length),
+      `Rated 4.0 or higher: ${good.length} of ${rated.length}. Average rating <b>${avgR}</b>` +
+      `<br>4.0+, not dropping and BSR showing: <b>${ovPct(strict.length, all.length)}%</b> (${strict.length} of ${all.length})`,
+      ovCount(all.filter(r=> r.flags.length), r=> r.flags, k=> ({low:'Below 4.0 stars', drop:'Rating dropped in 30 days', nobsr:'No BSR on Amazon', slow:'BSR 25% worse than its 30-day average'})[k] || k)
+        .concat(RB && all.filter(r=> (r.rb || []).length).length ? [['Below 3.0: not eligible for deals', all.filter(r=> (r.rb || []).length).length]] : []), 'bsBtn',
+      '', ovPct(strict.length, all.length)).replace(/data-go="bsBtn"/, `data-go="bsBtn" data-bsmk="${mk}"`));
+  });
   // Variation, US and CA
   ['US','CA'].forEach(mk=>{
     if(!VR.length){ if(mk === 'US') cards.push(ovCard('Variation', null, 'Variation feed not loaded', [], 'vrBtn')); return; }
@@ -5698,7 +5960,7 @@ function renderOverview(){
     const okN = live.reduce((t,r)=> t + (r.ok || 0), 0), chkN = live.reduce((t,r)=> t + (r.checked || 0), 0);
     const inCase = live.filter(r=> r.caseable.length && vrCaseInfo(r)).length;
     cards.push(ovCard(`Variation ${mk}`, ovPct(okN, chkN),
-      `${okN} of ${chkN} family, theme and value checks correct<br>Listings fully correct${mk === 'US' ? ', reviews shared included' : ''}: <b>${ovPct(good.length, live.length)}%</b> (${good.length} of ${live.length})` +
+      `${okN} of ${chkN} ${VR_TV ? 'family, theme and value' : 'family'} checks correct<br>Listings fully correct${mk === 'US' ? ', reviews shared included' : ''}: <b>${ovPct(good.length, live.length)}%</b> (${good.length} of ${live.length})` +
       (inCase ? `<br>Already raised with Amazon (case on file): <b>${inCase}</b>` : ''),
       ovCount(live, r=> r.bad, k=> ({fam:'Not in the right family', theme:'Theme wrong', value:'Value wrong', rev:'Reviews not shared'})[k] || k)
         .concat(RB && live.filter(r=> r.rbA.length).length ? [['Break a variation rule (Master SKU sheet)', live.filter(r=> r.rbA.length).length]] : []), 'vrBtn',
@@ -5716,7 +5978,7 @@ function renderOverview(){
     `<span class="sub">Every module at a glance. Green is 95% or more, amber 80% to 95%, red below 80%.</span></div></section>`+
     health + (RB ? `<div class="why"><b>Daily rule screening:</b> every module is screened every day against the rulebook (Amazon rules and our brand guides), last checked against Amazon ${esc(shortDate(RB.verified))}${rbStale() ? ', <b>due for a re-check</b>' : ''}. <button class="work" data-rbopen="1">Open the rulebook</button></div>` : rbBanner()) +
     `<div class="ov-grid">${cards.join('')}</div>`;
-  [...v.querySelectorAll('button[data-go]')].forEach(b=> b.onclick = ()=>{ MK2 = b.dataset.mk2go === 'CA' ? 'CA' : 'US'; mk2Apply(); document.getElementById(b.dataset.go).click(); });
+  [...v.querySelectorAll('button[data-go]')].forEach(b=> b.onclick = ()=>{ MK2 = b.dataset.mk2go === 'CA' ? 'CA' : 'US'; mk2Apply(); if(b.dataset.bsmk) BS_F.mk = b.dataset.bsmk; document.getElementById(b.dataset.go).click(); });
   [...v.querySelectorAll('[data-rbopen]')].forEach(b=> b.onclick = openRulebook);
 }
 
@@ -5997,13 +6259,13 @@ function render(){
   TARGETS = null;      // re-read from today's data on every redraw
   renderView();
   chrome();
-  if(['cpt','bb','lc','lp','vr','category','catalog'].indexOf(S.view) !== -1) document.getElementById('ov').hidden = true;
+  if(['cpt','bb','lc','lp','vr','bs','category','catalog'].indexOf(S.view) !== -1) document.getElementById('ov').hidden = true;
   else bandHeaders();
 }
 
 function renderView(){
 
-  const isCpt = ['cpt','bb','lc','lp','vr','category','catalog'].indexOf(S.view) !== -1;
+  const isCpt = ['cpt','bb','lc','lp','vr','bs','category','catalog'].indexOf(S.view) !== -1;
   document.getElementById('cptView').hidden  = !isCpt;
   document.getElementById('mainWrap').hidden = isCpt;
   document.getElementById('bar').hidden      = isCpt;
@@ -6015,6 +6277,7 @@ function renderView(){
   if(S.view === 'lc'){ renderLc(); return; }
   if(S.view === 'lp'){ renderLp(); return; }
   if(S.view === 'vr'){ renderVariation(); return; }
+  if(S.view === 'bs'){ renderBsr(); return; }
   if(S.view === 'category'){ renderCategory(); return; }
   if(S.view === 'catalog'){ renderOverview(); return; }
 
@@ -6246,6 +6509,10 @@ function chrome(){
     const nLp = lpRows().filter(r=> !r.set).length;
     document.getElementById('lpBtn').innerHTML = 'List Price' + (nLp ? `<span class="badge">${nLp}</span>` : '');
   }
+  if(BS.length){
+    const nBs = bsRows('US').concat(bsRows('CA')).filter(r=> r.flags.indexOf('low') !== -1 || r.flags.indexOf('nobsr') !== -1).length;
+    document.getElementById('bsBtn').innerHTML = 'BSR' + (nBs ? `<span class="badge">${nBs}</span>` : '');
+  }
   if(VR.length){
     const nVr = vrRows('US').concat(vrRows('CA')).filter(r=> r.bad.length).length;
     document.getElementById('vrBtn').innerHTML = 'Variation' + (nVr ? `<span class="badge">${nVr}</span>` : '');
@@ -6432,6 +6699,7 @@ const bbBtn    = document.getElementById('bbBtn');
 const lcBtn    = document.getElementById('lcBtn');
 const lpBtn    = document.getElementById('lpBtn');
 const vrBtn    = document.getElementById('vrBtn');
+const bsBtn    = document.getElementById('bsBtn');
 
 let PANEL_BEFORE_CPT = null;
 
@@ -6440,7 +6708,7 @@ function go(view){
   // The CPT view has its own controls, so the filter panel folds away while
   // it is open and comes back as it was when you leave.
   // The CPT and Buy Box views both own the screen
-  const own = x=> ['cpt','bb','lc','lp','vr','category','catalog'].indexOf(x) !== -1;
+  const own = x=> ['cpt','bb','lc','lp','vr','bs','category','catalog'].indexOf(x) !== -1;
   if(own(view) && !own(S.view)){
     PANEL_BEFORE_CPT = !document.getElementById('panel').hidden;
     setPanel(false);
@@ -6458,6 +6726,7 @@ function go(view){
   lcBtn.setAttribute('aria-pressed', view === 'lc');
   lpBtn.setAttribute('aria-pressed', view === 'lp');
   vrBtn.setAttribute('aria-pressed', view === 'vr');
+  bsBtn.setAttribute('aria-pressed', view === 'bs');
   catalogBtn.setAttribute('aria-pressed', view === 'catalog');
   render();
 }
@@ -6468,6 +6737,7 @@ bbBtn.onclick    = ()=> go('bb');
 lcBtn.onclick    = ()=> go('lc');
 lpBtn.onclick    = ()=> go('lp');
 vrBtn.onclick    = ()=> go('vr');
+bsBtn.onclick    = ()=> go('bs');
 
 homeBtn.onclick    = ()=> go('checklist');
 catalogBtn.onclick = ()=> go('catalog');

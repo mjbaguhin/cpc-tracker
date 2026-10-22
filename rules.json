@@ -977,6 +977,28 @@
      "https://www.godatafeed.com/disapproval/amazon-8011-invalid-browse-node"
     ]
    ]
+  },
+  {
+   "id": "bsr-deals",
+   "module": [
+    "bsr"
+   ],
+   "kind": "ratingMin",
+   "value": 3.0,
+   "minReviews": 5,
+   "sev": "check",
+   "sure": "Confirmed by Amazon (Deals Guide, Australia version)",
+   "text": "Lightning Deals and Best Deals need an average rating of 3 stars, where the product has at least 5 reviews or none. A listing under 3.0 can't run a deal.",
+   "src": [
+    [
+     "Amazon Deals Guide",
+     "https://m.media-amazon.com/images/G/35/sp-marketing-toolkit/Sellerfacingguides/Deals/Deals_Guide.pdf"
+    ],
+    [
+     "Sell on Amazon: promotions and deals",
+     "https://sell.amazon.com/blog/seller-promotions"
+    ]
+   ]
   }
  ]
 }
