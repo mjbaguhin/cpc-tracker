@@ -1,7 +1,7 @@
 {
  "verified": "2026-10-22",
  "recheckDays": 30,
- "note": "Every rule was checked on the date above against Amazon's own pages or announcements where possible, otherwise against seller news sites (marked Reported). Brand rules come from the Seedboy and Barnyard Designs brand guides in the project.",
+ "note": "Every rule was checked on the date above against Amazon's own pages or announcements where possible, otherwise against seller news sites (marked Reported). Brand rules come from the Seedboy and Barnyard Designs brand guides in the project. Marketplace: rules apply to amazon.com and amazon.ca unless marked; rules not yet confirmed for Canada show as Needs a check on CA.",
  "notScreened": [],
  "rules": [
   {
@@ -22,7 +22,10 @@
      "Amazon Seller Forums announcement",
      "https://sellercentral.amazon.com/seller-forums/discussions/t/145b6d0f-999c-4555-896c-c694bda2e470"
     ]
-   ]
+   ],
+   "caSev": "check",
+   "caSure": "Confirmed for the US; reported for the UK; not yet confirmed for amazon.ca",
+   "caNote": "On amazon.ca this is shown as a check: Amazon announced it for all categories except media, but we found no announcement naming Canada."
   },
   {
    "id": "ih-125",
@@ -42,7 +45,10 @@
      "Amazon Seller Forums announcement",
      "https://sellercentral.amazon.com/seller-forums/discussions/t/145b6d0f-999c-4555-896c-c694bda2e470"
     ]
-   ]
+   ],
+   "caSev": "check",
+   "caSure": "Confirmed for the US; reported for the UK; not yet confirmed for amazon.ca",
+   "caNote": "On amazon.ca this is shown as a check: Amazon announced it for all categories except media, but we found no announcement naming Canada."
   },
   {
    "id": "title-chars",
@@ -863,7 +869,9 @@
      "Amazon: Engage customers with a List Price",
      "https://sell.amazon.com/blog/amazon-list-price"
     ]
-   ]
+   ],
+   "caSev": "check",
+   "caNote": "For amazon.ca we compare with the CA Sale Price in the Master SKU sheet. We found no announcement naming Canada for the April 2026 change."
   },
   {
    "id": "price-external",
@@ -874,7 +882,7 @@
    "kind": "aboveExternal",
    "sev": "amazon",
    "sure": "Confirmed by Amazon",
-   "text": "Offers priced above the Competitive External Price (the lowest price at other retailers) are not eligible for the Featured Offer. We compare with our own Walmart price in the Master SKU sheet, which may differ from the live Walmart page.",
+   "text": "Offers priced above the Competitive External Price (the lowest price at other retailers) are not eligible for the Featured Offer. We compare with our own Walmart price in the Master SKU sheet, which may differ from the live Walmart page. US only: we have no CA price at another retailer to compare.",
    "src": [
     [
      "Amazon Fair Pricing message, quoted on Seller Forums",
@@ -884,6 +892,9 @@
      "Sell on Amazon: pricing strategies",
      "https://sell.amazon.com/blog/amazon-pricing-strategies"
     ]
+   ],
+   "markets": [
+    "US"
    ]
   },
   {
