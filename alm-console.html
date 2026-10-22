@@ -1003,32 +1003,32 @@ async function load(fresh){
 
   // CPT feed is small and independent, so it never holds up the first paint
   grab(CPT_SRC, 'json', fresh)
-    .then(j => { buildCpt(j); if(S.view === 'cpt' || S.view === 'bb' || S.view === 'lp') render(); else chrome(); })
+    .then(j => { buildCpt(j); if(S.view === 'cpt' || S.view === 'bb' || S.view === 'lp') render(); else if(S.view === 'catalog') render(); else chrome(); })
     .catch(e => { CPT_ERR = e.message; if(S.view === 'cpt') render(); });
   grab(SIM_SRC, 'json', fresh)
     .then(j => { SIM = (j && j.items) || []; SIM_META = {updated: j && j.updated || ''};
                  if(S.view === 'cpt') render(); })
     .catch(e => console.warn('similar.json unavailable:', e.message));
   grab(BB_SRC, 'json', fresh)
-    .then(j => { buildBb(j); if(S.view === 'bb') render(); else chrome(); })
+    .then(j => { buildBb(j); if(S.view === 'bb') render(); else if(S.view === 'catalog') render(); else chrome(); })
     .catch(e => { BB_ERR = e.message; if(S.view === 'bb') render(); });
   grab(LC_SRC, 'json', fresh)
-    .then(j => { buildLc(j); if(S.view === 'lc') render(); else chrome(); })
+    .then(j => { buildLc(j); if(S.view === 'lc') render(); else if(S.view === 'catalog') render(); else chrome(); })
     .catch(e => { LC_ERR = e.message; if(S.view === 'lc') render(); });
   grab(CG_SRC, 'json', fresh)
-    .then(j => { buildCg(j); if(S.view === 'category') render(); else chrome(); })
+    .then(j => { buildCg(j); if(S.view === 'category') render(); else if(S.view === 'catalog') render(); else chrome(); })
     .catch(e => { CG_ERR = e.message; if(S.view === 'category') render(); });
   grab(BS_SRC, 'json', fresh)
-    .then(j => { buildBs(j); if(S.view === 'bs' || S.view === 'catalog') render(); else chrome(); })
+    .then(j => { buildBs(j); if(S.view === 'bs' || S.view === 'catalog') render(); else if(S.view === 'catalog') render(); else chrome(); })
     .catch(e => { BS_ERR = e.message; if(S.view === 'bs') render(); });
   grab(CA_SRC, 'json', fresh)
-    .then(j => { buildCa(j); if(['lc','lp','bb','cpt','catalog'].indexOf(S.view) !== -1) render(); else chrome(); })
+    .then(j => { buildCa(j); if(['lc','lp','bb','cpt','catalog'].indexOf(S.view) !== -1) render(); else if(S.view === 'catalog') render(); else chrome(); })
     .catch(e => { CA_ERR = e.message; if(MK2 === 'CA') render(); });
   grab(RB_SRC, 'json', fresh)
     .then(j => { buildRb(j); if(['lc','vr','catalog','cg','category','lp','bb','cpt','bs'].indexOf(S.view) !== -1) render(); })
     .catch(e => { RB_ERR = e.message; if(['lc','vr','catalog','category','lp','bb','cpt'].indexOf(S.view) !== -1) render(); });
   grab(VR_SRC, 'json', fresh)
-    .then(j => { buildVr(j); if(S.view === 'vr') render(); else chrome(); })
+    .then(j => { buildVr(j); if(S.view === 'vr') render(); else if(S.view === 'catalog') render(); else chrome(); })
     .catch(e => { VR_ERR = e.message; if(S.view === 'vr') render(); });
 
   // Ratings arrive after the first paint and trigger a rebuild
@@ -3731,7 +3731,7 @@ function openDetail(row, check){
    not, why. Out of stock comes first, then another seller, then price.
    Stock is shown for the US and Canada side by side. */
 let BB = [], BB_META = {}, BB_ERR = '';
-const BB_F = {show:'all', q:'', sort:'', dir:1, tier:'', group:false};
+const BB_F = {show:'all', q:'', sort:'', dir:1, tier:'', group:true};   // grouped by parent by default (MJ, Oct 22)
 const BB_CLS = {us:['Us', 'bbh-us'], amazon:['Amazon', 'bbh-amz'], other:['Other seller', 'bbh-oth'], none:['No Buy Box', 'bbh-none']};
 const BB_WHY = {
   oos:     {t:'Out of stock in the US', c:'bad'},
@@ -4035,7 +4035,7 @@ function openBb(r){
    highlight, bullets 1 to 5 and description. Generic keywords can't be read
    from Amazon, so they are checked against Amazon's rules instead. */
 let LC = [], LC_META = {}, LC_ERR = '';
-const LC_F = {show:'all', q:'', sort:'', dir:1, tier:'', group:false};
+const LC_F = {show:'all', q:'', sort:'', dir:1, tier:'', group:true};   // grouped by parent by default (MJ, Oct 22)
 /* ---------- Rulebook screening ----------
    rules.json holds Amazon's listing rules and the two brand guides' rules,
    each with its source and the day it was last checked. Every day, when the
@@ -4357,7 +4357,7 @@ function renderLc(){
       tile('Brand guide issues', RB ? rbB.length : '\u2014', !RB ? '' : rbB.length ? 'warn' : 'good', !RB ? 'Rulebook not loaded' : rbB.length ? list(rbB) : 'None')+
     '</div></section>'+
     rbBanner()+
-    mk2Note('The correct copy is the Plytix copy: the Master SKU sheet has no separate CA copy.')+
+    mk2Note('The correct copy is the metric (cm) copy in the Master SKU sheet, which is what amazon.ca uses. A field with no (cm) version uses the US copy.')+
     '<div class="cpt-tools">' + mk2Seg() + '<div class="seg" id="lcSeg">'+
       [['all','All ' + all.length], ['wrong','Wrong copy ' + wrong.length], ['title','Title ' + has('title').length],
        ['bullets','Bullets ' + bul.length], ['desc','Description ' + has('desc').length], ['gk','Keywords ' + gk.length],
@@ -4479,7 +4479,7 @@ function openLc(r){
 /* ---------- List Price module ----------
    One check: is a List Price set on the Amazon listing (the backend
    list_price). From Keepa's daily read in CPT Watch (cpt.json). */
-const LP_F = {show:'all', q:'', sort:'', dir:1, tier:'', group:false};
+const LP_F = {show:'all', q:'', sort:'', dir:1, tier:'', group:true};   // grouped by parent by default (MJ, Oct 22)
 
 function lpRows(){
   return CPT.map(c=>{
@@ -4586,7 +4586,7 @@ function renderLp(){
    live value is from Keepa (and for the US GL, Sam's FBA report). The
    correct value is from the Master SKU sheet. */
 let CG = [], CG_META = {}, CG_ERR = '', CG_VIEW = [];
-const CG_F = {show:'all', q:'', sort:'', dir:1, tier:'', mk:'US', group:false};
+const CG_F = {show:'all', q:'', sort:'', dir:1, tier:'', mk:'US', group:true};   // grouped by parent by default (MJ, Oct 22)
 const CG_COLS = [['gl','GL'], ['pt','Product Type'], ['sd','Search dept'], ['path','Full path'], ['itk','ITK'], ['node','Browse node']];
 const CG_S = {
   match:    ['OK', 'lc-ok', 'Same as the Master SKU sheet'],
@@ -5198,7 +5198,7 @@ function cgTips(){
    Per family: ASINs in the family on Amazon that are not active in the
    Master SKU sheet. */
 let VR = [], VR_FAMS = [], VR_META = {}, VR_ERR = '', VR_VIEW = [];
-const VR_F = {show:'all', q:'', sort:'', dir:1, tier:'', mk:'US', group:false};
+const VR_F = {show:'all', q:'', sort:'', dir:1, tier:'', mk:'US', group:true};   // grouped by parent by default (MJ, Oct 22)
 // Theme and value checks are off for now (MJ, Oct 22). Set VR_TV to true to bring them back.
 const VR_TV = false;
 const VR_COLS = VR_TV ? [['fam','Family'], ['theme','Theme'], ['value','Value'], ['rev','Reviews shared']] : [['fam','Family'], ['rev','Reviews shared']];
@@ -5594,7 +5594,7 @@ function vrTips(){
    from bsr.json (BSR Watch, daily). US ratings: the nightly rating run (Keepa).
    BSR history: the daily Buy Box read (US) and CA Watch (CA), both Keepa. */
 let BS = [], BS_META = {}, BS_ERR = '', BS_VIEW = [];
-const BS_F = {show:'all', q:'', sort:'', dir:1, tier:'', mk:'US', group:false};
+const BS_F = {show:'all', q:'', sort:'', dir:1, tier:'', mk:'US', group:true};   // grouped by parent by default (MJ, Oct 22)
 function buildBs(j){
   BS_ERR = '';
   BS_META = {updated: j && j.updated || '', usFrom: j && j.usRatingsFrom || '', usErr: j && j.usRatingsError || ''};
@@ -5602,7 +5602,55 @@ function buildBs(j){
 }
 const bsNum = v=> v === null || v === undefined || isNaN(v) ? null : Number(v);
 const bsInt = v=> v === null || v === undefined ? '\u2014' : Number(v).toLocaleString('en-US');
+/* MJ, Oct 22: Keepa values across children are often stale or delayed, and the
+   live pages are usually consistent. So a mismatch here is "check the live
+   page", shown in amber, and it never counts against a score or the strict %.
+   A variation family should show one star rating, one ratings count and one BSR.
+   Keepa reads each child at its own time, so small gaps count as the same:
+   ratings count within 3 or 1%, BSR within 50% (#631 and #633 are the same
+   rank read minutes apart; #713 and #10,662 are not). Star rating: exact. */
+const BS_SYNC = {
+  cur: {label:'Star rating', same:(a,b)=> a === b, fmt: v=> v.toFixed(1)},
+  rev: {label:'Ratings count', same:(a,b)=> Math.abs(a - b) <= Math.max(3, Math.max(a,b) * 0.01), fmt: v=> bsInt(v)},
+  bsr: {label:'BSR', same:(a,b)=> Math.max(a,b) / Math.max(1, Math.min(a,b)) <= 1.5, fmt: v=> '#' + bsInt(v)}
+};
+function bsGroups(vals, same){
+  // Biggest group of matching values wins (ties: the higher count or the better rank)
+  const groups = [];
+  vals.forEach(x=>{ const g = groups.find(g=> same(g.v, x.v)); if(g) g.m.push(x); else groups.push({v:x.v, m:[x]}); });
+  groups.sort((a,b)=> b.m.length - a.m.length);
+  return groups;
+}
+function bsFamilySync(rows){
+  const fam = {};
+  rows.forEach(r=>{ const p = r.par && r.par.pasin; if(p) (fam[p] = fam[p] || []).push(r); });
+  Object.keys(fam).forEach(p=>{
+    const kids = fam[p];
+    Object.keys(BS_SYNC).forEach(k=>{
+      const vals = kids.filter(r=> r[k] !== null && r[k] !== undefined && r[k] > 0).map(r=> ({r, v:r[k]}));
+      if(vals.length < 2){ kids.forEach(r=> r.sync[k] = {s:'na'}); return; }
+      const g = bsGroups(vals, BS_SYNC[k].same), main = g[0];
+      kids.forEach(r=>{
+        if(r[k] === null || r[k] === undefined || !(r[k] > 0)){ r.sync[k] = {s:'na'}; return; }
+        const inMain = main.m.some(x=> x.r === r);
+        r.sync[k] = {s: g.length === 1 || inMain ? 'ok' : 'off', main: main.v, mine: r[k], groups: g.length,
+                     kids: vals.length, note: g.length === 1 ? '' : `Most of the family (${main.m.length} of ${vals.length}) shows ${BS_SYNC[k].fmt(main.v)}`};
+      });
+    });
+  });
+  return fam;
+}
 function bsRows(mk){
+  const out = bsRowsRaw(mk);
+  bsFamilySync(out);
+  out.forEach(o=>{
+    const off = Object.keys(BS_SYNC).filter(k=> o.sync[k] && o.sync[k].s === 'off');
+    if(off.length) o.flags.push('sync');
+    o.off = off;      // to check on the live page; o.ok is not changed by it
+  });
+  return out;
+}
+function bsRowsRaw(mk){
   return BS.filter(r=> r.mk === (mk || BS_F.mk)).map(r=>{
     const row = ROWS.find(x=> x.asin === r.asin);
     const rt = r.rt || {}, rk = r.rk || {};
@@ -5613,7 +5661,7 @@ function bsRows(mk){
     // Positive trend = a higher rank number = selling slower than its 30-day average
     const trend = bsr && avg30 && (rk.days || 0) >= 7 ? Math.round((bsr - avg30) / avg30 * 100) : null;
     const o = Object.assign({}, r, {name: (row && row.name) || r.name || r.asin, tier: r.tier || (row && row.tier) || '',
-      cur, r30, r90, d30, d90, rev: bsNum(rt.rev), rev30: bsNum(rt.rev30), bsr, avg30, trend, sold: bsNum(rk.sold), days: rk.days || 0});
+      cur, r30, r90, d30, d90, rev: bsNum(rt.rev), rev30: bsNum(rt.rev30), bsr, avg30, trend, sold: bsNum(rk.sold), days: rk.days || 0, sync: {}});
     o.flags = [];
     if(cur !== null && cur < 4) o.flags.push('low');
     if(d30 !== null && d30 <= -0.1) o.flags.push('drop');
@@ -5625,7 +5673,15 @@ function bsRows(mk){
   });
 }
 const BS_SORT = { product: r=> r.name, stock: r=> stockOf(r, BS_F.mk), cur: r=> r.cur, d30: r=> r.d30, rev: r=> r.rev, rev30: r=> r.rev30,
-  bsr: r=> r.bsr || 1e12, avg30: r=> r.avg30 || 1e12, trend: r=> r.trend, sold: r=> r.sold, rb: r=> -((r.rb || []).length) };
+  bsr: r=> r.bsr || 1e12, avg30: r=> r.avg30 || 1e12, trend: r=> r.trend, sold: r=> r.sold, rb: r=> -((r.rb || []).length),
+  sync: r=> -((r.off || []).length) };
+function bsSyncChip(r){
+  if(!r.par || !r.par.pasin) return '<span class="mut">Standalone</span>';
+  const ks = Object.keys(BS_SYNC), have = ks.filter(k=> r.sync[k] && r.sync[k].s !== 'na');
+  if(!have.length) return '<span class="lcchip lc-gray" data-tip="Not enough siblings with data to compare">\u2014</span>';
+  if(!r.off.length) return `<span class="lcchip lc-ok" data-tip="Same ${have.map(k=> BS_SYNC[k].label.toLowerCase()).join(', ')} as the family">In sync</span>`;
+  return r.off.map(k=> `<span class="lcchip lc-small" data-tip="${esc(r.sync[k].note + '. Keepa shows ' + BS_SYNC[k].fmt(r.sync[k].mine) + ' for this child. Keepa is often delayed between children, so check the live page before acting.')}">Check ${BS_SYNC[k].label}</span>`).join(' ');
+}
 const bsStars = v=> v === null ? '<span class="mut">No rating</span>' :
   `<b style="color:${v >= 4.5 ? 'var(--ok)' : v >= 4 ? 'inherit' : v >= 3 ? 'var(--warn)' : 'var(--bad)'}">${v.toFixed(1)}</b> <span class="mut">\u2605</span>`;
 const bsDelta = (v, unit)=> v === null ? '<span class="mut">\u2014</span>' : v === 0 ? '<span class="mut">no change</span>' :
@@ -5647,7 +5703,21 @@ function renderBsr(){
   const good = all.filter(r=> r.cur !== null && r.cur >= 4), low = f('low'), drop = f('drop'), nobsr = f('nobsr'), slow = f('slow');
   const under3 = rated.filter(r=> r.cur < 3);
   const gained = all.reduce((t,r)=> t + (r.rev30 || 0), 0);
-  const pick = {good, low, drop, nobsr, slow, under3, rb: all.filter(r=> (r.rb || []).length), any: all.filter(r=> r.flags.length)};
+  const offK = k=> all.filter(r=> (r.off || []).indexOf(k) !== -1);
+  const fams = {}; all.forEach(r=>{ if(r.par && r.par.pasin) (fams[r.par.pasin] = fams[r.par.pasin] || []).push(r); });
+  const famIds = Object.keys(fams).filter(p=> fams[p].length > 1);
+  const famOk = k=> famIds.filter(p=> fams[p].every(r=> !r.sync[k] || r.sync[k].s !== 'off') && fams[p].some(r=> r.sync[k] && r.sync[k].s === 'ok')).length;
+  const famHas = k=> famIds.filter(p=> fams[p].some(r=> r.sync[k] && r.sync[k].s !== 'na')).length;
+  const syncTile = (k, fl)=>{ const off = offK(k), ok = famOk(k), n = famHas(k);
+    return tile(`${BS_SYNC[k].label} in sync (Keepa)`, n ? `${ok}<span style="font-size:1rem;color:var(--c-night-mut)"> of ${n}</span>` : '\u2014',
+      !n ? '' : off.length ? 'warn' : 'good', !n ? 'No family with two children that have data' : off.length ? `${off.length} children to check on the live page: ${list(off)}` : 'Every family shows one value', fl); };
+  const totalRev = (()=>{ // pooled families share one count, so count each family once
+    let t = 0; const seen = {};
+    all.forEach(r=>{ if(r.rev === null) return; const k = r.par && r.par.pasin && r.sync.rev && r.sync.rev.s === 'ok' ? 'f' + r.par.pasin : 'a' + r.asin; if(!seen[k]){ seen[k] = 1; t += r.rev; } });
+    return t; })();
+  const ranked = all.filter(r=> r.bsr).map(r=> r.bsr).sort((a,b)=> a - b), medBsr = ranked.length ? ranked[Math.floor(ranked.length / 2)] : null;
+  const pick = {good, low, drop, nobsr, slow, under3, rb: all.filter(r=> (r.rb || []).length), any: all.filter(r=> r.flags.length),
+                synccur: offK('cur'), syncrev: offK('rev'), syncbsr: offK('bsr'), sync: all.filter(r=> r.off && r.off.length)};
 
   let rows = pick[BS_F.show] || all;
   if(BS_F.tier) rows = rows.filter(r=> (r.tier || 'N') === BS_F.tier);
@@ -5671,6 +5741,9 @@ function renderBsr(){
       t1('Rating dropped (30 days)', drop, 'drop') + t1('BSR 25% worse than its 30-day average', slow, 'slow', true) +
       t1('No BSR on Amazon', nobsr, 'nobsr') +
       tile('New ratings (30 days)', bsInt(gained), 'good', 'All listings together', 'all') +
+      tile('Ratings count', bsInt(totalRev), '', 'All listings, each pooled family counted once', 'all') +
+      tile('Median BSR', medBsr ? '#' + bsInt(medBsr) : '\u2014', '', `${ranked.length} listings with a BSR. Best #${ranked.length ? bsInt(ranked[0]) : '\u2014'}`, 'all') +
+      syncTile('cur', 'synccur') + syncTile('rev', 'syncrev') + syncTile('bsr', 'syncbsr') +
       rbTile(all, 'Breaks a BSR rule') +
     '</div></section>'+
     rbBanner()+
@@ -5679,7 +5752,7 @@ function renderBsr(){
     '<div class="cpt-tools"><div class="seg" id="bsMk">'+
       ['US','CA'].map(m=> `<button data-mk="${m}" aria-pressed="${mk === m}">${m === 'US' ? 'Amazon US' : 'Amazon CA'}</button>`).join('')+
     '</div><div class="seg" id="bsSeg">'+
-      [['all','All ' + all.length], ['any','Needs a look ' + pick.any.length]].map(b=> `<button data-show="${b[0]}" aria-pressed="${BS_F.show === b[0]}">${b[1]}</button>`).join('')+
+      [['all','All ' + all.length], ['any','Needs a look ' + pick.any.length], ['sync','Family to check ' + pick.sync.length]].map(b=> `<button data-show="${b[0]}" aria-pressed="${BS_F.show === b[0]}">${b[1]}</button>`).join('')+
     '</div><div class="seg" id="bsTier">'+
       ['', 'A', 'B', 'C', 'X', 'N'].map(t=> `<button data-t="${t}" aria-pressed="${BS_F.tier === t}">${t ? 'Tier ' + t : 'All tiers'}</button>`).join('')+
     '</div>'+
@@ -5706,11 +5779,12 @@ function renderBsr(){
       H('avg30', '30-day average', 'b-sim c', 'Average daily BSR over the last 30 days we have.')+
       H('trend', 'BSR vs average', 'b-sim c', 'BSR now against its 30-day average. Red means selling slower than usual. Needs 7 days of history.', 'desc')+
       H('sold', 'Bought past month', 'b-move c', 'Amazon\u2019s \u201cbought in past month\u201d count, when Amazon shows one.', 'desc')+
+      H('sync', 'Family in sync', 'b-gap c', 'Star rating, ratings count and BSR against the rest of the variation family, as Keepa sees it. Keepa is often delayed between children, so amber means check the live page, not a confirmed problem.')+
       H('rb', 'Rules', 'b-gap c', 'Screened every day against the rulebook.')+
       '<th class="b-case">Case</th>'+
       '</tr></thead><tbody>'+
-      grpMap(BS_F, rows, 13, r=> `<tr class="row" tabindex="0" data-bs="${esc(r.asin)}">`+
-        `<td class="prod"><div class="p-name"><span class="dot" style="background:${r.nolive ? '#94a3b8' : r.flags.length ? '#d64545' : '#1f9d55'}"></span>${esc(String(r.name).slice(0, 60))}</div>`+
+      grpMap(BS_F, rows, 14, r=> `<tr class="row" tabindex="0" data-bs="${esc(r.asin)}">`+
+        `<td class="prod"><div class="p-name"><span class="dot" style="background:${r.nolive ? '#94a3b8' : r.flags.some(f=> f !== 'sync') ? '#d64545' : r.flags.length ? '#d99a00' : '#1f9d55'}"></span>${esc(String(r.name).slice(0, 60))}</div>`+
           `<div class="p-id"><span>SKU</span>${skuL(r.sku, mk)}${cpy(r.sku)}</div><div class="p-id"><span>ASIN</span>${asinL(r.asin, mk)}${cpy(r.asin)}</div>`+
           `${r.tier ? `<span class="p-size">Tier ${esc(r.tier)}</span>` : ''}</td>`+
         stockTd(r, mk)+
@@ -5722,9 +5796,11 @@ function renderBsr(){
         `<td class="c">${r.avg30 ? '#' + bsInt(r.avg30) : '<span class="mut">\u2014</span>'}</td>`+
         `<td class="c">${r.trend === null ? '<span class="mut">' + (r.days < 7 ? 'needs 7 days' : '\u2014') + '</span>' : bsDelta(-r.trend, '%')}</td>`+
         `<td class="c">${r.sold === null ? '<span class="mut">\u2014</span>' : bsInt(r.sold) + '+'}</td>`+
+        `<td class="c">${bsSyncChip(r)}</td>`+
         `<td class="c"><span data-rbrow="${esc(r.asin)}" style="cursor:pointer">${rbChip(r.rb || [])}</span></td>`+
         `<td>${r.flags.indexOf('nobsr') !== -1 ? `<button class="work strong" data-bscase="${esc(r.asin)}">Draft case</button>` : ''}</td>`+
-      '</tr>', r=> r.flags.length, 'need a look', mk)+
+      '</tr>', r=> r.flags.length, 'need a look', mk,
+      p=> (fams[p.pasin] || []).some(r=> r.off && r.off.length) ? `<button class="work" data-bsfam="${esc(p.pasin)}" title="Check the live pages first">Draft case (check live first)</button>` : '')+
       '</tbody></table>';
   }
   v.innerHTML = stockAlert() + html;
@@ -5745,6 +5821,7 @@ function renderBsr(){
   const q = document.getElementById('bsQ');
   if(q) q.oninput = ()=>{ BS_F.q = q.value; const pos = q.selectionStart; renderBsr(); const q2 = document.getElementById('bsQ'); q2.focus(); q2.setSelectionRange(pos, pos); };
   const un = document.getElementById('bsUnsort'); if(un) un.onclick = ()=>{ BS_F.sort = ''; renderBsr(); };
+  [...v.querySelectorAll('button[data-bsfam]')].forEach(b=> b.onclick = e=>{ e.stopPropagation(); bsFamDraft(fams[b.dataset.bsfam] || []); });
   [...v.querySelectorAll('button[data-bscase]')].forEach(b=> b.onclick = e=>{ e.stopPropagation(); const r = all.find(x=> x.asin === b.dataset.bscase); if(r) bsDraft(r); });
   [...v.querySelectorAll('tr.row[data-bs]')].forEach(tr=>{
     const open = ()=>{ const r = all.find(x=> x.asin === tr.dataset.bs); if(r) openBs(r); };
@@ -5754,7 +5831,8 @@ function renderBsr(){
 
 function openBs(r){
   const d = document.getElementById('detail'), mk = r.mk;
-  const why = {low:'Star rating below 4.0', drop:'Star rating dropped in the last 30 days', nobsr:'No Best Sellers Rank on Amazon', slow:'BSR 25% or more worse than its 30-day average'};
+  const why = {low:'Star rating below 4.0', drop:'Star rating dropped in the last 30 days', nobsr:'No Best Sellers Rank on Amazon', slow:'BSR 25% or more worse than its 30-day average', sync:'Keepa shows a different ' + (r.off || []).map(k=> BS_SYNC[k].label.toLowerCase()).join(', ') + ' than the family: check the live page'};
+  const famAll = r.par && r.par.pasin ? bsRows(mk).filter(x=> x.par && x.par.pasin === r.par.pasin) : [];
   d.innerHTML =
     `<h2>BSR \u00b7 ${esc(mk)}</h2><h3>${skuL(r.sku, mk)} ${esc(r.name)}</h3>`+
     '<dl>'+
@@ -5768,9 +5846,16 @@ function openBs(r){
     '</dl>'+
     (r.flags.indexOf('nobsr') !== -1 ? '<div class="act-row"><button class="work strong" id="bsOne">Draft case</button></div>' : '')+
     (r.flags.indexOf('low') !== -1 || r.flags.indexOf('drop') !== -1 ? '<div class="why">For low or falling ratings, check the newest negative reviews in the NR Log, and the Variation module in case reviews split from the family.</div>' : '')+
+    (famAll.length > 1 ? `<div class="lcf-l" style="margin-top:.8rem">Variation family ${esc(r.par.pasin)}${r.par.psku ? ' (' + esc(r.par.psku) + ')' : ''}</div>`+
+      '<table class="cpt-table" style="font-size:.8rem"><thead><tr><th>SKU (live page)</th><th class="c">Star rating</th><th class="c">Ratings</th><th class="c">BSR</th><th class="c">Keepa saw the count change</th></tr></thead><tbody>'+
+      famAll.map(x=> `<tr${x.asin === r.asin ? ' style="font-weight:700"' : ''}><td>${asinL(x.asin, mk)} <span class="mut">${esc(x.sku)}</span></td>`+
+        ['cur','rev','bsr'].map(k=> `<td class="c" style="${x.sync[k] && x.sync[k].s === 'off' ? 'color:var(--warn);font-weight:700' : ''}">${x[k] === null || x[k] === undefined ? '\u2014' : BS_SYNC[k].fmt(x[k])}</td>`).join('')+
+        `<td class="c mut">${(x.rt || {}).revAsOf ? esc(shortDate(new Date(x.rt.revAsOf).toISOString().slice(0,10))) : '\u2014'}</td></tr>`).join('')+
+      '</tbody></table>' + (famAll.some(x=> x.off.length) ? '<div class="why">Keepa is often delayed between children, and the live pages are usually consistent. Open the pages above and check them before you open a case.</div><div class="act-row"><button class="work" id="bsFamOne">Draft case (after checking the live pages)</button></div>' : '') : '')+
     rbBlock(r.rb || [])+
     `<div class="why">Star rating and ratings: Keepa (${mk === 'US' ? 'the nightly rating run' : 'CA Watch'}). BSR and units bought: Keepa\u2019s daily read. As Keepa sees it, not the page itself.</div>`;
   const one = document.getElementById('bsOne'); if(one) one.onclick = ()=> bsDraft(r);
+  const fo = document.getElementById('bsFamOne'); if(fo) fo.onclick = ()=> bsFamDraft(famAll);
   document.getElementById('veil').hidden = false;
 }
 
@@ -5798,11 +5883,50 @@ function bsDraft(r){
             subject: clean(`No Best Sellers Rank: ${r.asin} on ${site}`)}});
 }
 
+/* A family whose children show different ratings, counts or BSR. Review
+   sharing only qualifies for some themes (Feb 2026), so the draft only says the
+   children qualify when the Variation data shows an eligible theme. */
+function bsFamDraft(fam){
+  const off = fam.filter(r=> r.off && r.off.length);
+  if(!off.length) return;
+  const r0 = fam[0], mk = r0.mk, site = mk === 'CA' ? 'amazon.ca' : 'amazon.com', brand = r0.brand || 'Barnyard Designs', p = r0.par || {};
+  const vr = (typeof VR !== 'undefined' ? VR : []).find(x=> x.mk === mk && x.asin === r0.asin);
+  const elig = vr && vr.exp && typeof vrEligible === 'function' ? vrEligible(vr) : null;
+  const theme = vr && vr.exp ? [vr.exp.t1, vr.exp.t2].filter(Boolean).join(' and ') : '';
+  const lab = k=> k === 'bsr' ? 'Best Sellers Rank' : BS_SYNC[k].label.toLowerCase();
+  const what = ks=> ks.map(lab).join(', ').replace(/, ([^,]*)$/, ' and $1');
+  const kinds = [...new Set(off.flatMap(r=> r.off))];
+  const reviewsOff = kinds.some(k=> k === 'cur' || k === 'rev');
+  const lines = off.slice(0, 5).map(r=> `${r.asin} (SKU ${r.sku}): ` + r.off.map(k=> `${lab(k)} ${BS_SYNC[k].fmt(r.sync[k].mine)}, most of the family ${BS_SYNC[k].fmt(r.sync[k].main)}`).join('; '));
+  const chat = [
+    `Hi, I'm MJ from ${brand}, the brand owner. Some children in our variation family on ${site} do not show the same ${what(kinds)} as the rest of the family. The details are below.`,
+    `Parent ASIN ${p.pasin}${p.psku ? ', parent SKU ' + p.psku : ''}${p.pname ? ' (' + p.pname + ')' : ''}.`,
+    `What the live pages show (${longToday()}):\n` + lines.join('\n') + (off.length > 5 ? `\nand ${off.length - 5} more` : ''),
+    ...(reviewsOff ? [elig === true ? `These children are the same product. They differ only by ${theme}. Your review sharing guidelines keep reviews shared for color, pattern, same-function size and pack size variations.`
+                                    : `Please confirm whether these children qualify for review sharing${theme ? ' (they differ by ' + theme + ')' : ''}, and if not, what we need to change.`] : []),
+    `Please check that ${off.length === 1 ? 'this child is' : 'these children are'} linked to the parent correctly${reviewsOff ? ' and that reviews are shared across the family' : ''}${kinds.indexOf('bsr') !== -1 ? ', and why the Best Sellers Rank differs from the rest of the family' : ''}. Please add these notes to a case and send me the case number.`];
+  const ifSay = [
+    ['"Ranks can differ by child."', 'Most of this family shows the same rank, and only these children are far apart. Please check whether they are in a different category or not linked to the parent.'],
+    ...(reviewsOff && elig === true ? [['"Reviews are shared only for the same core product."', `They are the same product. Only the ${theme.toLowerCase()} differs, which your guidelines list as eligible.`]] : [])];
+  const call = ['1. SAY WHO YOU ARE', `"${chat[0].replace("Hi, I'm MJ", 'Hi, my name is MJ Baguhin, calling')}"`, '',
+    '2. GIVE THE DETAILS', ...chat.slice(1, -1).map(m=> '"' + m.replace(/\n/g, '; ') + '"'), '', '3. MAKE THE ASK', `"${chat[chat.length - 1]}"`, '',
+    '4. BEFORE YOU HANG UP', 'Ask for the case number and the agent\u2019s name. Write them down.', '',
+    'IF THEY SAY...', ...ifSay.map(x=> `${x[0]}\n   Say: "${x[1]}"`)].join('\n');
+  const body = ['[CHECK FIRST, then delete this line: open each child\u2019s live page and confirm the values really differ. Keepa is often delayed between children. Remove any child that matches the family on the live page.]', '',
+    `I am requesting help with a variation family on the ${mk} marketplace for ${brand}, where we are the brand owner.`, '',
+    chat[1], '', chat[2], '', ...(reviewsOff ? [chat[3], ''] : []),
+    `Could you please check that these children are linked to the parent correctly${reviewsOff ? ' and that reviews are shared across the family' : ''}, and confirm once it is done?`, '',
+    'Thank you,', 'MJ Baguhin', `${brand}, Cross Path Capital LLC`].join('\n');
+  const clean = t=> noDash(String(t)), subj = clean(`Variation family not in sync: parent ${p.pasin} on ${site}`);
+  showDraft(`Family ${p.pasin}`, clean(body), {subject: subj, rows: [],
+    pitch: {chat: chat.map(clean), call: clean(call), ifSay: ifSay.map(x=> [x[0], clean(x[1])]), cid: '', read: null, body: clean(body), follow: false, subject: subj}});
+}
 function dlBs(rows){
   csvSave('bsr-' + BS_F.mk.toLowerCase(), ['Market','SKU','ASIN','Amazon link','Product','Tier','Stock','Star rating','Rating 30 days ago','Rating 90 days ago',
-    '30-day change','Ratings','New ratings (30 days)','BSR','BSR 30-day average','BSR best (90 days)','BSR vs average %','Bought past month','Needs a look','Rule issues','Parent SKU','Parent ASIN'],
+    '30-day change','Ratings','New ratings (30 days)','BSR','BSR 30-day average','BSR best (90 days)','BSR vs average %','Bought past month','Needs a look','Family out of sync','Rule issues','Parent SKU','Parent ASIN'],
     rows.map(r=> withParent(r, [r.mk, r.sku, r.asin, `https://www.amazon.${r.mk === 'CA' ? 'ca' : 'com'}/dp/${r.asin}`, r.name, r.tier, stockOf(r, r.mk),
       r.cur, r.r30, r.r90, r.d30, r.rev, r.rev30, r.bsr, r.avg30, (r.rk || {}).best90, r.trend, r.sold, r.flags.join(', '),
+      (r.off || []).map(k=> `${BS_SYNC[k].label} ${BS_SYNC[k].fmt(r.sync[k].mine)} (family ${BS_SYNC[k].fmt(r.sync[k].main)})`).join('; '),
       (r.rb || []).map(h=> h.live + ' (' + h.rule.id + ')').join('; ')])));
 }
 
@@ -5833,7 +5957,26 @@ let OV_SCORES = [];
 /* A module that is not working yet is shown as Under construction, with the
    reason, and left out of the overall score and every count. */
 let OV_UC = [];
+const OV_LOADING = 'LOADING';
+function ovFeed(t){
+  // [rows loaded?, load error] per module card
+  const ca = / CA$/.test(t);
+  if(ca && /^(CPT tracker|Buy Box|Listing Copy|List Price)/.test(t)) return [LC_CA !== null, CA_ERR];
+  if(/^(CPT tracker|List Price)/.test(t)) return [CPT_US.length > 0, CPT_ERR];
+  if(/^Buy Box/.test(t)) return [BB_US.length > 0, BB_ERR];
+  if(/^Listing Copy/.test(t)) return [LC_US.length > 0, LC_ERR];
+  if(/^Category/.test(t)) return [CG.length > 0, CG_ERR];
+  if(/^Variation/.test(t)) return [VR.length > 0, VR_ERR];
+  if(/^BSR/.test(t)) return [BS.length > 0, BS_ERR];
+  return [true, ''];
+}
 function ovUnder(t){
+  const fd = ovFeed(t);
+  if(!fd[0] && !fd[1]) return OV_LOADING;
+  if(/^Buy Box US/.test(t) && !fd[0]) return 'buybox.json could not be loaded (' + fd[1] + '). Check the Buy Box Watch run in CPC Keepa Fetcher.';
+  if(/^(CPT tracker|List Price) US/.test(t) && !fd[0]) return 'cpt.json could not be loaded (' + fd[1] + '). Check the CPT Watch run in CPC Keepa Fetcher.';
+  if(/^Listing Copy US/.test(t) && !fd[0]) return 'copy.json could not be loaded (' + fd[1] + ').';
+  if(/^Category/.test(t) && !fd[0]) return 'category.json could not be loaded (' + fd[1] + ').';
   if(/^Variation/.test(t)){
     if(!VR.length) return 'Variation Watch has not run yet, so variation.json is not on GitHub. Run setupVariationWatchDaily in CPC Keepa Fetcher.';
     const mk = / CA$/.test(t) ? 'CA' : 'US';
@@ -5845,12 +5988,20 @@ function ovUnder(t){
   }
   if(/ CA$/.test(t) && /^(CPT tracker|Buy Box|Listing Copy|List Price)/.test(t)){
     if(LC_CA === null) return 'CA Watch has not finished its first run, so ca.json is not on GitHub yet. Run setupCaWatchDaily in CPC Keepa Fetcher.';
+    // The Buy Box score leaves out out-of-stock listings; without CA stock it can't
+    if(/^Buy Box/.test(t) && !(BB_CA || []).some(r=> stockOf(r, 'CA') !== null))
+      return 'The Buy Box data from amazon.ca is live, but there is no CA stock yet, so out-of-stock listings would count as Buy Box losses. It is counted once Sam adds Canada rows to the BigQuery pull. The module page still shows the live Buy Box data.';
     if(/^CPT/.test(t) && !(CPT_CA || []).some(r=> r.cpt !== null)) return 'Keepa has returned no CPT for any amazon.ca listing yet. If it stays empty, Keepa may not supply a CPT for Canada, and this module stays CA-off.';
   }
   return '';
 }
 function ovCard(title, pct, sub, reasons, btnId, extra, strict){
   const why = ovUnder(title) || (pct === null ? 'No data yet for this module.' : '');
+  if(why === OV_LOADING){
+    OV_UC.push(title + ' (loading)');
+    return `<div class="ov-card" style="opacity:.7"><div class="ov-h"><h3>${esc(title)}</h3><button class="work" data-go="${btnId}">Open ${esc(title)} \u2192</button></div>`+
+      `<div class="ov-pct" style="font-size:1.4rem"><span class="mut">Loading\u2026</span></div><div class="ov-sub">The data is still loading. This card fills in by itself.</div></div>`;
+  }
   if(why){
     OV_UC.push(title);
     return `<div class="ov-card" style="opacity:.85"><div class="ov-h"><h3>${esc(title)}</h3><button class="work" data-go="${btnId}">Open ${esc(title)} \u2192</button></div>`+
@@ -5983,7 +6134,7 @@ function renderOverview(){
     cards.push(ovCard(`BSR ${mk}`, ovPct(good.length, rated.length),
       `Rated 4.0 or higher: ${good.length} of ${rated.length}. Average rating <b>${avgR}</b>` +
       `<br>4.0+, not dropping and BSR showing: <b>${ovPct(strict.length, all.length)}%</b> (${strict.length} of ${all.length})`,
-      ovCount(all.filter(r=> r.flags.length), r=> r.flags, k=> ({low:'Below 4.0 stars', drop:'Rating dropped in 30 days', nobsr:'No BSR on Amazon', slow:'BSR 25% worse than its 30-day average'})[k] || k)
+      ovCount(all.filter(r=> r.flags.length), r=> r.flags, k=> ({low:'Below 4.0 stars', drop:'Rating dropped in 30 days', nobsr:'No BSR on Amazon', slow:'BSR 25% worse than its 30-day average', sync:'Family value to check on the live page (Keepa often delayed, not counted)'})[k] || k)
         .concat(RB && all.filter(r=> (r.rb || []).length).length ? [['Below 3.0: not eligible for deals', all.filter(r=> (r.rb || []).length).length]] : []), 'bsBtn',
       '', ovPct(strict.length, all.length)).replace(/data-go="bsBtn"/, `data-go="bsBtn" data-bsmk="${mk}"`));
   });
@@ -6007,7 +6158,7 @@ function renderOverview(){
     `<div class="ov-health"><div><div class="ov-hl">Overall catalog health</div><div class="ov-pct ${hCls}" style="font-size:3rem;margin:0">${hMain}%</div></div>`+
     `<div class="ov-sub" style="max-width:640px">The average of the ${OV_SCORES.length} module scores below (${OV_SCORES.map(x=> esc(x.title) + ' ' + x.main + '%').join(', ')}).`+
     `<br>Strict view, every listing fully correct and counting out of stock: <b>${hStrict}%</b>.` +
-    (OV_UC.length ? `<br><span class="mut">Not counted, under construction: ${OV_UC.map(esc).join(', ')}.</span>` : '') + '</div></div>';
+    (OV_UC.length ? `<br><span class="mut">Not counted yet: ${OV_UC.map(esc).join(', ')}.</span>` : '') + '</div></div>';
   v.innerHTML = stockAlert() +
     '<section class="cpt-top"><div class="cpt-head"><h2>Catalog overview</h2>'+
     `<span class="sub">Every module at a glance. Green is 95% or more, amber 80% to 95%, red below 80%.</span></div></section>`+
