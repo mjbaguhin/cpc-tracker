@@ -907,6 +907,7 @@ const LC_SRC = 'https://raw.githubusercontent.com/mjbaguhin/cpc-tracker/main/cop
 const CG_SRC = 'https://raw.githubusercontent.com/mjbaguhin/cpc-tracker/main/category.json';
 const VR_SRC = 'https://raw.githubusercontent.com/mjbaguhin/cpc-tracker/main/variation.json';
 const RB_SRC = 'https://raw.githubusercontent.com/mjbaguhin/cpc-tracker/main/rules.json';
+const CA_SRC = 'https://raw.githubusercontent.com/mjbaguhin/cpc-tracker/main/ca.json';
 
 // Amazon's case creation entry point
 const CASE_URL = 'https://sellercentral.amazon.com/help/center?redirectSource=HelpHub';
@@ -1015,6 +1016,9 @@ async function load(fresh){
   grab(CG_SRC, 'json', fresh)
     .then(j => { buildCg(j); if(S.view === 'category') render(); else chrome(); })
     .catch(e => { CG_ERR = e.message; if(S.view === 'category') render(); });
+  grab(CA_SRC, 'json', fresh)
+    .then(j => { buildCa(j); if(['lc','lp','bb','cpt','catalog'].indexOf(S.view) !== -1) render(); else chrome(); })
+    .catch(e => { CA_ERR = e.message; if(MK2 === 'CA') render(); });
   grab(RB_SRC, 'json', fresh)
     .then(j => { buildRb(j); if(['lc','vr','catalog','cg','category','lp','bb','cpt'].indexOf(S.view) !== -1) render(); })
     .catch(e => { RB_ERR = e.message; if(['lc','vr','catalog','category','lp','bb','cpt'].indexOf(S.view) !== -1) render(); });
@@ -1810,7 +1814,8 @@ function median(a){
 }
 const CPT_RECENT = 7;   // a move inside this many days is flagged as recent
 
-function buildCpt(j){
+function buildCpt(j){ buildCptRaw(j); CPT_US = CPT; CPT_US_META = CPT_META; mk2Apply(); }
+function buildCptRaw(j){
   CPT_ERR = '';
   CPT_META = {updated: j && j.updated || ''};
   CPT = ((j && j.rows) || []).map(r=>{
@@ -1824,7 +1829,7 @@ function buildCpt(j){
     }
     return {asin:r.asin, sku:r.sku || '', name:r.name || '', cpt:num(r.cpt), bb:num(r.bb),
             kOurs:num(r.ours), kList:num(r.list), cases:r.cases || [], mail:r.mail || null, events:r.events || [],
-            mailCases:r.mailCases || [], latestReply:r.latestReply || null,
+            mailCases:r.mailCases || [], latestReply:r.latestReply || null, caSale:num(r.caSale),
             ours90:num(r.ours90), bb90:num(r.bb90), sold:num(r.sold),
             date:r.d || '', h, moved, from};
   });
@@ -1884,7 +1889,7 @@ function daysSince(d){
 
 function cptRows(){
   return CPT.filter(c=> c.cpt !== null).map(c=>{
-    const ours = c.kOurs !== null ? c.kOurs : ourPrice(c.asin);
+    const ours = c.kOurs !== null ? c.kOurs : (MK2 === 'CA' ? null : ourPrice(c.asin));
     const gap  = ours !== null ? Math.round((ours - c.cpt) * 100) / 100 : null;
     const pct  = gap !== null && c.cpt ? Math.round(gap / c.cpt * 100) : null;
     // Match on SKU first: one ASIN can sit on more than one SKU row (US and CA
@@ -2903,7 +2908,8 @@ function renderCpt(){
     '</section>'+
     rbBanner()+
     (RB ? (()=>{ const n = all.filter(r=> (r.rb || []).some(h=> h.sev === 'amazon')); return `<div class="why"><b>Rule screening:</b> ${n.length ? `${n.length} listing${n.length === 1 ? '' : 's'} break${n.length === 1 ? 's' : ''} an Amazon pricing rule (${esc(n.map(r=> r.sku).slice(0,4).join(', '))}${n.length > 4 ? '\u2026' : ''}). Open a listing to see which.` : 'No listing breaks an Amazon pricing rule.'} <button class="work" data-rbopen="1">Rulebook</button></div>`; })() : '')+
-    '<div class="cpt-tools">'+
+    mk2Note('Case drafts here are written for the US team and amazon.com. Change the marketplace and currency before you send one for Canada.')+
+    '<div class="cpt-tools">' + mk2Seg() +
       '<div class="seg" id="cptSeg">'+
         [['all','All ' + all.length],
          ['need','Needs a case ' + all.filter(r=> r.action === 'open' || r.action === 'follow').length],
@@ -3127,8 +3133,8 @@ function cptRowHtml(r){
         return `<tr class="row act-${r.action}" tabindex="0" data-asin="${esc(r.asin)}">`+
           '<td class="prod">'+
             `<div class="p-name" title="${esc(r.name)}"><span class="dot" style="background:${brandDot}"></span>${esc(cptTitle(r).slice(0,48))}</div>`+
-            `<div class="p-id"><span>SKU</span>${skuL(r.sku)}${cpy(r.sku)}</div>`+
-            `<div class="p-id"><span>ASIN</span>${asinL(r.asin)}${cpy(r.asin)}</div>`+
+            `<div class="p-id"><span>SKU</span>${skuL(r.sku, MK2)}${cpy(r.sku)}</div>`+
+            `<div class="p-id"><span>ASIN</span>${asinL(r.asin, MK2)}${cpy(r.asin)}</div>`+
             (r.size ? `<span class="p-size">${esc(r.size)}</span>` : '')+
             stockTag(r)+
           '</td>'+
@@ -3162,6 +3168,7 @@ function cptRowHtml(r){
 
 function wireCpt(v, all){
   wireSort(v, CPT_F, renderCpt);
+  mk2Wire(v);
   { const cdl = v.querySelector('button[data-dl]'); if(cdl) cdl.onclick = ()=> dlCpt(CPT_SHOWN); }
 
   [...v.querySelectorAll('#cptSeg button')].forEach(b=> b.onclick = ()=>{ CPT_F.show = b.dataset.show; renderCpt(); });
@@ -3466,9 +3473,9 @@ function openCpt(r){
 
   d.innerHTML =
     `<h2>CPT tracker</h2>`+
-    `<h3>${skuL(r.sku)} ${esc(r.name)}</h3>`+
+    `<h3>${skuL(r.sku, MK2)} ${esc(r.name)}</h3>`+
     '<dl>'+
-    `<dt>ASIN</dt><dd class="mono">${asinL(r.asin)}${cpy(r.asin)}</dd>`+
+    `<dt>ASIN</dt><dd class="mono">${asinL(r.asin, MK2)}${cpy(r.asin)}</dd>`+
     `<dt>Our price</dt><dd>${usd(r.ours)}${r.kOurs !== null ? '' : ' <span class="mut">(from ALM data, Keepa had none)</span>'}</dd>`+
     `<dt>CPT today</dt><dd class="${r.gap > 0 ? 'warn' : 'ok'}">${usd(r.cpt)}</dd>`+
     `<dt>Over by</dt><dd>${r.gap === null ? '\u2014' : r.gap > 0 ? usd(r.gap) + ' (' + r.pct + '%)' : 'Our price is at or under the CPT'}</dd>`+
@@ -3724,7 +3731,8 @@ const BB_WHY = {
   unknown: {t:'Reason not clear', c:'warn'}
 };
 
-function buildBb(j){
+function buildBb(j){ buildBbRaw(j); BB_US = BB; BB_US_META = BB_META; mk2Apply(); }
+function buildBbRaw(j){
   BB_ERR = '';
   BB_META = {updated: j && j.updated || '', ourId: j && j.ourSellerId || ''};
   BB = (j && j.rows) || [];
@@ -3754,7 +3762,7 @@ function bbRows(){
     r.shared = r.has && h.cls !== 'us';
     // Why not, most likely cause first
     r.why = r.has ? '' :
-      (r.us === 0 || (ours === null && r.us !== null && r.us <= 0)) ? 'oos' :
+      ((MK2 === 'CA' ? r.ca : r.us) === 0 || (ours === null && (MK2 === 'CA' ? r.ca : r.us) !== null && (MK2 === 'CA' ? r.ca : r.us) <= 0)) ? 'oos' :
       h.cls === 'amazon' ? 'amazon' :
       h.cls === 'other' ? 'seller' :
       r.cptOver ? 'cpt' :
@@ -3774,7 +3782,7 @@ function bbRows(){
 function bbNext(r){
   if(r.has) return r.others.length ? 'Nothing now. Another seller is on this listing, keep an eye on it.' : '';
   return {
-    oos:     r.usIn ? `Restock is on the way (${r.usIn} inbound).` : 'Out of stock in the US. Check the restock plan.',
+    oos:     (MK2 === 'CA' ? r.caIn : r.usIn) ? `Restock is on the way (${MK2 === 'CA' ? r.caIn : r.usIn} inbound).` : `Out of stock in ${MK2 === 'CA' ? 'Canada' : 'the US'}. Check the restock plan.`,
     amazon:  'Check who it is, then flag it to Jack.',
     seller:  'We have no resellers. Check who it is, then flag it to Jack.',
     cpt:     'Open it in the CPT tracker.',
@@ -3854,7 +3862,8 @@ function renderBb(){
       rbTile(all, 'Breaks an Amazon pricing rule')+
     '</div></section>'+
     rbBanner()+
-    '<div class="cpt-tools"><div class="seg" id="bbSeg">'+
+    mk2Note('Out of stock uses CA stock, which needs Canada rows in BigQuery.')+
+    '<div class="cpt-tools">' + mk2Seg() + '<div class="seg" id="bbSeg">'+
       [['all','All ' + all.length], ['no','No Buy Box ' + no.length], ['oos','Out of stock ' + by('oos').length],
        ['seller','Another seller ' + (by('amazon').length + by('seller').length)], ['other','Other reason ' + oth.length],
        ['amz','Other sellers on listing ' + amzOn.length]]
@@ -3892,6 +3901,7 @@ function renderBb(){
   v.innerHTML = html;
 
   wireSort(v, BB_F, renderBb);
+  mk2Wire(v);
   [...v.querySelectorAll('[data-rbopen]')].forEach(b=> b.onclick = openRulebook);
   [...v.querySelectorAll('[data-rbrow]')].forEach(b=> b.onclick = e=>{ e.stopPropagation(); const r = all.find(x=> x.asin === b.dataset.rbrow); if(r) rbOpenRow(`${r.sku} ${r.name}`, r.rb || []); });
   wireGrpDl(v, BB_F, renderBb, ()=> dlBb(rows));
@@ -3920,7 +3930,7 @@ function bbTr(r){
   const whyTxt = r.why === 'seller' ? `${r.holder.name || 'Another seller'} has it` : w ? w.t : '';
   return `<tr class="row" tabindex="0" data-bb="${esc(r.asin)}">`+
     `<td class="prod"><div class="p-name"><span class="dot" style="background:${r.has ? '#1f9d55' : '#d64545'}"></span>${esc(String(r.name).slice(0, 60))}</div>`+
-      `<div class="p-id"><span>SKU</span>${skuL(r.sku)}${cpy(r.sku)}</div><div class="p-id"><span>ASIN</span>${asinL(r.asin)}${cpy(r.asin)}</div>`+
+      `<div class="p-id"><span>SKU</span>${skuL(r.sku, MK2)}${cpy(r.sku)}</div><div class="p-id"><span>ASIN</span>${asinL(r.asin, MK2)}${cpy(r.asin)}</div>`+
       `${r.tier ? `<span class="p-size">Tier ${esc(r.tier)}</span>` : ''}</td>`+
     `<td class="c">${r.has ? '<span class="bbyes">Yes</span>' : '<span class="bbno">No</span>'}</td>`+
     `<td>${r.has ? (r.shared ? `<span class="was" style="white-space:normal;max-width:15rem">Same price as ${esc(r.holder.name || 'another seller')}, we share it</span>` : '') :
@@ -3980,7 +3990,7 @@ function openBb(r){
   const sellers = [{name:'CPC Brands (us)', cls:'us', p90:r.win.d90, p30:r.win.d30}].concat(r.rivals || []);
   d.innerHTML =
     '<h2>Buy Box</h2>'+
-    `<h3>${skuL(r.sku)} ${esc(r.name)}</h3>`+
+    `<h3>${skuL(r.sku, MK2)} ${esc(r.name)}</h3>`+
     '<dl>'+
       `<dt>Buy Box?</dt><dd class="${r.has ? 'ok' : 'warn'}">${r.has ? 'Yes, we have it' + (r.shared ? ' (shared with ' + esc(h.name) + ' at the same price)' : '') : 'No: ' + esc(r.why === 'seller' ? (h.name || 'another seller') + ' has it' : w ? w.t : '')}</dd>`+
       (r.next ? `<dt>Next step</dt><dd>${esc(r.next)}</dd>` : '')+
@@ -4000,8 +4010,8 @@ function openBb(r){
       sellers.filter(s=> s.p90 > 0 || s.cls === 'us').map(s=> `<tr><td><span class="bbh ${(BB_CLS[s.cls] || BB_CLS.other)[1]}">${esc(s.name)}</span></td><td>${Math.round(s.p90 || 0)}%</td><td>${Math.round(s.p30 || 0)}%</td></tr>`).join('')+
     '</tbody></table>'+
     '<div class="act-row">'+
-      `<a class="work" href="https://www.amazon.com/dp/${esc(r.asin)}?aod=1" target="_blank" rel="noopener">See all offers on Amazon</a>`+
-      `<a class="work" href="https://sellercentral.amazon.com/myinventory/inventory?searchTerm=${encodeURIComponent(r.sku)}" target="_blank" rel="noopener">Open in Seller Central</a>`+
+      `<a class="work" href="https://www.amazon.${MK2 === 'CA' ? 'ca' : 'com'}/dp/${esc(r.asin)}?aod=1" target="_blank" rel="noopener">See all offers on Amazon</a>`+
+      `<a class="work" href="https://sellercentral.amazon.${MK2 === 'CA' ? 'ca' : 'com'}/myinventory/inventory?searchTerm=${encodeURIComponent(r.sku)}" target="_blank" rel="noopener">Open in Seller Central</a>`+
     '</div>'+
     '<div class="why">Buy Box from Keepa\u2019s last check, usually a few hours old. Stock from the FBA inventory files.</div>';
   d.insertAdjacentHTML('beforeend', rbBlock(r.rb || []));
@@ -4059,16 +4069,20 @@ function rbTest(rule, text, ctx){
   }
   return '';
 }
-function rbFor(module, brand, name){
+function rbFor(module, brand, name, mk){
   if(!RB) return [];
-  return RB.rules.filter(r=> [].concat(r.module).indexOf(module) !== -1 && (!r.brand || r.brand === brand) && (!r.when || new RegExp(r.when, 'i').test(name || '')));
+  mk = mk || MK2;
+  return RB.rules.filter(r=> [].concat(r.module).indexOf(module) !== -1 && (!r.brand || r.brand === brand) && (!r.when || new RegExp(r.when, 'i').test(name || ''))
+    && (!r.markets || r.markets.indexOf(mk) !== -1))
+    // A rule confirmed for the US but not yet for Canada is a check in CA, not a break
+    .map(r=> mk === 'CA' && r.caSev ? Object.assign({}, r, {sev: r.caSev, text: r.text + ' ' + (r.caNote || ''), sure: r.caSure || r.sure}) : r);
 }
 /* Listing Copy: every field, live and correct. Returns findings. */
 const RB_FIELD = {title:'title', ih:'ih', b1:'bullet', b2:'bullet', b3:'bullet', b4:'bullet', b5:'bullet', gk:'gk', desc:'desc'};
 function rbScreenLc(r){
   const out = [];
   if(!RB || !r.f) return out;
-  const rules = rbFor('lc', r.brand, r.name), f = r.f;
+  const rules = rbFor('lc', r.brand, r.name, MK2), f = r.f;
   Object.keys(RB_FIELD).forEach(k=>{
     const x = f[k]; if(!x) return;
     const live = k === 'gk' || k === 'ih' ? '' : (x.s === 'match' ? (x.c || '') : (x.l || ''));
@@ -4094,7 +4108,7 @@ function rbScreenVr(r, fam){
   const nt = t=> String(t || '').toLowerCase().replace(/[^a-z]/g, '').replace(/name$/, '').replace(/^colour$/, 'color')
     .replace(/^(numberofitems|itempackagequantity|packagequantity|unitcount|itemcount)$/, 'count').replace(/^itemshape$/, 'shape').replace(/^(modelnumber)$/, 'model');
   const mine = [r.exp.t1, r.exp.t2].filter(Boolean);
-  rbFor('vr', r.brand, r.name).forEach(ru=>{
+  rbFor('vr', r.brand, r.name, r.mk).forEach(ru=>{
     if(ru.kind === 'themeShare'){
       const off = mine.filter(t=> ru.value.indexOf(nt(t)) === -1);
       if(off.length) out.push({id: ru.id, sev: ru.sev, field: 'theme', corr: `Theme ${off.join(' + ')}`, rule: ru});
@@ -4120,11 +4134,11 @@ function rbWalmart(asin){ const c = (typeof LC !== 'undefined' ? LC : []).find(x
 function rbScreenRow(module, r){
   const out = [];
   if(!RB || !r) return out;
-  rbFor(module, r.brand, r.name).forEach(ru=>{
+  rbFor(module, r.brand, r.name, module === 'cg' ? r.mk : MK2).forEach(ru=>{
     let msg = '', field = 'price';
     if(ru.kind === 'listValidated' && r.live !== null && r.live !== undefined){
-      const wm = rbWalmart(r.asin), top = Math.max(r.ours || 0, wm || 0);
-      if(top && r.live > top + 0.01) msg = `List Price ${rbUsd(r.live)} is above our Amazon price ${rbUsd(r.ours)}${wm ? ' and our Walmart price ' + rbUsd(wm) : ''}. Check customers paid ${rbUsd(r.live)} recently, or lower it.`;
+      const ca = MK2 === 'CA', wm = ca ? (r.caSale || null) : rbWalmart(r.asin), top = Math.max(r.ours || 0, wm || 0);
+      if(top && r.live > top + 0.01) msg = `List Price ${rbUsd(r.live)} is above our Amazon price ${rbUsd(r.ours)}${wm ? (ca ? ' and our CA Sale Price ' : ' and our Walmart price ') + rbUsd(wm) : ''}. Check customers paid ${rbUsd(r.live)} recently, or lower it.`;
     }
     if(ru.kind === 'aboveExternal'){
       const wm = rbWalmart(r.asin);
@@ -4226,7 +4240,42 @@ const LC_BAD = ['small', 'wrong', 'missing', 'rule'];
 const ST_RANK = {wrong:0, missing:1, rule:1, small:2, leaf:2, unknown:3, cantread:3, hidden:4, blank:4, noplytix:4, nodata:5, nomaster:6, none:6, rulesok:7, match:7};
 const stRank = x=> x ? (x.rule && x.s !== 'rule' && x.s !== 'rulesok' ? 1 : (ST_RANK[x.s] !== undefined ? ST_RANK[x.s] : 5)) : 9;
 
-function buildLc(j){ LC_ERR = ''; LC_META = {updated: j && j.updated || ''}; LC = (j && j.rows) || []; }
+function buildLc(j){ buildLcRaw(j); LC_US = LC; LC_US_META = LC_META; mk2Apply(); }
+function buildLcRaw(j){ LC_ERR = ''; LC_META = {updated: j && j.updated || ''}; LC = (j && j.rows) || []; }
+/* ---------- Amazon US / CA for Listing Copy, List Price, Buy Box and CPT ----------
+   The US feeds and ca.json (CA Watch) have the same shapes, so the switch only
+   swaps which set the modules read. Category and Variation keep their own switch. */
+let MK2 = 'US', CA_ERR = '', CA_META = {};
+let LC_US = [], LC_US_META = {}, BB_US = [], BB_US_META = {}, CPT_US = [], CPT_US_META = {};
+let LC_CA = null, LC_CA_META = {}, BB_CA = null, BB_CA_META = {}, CPT_CA = null, CPT_CA_META = {};
+function buildCa(j){
+  CA_ERR = ''; CA_META = {updated: j && j.updated || '', ourId: j && j.ourSellerId || ''};
+  const keep = {LC, LC_META, BB, BB_META, CPT, CPT_META};
+  buildCptRaw({updated: CA_META.updated, rows: (j && j.cpt) || []}); CPT_CA = CPT; CPT_CA_META = CPT_META;
+  buildBbRaw({updated: CA_META.updated, ourSellerId: CA_META.ourId, rows: (j && j.bb) || []}); BB_CA = BB; BB_CA_META = BB_META;
+  buildLcRaw({updated: CA_META.updated, rows: (j && j.copy) || []}); LC_CA = LC; LC_CA_META = LC_META;
+  LC = keep.LC; LC_META = keep.LC_META; BB = keep.BB; BB_META = keep.BB_META; CPT = keep.CPT; CPT_META = keep.CPT_META;
+  mk2Apply();
+}
+function mk2Apply(){
+  const ca = MK2 === 'CA';
+  LC = ca ? (LC_CA || []) : LC_US; LC_META = ca ? LC_CA_META : LC_US_META;
+  BB = ca ? (BB_CA || []) : BB_US; BB_META = ca ? BB_CA_META : BB_US_META;
+  CPT = ca ? (CPT_CA || []) : CPT_US; CPT_META = ca ? CPT_CA_META : CPT_US_META;
+}
+function setMk2(mk){ MK2 = mk === 'CA' ? 'CA' : 'US'; mk2Apply(); render(); }
+// Run something with the other marketplace's data, then put the view back
+function withMk2(mk, fn){ const was = MK2; MK2 = mk; mk2Apply(); try { return fn(); } finally { MK2 = was; mk2Apply(); } }
+function mk2Seg(){
+  const n = mk=> withMk2(mk, ()=> 0);
+  return '<div class="seg mk2seg">' + ['US','CA'].map(m=> `<button data-mk2="${m}" aria-pressed="${MK2 === m}">${m === 'US' ? 'Amazon US' : 'Amazon CA'}</button>`).join('') + '</div>';
+}
+function mk2Wire(v){ [...v.querySelectorAll('button[data-mk2]')].forEach(b=> b.onclick = ()=> setMk2(b.dataset.mk2)); }
+function mk2Note(what){
+  if(MK2 !== 'CA') return '';
+  if(LC_CA === null) return `<div class="why"><b>Amazon CA:</b> ${CA_ERR ? 'ca.json not found. Run setupCaWatchDaily in the CPC Keepa Fetcher project.' : 'loading the Canada data.'}</div>`;
+  return `<div class="why"><b>Amazon CA</b>, read from amazon.ca ${CA_META.updated ? esc(CA_META.updated) + ' ET' : ''}. Prices are in CAD.${what ? ' ' + what : ''}</div>`;
+}
 
 function lcRows(){
   return LC.map(c=>{
@@ -4248,7 +4297,7 @@ function lcChip(x){
   return `<span class="lcchip ${d[1]}" data-tip="${esc(tip)}">${d[0]}</span>`;
 }
 
-const LC_SORT = { product: r=> r.name, stock: r=> stockOf(r, 'US'), pct: r=> r.pct, bad: r=> r.bad.length, since: r=> r.since || '',
+const LC_SORT = { product: r=> r.name, stock: r=> stockOf(r, MK2), pct: r=> r.pct, bad: r=> r.bad.length, since: r=> r.since || '',
   rb: r=> -(r.rbA.length * 100 + r.rbB.length * 10 + r.rb.length) };
 LC_COLS.forEach(c=> LC_SORT['f_' + c[0]] = r=> r.nolive ? 9 : stRank((r.f || {})[c[0]]));
 
@@ -4280,7 +4329,7 @@ function renderLc(){
   const fresh = LC_META.updated && LC_META.updated.slice(0,10) >= new Date(Date.now() - 2*86400000).toISOString().slice(0,10);
   let html =
     '<section class="cpt-top"><div class="cpt-head"><h2>Listing Copy</h2>'+
-      `<span class="sub">Amazon US vs Plytix, ${all.length} active ASINs</span>`+
+      `<span class="sub">Amazon ${MK2} vs Plytix, ${all.length} active ASINs</span>`+
       (LC_META.updated ? `<span class="cpt-live${fresh ? '' : ' stale'}"><i></i>Checked ${esc(LC_META.updated)} ET</span>` : '')+
     '</div><div class="cpt-tiles">'+
       tile('Correct copy %', pct + '%', pct >= 98 ? 'good' : pct >= 90 ? 'warn' : 'bad', `${ok} of ${checked} fields match Plytix`)+
@@ -4295,7 +4344,8 @@ function renderLc(){
       tile('Brand guide issues', RB ? rbB.length : '\u2014', !RB ? '' : rbB.length ? 'warn' : 'good', !RB ? 'Rulebook not loaded' : rbB.length ? list(rbB) : 'None')+
     '</div></section>'+
     rbBanner()+
-    '<div class="cpt-tools"><div class="seg" id="lcSeg">'+
+    mk2Note('The correct copy is the Plytix copy: the Master SKU sheet has no separate CA copy.')+
+    '<div class="cpt-tools">' + mk2Seg() + '<div class="seg" id="lcSeg">'+
       [['all','All ' + all.length], ['wrong','Wrong copy ' + wrong.length], ['title','Title ' + has('title').length],
        ['bullets','Bullets ' + bul.length], ['desc','Description ' + has('desc').length], ['gk','Keywords ' + gk.length],
        ['blank','Blank in Plytix ' + blank.length], ['rba','Amazon rules ' + rbA.length], ['rbb','Brand guide ' + rbB.length]]
@@ -4326,9 +4376,9 @@ function renderLc(){
       '</tr></thead><tbody>'+
       grpMap(LC_F, rows, 14, r=> `<tr class="row" tabindex="0" data-lc="${esc(r.asin)}">`+
         `<td class="prod"><div class="p-name"><span class="dot" style="background:${r.nolive ? '#94a3b8' : r.allOk ? '#1f9d55' : '#d64545'}"></span>${esc(String(r.name).slice(0, 60))}</div>`+
-          `<div class="p-id"><span>SKU</span>${skuL(r.sku)}${cpy(r.sku)}</div><div class="p-id"><span>ASIN</span>${asinL(r.asin)}${cpy(r.asin)}</div>`+
+          `<div class="p-id"><span>SKU</span>${skuL(r.sku, MK2)}${cpy(r.sku)}</div><div class="p-id"><span>ASIN</span>${asinL(r.asin, MK2)}${cpy(r.asin)}</div>`+
           `${r.tier ? `<span class="p-size">Tier ${esc(r.tier)}</span>` : ''}</td>`+
-        stockTd(r, 'US')+
+        stockTd(r, MK2)+
         `<td class="c">${r.nolive ? '<span class="mut">Not checked yet</span>' : r.pct === null ? '<span class="mut">\u2014</span>' : bbBar(r.pct)}</td>`+
         `<td class="c">${rbChip(r.rb)}</td>`+
         LC_COLS.map(c=> `<td class="c">${r.nolive ? '' : lcChip(r.f[c[0]])}</td>`).join('')+
@@ -4339,6 +4389,7 @@ function renderLc(){
   v.innerHTML = html;
 
   wireSort(v, LC_F, renderLc);
+  mk2Wire(v);
   wireGrpDl(v, LC_F, renderLc, ()=> dlLc(rows));
   [...v.querySelectorAll('[data-rbopen]')].forEach(b=> b.onclick = openRulebook);
   const setShow = f=>{ LC_F.show = f; renderLc(); };
@@ -4389,9 +4440,9 @@ function openLc(r){
   };
   d.innerHTML =
     '<h2>Listing Copy</h2>'+
-    `<h3>${skuL(r.sku)} ${esc(r.name)}</h3>`+
+    `<h3>${skuL(r.sku, MK2)} ${esc(r.name)}</h3>`+
     '<dl>'+
-      `<dt>ASIN</dt><dd class="mono">${asinL(r.asin)}${cpy(r.asin)}</dd>`+
+      `<dt>ASIN</dt><dd class="mono">${asinL(r.asin, MK2)}${cpy(r.asin)}</dd>`+
       `<dt>Correct %</dt><dd class="${r.allOk ? 'ok' : 'warn'}">${r.pct === null ? '\u2014' : r.pct + '%'}${r.checked ? ` (${r.ok} of ${r.checked} fields)` : ''}</dd>`+
       `<dt>To fix</dt><dd>${r.bad.length ? esc(r.bad.map(k=> LC_COLS.find(c=> c[0] === k)[1]).join(', ')) : 'Nothing'}</dd>`+
       `<dt>Last change</dt><dd>${r.since ? esc(shortDate(r.since)) : 'No change seen'}${r.liveChecked ? ', checked ' + esc(shortDate(r.liveChecked)) : ''}</dd>`+
@@ -4400,8 +4451,8 @@ function openLc(r){
     rbBlock(r.rb)+
     LC_COLS.map(block).join('')+
     '<div class="act-row">'+
-      `<a class="work" href="https://www.amazon.com/dp/${esc(r.asin)}" target="_blank" rel="noopener">Open on Amazon</a>`+
-      `<a class="work" href="https://sellercentral.amazon.com/myinventory/inventory?searchTerm=${encodeURIComponent(r.sku)}" target="_blank" rel="noopener">Open in Seller Central</a>`+
+      `<a class="work" href="https://www.amazon.${MK2 === 'CA' ? 'ca' : 'com'}/dp/${esc(r.asin)}" target="_blank" rel="noopener">Open on Amazon</a>`+
+      `<a class="work" href="https://sellercentral.amazon.${MK2 === 'CA' ? 'ca' : 'com'}/myinventory/inventory?searchTerm=${encodeURIComponent(r.sku)}" target="_blank" rel="noopener">Open in Seller Central</a>`+
     '</div>'+
     '<div class="why">Live copy from Keepa\u2019s last check. Correct copy from Plytix. Generic keywords are backend only, so they are checked against Amazon\u2019s rules, not compared.</div>';
   [...d.querySelectorAll('button[data-copy]')].forEach(b=> b.onclick = ()=>{
@@ -4423,11 +4474,11 @@ function lpRows(){
     const live = c.kList !== undefined && c.kList !== null ? c.kList : null;
     return {asin:c.asin, sku:c.sku || (row && row.sku) || '', name:(row && row.name) || c.name || c.asin,
       tier:(row && row.tier) || '', live, ours:c.kOurs !== undefined ? c.kOurs : null, set: live !== null, date:c.date || '',
-      brand:(row && row.brand) || ''};
+      brand:(row && row.brand) || '', caSale: c.caSale};
   }).map(r=> Object.assign(r, {rb: rbScreenRow('lp', r)}));
 }
 
-const LP_SORT = {product: r=> r.name, stock: r=> stockOf(r, 'US'), set: r=> r.set ? 1 : 0, live: r=> r.live, ours: r=> r.ours, todo: r=> r.set ? 1 : 0, rb: r=> -((r.rb || []).length)};
+const LP_SORT = {product: r=> r.name, stock: r=> stockOf(r, MK2), set: r=> r.set ? 1 : 0, live: r=> r.live, ours: r=> r.ours, todo: r=> r.set ? 1 : 0, rb: r=> -((r.rb || []).length)};
 
 function renderLp(){
   document.getElementById('msg').hidden = true;
@@ -4447,7 +4498,7 @@ function renderLp(){
   const list = a=> esc(a.map(r=> r.sku).slice(0,3).join(', ')) + (a.length > 3 ? '\u2026' : '');
   let html =
     '<section class="cpt-top"><div class="cpt-head"><h2>List Price</h2>'+
-      `<span class="sub">Is a List Price set on Amazon US, ${all.length} active ASINs</span>`+
+      `<span class="sub">Is a List Price set on Amazon ${MK2}, ${all.length} active ASINs</span>`+
       (CPT_META.updated ? `<span class="cpt-live"><i></i>Checked ${esc(CPT_META.updated)} ET</span>` : '')+
     '</div><div class="cpt-tiles">'+
       tile('List Price set %', pct + '%', pct >= 100 ? 'good' : pct >= 95 ? 'warn' : 'bad', `${set.length} of ${all.length} listings`)+
@@ -4456,7 +4507,8 @@ function renderLp(){
       rbTile(all, 'Breaks a List Price rule')+
     '</div></section>'+
     rbBanner()+
-    '<div class="cpt-tools"><div class="seg" id="lpSeg">'+
+    mk2Note('The rule check compares the List Price with our CA price and the CA Sale Price in the Master SKU sheet.')+
+    '<div class="cpt-tools">' + mk2Seg() + '<div class="seg" id="lpSeg">'+
       [['all','All ' + all.length], ['empty','Empty ' + empty.length], ['set','Set ' + set.length]]
         .map(b=> `<button data-show="${b[0]}" aria-pressed="${LP_F.show === b[0]}">${b[1]}</button>`).join('')+
     '</div><div class="seg" id="lpTier">'+
@@ -4485,8 +4537,8 @@ function renderLp(){
       '</tr></thead><tbody>'+
       grpMap(LP_F, rows, 7, r=> `<tr class="row">`+
         `<td class="prod"><div class="p-name"><span class="dot" style="background:${r.set ? '#1f9d55' : '#d64545'}"></span>${esc(String(r.name).slice(0, 60))}</div>`+
-          `<div class="p-id"><span>SKU</span>${skuL(r.sku)}${cpy(r.sku)}</div><div class="p-id"><span>ASIN</span>${asinL(r.asin)}${cpy(r.asin)}</div>${r.tier ? `<span class="p-size">Tier ${esc(r.tier)}</span>` : ''}</td>`+
-        stockTd(r, 'US')+
+          `<div class="p-id"><span>SKU</span>${skuL(r.sku, MK2)}${cpy(r.sku)}</div><div class="p-id"><span>ASIN</span>${asinL(r.asin, MK2)}${cpy(r.asin)}</div>${r.tier ? `<span class="p-size">Tier ${esc(r.tier)}</span>` : ''}</td>`+
+        stockTd(r, MK2)+
         `<td class="c">${r.set ? '<span class="bbyes">Yes</span>' : '<span class="bbno">Empty</span>'}</td>`+
         `<td class="c">${r.set ? '<b>' + usd(r.live) + '</b>' : '<span class="mut">none</span>'}</td>`+
         `<td class="c">${usd(r.ours)}</td>`+
@@ -4498,6 +4550,7 @@ function renderLp(){
   v.innerHTML = html;
 
   wireSort(v, LP_F, renderLp);
+  mk2Wire(v);
   [...v.querySelectorAll('[data-rbopen]')].forEach(b=> b.onclick = openRulebook);
   [...v.querySelectorAll('[data-rbrow]')].forEach(b=> b.onclick = e=>{ e.stopPropagation(); const r = all.find(x=> x.asin === b.dataset.rbrow); if(r) rbOpenRow(`${r.sku} ${r.name}`, r.rb || []); });
   wireGrpDl(v, LP_F, renderLp, ()=> dlLp(rows));
@@ -5005,7 +5058,7 @@ function dlLc(rows){
   head.push('Amazon rule issues', 'Brand guide issues', 'Amazon guidance');
   const rbTxt = (r, sev)=> (r.rb || []).filter(h=> h.sev === sev).map(h=> `${RB_FNAME[h.field] || h.field}: ${h.live || h.corr} (${h.rule.id})`).join('; ');
   csvSave('listing-copy', head.concat(['Parent SKU','Parent ASIN']), rows.map(r=>{
-    const cells = [r.sku, r.asin, r.name, r.tier, stockOf(r, 'US'), r.pct];
+    const cells = [r.sku, r.asin, r.name, r.tier, stockOf(r, MK2), r.pct];
     LC_COLS.forEach(c=>{ const x = (r.f || {})[c[0]]; cells.push(x ? (LC_S[x.s] || [x.s])[0] : '', lcVal(x, 'c'), c[0] === 'gk' ? '(backend, not visible)' : lcVal(x, 'l')); });
     cells.push(rbTxt(r, 'amazon'), rbTxt(r, 'brand'), rbTxt(r, 'guide'));
     return withParent(r, cells);
@@ -5013,7 +5066,7 @@ function dlLc(rows){
 }
 function dlLp(rows){
   csvSave('list-price', ['SKU','ASIN','Product','Tier','US stock','List Price set?','List Price on Amazon','Our price now','Rule issues','Parent SKU','Parent ASIN'],
-    rows.map(r=> withParent(r, [r.sku, r.asin, r.name, r.tier, stockOf(r, 'US'), r.set ? 'Yes' : 'Empty', r.live, r.ours, (r.rb || []).map(h=> h.live + ' (' + h.rule.id + ')').join('; ')])));
+    rows.map(r=> withParent(r, [r.sku, r.asin, r.name, r.tier, stockOf(r, MK2), r.set ? 'Yes' : 'Empty', r.live, r.ours, (r.rb || []).map(h=> h.live + ' (' + h.rule.id + ')').join('; ')])));
 }
 function cgCells(r){
   const cells = [r.mk, r.sku, r.asin, `https://www.amazon.${r.mk === 'CA' ? 'ca' : 'com'}/dp/${r.asin}`, r.name, r.tier, stockOf(r, r.mk), r.pct];
@@ -5551,46 +5604,93 @@ function renderOverview(){
         .concat(RB && live.filter(r=> (r.rb || []).some(h=> h.sev === 'amazon')).length ? [['Break an Amazon category rule', live.filter(r=> (r.rb || []).some(h=> h.sev === 'amazon')).length]] : []), 'quickCat',
       mk === 'US' ? '<div class="ov-note">GL shows Can\u2019t check until BigQuery has product-group.</div>' : '', ovPct(good.length, live.length)));
   });
+  withMk2('US', ()=>{
   // CPT tracker
   if(typeof CPT !== 'undefined' && CPT.length){
     const rows = cptRows(), fine = rows.filter(r=> r.action === 'none'), open = rows.filter(r=> r.action === 'open');
     const follow = rows.filter(r=> r.action === 'follow').length;
-    cards.push(ovCard('CPT tracker', ovPct(rows.length - open.length, rows.length),
+    cards.push(ovCard('CPT tracker US', ovPct(rows.length - open.length, rows.length),
       `${rows.length - open.length} of ${rows.length} listings need no new case` +
       `<br>No action at all: <b>${ovPct(fine.length, rows.length)}%</b> (${fine.length} of ${rows.length})` +
       (follow ? `<br>Cases already open with Amazon, being followed up: <b>${follow}</b>` : ''),
       ovCount(rows.filter(r=> r.action !== 'none'), r=> r.action, k=> (ACTIONS[k] || {}).group || k)
         .concat(RB && rows.filter(r=> (r.rb || []).some(h=> h.sev === 'amazon')).length ? [['Break an Amazon pricing rule', rows.filter(r=> (r.rb || []).some(h=> h.sev === 'amazon')).length]] : []), 'cptBtn', '', ovPct(fine.length, rows.length)));
-  } else cards.push(ovCard('CPT tracker', null, 'CPT feed not loaded', [], 'cptBtn'));
+  } else cards.push(ovCard('CPT tracker US', null, 'CPT feed not loaded', [], 'cptBtn'));
   // Buy Box
   if(typeof BB !== 'undefined' && BB.length){
     // Out of stock is a restock matter, not a listing problem, so the main
     // number counts in-stock listings; the all-listings number stays visible
     const rows = bbRows(), has = rows.filter(r=> r.has), oos = rows.filter(r=> !r.has && r.why === 'oos');
     const inStock = rows.length - oos.length;
-    cards.push(ovCard('Buy Box', ovPct(has.length, inStock),
+    cards.push(ovCard('Buy Box US', ovPct(has.length, inStock),
       `${has.length} of ${inStock} in-stock listings have the Buy Box<br>All listings, counting out of stock: <b>${ovPct(has.length, rows.length)}%</b> (${has.length} of ${rows.length})`,
       ovCount(rows.filter(r=> !r.has), r=> r.why || 'unknown', k=> k === 'oos' ? 'Out of stock (restock, not a listing problem)' : (BB_WHY[k] || {t:k}).t)
         .concat(RB && rows.filter(r=> (r.rb || []).some(h=> h.sev === 'amazon')).length ? [['Break an Amazon pricing rule', rows.filter(r=> (r.rb || []).some(h=> h.sev === 'amazon')).length]] : []), 'bbBtn', '', ovPct(has.length, rows.length)));
-  } else cards.push(ovCard('Buy Box', null, 'Buy Box feed not loaded', [], 'bbBtn'));
+  } else cards.push(ovCard('Buy Box US', null, 'Buy Box feed not loaded', [], 'bbBtn'));
   // Listing Copy
   if(typeof LC !== 'undefined' && LC.length){
     const rows = lcRows().filter(r=> !r.nolive), ok = rows.filter(r=> r.allOk);
     const avg = rows.length ? Math.round(rows.reduce((t,r)=> t + (r.pct || 0), 0) / rows.length * 10) / 10 : null;
     const rbA = rows.filter(r=> r.rbA.length), rbB = rows.filter(r=> r.rbB.length), strictOk = ok.filter(r=> !r.rbA.length);
-    cards.push(ovCard('Listing Copy', avg, `Average correct copy across ${rows.length} listings (title, bullets, description)` +
+    cards.push(ovCard('Listing Copy US', avg, `Average correct copy across ${rows.length} listings (title, bullets, description)` +
       `<br>Listings with every field correct and no Amazon rule broken: <b>${ovPct(strictOk.length, rows.length)}%</b> (${strictOk.length} of ${rows.length})`,
       ovCount(rows, r=> r.bad, k=> (LC_COLS.find(c=> c[0] === k) || [k, k])[1] + ' not matching')
         .concat(RB ? [['Break an Amazon rule (live or in Plytix)', rbA.length], ['Brand guide issues', rbB.length]].filter(x=> x[1]) : []), 'lcBtn',
       RB ? '' : '<div class="ov-note">Rule screening off: rulebook not loaded.</div>', ovPct(strictOk.length, rows.length)));
-  } else cards.push(ovCard('Listing Copy', null, 'Copy feed not loaded', [], 'lcBtn'));
+  } else cards.push(ovCard('Listing Copy US', null, 'Copy feed not loaded', [], 'lcBtn'));
   // List Price
   if(typeof lpRows === 'function'){
     const rows = lpRows(), set = rows.filter(r=> r.set);
     const lpRb = rows.filter(r=> (r.rb || []).length);
-    cards.push(ovCard('List Price', ovPct(set.length, rows.length), `${set.length} of ${rows.length} listings have a List Price` + (RB ? `<br>List Prices to check against Amazon\u2019s Apr 2026 rule: <b>${lpRb.length}</b>` : ''),
+    cards.push(ovCard('List Price US', ovPct(set.length, rows.length), `${set.length} of ${rows.length} listings have a List Price` + (RB ? `<br>List Prices to check against Amazon\u2019s Apr 2026 rule: <b>${lpRb.length}</b>` : ''),
       (rows.length - set.length ? [['List Price empty', rows.length - set.length]] : []).concat(lpRb.length ? [['List Price above what we can show customers paid', lpRb.length]] : []), 'lpBtn'));
   }
+  });
+  // Amazon CA for CPT, Buy Box, Listing Copy and List Price, same cards with the CA data
+  if(LC_CA !== null) withMk2('CA', ()=>{
+    const n0 = cards.length;
+  // CPT tracker
+  if(typeof CPT !== 'undefined' && CPT.length){
+    const rows = cptRows(), fine = rows.filter(r=> r.action === 'none'), open = rows.filter(r=> r.action === 'open');
+    const follow = rows.filter(r=> r.action === 'follow').length;
+    cards.push(ovCard('CPT tracker CA', ovPct(rows.length - open.length, rows.length),
+      `${rows.length - open.length} of ${rows.length} listings need no new case` +
+      `<br>No action at all: <b>${ovPct(fine.length, rows.length)}%</b> (${fine.length} of ${rows.length})` +
+      (follow ? `<br>Cases already open with Amazon, being followed up: <b>${follow}</b>` : ''),
+      ovCount(rows.filter(r=> r.action !== 'none'), r=> r.action, k=> (ACTIONS[k] || {}).group || k)
+        .concat(RB && rows.filter(r=> (r.rb || []).some(h=> h.sev === 'amazon')).length ? [['Break an Amazon pricing rule', rows.filter(r=> (r.rb || []).some(h=> h.sev === 'amazon')).length]] : []), 'cptBtn', '', ovPct(fine.length, rows.length)));
+  } else cards.push(ovCard('CPT tracker CA', null, 'CPT feed not loaded', [], 'cptBtn'));
+  // Buy Box
+  if(typeof BB !== 'undefined' && BB.length){
+    // Out of stock is a restock matter, not a listing problem, so the main
+    // number counts in-stock listings; the all-listings number stays visible
+    const rows = bbRows(), has = rows.filter(r=> r.has), oos = rows.filter(r=> !r.has && r.why === 'oos');
+    const inStock = rows.length - oos.length;
+    cards.push(ovCard('Buy Box CA', ovPct(has.length, inStock),
+      `${has.length} of ${inStock} in-stock listings have the Buy Box<br>All listings, counting out of stock: <b>${ovPct(has.length, rows.length)}%</b> (${has.length} of ${rows.length})`,
+      ovCount(rows.filter(r=> !r.has), r=> r.why || 'unknown', k=> k === 'oos' ? 'Out of stock (restock, not a listing problem)' : (BB_WHY[k] || {t:k}).t)
+        .concat(RB && rows.filter(r=> (r.rb || []).some(h=> h.sev === 'amazon')).length ? [['Break an Amazon pricing rule', rows.filter(r=> (r.rb || []).some(h=> h.sev === 'amazon')).length]] : []), 'bbBtn', '', ovPct(has.length, rows.length)));
+  } else cards.push(ovCard('Buy Box CA', null, 'Buy Box feed not loaded', [], 'bbBtn'));
+  // Listing Copy
+  if(typeof LC !== 'undefined' && LC.length){
+    const rows = lcRows().filter(r=> !r.nolive), ok = rows.filter(r=> r.allOk);
+    const avg = rows.length ? Math.round(rows.reduce((t,r)=> t + (r.pct || 0), 0) / rows.length * 10) / 10 : null;
+    const rbA = rows.filter(r=> r.rbA.length), rbB = rows.filter(r=> r.rbB.length), strictOk = ok.filter(r=> !r.rbA.length);
+    cards.push(ovCard('Listing Copy CA', avg, `Average correct copy across ${rows.length} listings (title, bullets, description)` +
+      `<br>Listings with every field correct and no Amazon rule broken: <b>${ovPct(strictOk.length, rows.length)}%</b> (${strictOk.length} of ${rows.length})`,
+      ovCount(rows, r=> r.bad, k=> (LC_COLS.find(c=> c[0] === k) || [k, k])[1] + ' not matching')
+        .concat(RB ? [['Break an Amazon rule (live or in Plytix)', rbA.length], ['Brand guide issues', rbB.length]].filter(x=> x[1]) : []), 'lcBtn',
+      RB ? '' : '<div class="ov-note">Rule screening off: rulebook not loaded.</div>', ovPct(strictOk.length, rows.length)));
+  } else cards.push(ovCard('Listing Copy CA', null, 'Copy feed not loaded', [], 'lcBtn'));
+  // List Price
+  if(typeof lpRows === 'function'){
+    const rows = lpRows(), set = rows.filter(r=> r.set);
+    const lpRb = rows.filter(r=> (r.rb || []).length);
+    cards.push(ovCard('List Price CA', ovPct(set.length, rows.length), `${set.length} of ${rows.length} listings have a List Price` + (RB ? `<br>List Prices to check against Amazon\u2019s Apr 2026 rule: <b>${lpRb.length}</b>` : ''),
+      (rows.length - set.length ? [['List Price empty', rows.length - set.length]] : []).concat(lpRb.length ? [['List Price above what we can show customers paid', lpRb.length]] : []), 'lpBtn'));
+  }
+    for(let k = n0; k < cards.length; k++) cards[k] = cards[k].replace(/data-go="(\w+)"/, 'data-go="$1" data-mk2go="CA"');
+  });
   // Variation, US and CA
   ['US','CA'].forEach(mk=>{
     if(!VR.length){ if(mk === 'US') cards.push(ovCard('Variation', null, 'Variation feed not loaded', [], 'vrBtn')); return; }
@@ -5616,7 +5716,7 @@ function renderOverview(){
     `<span class="sub">Every module at a glance. Green is 95% or more, amber 80% to 95%, red below 80%.</span></div></section>`+
     health + (RB ? `<div class="why"><b>Daily rule screening:</b> every module is screened every day against the rulebook (Amazon rules and our brand guides), last checked against Amazon ${esc(shortDate(RB.verified))}${rbStale() ? ', <b>due for a re-check</b>' : ''}. <button class="work" data-rbopen="1">Open the rulebook</button></div>` : rbBanner()) +
     `<div class="ov-grid">${cards.join('')}</div>`;
-  [...v.querySelectorAll('button[data-go]')].forEach(b=> b.onclick = ()=> document.getElementById(b.dataset.go).click());
+  [...v.querySelectorAll('button[data-go]')].forEach(b=> b.onclick = ()=>{ MK2 = b.dataset.mk2go === 'CA' ? 'CA' : 'US'; mk2Apply(); document.getElementById(b.dataset.go).click(); });
   [...v.querySelectorAll('[data-rbopen]')].forEach(b=> b.onclick = openRulebook);
 }
 
