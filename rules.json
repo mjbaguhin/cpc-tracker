@@ -1,0 +1,971 @@
+{
+ "verified": "2026-10-22",
+ "recheckDays": 30,
+ "note": "Every rule was checked on the date above against Amazon's own pages or announcements where possible, otherwise against seller news sites (marked Reported). Brand rules come from the Seedboy and Barnyard Designs brand guides in the project.",
+ "notScreened": [],
+ "rules": [
+  {
+   "id": "title-75",
+   "module": [
+    "lc"
+   ],
+   "field": [
+    "title"
+   ],
+   "kind": "maxChars",
+   "value": 75,
+   "sev": "amazon",
+   "sure": "Confirmed by Amazon",
+   "text": "Titles in every category except media must be 75 characters or less, including spaces (from July 27, 2026). Amazon rewrites longer titles with AI.",
+   "src": [
+    [
+     "Amazon Seller Forums announcement",
+     "https://sellercentral.amazon.com/seller-forums/discussions/t/145b6d0f-999c-4555-896c-c694bda2e470"
+    ]
+   ]
+  },
+  {
+   "id": "ih-125",
+   "module": [
+    "lc"
+   ],
+   "field": [
+    "ih"
+   ],
+   "kind": "maxChars",
+   "value": 125,
+   "sev": "amazon",
+   "sure": "Confirmed by Amazon",
+   "text": "Item Highlights can be up to 125 characters.",
+   "src": [
+    [
+     "Amazon Seller Forums announcement",
+     "https://sellercentral.amazon.com/seller-forums/discussions/t/145b6d0f-999c-4555-896c-c694bda2e470"
+    ]
+   ]
+  },
+  {
+   "id": "title-chars",
+   "module": [
+    "lc"
+   ],
+   "field": [
+    "title"
+   ],
+   "kind": "chars",
+   "value": "!$?_{}^¬¦",
+   "sev": "amazon",
+   "sure": "Confirmed by Amazon",
+   "text": "Titles must not use ! $ ? _ { } ^ ¬ ¦ unless they are part of the brand name. Decorative special characters are not allowed.",
+   "src": [
+    [
+     "Amazon: Product title requirements",
+     "https://sellercentral.amazon.com/gp/help/external/GYTR6SYGFA5E3EQC"
+    ]
+   ]
+  },
+  {
+   "id": "title-repeat",
+   "module": [
+    "lc"
+   ],
+   "field": [
+    "title"
+   ],
+   "kind": "repeat",
+   "value": 2,
+   "sev": "amazon",
+   "sure": "Confirmed by Amazon",
+   "except": [
+    "a",
+    "an",
+    "the",
+    "and",
+    "or",
+    "but",
+    "nor",
+    "for",
+    "so",
+    "yet",
+    "of",
+    "in",
+    "on",
+    "at",
+    "to",
+    "by",
+    "with",
+    "from",
+    "into",
+    "onto",
+    "over",
+    "under",
+    "per",
+    "as",
+    "up",
+    "off",
+    "x"
+   ],
+   "text": "A title may not use the same word more than twice. Prepositions, articles and conjunctions are exceptions, and so is the brand name.",
+   "src": [
+    [
+     "Amazon Seller Forums announcement (Jan 2025)",
+     "https://sellercentral-europe.amazon.com/seller-forums/discussions/t/c6389f49-228c-44ff-99c6-0bb3974cdb3b"
+    ]
+   ]
+  },
+  {
+   "id": "title-promo",
+   "module": [
+    "lc"
+   ],
+   "field": [
+    "title",
+    "ih"
+   ],
+   "kind": "phrases",
+   "sev": "amazon",
+   "sure": "Reported by seller news sites",
+   "words": [
+    "best",
+    "best seller",
+    "bestseller",
+    "top rated",
+    "top-rated",
+    "#1",
+    "number one",
+    "sale",
+    "on sale",
+    "free shipping",
+    "hot deal",
+    "limited time"
+   ],
+   "text": "Promotional words (best, top rated, sale) in the title are reported to trigger Amazon's AI rewrite.",
+   "src": [
+    [
+     "Novadata",
+     "https://novadata.io/resources/news/amazon-product-title-75-character-limit-july-27-2026"
+    ]
+   ]
+  },
+  {
+   "id": "bullet-chars",
+   "module": [
+    "lc"
+   ],
+   "field": [
+    "bullet"
+   ],
+   "kind": "chars",
+   "value": "™®€…†‡¢£¥©±~",
+   "sev": "amazon",
+   "sure": "Confirmed by Amazon",
+   "text": "Bullets with special characters such as ™ ® € … † ‡ ¢ £ ¥ © ± ~ are removed or rewritten by Amazon (since Aug 15, 2024).",
+   "src": [
+    [
+     "Amazon's bullet point rules, quoted on Seller Forums",
+     "https://sellercentral-europe.amazon.com/seller-forums/discussions/t/72f081f4-f765-4130-abed-d752132f23b0"
+    ]
+   ]
+  },
+  {
+   "id": "emoji",
+   "module": [
+    "lc"
+   ],
+   "field": [
+    "title",
+    "ih",
+    "bullet",
+    "desc"
+   ],
+   "kind": "emoji",
+   "sev": "amazon",
+   "sure": "Confirmed by Amazon",
+   "text": "No emojis. Amazon removes bullets that use them.",
+   "src": [
+    [
+     "Amazon's bullet point rules, quoted on Seller Forums",
+     "https://sellercentral-europe.amazon.com/seller-forums/discussions/t/72f081f4-f765-4130-abed-d752132f23b0"
+    ]
+   ]
+  },
+  {
+   "id": "bullet-phrases",
+   "module": [
+    "lc"
+   ],
+   "field": [
+    "bullet"
+   ],
+   "kind": "phrases",
+   "sev": "amazon",
+   "sure": "Confirmed by Amazon",
+   "words": [
+    "eco-friendly",
+    "eco friendly",
+    "environmentally friendly",
+    "ecologically friendly",
+    "anti-microbial",
+    "antimicrobial",
+    "anti-bacterial",
+    "antibacterial",
+    "made from bamboo",
+    "contains bamboo",
+    "made from soy",
+    "contains soy"
+   ],
+   "text": "Amazon lists these as prohibited phrases in bullets: eco-friendly, environmentally friendly, ecologically friendly, anti-microbial, anti-bacterial, made from bamboo, contains bamboo, made from soy, contains soy.",
+   "src": [
+    [
+     "Amazon's bullet point rules, quoted on Seller Forums",
+     "https://sellercentral-europe.amazon.com/seller-forums/discussions/t/72f081f4-f765-4130-abed-d752132f23b0"
+    ]
+   ]
+  },
+  {
+   "id": "guarantee",
+   "module": [
+    "lc"
+   ],
+   "field": [
+    "title",
+    "ih",
+    "bullet",
+    "desc"
+   ],
+   "kind": "phrases",
+   "sev": "amazon",
+   "sure": "Confirmed by Amazon",
+   "words": [
+    "full refund",
+    "money back",
+    "money-back",
+    "if not satisfied",
+    "unconditional guarantee",
+    "satisfaction guaranteed",
+    "100% guarantee"
+   ],
+   "text": "No refund guarantees (Amazon's examples: \"Full refund\", \"If not satisfied, send it back\", \"Unconditional guarantee with no limit\").",
+   "src": [
+    [
+     "Amazon's bullet point rules, quoted on Seller Forums",
+     "https://sellercentral-europe.amazon.com/seller-forums/discussions/t/72f081f4-f765-4130-abed-d752132f23b0"
+    ]
+   ]
+  },
+  {
+   "id": "bullet-count",
+   "module": [
+    "lc"
+   ],
+   "field": [
+    "bullets"
+   ],
+   "kind": "minCount",
+   "value": 3,
+   "sev": "amazon",
+   "sure": "Confirmed by Amazon",
+   "text": "Include at least three bullet points.",
+   "src": [
+    [
+     "Amazon's bullet point rules, quoted on Seller Forums",
+     "https://sellercentral-europe.amazon.com/seller-forums/discussions/t/72f081f4-f765-4130-abed-d752132f23b0"
+    ]
+   ]
+  },
+  {
+   "id": "bullet-length",
+   "module": [
+    "lc"
+   ],
+   "field": [
+    "bullet"
+   ],
+   "kind": "range",
+   "min": 10,
+   "max": 255,
+   "sev": "guide",
+   "sure": "Amazon guidance",
+   "text": "Amazon's writing guidance: more than 10 and fewer than 255 characters per bullet.",
+   "src": [
+    [
+     "Amazon's bullet point rules, quoted on Seller Forums",
+     "https://sellercentral-europe.amazon.com/seller-forums/discussions/t/72f081f4-f765-4130-abed-d752132f23b0"
+    ]
+   ]
+  },
+  {
+   "id": "contact",
+   "module": [
+    "lc"
+   ],
+   "field": [
+    "title",
+    "ih",
+    "bullet",
+    "desc"
+   ],
+   "kind": "regex",
+   "value": "(https?://|www\\.|\\b[\\w.+-]+@[\\w-]+\\.[a-z]{2,}\\b|\\.com\\b)",
+   "sev": "amazon",
+   "sure": "Reported by seller news sites",
+   "text": "No company contact details, website links or external links on the detail page.",
+   "src": [
+    [
+     "Goat Consulting",
+     "https://www.goatconsulting.com/amazon-policy/amazon-product-detail-page-rules-violation-policy-compliance"
+    ]
+   ]
+  },
+  {
+   "id": "gk-bytes",
+   "module": [
+    "lc"
+   ],
+   "field": [
+    "gk"
+   ],
+   "kind": "maxBytes",
+   "value": 249,
+   "sev": "amazon",
+   "sure": "Reported by seller news sites",
+   "text": "Backend search terms: sources say 249 or 250 bytes. Over the limit, Amazon may ignore all of them. We flag over 249 to be safe.",
+   "src": [
+    [
+     "Bidx",
+     "https://www.bidx.io/blog/amazon-search-term-optimization-using-backend-keywords"
+    ],
+    [
+     "Feedvisor",
+     "https://feedvisor.com/resources/amazon-marketing-advertising-strategies/5-backend-search-terms-amazon-tips/"
+    ]
+   ]
+  },
+  {
+   "id": "gk-asin",
+   "module": [
+    "lc"
+   ],
+   "field": [
+    "gk"
+   ],
+   "kind": "regex",
+   "value": "\\bB0[A-Z0-9]{8}\\b",
+   "flags": "",
+   "sev": "amazon",
+   "sure": "Reported by seller news sites",
+   "text": "No ASINs or other product identifiers in backend search terms.",
+   "src": [
+    [
+     "Feedvisor",
+     "https://feedvisor.com/resources/amazon-marketing-advertising-strategies/5-backend-search-terms-amazon-tips/"
+    ]
+   ]
+  },
+  {
+   "id": "gk-brand",
+   "module": [
+    "lc"
+   ],
+   "field": [
+    "gk"
+   ],
+   "kind": "phrases",
+   "sev": "amazon",
+   "sure": "Reported by seller news sites",
+   "words": [
+    "barnyard designs",
+    "barnyard",
+    "seedboy"
+   ],
+   "text": "No brand names in backend search terms, ours or anyone else's.",
+   "src": [
+    [
+     "Bidx",
+     "https://www.bidx.io/blog/amazon-search-term-optimization-using-backend-keywords"
+    ]
+   ]
+  },
+  {
+   "id": "gk-temp",
+   "module": [
+    "lc"
+   ],
+   "field": [
+    "gk"
+   ],
+   "kind": "phrases",
+   "sev": "amazon",
+   "sure": "Reported by seller news sites",
+   "words": [
+    "on sale",
+    "sale",
+    "discount",
+    "discounted",
+    "latest",
+    "latest version",
+    "limited time",
+    "best",
+    "cheapest",
+    "amazing",
+    "#1",
+    "top rated"
+   ],
+   "text": "No temporary statements (on sale, discounted, latest) or subjective claims (best, cheapest, amazing) in backend search terms.",
+   "src": [
+    [
+     "Bidx",
+     "https://www.bidx.io/blog/amazon-search-term-optimization-using-backend-keywords"
+    ],
+    [
+     "Seller Labs",
+     "https://www.sellerlabs.com/knowledge-base/writing-backend-search-terms-with-ai-without-keyword-stuffing/"
+    ]
+   ]
+  },
+  {
+   "id": "sb-category",
+   "module": [
+    "lc"
+   ],
+   "brand": "Seedboy",
+   "field": [
+    "title",
+    "ih",
+    "bullet",
+    "desc",
+    "gk"
+   ],
+   "kind": "phrases",
+   "sev": "brand",
+   "sure": "Seedboy brand guide",
+   "words": [
+    "supplement",
+    "nutritional supplement",
+    "dietary supplement",
+    "superfood",
+    "super food",
+    "functional food",
+    "nutraceutical",
+    "wellness product",
+    "booster"
+   ],
+   "text": "Wrong-category words. Seedboy is food, not a supplement.",
+   "src": [
+    [
+     "Seedboy Voice Cheat Sheet, section 7",
+     ""
+    ]
+   ]
+  },
+  {
+   "id": "sb-disease",
+   "module": [
+    "lc"
+   ],
+   "brand": "Seedboy",
+   "field": [
+    "title",
+    "ih",
+    "bullet",
+    "desc",
+    "gk"
+   ],
+   "kind": "phrases",
+   "sev": "brand",
+   "sure": "Seedboy brand guide",
+   "words": [
+    "cure",
+    "cures",
+    "treat",
+    "treats",
+    "prevent",
+    "prevents",
+    "heal",
+    "heals",
+    "healing",
+    "reverse",
+    "reverses",
+    "diagnose",
+    "therapy",
+    "therapeutic",
+    "remedy",
+    "fda approved",
+    "doctor recommended"
+   ],
+   "text": "Disease-treatment words and FDA claims are never used (highest risk). Check the meaning: “treat” as a snack (a treat for chickens) is fine; as a health claim it is not.",
+   "src": [
+    [
+     "Seedboy Voice Cheat Sheet, section 8",
+     ""
+    ]
+   ]
+  },
+  {
+   "id": "sb-claims",
+   "module": [
+    "lc"
+   ],
+   "brand": "Seedboy",
+   "field": [
+    "title",
+    "ih",
+    "bullet",
+    "desc",
+    "gk"
+   ],
+   "kind": "phrases",
+   "sev": "brand",
+   "sure": "Seedboy brand guide",
+   "except": [
+    "hormone balance blend",
+    "gut health blend",
+    "immunity blend",
+    "longevity blend"
+   ],
+   "words": [
+    "boost",
+    "boosts",
+    "boosting",
+    "immune support",
+    "immune-boosting",
+    "immune boosting",
+    "supports immune",
+    "anti-aging",
+    "anti aging",
+    "brain health",
+    "cognitive support",
+    "gut health",
+    "gut support",
+    "heart health",
+    "bone health",
+    "joint health",
+    "joint support",
+    "mood support",
+    "stress support",
+    "anxiety relief",
+    "sleep support",
+    "better sleep",
+    "energy boost",
+    "detox",
+    "detoxify",
+    "cleanse",
+    "flush",
+    "anti-inflammatory",
+    "anti inflammatory",
+    "reduces inflammation",
+    "fights inflammation",
+    "weight loss",
+    "lose weight",
+    "burn fat",
+    "fat burning",
+    "metabolism boost",
+    "slimming",
+    "belly fat",
+    "debloat",
+    "bloating",
+    "balances hormones",
+    "hormone balance",
+    "hormonal support",
+    "immunity",
+    "longevity"
+   ],
+   "text": "Structure/function and health claims are never used. The four blend names (Hormone Balance, Gut Health, Immunity, Longevity Blend) are names, not claims, and are allowed as names only.",
+   "src": [
+    [
+     "Seedboy Voice Cheat Sheet, section 8",
+     ""
+    ]
+   ]
+  },
+  {
+   "id": "sb-promo",
+   "module": [
+    "lc"
+   ],
+   "brand": "Seedboy",
+   "field": [
+    "title",
+    "ih",
+    "bullet",
+    "desc"
+   ],
+   "kind": "phrases",
+   "sev": "brand",
+   "sure": "Seedboy brand guide",
+   "words": [
+    "game-changer",
+    "game changer",
+    "life-changing",
+    "revolutionary",
+    "must-have",
+    "must have",
+    "best on the market",
+    "#1",
+    "top-rated",
+    "top rated",
+    "premium",
+    "luxury",
+    "all-natural",
+    "all natural",
+    "guilt-free",
+    "guilt free",
+    "wellness"
+   ],
+   "text": "Promotional and trust-theater words the Seedboy guide avoids.",
+   "src": [
+    [
+     "Seedboy Voice Cheat Sheet, section 7",
+     ""
+    ]
+   ]
+  },
+  {
+   "id": "bd-claims",
+   "module": [
+    "lc"
+   ],
+   "brand": "Barnyard Designs",
+   "field": [
+    "title",
+    "ih",
+    "bullet",
+    "desc",
+    "gk"
+   ],
+   "kind": "phrases",
+   "sev": "brand",
+   "sure": "Barnyard Designs brand guide",
+   "words": [
+    "fda",
+    "antibacterial",
+    "antimicrobial",
+    "antifungal",
+    "mold",
+    "mildew",
+    "insects",
+    "bugs",
+    "pests",
+    "repels",
+    "disinfects",
+    "eco-friendly",
+    "biodegradable",
+    "sustainable",
+    "100% safe",
+    "risk free",
+    "non-toxic",
+    "pet safe",
+    "best",
+    "number one",
+    "#1",
+    "top rated",
+    "world's best"
+   ],
+   "text": "Never used on any channel: FDA, pesticide claims, unverified superlatives, environmental claims without certification, absolute safety claims.",
+   "src": [
+    [
+     "Barnyard Designs Brand Guide, section 10",
+     ""
+    ]
+   ]
+  },
+  {
+   "id": "bd-coir",
+   "module": [
+    "lc"
+   ],
+   "brand": "Barnyard Designs",
+   "when": "coir",
+   "field": [
+    "title",
+    "ih",
+    "bullet",
+    "desc",
+    "gk"
+   ],
+   "kind": "phrases",
+   "sev": "brand",
+   "sure": "Barnyard Designs brand guide",
+   "words": [
+    "waterproof",
+    "weatherproof",
+    "weather resistant",
+    "weather-resistant",
+    "anti-shed",
+    "shed-free",
+    "shed free",
+    "non-shedding",
+    "no shedding",
+    "stain free",
+    "stain-free",
+    "heavy duty",
+    "heavy-duty",
+    "commercial"
+   ],
+   "text": "Coir doormats must not say waterproof, weatherproof, weather resistant, anti-shed, shed-free, non-shedding, stain free, commercial or heavy duty.",
+   "src": [
+    [
+     "Barnyard Designs Brand Guide, section 10",
+     ""
+    ]
+   ]
+  },
+  {
+   "id": "bd-kitchen",
+   "module": [
+    "lc"
+   ],
+   "brand": "Barnyard Designs",
+   "field": [
+    "title",
+    "ih",
+    "bullet",
+    "desc"
+   ],
+   "kind": "phrases",
+   "sev": "brand",
+   "sure": "Barnyard Designs brand guide",
+   "words": [
+    "airtight",
+    "food safe",
+    "food-safe",
+    "odor free",
+    "odor-free",
+    "eliminates odors",
+    "fade proof",
+    "fade-proof",
+    "shatterproof",
+    "handmade",
+    "handwoven",
+    "hand painted",
+    "hand-painted"
+   ],
+   "text": "Only if verified: airtight, food safe and odor free (kitchen), fade proof (mats), shatterproof (mirrors), handmade or hand painted (needs the supplier's confirmation in writing). Check before keeping.",
+   "src": [
+    [
+     "Barnyard Designs Brand Guide, sections 5 and 10",
+     ""
+    ]
+   ]
+  },
+  {
+   "id": "bd-voice",
+   "module": [
+    "lc"
+   ],
+   "brand": "Barnyard Designs",
+   "field": [
+    "title",
+    "ih",
+    "bullet",
+    "desc"
+   ],
+   "kind": "phrases",
+   "sev": "brand",
+   "sure": "Barnyard Designs brand guide",
+   "words": [
+    "premium",
+    "luxurious",
+    "designer",
+    "elevate",
+    "curate",
+    "curated",
+    "aesthetic",
+    "must-have",
+    "must have"
+   ],
+   "text": "Words the Barnyard Designs guide avoids in product copy.",
+   "src": [
+    [
+     "Barnyard Designs Brand Guide, section 5",
+     ""
+    ]
+   ]
+  },
+  {
+   "id": "vr-share",
+   "module": [
+    "vr"
+   ],
+   "kind": "themeShare",
+   "sev": "guide",
+   "sure": "Confirmed by Amazon",
+   "value": [
+    "color",
+    "pattern",
+    "size",
+    "count",
+    "model"
+   ],
+   "text": "Since Feb 12, 2026, reviews stay pooled only for minor differences: color or pattern, size with the same function, pack size or quantity, model fitment. Other themes may split reviews.",
+   "src": [
+    [
+     "PPC Land",
+     "https://ppc.land/amazon-splits-variation-reviews-in-bid-to-stop-misleading-ratings/"
+    ],
+    [
+     "My Amazon Guy",
+     "https://myamazonguy.com/news/amazon-product-variation-review-sharing/"
+    ]
+   ]
+  },
+  {
+   "id": "vr-same-theme",
+   "module": [
+    "vr"
+   ],
+   "kind": "sameTheme",
+   "sev": "amazon",
+   "sure": "Reported by seller news sites",
+   "text": "The variation theme must be the same for the parent and every child in the family.",
+   "src": [
+    [
+     "EcomCrew",
+     "https://www.ecomcrew.com/amazon-just-made-it-easier-to-add-variations-and-is-retiring-the-variation-wizard-in-august/"
+    ]
+   ]
+  },
+  {
+   "id": "vr-values",
+   "module": [
+    "vr"
+   ],
+   "kind": "uniqueValues",
+   "sev": "amazon",
+   "sure": "Confirmed by Amazon (Help page)",
+   "text": "Amazon's definition: each child has a characteristic that is different from the other children. Two children with the same theme values in the Master SKU sheet don't meet it.",
+   "src": [
+    [
+     "Amazon: Variation relationships",
+     "https://sellercentral.amazon.com/help/hub/reference/G201951410"
+    ]
+   ]
+  },
+  {
+   "id": "lp-validated",
+   "module": [
+    "lp"
+   ],
+   "kind": "listValidated",
+   "sev": "check",
+   "sure": "Reported by seller news sites, quoting Amazon",
+   "text": "Since April 23, 2026, Amazon only accepts a List Price if customers bought the product as the Featured Offer at that price, or another retailer offered it at that price recently. Otherwise the List Price is not shown, and an inflated one can flag the account. (Barnyard Designs guide: never inflate a list price.)",
+   "src": [
+    [
+     "EcommerceBytes",
+     "https://www.ecommercebytes.com/qcwe"
+    ],
+    [
+     "Emplicit",
+     "https://emplicit.co/amazon-enforces-stricter-rules-discounted-list-price-claims-april-23/"
+    ],
+    [
+     "Amazon: Engage customers with a List Price",
+     "https://sell.amazon.com/blog/amazon-list-price"
+    ]
+   ]
+  },
+  {
+   "id": "price-external",
+   "module": [
+    "bb",
+    "cpt"
+   ],
+   "kind": "aboveExternal",
+   "sev": "amazon",
+   "sure": "Confirmed by Amazon",
+   "text": "Offers priced above the Competitive External Price (the lowest price at other retailers) are not eligible for the Featured Offer. We compare with our own Walmart price in the Master SKU sheet, which may differ from the live Walmart page.",
+   "src": [
+    [
+     "Amazon Fair Pricing message, quoted on Seller Forums",
+     "https://sellercentral.amazon.com/seller-forums/discussions/t/57267418-e5fc-4d42-89b8-47b4bf8c76f6"
+    ],
+    [
+     "Sell on Amazon: pricing strategies",
+     "https://sell.amazon.com/blog/amazon-pricing-strategies"
+    ]
+   ]
+  },
+  {
+   "id": "price-cpt",
+   "module": [
+    "bb",
+    "cpt"
+   ],
+   "kind": "aboveCpt",
+   "sev": "amazon",
+   "sure": "Confirmed by Amazon",
+   "text": "Offers priced significantly higher than recent prices on or off Amazon are not eligible for the Featured Offer (Fair Pricing Policy). The CPT tracker shows Amazon's limit for each listing.",
+   "src": [
+    [
+     "Amazon Fair Pricing message, quoted on Seller Forums",
+     "https://sellercentral.amazon.com/seller-forums/discussions/t/57267418-e5fc-4d42-89b8-47b4bf8c76f6"
+    ]
+   ]
+  },
+  {
+   "id": "fo-eligibility",
+   "module": [
+    "bb"
+   ],
+   "kind": "info",
+   "sev": "guide",
+   "sure": "Confirmed by Amazon",
+   "text": "From July 2026 to the end of 2026, Amazon is removing seller eligibility requirements for the Featured Offer. It still picks the Featured Offer on price, delivery speed and performance. Nothing to check; this explains why eligibility flags may disappear.",
+   "src": [
+    [
+     "Amazon Seller Forums announcement",
+     "https://sellercentral.amazon.com/seller-forums/discussions/t/165b4765-84c3-4230-84c9-65b2cca2d2bd"
+    ]
+   ]
+  },
+  {
+   "id": "cg-node",
+   "module": [
+    "cg"
+   ],
+   "kind": "cgNode",
+   "sev": "amazon",
+   "sure": "Confirmed by Amazon",
+   "text": "The browse node decides where the product is shown. Amazon says that with no node or an incorrect node, customers may not be able to find the product.",
+   "src": [
+    [
+     "Amazon SP-API: recommended browse nodes",
+     "https://developer-docs.amazon.com/sp-api/docs/get-recommended-browse-nodes-or-item-type-keywords"
+    ]
+   ]
+  },
+  {
+   "id": "cg-itk",
+   "module": [
+    "cg"
+   ],
+   "kind": "cgItk",
+   "sev": "amazon",
+   "sure": "Reported on Seller Forums",
+   "text": "Sellers report listings suppressed as not assigned to a category when the item type keyword is missing. Every listing needs an item type keyword in the Master SKU sheet.",
+   "src": [
+    [
+     "Amazon Seller Forums",
+     "https://sellercentral-europe.amazon.com/seller-forums/discussions/t/9becfa2e18ef5d986b5d6c239d768635"
+    ]
+   ]
+  },
+  {
+   "id": "cg-ca-node",
+   "module": [
+    "cg"
+   ],
+   "kind": "cgCaNode",
+   "sev": "guide",
+   "sure": "Reported by seller news sites",
+   "text": "Each marketplace has its own browse tree. A US browse node number reused for Canada is usually wrong. Check the CA Browse Tree Guide.",
+   "src": [
+    [
+     "GoDataFeed",
+     "https://www.godatafeed.com/disapproval/amazon-8011-invalid-browse-node"
+    ]
+   ]
+  }
+ ]
+}
