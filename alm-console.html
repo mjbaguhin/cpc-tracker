@@ -1016,8 +1016,8 @@ async function load(fresh){
     .then(j => { buildCg(j); if(S.view === 'category') render(); else chrome(); })
     .catch(e => { CG_ERR = e.message; if(S.view === 'category') render(); });
   grab(RB_SRC, 'json', fresh)
-    .then(j => { buildRb(j); if(['lc','vr','catalog'].indexOf(S.view) !== -1) render(); })
-    .catch(e => { RB_ERR = e.message; if(['lc','vr','catalog'].indexOf(S.view) !== -1) render(); });
+    .then(j => { buildRb(j); if(['lc','vr','catalog','cg','category','lp','bb','cpt'].indexOf(S.view) !== -1) render(); })
+    .catch(e => { RB_ERR = e.message; if(['lc','vr','catalog','category','lp','bb','cpt'].indexOf(S.view) !== -1) render(); });
   grab(VR_SRC, 'json', fresh)
     .then(j => { buildVr(j); if(S.view === 'vr') render(); else chrome(); })
     .catch(e => { VR_ERR = e.message; if(S.view === 'vr') render(); });
@@ -1917,6 +1917,7 @@ function cptRows(){
       : !(r.gap > 0) && r.listGap !== null && r.listPct >= CASE_RULES.heldPct;
     r.verdict = caseVerdict(r);
     r.action = cptAction(r);
+    r.rb = rbScreenRow('cpt', r);
     return r;
   }).sort((a,b)=>{
     const ra = ACTIONS[a.action].rank, rb = ACTIONS[b.action].rank;
@@ -2900,6 +2901,8 @@ function renderCpt(){
              none ? none + ' with no CPT today' : 'All ASINs have one')+
       '</div>'+
     '</section>'+
+    rbBanner()+
+    (RB ? (()=>{ const n = all.filter(r=> (r.rb || []).some(h=> h.sev === 'amazon')); return `<div class="why"><b>Rule screening:</b> ${n.length ? `${n.length} listing${n.length === 1 ? '' : 's'} break${n.length === 1 ? 's' : ''} an Amazon pricing rule (${esc(n.map(r=> r.sku).slice(0,4).join(', '))}${n.length > 4 ? '\u2026' : ''}). Open a listing to see which.` : 'No listing breaks an Amazon pricing rule.'} <button class="work" data-rbopen="1">Rulebook</button></div>`; })() : '')+
     '<div class="cpt-tools">'+
       '<div class="seg" id="cptSeg">'+
         [['all','All ' + all.length],
@@ -3524,6 +3527,7 @@ function openCpt(r){
   };
   document.getElementById('phBtn').onclick = ()=>
     window.open('https://sellercentral.amazon.com/pricing/health', '_blank', 'noopener');
+  d.insertAdjacentHTML('beforeend', rbBlock(r.rb || []));
   document.getElementById('veil').hidden = false;
 }
 
@@ -3761,6 +3765,7 @@ function bbRows(){
     (b.rivals || []).filter(x=> x.cls === 'other' && x.p30 > 0).forEach(x=> others.push(x.name));
     r.others = others;
     r.next = bbNext(r);
+    r.rb = rbScreenRow('bb', r);
     return r;
   });
 }
@@ -3780,7 +3785,7 @@ function bbNext(r){
 
 const BB_SORT = {
   product: r=> r.name, has: r=> r.has ? 1 : 0, why: r=> r.why ? Object.keys(BB_WHY).indexOf(r.why) : 99,
-  us: r=> r.us, ca: r=> r.ca, ours: r=> r.ours, bb: r=> r.bb, w30: r=> r.win ? r.win.d30 : null,
+  us: r=> r.us, ca: r=> r.ca, ours: r=> r.ours, bb: r=> r.bb, w30: r=> r.win ? r.win.d30 : null, rb: r=> -((r.rb || []).length),
   others: r=> (r.others || []).length
 };
 
@@ -3812,6 +3817,7 @@ function renderBb(){
   if(BB_F.show === 'seller') rows = no.filter(r=> r.why === 'amazon' || r.why === 'seller');
   if(BB_F.show === 'other')  rows = no.filter(r=> ['cpt','nooffer','unknown'].indexOf(r.why) !== -1);
   if(BB_F.show === 'amz')    rows = amzOn;
+  if(BB_F.show === 'rb')     rows = all.filter(r=> (r.rb || []).length);
   if(BB_F.tier) rows = rows.filter(r=> (r.tier || 'N') === BB_F.tier);
   if(BB_F.q){ const q = BB_F.q.toLowerCase(); rows = rows.filter(r=> (r.sku + ' ' + r.asin + ' ' + r.name).toLowerCase().indexOf(q) !== -1); }
   // Default: listings without the Buy Box on top, out of stock first, then by tier
@@ -3845,7 +3851,9 @@ function renderBb(){
       tile('Other reason', oth.length, oth.length ? 'warn' : 'good', oth.length ? list(oth) : 'None')+
       tile('Other sellers on our listing', amzOn.length, amzOn.length ? 'warn' : 'good',
            amzOn.length ? `We still have the Buy Box on ${amzOn.filter(r=> r.has).length}` : 'None')+
+      rbTile(all, 'Breaks an Amazon pricing rule')+
     '</div></section>'+
+    rbBanner()+
     '<div class="cpt-tools"><div class="seg" id="bbSeg">'+
       [['all','All ' + all.length], ['no','No Buy Box ' + no.length], ['oos','Out of stock ' + by('oos').length],
        ['seller','Another seller ' + (by('amazon').length + by('seller').length)], ['other','Other reason ' + oth.length],
@@ -3857,7 +3865,7 @@ function renderBb(){
     `<input id="bbQ" type="search" placeholder="Search SKU, ASIN or product" value="${esc(BB_F.q)}" aria-label="Search Buy Box">`+
     (BB_F.sort ? '<button id="bbUnsort">Clear sort</button>' : '')+
     (no.length ? '<button id="bbSlack" class="work strong">Draft Slack to Haris</button>' : '')+
-    grpBtn(BB_F) + dlBtns() +
+    grpBtn(BB_F) + dlBtns() + '<button data-rbopen="1">Rulebook</button>' +
     `<span class="count">${rows.length} of ${all.length}</span></div>`;
 
   if(!BB.length){
@@ -3878,11 +3886,14 @@ function renderBb(){
       H('bb', 'Buy Box price', 'b-gap c', 'The price on the Add to Cart button.', 'desc')+
       H('others', 'Other sellers', 'b-sim', 'Other New offers on our listing.', 'desc')+
       H('w30', 'Buy Box %', 'b-sim c', 'Share of time we had the Buy Box: 30 days, and 7 days under it.')+
-      '</tr></thead><tbody>'+ grpMap(BB_F, rows, 9, bbTr, r=> !r.has, 'without the Buy Box') +'</tbody></table>';
+      H('rb', 'Rules', 'b-gap c', 'Screened every day against Amazon\u2019s pricing rules in the rulebook. Click the chip for details.')+
+      '</tr></thead><tbody>'+ grpMap(BB_F, rows, 10, bbTr, r=> !r.has, 'without the Buy Box') +'</tbody></table>';
   }
   v.innerHTML = html;
 
   wireSort(v, BB_F, renderBb);
+  [...v.querySelectorAll('[data-rbopen]')].forEach(b=> b.onclick = openRulebook);
+  [...v.querySelectorAll('[data-rbrow]')].forEach(b=> b.onclick = e=>{ e.stopPropagation(); const r = all.find(x=> x.asin === b.dataset.rbrow); if(r) rbOpenRow(`${r.sku} ${r.name}`, r.rb || []); });
   wireGrpDl(v, BB_F, renderBb, ()=> dlBb(rows));
   [...v.querySelectorAll('#bbSeg button')].forEach(b=> b.onclick = ()=>{ BB_F.show = b.dataset.show; renderBb(); });
   [...v.querySelectorAll('.bbtile')].forEach(t=>{
@@ -3921,6 +3932,7 @@ function bbTr(r){
     `<td class="c">${r.bb !== null ? usd(r.bb) : '<span class="mut">none</span>'}</td>`+
     `<td style="white-space:normal;max-width:14rem">${r.others.length ? r.others.map(x=> `<div>${esc(x)}</div>`).join('') : '<span class="mut">None</span>'}</td>`+
     `<td class="c">${bbBar(r.win && r.win.d30)}<span class="was">7 days ${Math.round(r.win ? r.win.d7 : 0)}%</span></td>`+
+    `<td class="c"><span data-rbrow="${esc(r.asin)}" style="cursor:pointer">${rbChip(r.rb || [])}</span></td>`+
   '</tr>';
 }
 
@@ -3992,6 +4004,7 @@ function openBb(r){
       `<a class="work" href="https://sellercentral.amazon.com/myinventory/inventory?searchTerm=${encodeURIComponent(r.sku)}" target="_blank" rel="noopener">Open in Seller Central</a>`+
     '</div>'+
     '<div class="why">Buy Box from Keepa\u2019s last check, usually a few hours old. Stock from the FBA inventory files.</div>';
+  d.insertAdjacentHTML('beforeend', rbBlock(r.rb || []));
   document.getElementById('veil').hidden = false;
 }
 
@@ -4010,7 +4023,7 @@ const LC_F = {show:'all', q:'', sort:'', dir:1, tier:'', group:false};
    brand (our brand guide), guide (Amazon guidance, not a hard rule). */
 let RB = null, RB_ERR = '';
 function buildRb(j){ RB_ERR = ''; RB = j && Array.isArray(j.rules) ? j : null; if(!RB) RB_ERR = 'rules.json has no rules'; }
-const RB_SEV = {amazon:['Amazon rule', 'lc-bad'], brand:['Brand guide', 'lc-small'], guide:['Amazon guidance', 'lc-gray']};
+const RB_SEV = {amazon:['Amazon rule', 'lc-bad'], brand:['Brand guide', 'lc-small'], check:['Needs a check', 'lc-small'], guide:['Amazon guidance', 'lc-gray']};
 function rbAgeDays(){ return RB && RB.verified ? Math.max(0, Math.floor((Date.now() - new Date(RB.verified + 'T00:00:00').getTime()) / 86400000)) : null; }
 function rbStale(){ const a = rbAgeDays(); return a === null || a > ((RB && RB.recheckDays) || 30); }
 const rbEsc = s=> String(s).replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
@@ -4048,7 +4061,7 @@ function rbTest(rule, text, ctx){
 }
 function rbFor(module, brand, name){
   if(!RB) return [];
-  return RB.rules.filter(r=> r.module === module && (!r.brand || r.brand === brand) && (!r.when || new RegExp(r.when, 'i').test(name || '')));
+  return RB.rules.filter(r=> [].concat(r.module).indexOf(module) !== -1 && (!r.brand || r.brand === brand) && (!r.when || new RegExp(r.when, 'i').test(name || '')));
 }
 /* Listing Copy: every field, live and correct. Returns findings. */
 const RB_FIELD = {title:'title', ih:'ih', b1:'bullet', b2:'bullet', b3:'bullet', b4:'bullet', b5:'bullet', gk:'gk', desc:'desc'};
@@ -4101,6 +4114,45 @@ function rbScreenVr(r, fam){
   });
   return out;
 }
+/* Prices and categories: one listing against the module's rules */
+const rbUsd = v=> v === null || v === undefined || isNaN(v) ? 'n/a' : '$' + Number(v).toFixed(2);
+function rbWalmart(asin){ const c = (typeof LC !== 'undefined' ? LC : []).find(x=> x.asin === asin); const v = c && c.pr ? c.pr.walmart : null; return v ? Number(v) : null; }
+function rbScreenRow(module, r){
+  const out = [];
+  if(!RB || !r) return out;
+  rbFor(module, r.brand, r.name).forEach(ru=>{
+    let msg = '', field = 'price';
+    if(ru.kind === 'listValidated' && r.live !== null && r.live !== undefined){
+      const wm = rbWalmart(r.asin), top = Math.max(r.ours || 0, wm || 0);
+      if(top && r.live > top + 0.01) msg = `List Price ${rbUsd(r.live)} is above our Amazon price ${rbUsd(r.ours)}${wm ? ' and our Walmart price ' + rbUsd(wm) : ''}. Check customers paid ${rbUsd(r.live)} recently, or lower it.`;
+    }
+    if(ru.kind === 'aboveExternal'){
+      const wm = rbWalmart(r.asin);
+      if(wm && r.ours !== null && r.ours !== undefined && r.ours > wm + 0.01) msg = `Our Amazon price ${rbUsd(r.ours)} is above our Walmart price ${rbUsd(wm)} (Master SKU sheet).`;
+    }
+    if(ru.kind === 'aboveCpt' && r.cpt !== null && r.cpt !== undefined && r.ours !== null && r.ours !== undefined && r.ours > r.cpt + 0.005)
+      msg = `Our price ${rbUsd(r.ours)} is above Amazon\u2019s threshold ${rbUsd(r.cpt)}.`;
+    if(ru.kind === 'cgNode' && r.c && r.c.node && (r.c.node.s === 'wrong' || r.c.node.s === 'missing')){ field = 'node';
+      msg = r.c.node.s === 'missing' ? 'No browse node on Amazon' : `Amazon has node ${r.c.node.a}, the correct one is ${r.c.node.e}`; }
+    if(ru.kind === 'cgItk' && r.c && r.c.itk && (r.c.itk.s === 'blank' || r.c.itk.s === 'missing')){ field = 'itk';
+      msg = r.c.itk.s === 'blank' ? 'No item type keyword in the Master SKU sheet' : 'No item type keyword on Amazon'; }
+    if(ru.kind === 'cgCaNode' && r.mk === 'CA' && r.exp && r.exp.node){ field = 'node';
+      const us = CG.find(x=> x.mk === 'US' && x.asin === r.asin);
+      if(us && us.exp && us.exp.node === r.exp.node) msg = `CA browse node ${r.exp.node} is the same number as the US node.`; }
+    if(msg) out.push({id: ru.id, sev: ru.sev, field, live: msg, corr: '', rule: ru});
+  });
+  return out;
+}
+// A small panel with a listing's rule findings, for modules without their own panel
+function rbOpenRow(title, hits){
+  document.getElementById('detail').innerHTML = `<h2>Rule screening</h2><h3>${esc(title)}</h3>` + rbBlock(hits);
+  document.getElementById('veil').hidden = false;
+}
+function rbTile(rows, label){
+  if(!RB) return `<div class="cpt-tile"><div class="k">${esc(label)}</div><div class="v">\u2014</div><div class="n">Rulebook not loaded</div></div>`;
+  const a = rows.filter(r=> (r.rb || []).some(h=> h.sev === 'amazon')), c = rows.filter(r=> (r.rb || []).length && !(r.rb || []).some(h=> h.sev === 'amazon'));
+  return `<div class="cpt-tile bbtile rbtile" role="button" tabindex="0" data-show="rb" title="Show these in the table"><div class="k">${esc(label)}</div><div class="v ${a.length ? 'bad' : c.length ? 'warn' : 'good'}">${a.length}</div><div class="n">${a.length ? esc(a.map(r=> r.sku).slice(0,3).join(', ')) + (a.length > 3 ? '\u2026' : '') : 'None'}${c.length ? ` \u00b7 ${c.length} to check` : ''}</div></div>`;
+}
 function rbChip(hits){
   if(!RB) return '<span class="lcchip lc-gray" data-tip="Rulebook not loaded">\u2014</span>';
   if(!hits.length) return '<span class="lcchip lc-ok" data-tip="Passes every rule in the rulebook">OK</span>';
@@ -4108,7 +4160,7 @@ function rbChip(hits){
   const tip = hits.slice(0, 6).map(h=> `${(RB_SEV[h.sev] || [''])[0]}: ${h.rule.text.split('. ')[0]}`).join(' \u2022 ');
   return `<span class="lcchip ${a ? 'lc-bad' : b ? 'lc-small' : 'lc-gray'}" data-tip="${esc(tip)}">${[a ? a + ' Amazon' : '', b ? b + ' brand' : '', g ? g + ' guidance' : ''].filter(Boolean).join(', ')}</span>`;
 }
-const RB_FNAME = {title:'Title', ih:'Item Highlights', b1:'Bullet 1', b2:'Bullet 2', b3:'Bullet 3', b4:'Bullet 4', b5:'Bullet 5', gk:'Backend keywords', desc:'Description', theme:'Variation theme', value:'Variation value'};
+const RB_FNAME = {price:'Price', node:'Browse node', itk:'Item type keyword', title:'Title', ih:'Item Highlights', b1:'Bullet 1', b2:'Bullet 2', b3:'Bullet 3', b4:'Bullet 4', b5:'Bullet 5', gk:'Backend keywords', desc:'Description', theme:'Variation theme', value:'Variation value'};
 function rbBlock(hits){
   if(!RB) return `<div class="why"><b>Rule screening off:</b> rules.json not loaded${RB_ERR ? ' (' + esc(RB_ERR) + ')' : ''}.</div>`;
   const head = `<div class="lcf-l" style="margin-top:.8rem">Rule screening, rulebook checked ${esc(shortDate(RB.verified))}${rbStale() ? ' <b style="color:var(--warn)">(due for a re-check)</b>' : ''}</div>`;
@@ -4130,14 +4182,14 @@ function rbBanner(){
 function openRulebook(){
   const d = document.getElementById('detail');
   if(!RB){ d.innerHTML = '<h2>Rulebook</h2>' + rbBanner(); document.getElementById('veil').hidden = false; return; }
-  const grp = [['lc', 'Listing Copy'], ['vr', 'Variation']];
-  const ask = `Please re-check the ALM Console rulebook (rules.json in mjbaguhin/cpc-tracker, last checked ${RB.verified}). Search for any Amazon listing policy changes since then (titles, Item Highlights, bullets, description, backend search terms, variations, review sharing), check every rule below is still current, and give me an updated rules.json with sources and today's date.\n\n` +
+  const grp = [['lc', 'Listing Copy'], ['vr', 'Variation'], ['cg', 'Category'], ['lp', 'List Price'], ['bb', 'Buy Box'], ['cpt', 'CPT tracker']];
+  const ask = `Please re-check the ALM Console rulebook (rules.json in mjbaguhin/cpc-tracker, last checked ${RB.verified}). Search for any Amazon policy changes since then (titles, Item Highlights, bullets, description, backend search terms, variations, review sharing, categories and browse nodes, List Price and reference prices, Featured Offer and fair pricing), check every rule below is still current, and give me an updated rules.json with sources and today's date.\n\n` +
     RB.rules.map(r=> `- ${r.id}: ${r.text}`).join('\n');
   d.innerHTML = '<h2>Rulebook</h2>'+
     `<h3>Checked against Amazon ${esc(shortDate(RB.verified))} (${rbAgeDays()} days ago). Re-check every ${RB.recheckDays || 30} days.</h3>`+
     (rbStale() ? '<div class="why"><b>Due for a re-check.</b> Copy the request below and paste it into a Claude chat in this Project.</div>' : '')+
-    '<div class="why">Screening runs every day on the newest data: the live Amazon copy and the correct copy in the Master SKU sheet, against every rule here. The rules themselves only change when they are re-checked, because Amazon\u2019s policy pages need a login and can\u2019t be read automatically.</div>'+
-    grp.map(g=> `<h2 style="margin-top:1rem">${g[1]}</h2>` + RB.rules.filter(r=> r.module === g[0]).map(r=>
+    '<div class="why">Every module is screened every day on its newest data against the rules here. A daily Claude Cowork task searches for new Amazon rules, and new rules are checked before they are added here.</div>'+
+    grp.map(g=> `<h2 style="margin-top:1rem">${g[1]}</h2>` + RB.rules.filter(r=> [].concat(r.module).indexOf(g[0]) !== -1).map(r=>
       `<div class="lcf"><div class="lcf-h"><b>${esc(r.id)}</b> <span class="lcchip ${(RB_SEV[r.sev] || ['', 'lc-gray'])[1]}">${esc((RB_SEV[r.sev] || [r.sev])[0])}</span>${r.brand ? ` <span class="mut" style="font-size:.75rem">${esc(r.brand)} only${r.when ? ', ' + esc(r.when) + ' listings' : ''}</span>` : ''} <span class="mut" style="font-size:.75rem">${esc(r.sure || '')}</span></div>`+
       `<div class="lcf-t" style="margin-top:.3rem">${esc(r.text)}</div>`+
       (r.src && r.src.length ? `<div class="lcf-r" style="color:var(--muted)">Source: ${r.src.map(s=> s[1] ? `<a href="${esc(s[1])}" target="_blank" rel="noopener">${esc(s[0])}</a>` : esc(s[0])).join(', ')}</div>` : '')+
@@ -4364,11 +4416,12 @@ function lpRows(){
     const row = (c.sku && ROWS.find(x=> x.sku === c.sku)) || ROWS.find(x=> x.asin === c.asin);
     const live = c.kList !== undefined && c.kList !== null ? c.kList : null;
     return {asin:c.asin, sku:c.sku || (row && row.sku) || '', name:(row && row.name) || c.name || c.asin,
-      tier:(row && row.tier) || '', live, ours:c.kOurs !== undefined ? c.kOurs : null, set: live !== null, date:c.date || ''};
-  });
+      tier:(row && row.tier) || '', live, ours:c.kOurs !== undefined ? c.kOurs : null, set: live !== null, date:c.date || '',
+      brand:(row && row.brand) || ''};
+  }).map(r=> Object.assign(r, {rb: rbScreenRow('lp', r)}));
 }
 
-const LP_SORT = {product: r=> r.name, stock: r=> stockOf(r, 'US'), set: r=> r.set ? 1 : 0, live: r=> r.live, ours: r=> r.ours, todo: r=> r.set ? 1 : 0};
+const LP_SORT = {product: r=> r.name, stock: r=> stockOf(r, 'US'), set: r=> r.set ? 1 : 0, live: r=> r.live, ours: r=> r.ours, todo: r=> r.set ? 1 : 0, rb: r=> -((r.rb || []).length)};
 
 function renderLp(){
   document.getElementById('msg').hidden = true;
@@ -4376,7 +4429,7 @@ function renderLp(){
   const v = document.getElementById('cptView');
   const all = lpRows(), set = all.filter(r=> r.set), empty = all.filter(r=> !r.set);
   const pct = all.length ? Math.round(set.length / all.length * 1000) / 10 : 0;
-  let rows = LP_F.show === 'set' ? set : LP_F.show === 'empty' ? empty : all;
+  let rows = LP_F.show === 'set' ? set : LP_F.show === 'empty' ? empty : LP_F.show === 'rb' ? all.filter(r=> (r.rb || []).length) : all;
   if(LP_F.tier) rows = rows.filter(r=> (r.tier || 'N') === LP_F.tier);
   if(LP_F.q){ const q = LP_F.q.toLowerCase(); rows = rows.filter(r=> (r.sku + ' ' + r.asin + ' ' + r.name).toLowerCase().indexOf(q) !== -1); }
   rows = LP_F.sort && LP_SORT[LP_F.sort] ? sortBy(rows, LP_SORT[LP_F.sort], LP_F.dir)
@@ -4394,7 +4447,9 @@ function renderLp(){
       tile('List Price set %', pct + '%', pct >= 100 ? 'good' : pct >= 95 ? 'warn' : 'bad', `${set.length} of ${all.length} listings`)+
       tile('List Price set', set.length, 'good', '')+
       tile('List Price empty', empty.length, empty.length ? 'bad' : 'good', empty.length ? list(empty) : 'None')+
+      rbTile(all, 'Breaks a List Price rule')+
     '</div></section>'+
+    rbBanner()+
     '<div class="cpt-tools"><div class="seg" id="lpSeg">'+
       [['all','All ' + all.length], ['empty','Empty ' + empty.length], ['set','Set ' + set.length]]
         .map(b=> `<button data-show="${b[0]}" aria-pressed="${LP_F.show === b[0]}">${b[1]}</button>`).join('')+
@@ -4403,7 +4458,7 @@ function renderLp(){
     '</div>'+
     `<input id="lpQ" type="search" placeholder="Search SKU, ASIN or product" value="${esc(LP_F.q)}" aria-label="Search List Price">`+
     (LP_F.sort ? '<button id="lpUnsort">Clear sort</button>' : '')+
-    grpBtn(LP_F) + dlBtns() +
+    grpBtn(LP_F) + dlBtns() + '<button data-rbopen="1">Rulebook</button>' +
     `<span class="count">${rows.length} of ${all.length}</span></div>`;
 
   if(!CPT.length){
@@ -4419,15 +4474,17 @@ function renderLp(){
       H('set', 'List Price set?', 'b-cpt c', 'Does the Amazon listing have a List Price.')+
       H('live', 'List Price on Amazon', 'b-ours c', 'The List Price as Keepa reads it from Amazon.', 'desc')+
       H('ours', 'Our price now', 'b-gap c', 'What a shopper pays today, sale included.', 'desc')+
+      H('rb', 'Rules', 'b-gap c', 'Screened every day against Amazon\u2019s List Price rules. Click the chip for details.')+
       H('todo', 'What to do', 'b-move')+
       '</tr></thead><tbody>'+
-      grpMap(LP_F, rows, 6, r=> `<tr class="row">`+
+      grpMap(LP_F, rows, 7, r=> `<tr class="row">`+
         `<td class="prod"><div class="p-name"><span class="dot" style="background:${r.set ? '#1f9d55' : '#d64545'}"></span>${esc(String(r.name).slice(0, 60))}</div>`+
           `<div class="p-id"><span>SKU</span>${skuL(r.sku)}${cpy(r.sku)}</div><div class="p-id"><span>ASIN</span>${asinL(r.asin)}${cpy(r.asin)}</div>${r.tier ? `<span class="p-size">Tier ${esc(r.tier)}</span>` : ''}</td>`+
         stockTd(r, 'US')+
         `<td class="c">${r.set ? '<span class="bbyes">Yes</span>' : '<span class="bbno">Empty</span>'}</td>`+
         `<td class="c">${r.set ? '<b>' + usd(r.live) + '</b>' : '<span class="mut">none</span>'}</td>`+
         `<td class="c">${usd(r.ours)}</td>`+
+        `<td class="c"><span data-rbrow="${esc(r.asin)}" style="cursor:pointer">${rbChip(r.rb || [])}</span></td>`+
         `<td style="font-size:.82rem;white-space:normal">${r.set ? '' : 'Add a List Price equal to Your Price in Seller Central (Offer tab). Never set it higher: since Apr 23, 2026 Amazon checks it against real sales or another retailer.'}</td>`+
       '</tr>', r=> !r.set, 'empty')+
       '</tbody></table>';
@@ -4435,6 +4492,8 @@ function renderLp(){
   v.innerHTML = html;
 
   wireSort(v, LP_F, renderLp);
+  [...v.querySelectorAll('[data-rbopen]')].forEach(b=> b.onclick = openRulebook);
+  [...v.querySelectorAll('[data-rbrow]')].forEach(b=> b.onclick = e=>{ e.stopPropagation(); const r = all.find(x=> x.asin === b.dataset.rbrow); if(r) rbOpenRow(`${r.sku} ${r.name}`, r.rb || []); });
   wireGrpDl(v, LP_F, renderLp, ()=> dlLp(rows));
   const setShow = f=>{ LP_F.show = f; renderLp(); };
   [...v.querySelectorAll('#lpSeg button')].forEach(b=> b.onclick = ()=> setShow(b.dataset.show));
@@ -4502,8 +4561,10 @@ function cgRows(mk){
     const c = r.c || {};
     const bad = CG_COLS.filter(x=> c[x[0]] && CG_BAD.indexOf(c[x[0]].s) !== -1).map(x=> x[0]);
     const blank = CG_COLS.filter(x=> c[x[0]] && c[x[0]].s === 'blank').map(x=> x[0]);
-    return Object.assign({}, r, {name: (row && row.name) || r.name || r.asin, tier: r.tier || (row && row.tier) || '',
+    const o = Object.assign({}, r, {name: (row && row.name) || r.name || r.asin, tier: r.tier || (row && row.tier) || '',
       bad, blank, allOk: !r.nolive && !bad.length});
+    o.rb = rbScreenRow('cg', o);
+    return o;
   });
 }
 
@@ -4516,7 +4577,7 @@ function cgChip(x, nolive){
   return `<span class="lcchip ${d[1]}" data-tip="${esc((x && x.note) || d[2])}">${d[0]}</span>`;
 }
 
-const CG_SORT = { product: r=> r.name, stock: r=> stockOf(r, CG_F.mk), pct: r=> r.pct, since: r=> r.since || '',
+const CG_SORT = { rb: r=> -((r.rb || []).length), product: r=> r.name, stock: r=> stockOf(r, CG_F.mk), pct: r=> r.pct, since: r=> r.since || '',
   cs: r=> !r.bad.length ? 2 : cgCaseInfo(r) ? 1 : 0 };
 CG_COLS.forEach(c=> CG_SORT['f_' + c[0]] = r=> r.nolive ? 9 : stRank((r.c || {})[c[0]]));
 
@@ -4529,7 +4590,7 @@ function renderCategory(){
   const pct = checked ? Math.round(ok / checked * 1000) / 10 : 0;
   const has = k=> all.filter(r=> r.bad.indexOf(k) !== -1);
   const wrong = all.filter(r=> r.bad.length), good = all.filter(r=> r.allOk), blank = all.filter(r=> r.blank.length);
-  const pick = {good, wrong, gl: has('gl'), pt: has('pt'), sd: has('sd'), path: has('path'), itk: has('itk'), node: has('node'), blank};
+  const pick = {good, wrong, gl: has('gl'), pt: has('pt'), sd: has('sd'), path: has('path'), itk: has('itk'), node: has('node'), blank, rb: all.filter(r=> (r.rb || []).length)};
 
   let rows = pick[CG_F.show] || all;
   if(CG_F.tier) rows = rows.filter(r=> (r.tier || 'N') === CG_F.tier);
@@ -4553,7 +4614,9 @@ function renderCategory(){
       tile('Listings with a wrong category', wrong.length, wrong.length ? 'bad' : 'good', wrong.length ? list(wrong) : 'None')+
       t1('GL wrong', 'gl') + t1('Product Type wrong', 'pt') + t1('Search dept wrong', 'sd') + t1('Full path wrong', 'path') + t1('ITK wrong', 'itk') + t1('Browse node wrong', 'node')+
       tile('Blank in Master SKU', blank.length, blank.length ? 'warn' : 'good', blank.length ? 'Correct value missing' : 'None')+
+      rbTile(all, 'Breaks an Amazon category rule')+
     '</div></section>'+
+    rbBanner()+
     '<div class="cpt-tools"><div class="seg" id="cgMk">'+
       ['US','CA'].map(m=> `<button data-mk="${m}" aria-pressed="${CG_F.mk === m}">${m === 'US' ? 'Amazon US' : 'Amazon CA'} ${cgRows(m).filter(r=> r.bad.length).length ? '<span class="badge" style="margin-left:.3rem">' + cgRows(m).filter(r=> r.bad.length).length + '</span>' : ''}</button>`).join('')+
     '</div><div class="seg" id="cgSeg">'+
@@ -4565,7 +4628,7 @@ function renderCategory(){
     `<input id="cgQ" type="search" placeholder="Search SKU, ASIN or product" value="${esc(CG_F.q)}" aria-label="Search Category">`+
     (CG_F.sort ? '<button id="cgUnsort">Clear sort</button>' : '')+
     (rows.some(r=> r.bad.length) ? `<button id="cgAll" class="work strong">Draft one case for all ${rows.filter(r=> r.bad.length).length} wrong</button>` : '')+
-    grpBtn(CG_F) + dlBtns('<button data-dlx="1">Download with listing copy</button>') + '<button id="cgTips">Why does this happen?</button>' + (rows.some(r=> r.bad.length) ? '<button id="cgFlatT">Download flat file values</button>' : '') +
+    grpBtn(CG_F) + dlBtns('<button data-dlx="1">Download with listing copy</button>') + '<button id="cgTips">Why does this happen?</button><button data-rbopen="1">Rulebook</button>' + (rows.some(r=> r.bad.length) ? '<button id="cgFlatT">Download flat file values</button>' : '') +
     `<span class="count">${rows.length} of ${all.length}</span></div>`;
   html += (()=>{ const n = all.filter(r=> r.c && r.c.path && r.c.path.shared).length;
       return n ? `<div class="why"><b>${n} listing${n === 1 ? '' : 's'} marked \u201cOK, shared node\u201d:</b> in the correct browse node, shown by Amazon under a different path that it treats as the same. Counted as correct. No case needed.</div>` : ''; })();
@@ -4582,16 +4645,18 @@ function renderCategory(){
       H('product', 'Product')+
       H('stock', CG_F.mk === 'CA' ? 'CA stock' : 'US stock', 'num', 'Available units in FBA, from BigQuery. Sort to see empty first.')+
       H('pct', 'Correct %', 'b-cpt c', 'Checks on Amazon that match the Master SKU sheet, out of the ones we can compare.')+
+      H('rb', 'Rules', 'b-gap c', 'Screened every day against Amazon\u2019s category rules in the rulebook. Click the chip for details.')+
       CG_COLS.map(c=> H('f_' + c[0], c[1], 'b-gap c', 'Sort to bring problems to the top.')).join('')+
       H('since', 'Last changed on Amazon', 'b-move', 'The day any of these category values last changed on Amazon, as Keepa saw it.', 'desc')+
       H('cs', 'Case', 'b-case', 'Needs a case first, then follow-ups, then fine.')+
       '</tr></thead><tbody>'+
-      grpMap(CG_F, rows, 11, r=> `<tr class="row" tabindex="0" data-cg="${esc(r.asin)}">`+
+      grpMap(CG_F, rows, 12, r=> `<tr class="row" tabindex="0" data-cg="${esc(r.asin)}">`+
         `<td class="prod"><div class="p-name"><span class="dot" style="background:${r.nolive ? '#94a3b8' : r.allOk ? '#1f9d55' : '#d64545'}"></span>${esc(String(r.name).slice(0, 60))}</div>`+
           `<div class="p-id"><span>SKU</span>${skuL(r.sku, mk)}${cpy(r.sku)}</div><div class="p-id"><span>ASIN</span>${asinL(r.asin, mk)}${cpy(r.asin)}</div>`+
           `${r.tier ? `<span class="p-size">Tier ${esc(r.tier)}</span>` : ''}</td>`+
         stockTd(r, mk)+
         `<td class="c">${r.nolive ? '<span class="mut">Not checked yet</span>' : r.pct === null ? '<span class="mut">\u2014</span>' : bbBar(r.pct)}</td>`+
+        `<td class="c"><span data-rbrow="${esc(r.asin)}" style="cursor:pointer">${rbChip(r.rb || [])}</span></td>`+
         CG_COLS.map(c=> `<td class="c">${cgChip((r.c || {})[c[0]], r.nolive)}${c[0] === 'path' ? pcBadge(r) : ''}</td>`).join('')+
         `<td>${r.since ? esc(shortDate(r.since)) : '<span class="mut">No change seen</span>'}</td>`+
         `<td>${r.bad.length ? (()=>{ const ci = cgCaseInfo(r);
@@ -4603,6 +4668,8 @@ function renderCategory(){
   v.innerHTML = html;
 
   wireSort(v, CG_F, renderCategory);
+  [...v.querySelectorAll('[data-rbopen]')].forEach(b=> b.onclick = openRulebook);
+  [...v.querySelectorAll('[data-rbrow]')].forEach(b=> b.onclick = e=>{ e.stopPropagation(); const r = all.find(x=> x.asin === b.dataset.rbrow); if(r) rbOpenRow(`${r.sku} ${r.name}`, r.rb || []); });
   wireGrpDl(v, CG_F, renderCategory, ()=> dlCg(rows), ()=> dlCgCopy(rows));
   const tp = document.getElementById('cgTips'); if(tp) tp.onclick = cgTips;
   const ft = document.getElementById('cgFlatT'); if(ft) ft.onclick = ()=> dlCgFlat(rows);
@@ -4665,6 +4732,7 @@ function openCg(r){
         return n > 1 ? `<button class="work strong" id="cgFamOne" data-k="${esc(k)}">Draft case for the whole family (${n})</button>` : ''; })()}<button class="work" id="cgAi">Copy for AI review</button><button class="work" id="cgWhy">Why does this happen?</button></div>`+
         (ci && ci.notes ? `<div class="lcf-r" style="color:var(--muted)">Amazon\u2019s last reply (${esc(shortDate(ci.date))}): ${esc(ci.notes)}${ci.link ? ` <a href="${esc(ci.link)}" target="_blank" rel="noopener">Open in Gmail</a>` : ''}</div>` : ''); })() : '')+
     (r.nolive ? '<div class="why">No live data from Amazon yet for this listing.</div>' : CG_COLS.map(block).join(''))+
+    rbBlock(r.rb || [])+
     '<div class="act-row">'+
       `<a class="work" href="https://sellercentral.amazon.${mk === 'CA' ? 'ca' : 'com'}/hz/productclassify" target="_blank" rel="noopener">Check in the product classifier</a>`+
     '</div>'+
@@ -4938,8 +5006,8 @@ function dlLc(rows){
   }));
 }
 function dlLp(rows){
-  csvSave('list-price', ['SKU','ASIN','Product','Tier','US stock','List Price set?','List Price on Amazon','Our price now','Parent SKU','Parent ASIN'],
-    rows.map(r=> withParent(r, [r.sku, r.asin, r.name, r.tier, stockOf(r, 'US'), r.set ? 'Yes' : 'Empty', r.live, r.ours])));
+  csvSave('list-price', ['SKU','ASIN','Product','Tier','US stock','List Price set?','List Price on Amazon','Our price now','Rule issues','Parent SKU','Parent ASIN'],
+    rows.map(r=> withParent(r, [r.sku, r.asin, r.name, r.tier, stockOf(r, 'US'), r.set ? 'Yes' : 'Empty', r.live, r.ours, (r.rb || []).map(h=> h.live + ' (' + h.rule.id + ')').join('; ')])));
 }
 function cgCells(r){
   const cells = [r.mk, r.sku, r.asin, `https://www.amazon.${r.mk === 'CA' ? 'ca' : 'com'}/dp/${r.asin}`, r.name, r.tier, stockOf(r, r.mk), r.pct];
@@ -5473,7 +5541,8 @@ function renderOverview(){
     cards.push(ovCard(`Category ${mk}`, ovPct(okN, chkN),
       `${okN} of ${chkN} category checks correct<br>Listings with every check correct: <b>${ovPct(good.length, live.length)}%</b> (${good.length} of ${live.length})` +
       (inCase ? `<br>Already raised with Amazon (case on file): <b>${inCase}</b>` : ''),
-      ovCount(live, r=> r.bad, k=> (CG_COLS.find(c=> c[0] === k) || [k, k])[1] + ' wrong'), 'quickCat',
+      ovCount(live, r=> r.bad, k=> (CG_COLS.find(c=> c[0] === k) || [k, k])[1] + ' wrong')
+        .concat(RB && live.filter(r=> (r.rb || []).some(h=> h.sev === 'amazon')).length ? [['Break an Amazon category rule', live.filter(r=> (r.rb || []).some(h=> h.sev === 'amazon')).length]] : []), 'quickCat',
       mk === 'US' ? '<div class="ov-note">GL shows Can\u2019t check until BigQuery has product-group.</div>' : '', ovPct(good.length, live.length)));
   });
   // CPT tracker
@@ -5484,7 +5553,8 @@ function renderOverview(){
       `${rows.length - open.length} of ${rows.length} listings need no new case` +
       `<br>No action at all: <b>${ovPct(fine.length, rows.length)}%</b> (${fine.length} of ${rows.length})` +
       (follow ? `<br>Cases already open with Amazon, being followed up: <b>${follow}</b>` : ''),
-      ovCount(rows.filter(r=> r.action !== 'none'), r=> r.action, k=> (ACTIONS[k] || {}).group || k), 'cptBtn', '', ovPct(fine.length, rows.length)));
+      ovCount(rows.filter(r=> r.action !== 'none'), r=> r.action, k=> (ACTIONS[k] || {}).group || k)
+        .concat(RB && rows.filter(r=> (r.rb || []).some(h=> h.sev === 'amazon')).length ? [['Break an Amazon pricing rule', rows.filter(r=> (r.rb || []).some(h=> h.sev === 'amazon')).length]] : []), 'cptBtn', '', ovPct(fine.length, rows.length)));
   } else cards.push(ovCard('CPT tracker', null, 'CPT feed not loaded', [], 'cptBtn'));
   // Buy Box
   if(typeof BB !== 'undefined' && BB.length){
@@ -5494,7 +5564,8 @@ function renderOverview(){
     const inStock = rows.length - oos.length;
     cards.push(ovCard('Buy Box', ovPct(has.length, inStock),
       `${has.length} of ${inStock} in-stock listings have the Buy Box<br>All listings, counting out of stock: <b>${ovPct(has.length, rows.length)}%</b> (${has.length} of ${rows.length})`,
-      ovCount(rows.filter(r=> !r.has), r=> r.why || 'unknown', k=> k === 'oos' ? 'Out of stock (restock, not a listing problem)' : (BB_WHY[k] || {t:k}).t), 'bbBtn', '', ovPct(has.length, rows.length)));
+      ovCount(rows.filter(r=> !r.has), r=> r.why || 'unknown', k=> k === 'oos' ? 'Out of stock (restock, not a listing problem)' : (BB_WHY[k] || {t:k}).t)
+        .concat(RB && rows.filter(r=> (r.rb || []).some(h=> h.sev === 'amazon')).length ? [['Break an Amazon pricing rule', rows.filter(r=> (r.rb || []).some(h=> h.sev === 'amazon')).length]] : []), 'bbBtn', '', ovPct(has.length, rows.length)));
   } else cards.push(ovCard('Buy Box', null, 'Buy Box feed not loaded', [], 'bbBtn'));
   // Listing Copy
   if(typeof LC !== 'undefined' && LC.length){
@@ -5510,8 +5581,9 @@ function renderOverview(){
   // List Price
   if(typeof lpRows === 'function'){
     const rows = lpRows(), set = rows.filter(r=> r.set);
-    cards.push(ovCard('List Price', ovPct(set.length, rows.length), `${set.length} of ${rows.length} listings have a List Price`,
-      rows.length - set.length ? [['List Price empty', rows.length - set.length]] : [], 'lpBtn'));
+    const lpRb = rows.filter(r=> (r.rb || []).length);
+    cards.push(ovCard('List Price', ovPct(set.length, rows.length), `${set.length} of ${rows.length} listings have a List Price` + (RB ? `<br>List Prices to check against Amazon\u2019s Apr 2026 rule: <b>${lpRb.length}</b>` : ''),
+      (rows.length - set.length ? [['List Price empty', rows.length - set.length]] : []).concat(lpRb.length ? [['List Price above what we can show customers paid', lpRb.length]] : []), 'lpBtn'));
   }
   // Variation, US and CA
   ['US','CA'].forEach(mk=>{
@@ -5536,7 +5608,7 @@ function renderOverview(){
   v.innerHTML = stockAlert() +
     '<section class="cpt-top"><div class="cpt-head"><h2>Catalog overview</h2>'+
     `<span class="sub">Every module at a glance. Green is 95% or more, amber 80% to 95%, red below 80%.</span></div></section>`+
-    health + (RB ? `<div class="why"><b>Daily rule screening:</b> Listing Copy and Variation are screened every day against the rulebook (Amazon rules and our brand guides), last checked against Amazon ${esc(shortDate(RB.verified))}${rbStale() ? ', <b>due for a re-check</b>' : ''}. <button class="work" data-rbopen="1">Open the rulebook</button></div>` : rbBanner()) +
+    health + (RB ? `<div class="why"><b>Daily rule screening:</b> every module is screened every day against the rulebook (Amazon rules and our brand guides), last checked against Amazon ${esc(shortDate(RB.verified))}${rbStale() ? ', <b>due for a re-check</b>' : ''}. <button class="work" data-rbopen="1">Open the rulebook</button></div>` : rbBanner()) +
     `<div class="ov-grid">${cards.join('')}</div>`;
   [...v.querySelectorAll('button[data-go]')].forEach(b=> b.onclick = ()=> document.getElementById(b.dataset.go).click());
   [...v.querySelectorAll('[data-rbopen]')].forEach(b=> b.onclick = openRulebook);
