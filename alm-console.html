@@ -5824,8 +5824,34 @@ function bsTips(){
    a button to open the module. Numbers come from the same live data the
    modules use, so the two always agree. */
 let OV_SCORES = [];
+/* A module that is not working yet is shown as Under construction, with the
+   reason, and left out of the overall score and every count. */
+let OV_UC = [];
+function ovUnder(t){
+  if(/^Variation/.test(t)){
+    if(!VR.length) return 'Variation Watch has not run yet, so variation.json is not on GitHub. Run setupVariationWatchDaily in CPC Keepa Fetcher.';
+    const mk = / CA$/.test(t) ? 'CA' : 'US';
+    if(!vrRows(mk).some(r=> !r.nolive)) return `No live Keepa data for ${mk} variations yet. It fills in after the next Variation Watch run.`;
+  }
+  if(/^BSR/.test(t)){
+    if(!BS.length) return 'BSR Watch has not run yet, so bsr.json is not on GitHub. Run setupBsrWatchDaily in CPC Keepa Fetcher.';
+    if(/ CA$/.test(t) && !bsRows('CA').some(r=> r.cur !== null)) return 'No CA star ratings yet. They start after the new CA_Watch.gs runs (it now reads ratings). A score from BSR alone would be misleading.';
+  }
+  if(/ CA$/.test(t) && /^(CPT tracker|Buy Box|Listing Copy|List Price)/.test(t)){
+    if(LC_CA === null) return 'CA Watch has not finished its first run, so ca.json is not on GitHub yet. Run setupCaWatchDaily in CPC Keepa Fetcher.';
+    if(/^CPT/.test(t) && !(CPT_CA || []).some(r=> r.cpt !== null)) return 'Keepa has returned no CPT for any amazon.ca listing yet. If it stays empty, Keepa may not supply a CPT for Canada, and this module stays CA-off.';
+  }
+  return '';
+}
 function ovCard(title, pct, sub, reasons, btnId, extra, strict){
-  if(pct !== null) OV_SCORES.push({title, main: pct, strict: strict === undefined ? pct : strict});
+  const why = ovUnder(title) || (pct === null ? 'No data yet for this module.' : '');
+  if(why){
+    OV_UC.push(title);
+    return `<div class="ov-card" style="opacity:.85"><div class="ov-h"><h3>${esc(title)}</h3><button class="work" data-go="${btnId}">Open ${esc(title)} \u2192</button></div>`+
+      `<div class="ov-pct" style="font-size:1.4rem"><span class="lcchip lc-small">Under construction</span></div>`+
+      `<div class="ov-sub">${esc(why)}</div><div class="ov-sub mut" style="margin-top:.4rem">Not counted in the overall score.</div></div>`;
+  }
+  OV_SCORES.push({title, main: pct, strict: strict === undefined ? pct : strict});
   const cls = pct === null ? '' : pct >= 95 ? 'ok' : pct >= 80 ? 'mid' : 'bad';
   return `<div class="ov-card"><div class="ov-h"><h3>${esc(title)}</h3><button class="work strong" data-go="${btnId}">Open ${esc(title)} \u2192</button></div>`+
     `<div class="ov-pct ${cls}">${pct === null ? '<span class="mut">No data</span>' : pct + '%'}</div><div class="ov-sub">${sub}</div>`+
@@ -5839,7 +5865,7 @@ function renderOverview(){
   document.getElementById('msg').hidden = true;
   document.getElementById('bar').innerHTML = '';
   const v = document.getElementById('cptView'), cards = [];
-  OV_SCORES = [];
+  OV_SCORES = []; OV_UC = [];
 
   // Category, US and CA
   ['US','CA'].forEach(mk=>{
@@ -5940,12 +5966,14 @@ function renderOverview(){
   }
     for(let k = n0; k < cards.length; k++) cards[k] = cards[k].replace(/data-go="(\w+)"/, 'data-go="$1" data-mk2go="CA"');
   });
+  if(LC_CA === null) [['CPT tracker CA','cptBtn'], ['Buy Box CA','bbBtn'], ['Listing Copy CA','lcBtn'], ['List Price CA','lpBtn']]
+    .forEach(x=> cards.push(ovCard(x[0], null, '', [], x[1]).replace(/data-go="(\w+)"/, 'data-go="$1" data-mk2go="CA"')));
   // BSR, US and CA: main % = rated 4.0+, strict = 4.0+, not dropping, BSR showing
   ['US','CA'].forEach(mk=>{
     if(!BS.length){ if(mk === 'US') cards.push(ovCard('BSR', null, 'BSR feed not loaded', [], 'bsBtn')); return; }
     const all = bsRows(mk), rated = all.filter(r=> r.cur !== null), good = rated.filter(r=> r.cur >= 4), strict = all.filter(r=> r.ok);
     const avgR = rated.length ? (rated.reduce((t,r)=> t + r.cur, 0) / rated.length).toFixed(2) : '\u2014';
-    if(!rated.length && !all.some(r=> r.bsr)){ cards.push(ovCard(`BSR ${mk}`, null, 'No ratings or BSR yet for this marketplace', [], 'bsBtn')); return; }
+    if(!rated.length){ cards.push(ovCard(`BSR ${mk}`, null, '', [], 'bsBtn').replace(/data-go="bsBtn"/, `data-go="bsBtn" data-bsmk="${mk}"`)); return; }
     cards.push(ovCard(`BSR ${mk}`, ovPct(good.length, rated.length),
       `Rated 4.0 or higher: ${good.length} of ${rated.length}. Average rating <b>${avgR}</b>` +
       `<br>4.0+, not dropping and BSR showing: <b>${ovPct(strict.length, all.length)}%</b> (${strict.length} of ${all.length})`,
@@ -5972,7 +6000,8 @@ function renderOverview(){
   const health = hMain === null ? '' :
     `<div class="ov-health"><div><div class="ov-hl">Overall catalog health</div><div class="ov-pct ${hCls}" style="font-size:3rem;margin:0">${hMain}%</div></div>`+
     `<div class="ov-sub" style="max-width:640px">The average of the ${OV_SCORES.length} module scores below (${OV_SCORES.map(x=> esc(x.title) + ' ' + x.main + '%').join(', ')}).`+
-    `<br>Strict view, every listing fully correct and counting out of stock: <b>${hStrict}%</b>.</div></div>`;
+    `<br>Strict view, every listing fully correct and counting out of stock: <b>${hStrict}%</b>.` +
+    (OV_UC.length ? `<br><span class="mut">Not counted, under construction: ${OV_UC.map(esc).join(', ')}.</span>` : '') + '</div></div>';
   v.innerHTML = stockAlert() +
     '<section class="cpt-top"><div class="cpt-head"><h2>Catalog overview</h2>'+
     `<span class="sub">Every module at a glance. Green is 95% or more, amber 80% to 95%, red below 80%.</span></div></section>`+
