@@ -2158,7 +2158,8 @@ function strongFacts(r){
     const x = refs[0], words = sharedDesign(r, x);
     const sameAsUs = cptRows().filter(o=> o.asin !== r.asin && o.size === r.size && o.cpt === r.cpt && (o.sku || '').split('-')[0] === line);
     const unaffected = cptRows().filter(o=> o.size === r.size && (o.sku || '').split('-')[0] === line && o.cpt !== null && o.cpt > r.cpt + 0.005);
-    F.push({w:6, ref:true, t:`The threshold of ${usd(r.cpt)} matches, to the cent, the ${x.market} price of ${x.brand ? x.brand + ' ' : ''}${x.name} (${usd(x.price)}). ` +
+    // No price here: quoting the other item's price only confirms the threshold (KB CPT notes)
+    F.push({w:6, ref:true, t:`The reference appears to be an item assessed as equivalent. The closest match we found is ${x.brand ? x.brand + ' ' : ''}${x.name} at ${x.market}. ` +
       (words.length ? `It carries the same design name as our listing (${words.map(w=> w.charAt(0).toUpperCase() + w.slice(1)).join(', ')}). ` : '') +
       (sameAsUs.length && unaffected.length ? `Only our ${r.size} designs that share a name with that brand's mats are held at ${usd(r.cpt)}. Our other ${numw(unaffected.length).toLowerCase()} ${r.size} designs, same size, material and backing, are not.` : 'The threshold appears to come from that single item.')});
   }
@@ -2166,7 +2167,7 @@ function strongFacts(r){
 
   // 1. Same threshold on different designs and prices: a generic reference
   const twins = same.filter(x=> x.cpt === r.cpt && (x.held || x.gap > 0));
-  if(twins.length) F.push({w:5, t:`${numw(twins.length + 1)} of our ${r.size} listings with different designs and prices (${[r].concat(twins).map(x=> x.sku).join(', ')}) ${twins.length === 1 ? 'both' : 'all'} show the exact same threshold of ${usd(r.cpt)}.`});
+  if(twins.length) F.push({w:5, t:`${numw(twins.length + 1)} of our ${r.size} listings with different designs (${[r].concat(twins).map(x=> x.sku).join(', ')}) ${twins.length === 1 ? 'both' : 'all'} show the exact same threshold of ${usd(r.cpt)}.`});
 
   // 2. Same brand, same size, same material, higher threshold
   const fair = same.filter(x=> !x.held && !(x.gap > 0) && x.cpt > r.cpt + 0.005);
@@ -2175,21 +2176,19 @@ function strongFacts(r){
     F.push({w:5, t:`${numw(fair.length)} other ${r.size} coir mats from our brand, same size and material, have a threshold of ${lo === hi ? usd(lo) : usd(lo) + ' to ' + usd(hi)}. Only this listing${twins.length ? ' and ' + twins.map(x=> x.sku).join(', ') + ' are' : ' is'} held at ${usd(r.cpt)}.`});
   }
 
-  // 3. Shoppers already paid more on this listing
-  if(r.bb90 && r.bb90 > r.cpt * 1.03) F.push({w:4, t:`Over the last 90 days the average Featured Offer price on this listing was ${usd(r.bb90)}, ${Math.round((r.bb90 / r.cpt - 1) * 100)}% above the threshold.`});
-  else if(r.ours90 && r.ours90 > r.cpt * 1.03) F.push({w:3, t:`Our average price on this listing over the last 90 days was ${usd(r.ours90)}, above today's threshold of ${usd(r.cpt)}.`});
+  // 3. (removed) Our own or Featured Offer prices are not evidence: the threshold
+  //    is set from outside retailers, so arguing with our price does not help.
 
   // 4. The threshold jumps around without any change on our side
   const pts = (r.h || []).filter(x=> x[1] !== null);
   if(pts.length >= 2){
     const vs = pts.map(x=> x[1]), lo = Math.min(...vs), hi = Math.max(...vs);
-    if(hi > lo * 1.1) F.push({w:3, t:`Since ${shortDate(pts[0][0])} the threshold on this listing has ranged from ${usd(lo)} to ${usd(hi)}. A reference price that moves this much is not a stable comparison.`});
+    if(hi > lo * 1.1) F.push({w:3, t:`Since ${shortDate(pts[0][0])} the threshold on this listing has ranged from ${usd(lo)} to ${usd(hi)}.`});
   }
 
   // 5. Demand and quality
   if(r.sold && r.sold >= 50) F.push({w:2, t:`Amazon shows "${r.sold}+ bought in past month" on this listing.`});
   else if(r.units30 && r.units30 >= 30) F.push({w:2, t:`We shipped ${r.units30} units of this listing in the last 30 days through FBA.`});
-  if(r.rating && r.reviews && r.rating >= 4.3) F.push({w:2, t:`The listing is rated ${r.rating} stars from ${Number(r.reviews).toLocaleString('en-US')} reviews.`});
 
   // 6. Outside prices, only when every one helps
   const out = (r.sim || []).filter(x=> x.market !== 'Amazon' && !/barnyard/i.test(x.brand || '') && !/walmart/i.test(x.market || ''));
@@ -2198,7 +2197,21 @@ function strongFacts(r){
   return F.sort((a,b)=> b.w - a.w);
 }
 function refLine(x){
-  return `${x.brand ? x.brand + ' ' : ''}${x.name} at ${x.market}, ${usd(x.price)}${x.link ? ' (' + x.link + ')' : ''}`;
+  // No price: quoting it only confirms the threshold
+  return `${x.brand ? x.brand + ' ' : ''}${x.name} at ${x.market}${x.link ? ' (' + x.link + ')' : ''}`;
+}
+/* "Our price on every channel we operate is at or above our Amazon price" (KB
+   case evidence). Walmart comes from the Master SKU sheet; Shopify stays a
+   bracket to fill. If Walmart is below our Amazon price, that is the cause, and
+   the draft says to fix it first instead of claiming the line. */
+function cptChannels(rows){
+  const list = [].concat(rows).filter(Boolean);
+  const bad = list.filter(r=>{ const w = rbWalmart(r.asin); return w !== null && r.ours !== null && w < r.ours - 0.005; });
+  if(bad.length) return '[CHECK FIRST, then delete this line: our Walmart price is below our Amazon price on ' +
+    bad.map(r=> `${r.sku} (Walmart ${usd(rbWalmart(r.asin))}, Amazon ${usd(r.ours)})`).join(', ') +
+    '. The CPT playbook says to fix our own channels before opening a case.]';
+  const parts = list.map(r=>{ const w = rbWalmart(r.asin); return `${list.length > 1 ? r.sku + ': ' : ''}Amazon ${usd(r.ours)}${w !== null ? ', Walmart ' + usd(w) : ''}, Shopify [price]`; });
+  return 'Our price on every channel we operate is at or above our Amazon price: ' + parts.join('; ') + '.';
 }
 
 function outsideRisk(r){
@@ -2223,8 +2236,8 @@ function freshCase(r){
     'I am disputing the accuracy of the Competitive External Price for the listing below. This is a validation of pricing change request. Please route it to the Pricing Audit team.', '',
     `ASIN: ${r.asin}`, `SKU: ${r.sku}`, 'Brand: Barnyard Designs', 'Marketplace: US', `Threshold shown: ${usd(r.cpt)}${r.moved ? ', since ' + r.moved : ''}`, '',
     cptProductLines(r), '',
-    caseEvidence(r), '',
-    'Our price on every channel we operate is at or above our Amazon price: [channel and price list].', '',
+    caseEvidence(r, true), '',
+    cptChannels(r), '',
     'Please confirm whether the reference is our exact product or an equivalent item, and revalidate the threshold.', '',
     ids.length ? 'Earlier case on this: ' + ids.slice(-2).join(', ') + '.' : '',
     '', 'Thank you,', 'MJ Baguhin on behalf of Jack Fallon (Registered Brand Owner)', 'Cross Path Capital LLC'
@@ -2241,7 +2254,8 @@ function freshCaseGroup(rows){
   // Strongest facts of the first listing of each size lead the case
   // In a group case "this listing" is unclear, so each fact names its SKU
   const lead = sizes.map(z=> list.find(r=> r.size === z)).filter(Boolean)
-    .flatMap(r=> strongFacts(r).slice(0, 3).map(f=> f.t.replace(/this listing/g, r.sku)));
+    .flatMap(r=> strongFacts(r).slice(0, 3).map(f=> ({w: f.w, t: f.t.replace(/this listing/g, r.sku)})))
+    .sort((a,b)=> b.w - a.w).map(f=> f.t);
   return [
     `Subject: Competitive External Price Dispute, Equivalency Mismatch, ${list.length} Barnyard Designs ASINs (${list.map(r=> r.asin).join(', ')})`, '',
     'Hello,', '',
@@ -2250,8 +2264,6 @@ function freshCaseGroup(rows){
     'The listings:',
     // groupEvidence opens with its own greeting and intro; skip those here
     groupEvidence(list).split('\n').slice(4).join('\n'), '',
-    'Our price on every channel we operate is at or above our Amazon price: [channel and price list].', '',
-    'Please confirm whether each reference is our exact product or an equivalent item, and revalidate the thresholds.', '',
     ids.length ? 'Earlier case on this: ' + ids.slice(-2).join(', ') + '.' : '',
     '', 'Thank you,', 'MJ Baguhin on behalf of Jack Fallon (Registered Brand Owner)', 'Cross Path Capital LLC'
   ].filter((x,i,a)=> !(x === '' && a[i-1] === '')).join('\n');
@@ -2267,19 +2279,22 @@ function followUpGroup(rows){
   const ids = recentCaseIds(list);
   const sizes = [...new Set(list.map(r=> r.size).filter(Boolean))];
   const lead = sizes.map(z=> list.find(r=> r.size === z)).filter(Boolean)
-    .flatMap(r=> strongFacts(r).slice(0, 3).map(f=> f.t.replace(/this listing/g, r.sku)));
+    .flatMap(r=> strongFacts(r).slice(0, 3).map(f=> ({w: f.w, t: f.t.replace(/this listing/g, r.sku)})))
+    .sort((a,b)=> b.w - a.w).map(f=> f.t);
   const restored = list.some(r=> ((r.events || [])[0] || {}).kind === 'restored');
   // Reply on the newest case any of these listings has
   const newest = list.flatMap(r=> r.events || []).filter(x=> x.cid).sort((a,b)=> a.d < b.d ? 1 : -1)[0];
   if(newest){ const k = ids.indexOf(newest.cid); if(k > -1){ ids.splice(k, 1); ids.push(newest.cid); } }
   const body = ['Hello,', '',
     `I am following up on ${ids.length ? 'case ' + ids.slice(-1)[0] : 'our earlier request'} about ${list.map(r=> r.asin).join(', ')}.`, '',
-    restored ? 'Thank you for checking. The listings have the Featured Offer, but only because we lowered our prices to match the Competitive Price Threshold. Our request is about the threshold itself, which is set too low.' : `As of ${longToday()}, the Competitive Price Threshold on these listings is still below our usual sale price.`, '',
-    ...list.map(r=> `- ${r.asin} (${r.sku}): threshold ${usd(r.cpt)}${r.target ? ', our usual sale price ' + usd(r.target) : ''}`), '',
+    (restored ? 'Thank you for checking. My request is about the accuracy of the Competitive External Price itself. ' : '') +
+      `I am disputing the accuracy of the Competitive External Price. As of ${longToday()}, Pricing Health shows these thresholds:`, '',
+    ...list.map(r=> `- ${r.asin} (${r.sku}): threshold ${usd(r.cpt)}`), '',
     'Key facts:', ...[...new Set(lead)].slice(0, 5).map((t,i)=> `${i + 1}. ${t}`), '',
-    'Could you please ask the pricing team for a manual review and raise the threshold to at least our usual sale price for each size? Thank you.', '',
+    cptChannels(list), '',
+    'Could you please route this to the Pricing Audit team, confirm whether each reference is our exact product or an item assessed as equivalent, and revalidate the thresholds? Thank you.', '',
     ids.length ? 'Related cases: ' + ids.join(', ') : '', '',
-    'Best regards,', 'MJ Baguhin', 'Barnyard Designs, Cross Path Capital LLC'].filter((x,i,a)=> !(x === '' && a[i-1] === '')).join('\n');
+    'Best regards,', 'MJ Baguhin on behalf of Jack Fallon (Registered Brand Owner)', 'Cross Path Capital LLC'].filter((x,i,a)=> !(x === '' && a[i-1] === '')).join('\n');
   const lastRep = list.map(r=> r.latestReply).filter(Boolean).sort((a,b)=> a.d < b.d ? 1 : -1)[0] || null;
   const toJassy = lastRep ? lastRep.ch === 'jassy' : list.some(r=> ((r.events || [])[0] || {}).ch === 'jassy');
   return {subject: lastRep && lastRep.subject ? (/^re:/i.test(lastRep.subject) ? lastRep.subject : 'RE: ' + lastRep.subject)
@@ -2393,17 +2408,17 @@ function caseHistory(rows){
    instead of assuming what Amazon said. */
 const REASONS = [
   {k:'retailer', re:/another retailer|other retailers?|external|outside (?:of )?amazon|off[- ]amazon|elsewhere/i,
-   a: r=> `The facts below show the reference is not a ${r.size || 'same-size'} coir doormat like ours.`},
+   a: r=> 'I am disputing the accuracy of the Competitive External Price. Please confirm whether the reference is our exact product or an item assessed as equivalent. The facts below are about that.'},
   {k:'noshare', re:/(?:cannot|can not|can't|unable to|not able to|not in a position to) (?:be )?shar|confidential|cannot disclose|unable to disclose/i,
-   a: r=> `We understand the reference item cannot be shared. We only ask the pricing team to confirm it is a ${r.size || 'same-size'} coir doormat. If it is not, please reset the threshold.`},
+   a: r=> 'We understand Amazon cannot name the retailer. We only ask you to confirm whether the reference is our exact product or an item assessed as equivalent, and to revalidate the threshold.'},
   {k:'auto', re:/automated|automatic|algorithm|system[- ]generated|our systems?/i,
-   a: ()=> 'We know an automated system sets the threshold. That is why we are asking for a person, a Senior Specialist on the pricing team, to do a manual reference price audit.'},
+   a: ()=> 'We understand the threshold is set by an automated system. That is why this is a validation of pricing change request. Please route it to the Pricing Audit team for revalidation.'},
   {k:'lower', re:/lower (?:your|the) price|reduce (?:your|the) price|adjust (?:your|the) price|price (?:your|the) item|match the/i,
-   a: r=> `We already lowered our price to keep the Featured Offer. Our request is about the threshold itself, which is ${usd(r.cpt)}.`},
+   a: ()=> 'That is guidance on eligibility, which is not what I am asking. I am disputing that the competitive external price is accurate and requesting validation of the pricing change.'},
   {k:'pending', re:/pending|internal request|appropriate team|will follow up|once we have an update|investigat/i,
    a: ()=> 'Thank you for sending this to the pricing team. Could you share any update from them?'},
   {k:'restored', re:/featured offer/i,
-   a: r=> `Thank you for checking. We have the Featured Offer only because we lowered our price to the threshold. The threshold itself is still too low at ${usd(r.cpt)}.`},
+   a: r=> `Thank you for checking. My request is about the accuracy of the Competitive External Price, which still shows ${usd(r.cpt)}. Please route it to the Pricing Audit team for revalidation.`},
   {k:'fixed', re:/eligible|reset|refreshed|updated/i,
    a: r=> `Thank you. As of ${longToday()}, the threshold on ${r.asin} is still ${usd(r.cpt)}, so the change has not taken effect.`},
   {k:'closed', re:/resolved|closed/i,
@@ -2476,20 +2491,19 @@ function jassyFollowUp(rows){
   const changes = list.map(r=>{
     const then = since ? cptOn(r, since) : null;
     const lab = one ? 'The threshold' : `${r.asin} (${r.sku}):`;
-    if(then === null || then === r.cpt) return `${one ? lab : '- ' + lab} ${one ? 'is' : 'threshold'} still ${usd(r.cpt)}${since ? ' as of today, no change since ' + shortDate(since) : ''}${r.target ? ', below our usual sale price of ' + usd(r.target) : ''}.`;
-    return `${one ? lab : '- ' + lab} ${one ? 'moved' : 'threshold moved'} from ${usd(then)} on ${shortDate(since)} to ${usd(r.cpt)} today${r.target && r.cpt < r.target - 0.005 ? ', still below our usual sale price of ' + usd(r.target) : ''}.`;
+    if(then === null || then === r.cpt) return `${one ? lab : '- ' + lab} ${one ? 'is' : 'threshold'} still ${usd(r.cpt)}${since ? ' as of today, no change since ' + shortDate(since) : ''}.`;
+    return `${one ? lab : '- ' + lab} ${one ? 'moved' : 'threshold moved'} from ${usd(then)} on ${shortDate(since)} to ${usd(r.cpt)} today.`;
   });
   const waited = since ? Math.max(0, Math.round((new Date(todayStr() + 'T12:00:00') - new Date(since + 'T12:00:00')) / 86400000)) : 0;
   const pending = read && read.kinds[0] === 'pending';
   const key = (one ? strongFacts(one) : list.flatMap(r=> strongFacts(r))).filter(f=> f.w >= 4)[0];
   const ask = pending
     ? 'Could you please share an update from the pricing team, and an expected date for their answer?'
-    : 'Could you please ask the pricing team for a manual reference price audit by a person, and reset the threshold' +
-      (one && one.target ? ` to at least ${usd(one.target)}?` : ' to at least our usual sale price for each size?');
+    : 'Could you please ask the Pricing Audit team to revalidate the threshold, and confirm whether the reference is our exact product or an item assessed as equivalent?';
 
   const body = [
     'Hello,', '',
-    `${read ? 'Thank you for your help on' : 'I am following up on'} ${cid ? 'case ' + cid : 'my earlier email'} about ${one ? 'ASIN ' + one.asin + ' (' + one.sku + ')' : 'our ' + list.length + ' coir doormat ASINs'}.` +
+    `${read ? 'Thank you for your help on' : 'I am following up on'} ${cid ? 'case ' + cid : 'my earlier email'} about ${one ? 'ASIN ' + one.asin + ' (' + one.sku + ')' : 'our ' + list.length + (list.every(r=> /^DMC-/.test(r.sku || '')) ? ' coir doormat ASINs' : ' ASINs')}.` +
       (J.firstSent ? ` My first email to Mr. Jassy on this was on ${shortDate(J.firstSent.d)}.` : ''), '',
     ...(read ? [`On ${shortDate(read.date)} your team wrote: "${read.quote}"`, '', ...read.answers, ''] : []),
     since ? 'What has changed since then:' : 'Where it stands today:',
@@ -2498,7 +2512,7 @@ function jassyFollowUp(rows){
     ...(key ? ['The key point from my first email, in short: ' + key.t, ''] : []),
     ask, '',
     'The full details are in my first email on this case, so I have not repeated them here. Our brand account owner, Jack Fallon, is copied.', '',
-    'Best regards,', 'MJ Baguhin', 'Barnyard Designs, Cross Path Capital LLC'
+    'Best regards,', 'MJ Baguhin on behalf of Jack Fallon (Registered Brand Owner)', 'Cross Path Capital LLC'
   ].filter((x,i,a)=> !(x === '' && a[i-1] === '')).map(noDash).join('\n');
   return {subject:noDash(subject), body, to, toJassy:true, caseId:cid, rep, read};
 }
@@ -2525,15 +2539,13 @@ function followUpEmail(r){
   const facts = strongFacts(r).filter(f=> f.w >= 3).slice(0, 4);
   const body = ['Hello,', '',
     `I am following up on ${cid ? 'case ' + cid : 'our earlier request'} for ASIN ${r.asin} (${r.sku}). ` +
-    `As of ${longToday()}, the Competitive Price Threshold is still ${usd(r.cpt)}` +
-    (r.target ? `, below our usual sale price of ${usd(r.target)} for this size.` : '.'), '',
+    `As of ${longToday()}, Pricing Health still shows a Competitive Price Threshold of ${usd(r.cpt)}.`, '',
     ...(read ? [`On ${shortDate(read.date)}, ${read.who} wrote: "${read.quote}"`, '', ...read.answers, ''] : []),
-    ...(read && read.kinds[0] === 'pending' ? [] : ['The threshold comes from an automated system. These facts show it is not comparing like with like:', '']),
+    ...(read && read.kinds[0] === 'pending' ? [] : ['I am disputing the accuracy of the Competitive External Price. The facts below are about whether the reference is equivalent to our product:', '']),
     ...facts.map((f,i)=> `${i + 1}. ${f.t}`), '',
     ...(likelyRefs(r).length ? ['Is the reference ' + refLine(likelyRefs(r)[0]) + '?', ''] : []),
-    `Please ask a Senior Specialist on the pricing team for a manual reference price audit, and reset the threshold` +
-      (r.target ? ` to at least ${usd(r.target)}.` : '.'), '',
-    'Thank you,', 'MJ Baguhin', 'Barnyard Designs, Cross Path Capital LLC'
+    'Please route this to the Pricing Audit team for revalidation, and confirm whether the reference is our exact product or an item assessed as equivalent.', '',
+    'Thank you,', 'MJ Baguhin on behalf of Jack Fallon (Registered Brand Owner)', 'Cross Path Capital LLC'
   ].filter((x,i,a)=> !(x === '' && a[i-1] === '')).map(noDash).join('\n');
   const to = toJassy ? ((rep && /@amazon\./i.test(rep.from || '') && rep.ch === 'jassy') ? rep.from : MAIL.jassy) : '';
   return {subject:noDash(subject), body, toJassy, to, caseId:cid, read};
@@ -2568,38 +2580,42 @@ function buildPitch(rows, mode, repOverride){
   const ids = recentCaseIds(list);
   const cid = mode === 'follow' ? ((rep && rep.cid) || ((r0.mailCases || [])[0] || {}).cid || ids.slice(-1)[0] || '') : '';
   const asinTxt = one ? `ASIN ${one.asin} (SKU ${one.sku}, ${one.size ? one.size + ' ' : ''}${cptTitle(one)})` : `${list.length} ASINs: ${list.map(r=> r.asin + ' (' + r.sku + ')').join(', ')}`;
+  // The threshold as Pricing Health shows it. Never our own price (KB CPT notes)
   const priceTxt = one
-    ? `The Competitive Price Threshold is ${usd(one.cpt)}${one.target ? ', below our usual sale price of ' + usd(one.target) + ' for this size' : ''}.`
-    : 'Their Competitive Price Thresholds are set below our usual sale price for each size: ' + list.map(r=> `${r.asin} ${usd(r.cpt)}${r.target ? ' (sale price ' + usd(r.target) + ')' : ''}`).join(', ') + '.';
-  const target = one && one.target ? ` to at least ${usd(one.target)}` : (one ? '' : ' to at least our usual sale price for each size');
+    ? `Pricing Health shows a Competitive Price Threshold of ${usd(one.cpt)}${one.moved ? ' since ' + shortDate(one.moved) : ''}.`
+    : 'Pricing Health shows these Competitive Price Thresholds: ' + list.map(r=> `${r.asin} ${usd(r.cpt)}`).join(', ') + '.';
   const facts = pitchFacts(list);
   const ref = one && likelyRefs(one).length ? refLine(likelyRefs(one)[0]) : '';
   const older = mode === 'fresh' && ids.length ? ` Earlier case: ${ids.slice(-2).join(', ')}.` : '';
-  const ask = `Please send this to the pricing team for a manual reference price audit by a Senior Specialist, and reset the threshold${target}.`;
+  const ask = `Please route this to the Pricing Audit team, confirm whether the reference is our exact product or an item assessed as equivalent, and revalidate the threshold.`;
   const ifSay = [
-    ['"The reference item cannot be shared."', `I understand. Can the pricing team at least confirm it is a ${(one && one.size) || 'same-size'} coir doormat? If it is not, the threshold should be reset.`],
-    ['"It is set by an automated system, we cannot change it."', 'That is why I am asking for a person to check it. Please transfer this to the pricing team or a Senior Specialist for a manual reference price audit.'],
-    ['"Just lower your price."', `We already did, to keep the Featured Offer. The problem is the threshold itself${one ? ', ' + usd(one.cpt) : ''}.`],
-    ['"Your price is not competitive with another retailer."', `Please compare the same size and material. ${facts[0] ? 'For example: ' + facts[0] : ''}`]
+    ['"We cannot share which retailer."', 'I understand. I am not asking where it is sold. Please confirm whether the reference is our exact product or an item assessed as equivalent, and revalidate the threshold.'],
+    ['"It is set by an automated system, we cannot change it."', 'That is why this is a validation of pricing change request. Please route it to the Pricing Audit team for revalidation.'],
+    ['"Lower your price" or "here is how to become eligible."', 'That is guidance on eligibility, which is not what I am asking. I am disputing that the competitive external price is accurate and requesting validation of the pricing change.'],
+    ['"Your price is not competitive with another retailer."', `Our price on every channel we operate is at or above our Amazon price. I am asking you to check whether the item used is equivalent to ours.${facts[0] ? ' For example: ' + facts[0] : ''}`]
   ];
 
   // Chat: short messages, one point each
   const chat = [];
-  chat.push(...chunk(`Hi, I am MJ from Barnyard Designs, the brand owner and only seller of ${asinTxt}.` +
-    (cid ? ` This is about case ${cid}.` : older) + ` ${priceTxt} It is set by Amazon's automated system, so I am asking for a manual review by a person.`));
+  // Opening line from the CPT playbook, so the agent does not treat it as a pricing question
+  chat.push(...chunk(`Hi, I am MJ from Barnyard Designs, writing on behalf of Jack Fallon, the Registered Brand Owner. ` +
+    `I am disputing the accuracy of the Competitive External Price for ${asinTxt}. This is a validation of pricing change request. ` +
+    'I am not asking how to become Featured Offer eligible.' + (cid ? ` This is about case ${cid}.` : older)));
+  chat.push(...chunk(`${priceTxt} It is set by Amazon's automated system. I am disputing that the competitive external price has changed, and I want you to check whether the external price has changed.`));
   if(read) chat.push(...chunk(`On ${shortDate(read.date)}, ${read.who} said: "${read.quote}" ${read.answers.join(' ')}`));
   facts.forEach((f,i)=> chat.push(...chunk(`Fact ${i + 1}: ${f}`)));
   if(ref) chat.push(...chunk(`Is the reference ${ref}? If so, please compare the two products side by side.`));
-  chat.push(ask + (cid ? ` Please add these notes to case ${cid}.` : ' Please open a case and send me the case number.'));
+  chat.push(ask + (cid ? ` Please add these notes to case ${cid}.` : ' Please open a case.'));
+  chat.push('Before we finish, could you please confirm in writing that this is routed to the Pricing Audit team, send me the case ID, and confirm all the ASINs above are covered in that case?');
 
   // Call: what to say, in order
   const call = [
     'BEFORE THE CALL',
     `Have open: ${cid ? 'case ' + cid + ', ' : ''}this page, and the ASIN${one ? '' : 's'} above.`, '',
     '1. SAY WHO YOU ARE',
-    `"Hi, my name is MJ Baguhin. I am calling for Barnyard Designs, the brand owner and only seller of ${asinTxt}.${cid ? ' I am calling about case ' + cid.split('').join(' ') + '.' : ''}"`, '',
+    `"Hi, my name is MJ Baguhin. I am calling for Barnyard Designs, on behalf of Jack Fallon, the Registered Brand Owner, about ${asinTxt}.${cid ? ' I am calling about case ' + cid.split('').join(' ') + '.' : ''}"`, '',
     '2. SAY THE PROBLEM',
-    `"${priceTxt} Amazon's automated system set it, and it is not comparing like with like. I need a person to review it."`, '',
+    `"I am disputing the accuracy of the Competitive External Price. This is a validation of pricing change request, not a question about how to become Featured Offer eligible. ${priceTxt} It is set by Amazon's automated system."`, '',
     ...(read ? ['3. ANSWER WHAT AMAZON SAID LAST',
       `They wrote on ${shortDate(read.date)}: "${read.quote}"`,
       `Say: "${read.answers.join(' ')}"`, ''] : []),
@@ -2609,7 +2625,7 @@ function buildPitch(rows, mode, repOverride){
     `${read ? 5 : 4}. MAKE THE ASK`,
     `"${ask}"`, '',
     `${read ? 6 : 5}. BEFORE YOU HANG UP`,
-    `Ask them to write the call notes on ${cid ? 'case ' + cid : 'a new case'} and to email you the update. Write down their name, the date, and any new case number.`, '',
+    `Get three things: written confirmation it is routed to the Pricing Audit team (not just "raised internally"), the case ID${cid ? ' (' + cid + ')' : ''}, and confirmation that all affected ASINs are covered. Write down their name and the date.`, '',
     'IF THEY SAY...',
     ...ifSay.map(x=> `${x[0]}\n   Say: "${x[1]}"`)
   ];
@@ -2688,27 +2704,21 @@ function caseVerdict(r){
 function cptProductLines(r){
   const coir = /^DMC-/.test(r.sku || '');
   return coir
-    ? `Our product: ${r.size || '[size]'}, coir, tufted construction, PVC backing, [pile height] pile height (V-Trust inspection, [report date]).\n` +
+    ? '[CHECK FIRST, then delete this line: the live listing shows Tufted and the V-Trust pile height (KB CPT notes, section 2). If not, update it before you send.]\n' +
+      `Our product: ${r.size || '[size]'}, coir, tufted construction, PVC backing, [pile height] pile height (V-Trust inspection, [report date]).\n` +
       'The reference appears to be an item assessed as equivalent. The closest match we found, [retailer and item], is [construction], [size].\n' +
       'Tufted and flat woven are different constructions, not a surface treatment.'
     : `Our product: ${r.size || '[size]'}, [material], [construction].`;
 }
-function caseEvidence(r){
+function caseEvidence(r, inScript){
   const pool = (r.sim || []).filter(x=> x.market !== 'Amazon');
   const lines = [
     `ASIN: ${r.asin}   SKU: ${r.sku}`,
     `Product: ${r.name}${r.size ? ' (' + r.size + ' inches)' : ''}`,
-    ...(r.target !== null ? [
-      r.list ? `Our regular price: ${usd(r.list)}` : `Our price: ${usd(r.ours)}`,
-      `Our sale price for this size: ${usd(r.target)}`,
-      `Competitive Price Threshold shown: ${usd(r.cpt)}, ${r.shortPct}% below even our sale price. ` +
-        (r.ours <= r.cpt + 0.005 ? `We have had to cut the price to ${usd(r.ours)} to keep the Featured Offer.` : 'The listing cannot hold the Featured Offer at our sale price.')
-    ] : [
-      `Our price: ${usd(r.ours)}${r.list ? '   Regular (list) price: ' + usd(r.list) : ''}`,
-      r.held ? `Competitive Price Threshold shown: ${usd(r.cpt)} (${r.listPct}% below our regular price). Our price is ${usd(r.ours)}.`
-             : `Competitive Price Threshold shown: ${usd(r.cpt)} (${r.belowPct}% below our price)`
-    ]),
+    `Competitive Price Threshold shown in Pricing Health: ${usd(r.cpt)}`,
+    cptChannels(r),
   ];
+  if(inScript) lines.splice(0, 4);   // the KB case script already has these
   if(r.moved) lines.push('', `The threshold moved from ${usd(r.from)} to ${usd(r.cpt)} on ${r.moved}.`);
   // Outside prices are not listed here: many are below our CPT and would weaken
   // the case. strongFacts() adds them only when every one is above the CPT.
@@ -2722,10 +2732,10 @@ function caseEvidence(r){
   const twins = r.size ? cptRows().filter(x=> x.asin !== r.asin && x.size === r.size && x.cpt === r.cpt &&
                   (x.held || x.gap > 0) && (x.sku || '').split('-')[0] === (r.sku || '').split('-')[0]) : [];
   if(twins.length && !top.length) lines.push('', `${twins.map(x=> 'ASIN ' + x.asin + ' (SKU ' + x.sku + ', ' + cptTitle(x) + ')').join(' and ')} `+
-    `${twins.length > 1 ? 'are' : 'is'} held at the exact same ${usd(r.cpt)} threshold, although the design and price differ. `+
+    `${twins.length > 1 ? 'are' : 'is'} held at the exact same ${usd(r.cpt)} threshold, although the designs differ. `+
     '');
   if(fair.length){
-    lines.push('', top.length ? 'Details, the same-size listings from fact 2:' : siblingHead(fair, r.size, [r.cpt]));
+    lines.push('', top.length ? 'Details, the same-size listings with a higher threshold:' : siblingHead(fair, r.size, [r.cpt]));
     fair.slice(0, 6).forEach(x=> lines.push(`- ASIN ${x.asin} (SKU ${x.sku}, ${cptTitle(x)}): threshold ${usd(x.cpt)}`));
   }
 
@@ -2765,17 +2775,17 @@ function jassyEmail(rows){
   const subject = one
     ? `Inaccurate Automated Competitive Price Threshold on ${one.asin} (${one.size || ''} ${cptTitle(one)})` +
       (one.caseIds && one.caseIds.length ? `, Case ${one.caseIds[one.caseIds.length - 1]}` : '')
-    : `Inaccurate Automated Competitive Price Threshold on ${list.length} Barnyard Designs coir doormat ASINs`;
+    : `Inaccurate Automated Competitive Price Threshold on ${list.length} Barnyard Designs ${list.every(r=> /^DMC-/.test(r.sku || '')) ? 'coir doormat ' : ''}ASINs`;
   const ids = [...new Set(list.flatMap(r=> r.caseIds || []))];
   const body = [
     'Hello,', '',
-    `I am writing on behalf of Barnyard Designs, the brand owner and only seller of the ASIN${one ? '' : 's'} below. ` +
+    `I am writing on behalf of Barnyard Designs, the brand owner of the ASIN${one ? '' : 's'} below. I am disputing the accuracy of the Competitive External Price. ` +
     `Our brand account owner, Jack Fallon, is copied on this email. All numbers below are as of ${longToday()}.`, '',
     one ? caseEvidence(one) : groupEvidence(list), '',
-    ids.length ? 'Related cases: ' + ids.join(', ') + '. The replies so far kept the threshold without comparing a same-size item.' : '',
+    ids.length ? 'Related cases: ' + ids.join(', ') + '.' : '',
     ids.length ? '' : '',
-    'Could a member of your team ask the pricing team for a manual review? Thank you for your help.', '',
-    'Best regards,', 'MJ Baguhin', 'Barnyard Designs, Cross Path Capital LLC'
+    'Could a member of your team ask the Pricing Audit team to revalidate the threshold, and confirm whether the reference is our exact product or an item assessed as equivalent? Thank you for your help.', '',
+    'Best regards,', 'MJ Baguhin on behalf of Jack Fallon (Registered Brand Owner)', 'Cross Path Capital LLC'
   ].filter((x,i,a)=> !(x === '' && a[i-1] === '')).join('\n');
   return {subject, body};
 }
@@ -3004,16 +3014,11 @@ function groupEvidence(rows){
   if(!flagged.length) return '';
   const sizes = [...new Set(flagged.map(r=> r.size).filter(Boolean))];
   const L = [];
-  L.push('Request: re-validate the Competitive Price Threshold on the ASINs below.', '');
-  L.push('We are Barnyard Designs, the brand owner and only seller of these coir doormats. '+
-         'Each listing below shows a threshold far under our price, while identical listings of the same size, '+
-         'material and brand are not flagged.', '');
+  L.push('Request: revalidate the Competitive External Price on the ASINs below.', '');
+  L.push('', '');
   flagged.forEach(r=>{
     L.push(`ASIN ${r.asin} (SKU ${r.sku}), ${r.size || ''} ${cptTitle(r)}`);
-    if(r.target !== null) L.push(`  Regular price ${r.list ? usd(r.list) : usd(r.ours)}, sale price ${usd(r.target)}. Threshold shown ${usd(r.cpt)}, ${r.shortPct}% below even our sale price.` +
-      (r.ours <= r.cpt + 0.005 ? ` We have had to cut the price to ${usd(r.ours)} to keep the Featured Offer.` : ''));
-    else if(r.held) L.push(`  Regular price ${usd(r.list)}. Threshold shown ${usd(r.cpt)}, ${r.listPct}% below it. We have had to cut the price to ${usd(r.ours)} to keep the Featured Offer.`);
-    else L.push(`  Our price ${usd(r.ours)}${r.list ? ', list price ' + usd(r.list) : ''}. Threshold shown ${usd(r.cpt)}, ${r.belowPct}% below our price.`);
+    L.push(`  Threshold shown in Pricing Health: ${usd(r.cpt)}.`);
     if(r.moved) L.push(`  The threshold changed from ${usd(r.from)} to ${usd(r.cpt)} on ${r.moved}.`);
   });
   const same = {};
@@ -3021,7 +3026,7 @@ function groupEvidence(rows){
   Object.keys(same).forEach(z=>{
     const v = same[z];
     if(v.length > 1 && v.every(x=> x === v[0]))
-      L.push('', `All ${v.length} flagged ${z} listings share the exact same threshold (${usd(v[0])}), even though their designs and prices differ. `+
+      L.push('', `${v.length === 2 ? 'Both' : 'All ' + v.length} flagged ${z} listings share the exact same threshold (${usd(v[0])}), even though their designs differ. `+
                  '');
   });
   sizes.forEach(z=>{
@@ -3032,16 +3037,17 @@ function groupEvidence(rows){
     }
     const held = flagged.filter(r=> r.size === z);
     const lr = held.length ? likelyRefs(held[0]) : [];
-    if(lr.length) L.push('', `For ${z}: the threshold of ${usd(held[0].cpt)} matches, to the cent, ${refLine(lr[0])}. ` +
-      'Only our designs sharing a name with that brand\u2019s mats are held to it. Please confirm whether this is the reference item.');
+    if(lr.length) L.push('', `For ${z}: the reference appears to be an item assessed as equivalent. The closest match we found is ${refLine(lr[0])}. ` +
+      'Only our designs sharing a name with that brand\u2019s mats are held to this threshold. Please confirm whether this is the reference item.');
     const out = [];
     if(out.length){
       L.push('', `Comparable ${z} coir doormats sold outside Amazon:`);
       out.slice(0, 5).forEach(x=> L.push(`  ${x.market}, ${x.brand || 'brand not listed'}: ${usd(x.price)}${x.link ? '  ' + x.link : ''}`));
     }
   });
-  L.push('', 'Each of these is also sold on our own brand website, barnyarddesigns.com, at a price at or above our Amazon price.', '',
-         'Please have the pricing team compare each flagged ASIN with a reference item of the same size and construction, and reset the threshold to at least our sale price for the size.');
+  // Our channels from data, not a claim we cannot check (KB CPT notes)
+  L.push('', cptChannels(flagged), '',
+         'Please route this to the Pricing Audit team, confirm whether each reference is our exact product or an item assessed as equivalent, and revalidate the thresholds.');
   return L.join('\n');
 }
 
@@ -3294,7 +3300,7 @@ function factsBlock(r){
   return '<h2 style="margin-top:1rem">Strongest facts for the case</h2>'+
     (F.length ? '<ol class="facts">' + F.map(f=> `<li><span class="fw fw-${f.w >= 4 ? 'hi' : f.w >= 3 ? 'mid' : 'lo'}">${f.w >= 4 ? 'Strong' : f.w >= 3 ? 'Good' : 'Extra'}</span> ${esc(f.t)}</li>`).join('') + '</ol>'
               : '<p class="mut" style="font-size:.84rem">No strong facts yet. They fill in as more days of data come in.</p>')+
-    (likelyRefs(r).length ? `<div class="refbox"><b>Likely reference found:</b> ${esc(refLine(likelyRefs(r)[0]))}. Its price equals our CPT to the cent. It is named in the case emails.</div>` : '')+
+    (likelyRefs(r).length ? `<div class="refbox"><b>Likely reference found:</b> ${esc(refLine(likelyRefs(r)[0]))}. Its price equals our CPT to the cent. That is for your diagnosis only: the drafts name the item but never quote its price, since that would only confirm the threshold. It is named in the case emails.</div>` : '')+
     (risk ? `<div class="risk"><b>Careful:</b> ${risk.length} same-size mat${risk.length > 1 ? 's' : ''} outside Amazon sell${risk.length > 1 ? '' : 's'} below the CPT (cheapest ${usd(risk[0].price)}, ${esc(risk[0].market)}). Do not argue on outside prices. Argue on our own listings, as in the facts above.</div>` : '')+
     '<p class="mut" style="font-size:.78rem;margin-top:.4rem">These facts are added to every draft email automatically, strongest first.</p>';
 }
@@ -6148,7 +6154,7 @@ const TIPS = {
   feat:   'The price on the Add to Cart button right now.',
   gap:    'Our price compared with Amazon\u2019s limit. Red means there is a problem.',
   held:   'We dropped our price to Amazon\u2019s limit just to keep selling. We make less on every sale.',
-  under:  'Amazon\u2019s limit is lower than our usual sale price for this size. Ask Amazon to raise it: open a case.',
+  under:  'Amazon\u2019s limit is lower than our usual sale price for this size. Open a case disputing the accuracy of the Competitive External Price (equivalency), not our price.',
   over:   'Our price is above Amazon\u2019s limit. The Add to Cart button is probably gone.',
   ok:     'All good. Nothing to do.',
   trend:  'A small picture of the last 30 days. Solid line: Amazon\u2019s limit (CPT). Dashed line: our price. A step means it changed. Tap a row for the daily numbers.',
@@ -6172,7 +6178,7 @@ function priceGuide(){
   const row = (term, key) => `<div class="pg-row"><div class="pg-t">${term}</div><div class="pg-d">${esc(TIPS[key])}</div></div>`;
   return '<div class="pguide">'+
     '<div class="pg-h">What do these prices mean?</div>'+
-    '<div class="pg-one">In one line: <b>Amazon has a price limit (the CPT). When that limit is lower than our usual sale price for the size, we open a case to ask Amazon to raise it.</b></div>'+
+    '<div class="pg-one">In one line: <b>Amazon has a price limit (the CPT). When that limit is lower than our usual sale price for the size, we open a case disputing the external price, following the CPT playbook.</b></div>'+
     row('List price', 'list') + row('Sale price', 'sale') + row('Our price', 'ours') +
     row('Target', 'target') + row('CPT', 'cpt') + row('Buy Box', 'buybox') +
     row('Held at CPT', 'held') + row('Too low', 'under') +
