@@ -63,7 +63,7 @@ header h1{
 #meta{font-size:.7rem;color:#93a0b0;letter-spacing:.02em}
 #meta b{color:#ccd6e2;font-weight:600}
 
-#toggle,#fs,#homeBtn,#quickCat,#casesBtn,#catalogBtn,#cptBtn,#bbBtn,#lcBtn,#lpBtn{
+#toggle,#fs,#homeBtn,#quickCat,#casesBtn,#catalogBtn,#cptBtn,#bbBtn,#lcBtn,#lpBtn,#vrBtn{
   font-size:.74rem;padding:.24rem .6rem;
   background:transparent;color:#fff;border:1px solid #3a4652;
 }
@@ -72,12 +72,12 @@ header h1{
 #quickCat{margin-left:auto}
 #homeBtn[aria-pressed="true"],#quickCat[aria-pressed="true"],
 #casesBtn[aria-pressed="true"],
-#cptBtn[aria-pressed="true"],#bbBtn[aria-pressed="true"],#lcBtn[aria-pressed="true"],#lpBtn[aria-pressed="true"],
+#cptBtn[aria-pressed="true"],#bbBtn[aria-pressed="true"],#lcBtn[aria-pressed="true"],#lpBtn[aria-pressed="true"],#vrBtn[aria-pressed="true"],
 #catalogBtn[aria-pressed="true"]{
   background:#2f4a6d;border-color:#4a6fa5;
 }
-#toggle:hover,#fs:hover,#homeBtn:hover,#quickCat:hover,#casesBtn:hover,#catalogBtn:hover,#cptBtn:hover,#bbBtn:hover,#lcBtn:hover,#lpBtn:hover{background:#1c232b}
-#toggle .badge,#homeBtn .badge,#quickCat .badge,#casesBtn .badge,#cptBtn .badge,#bbBtn .badge,#lcBtn .badge,#lpBtn .badge{
+#toggle:hover,#fs:hover,#homeBtn:hover,#quickCat:hover,#casesBtn:hover,#catalogBtn:hover,#cptBtn:hover,#bbBtn:hover,#lcBtn:hover,#lpBtn:hover,#vrBtn:hover{background:#1c232b}
+#toggle .badge,#homeBtn .badge,#quickCat .badge,#casesBtn .badge,#cptBtn .badge,#bbBtn .badge,#lcBtn .badge,#lpBtn .badge,#vrBtn .badge{
   display:inline-block;margin-left:.35rem;padding:0 .32rem;
   background:#a83a26;border-radius:8px;font-size:.68rem;font-weight:700;
 }
@@ -601,10 +601,10 @@ header h1{font-size:.95rem;letter-spacing:.02em;text-transform:none;font-weight:
 header h1::after{content:"";display:inline-block;width:.42rem;height:.42rem;border-radius:50%;
   background:#3fbf7f;margin-left:.45rem;vertical-align:middle}
 #meta{font-family:ui-monospace,"SF Mono",Menlo,Consolas,monospace;font-size:.72rem}
-#toggle,#fs,#homeBtn,#quickCat,#casesBtn,#catalogBtn,#cptBtn,#bbBtn,#lcBtn,#lpBtn{
+#toggle,#fs,#homeBtn,#quickCat,#casesBtn,#catalogBtn,#cptBtn,#bbBtn,#lcBtn,#lpBtn,#vrBtn{
   font-size:.8rem;padding:.38rem .8rem;border-radius:7px;border-color:var(--night-line);color:#dfe5ee}
 #homeBtn[aria-pressed="true"],#quickCat[aria-pressed="true"],#casesBtn[aria-pressed="true"],
-#catalogBtn[aria-pressed="true"],#cptBtn[aria-pressed="true"],#bbBtn[aria-pressed="true"],#lcBtn[aria-pressed="true"],#lpBtn[aria-pressed="true"]{background:#2c4f7c;border-color:#4a76b0;color:#fff}
+#catalogBtn[aria-pressed="true"],#cptBtn[aria-pressed="true"],#bbBtn[aria-pressed="true"],#lcBtn[aria-pressed="true"],#lpBtn[aria-pressed="true"],#vrBtn[aria-pressed="true"]{background:#2c4f7c;border-color:#4a76b0;color:#fff}
 
 /* overview band */
 #ov{background:var(--night);color:#e8edf3;padding:1.05rem 1.25rem 1.15rem;flex:0 0 auto}
@@ -786,6 +786,7 @@ a.idl:hover{color:var(--accent);border-bottom-style:solid}
   <button id="bbBtn">Buy Box</button>
   <button id="lcBtn">Listing Copy</button>
   <button id="lpBtn">List Price</button>
+  <button id="vrBtn">Variation</button>
   <button id="catalogBtn">Catalog</button>
   <button id="toggle" aria-expanded="true">Filters</button>
   <button id="fs" title="Fullscreen">Full screen</button>
@@ -904,6 +905,8 @@ const LC_SRC = 'https://raw.githubusercontent.com/mjbaguhin/cpc-tracker/main/cop
 
 // Category checks, US and CA, written nightly by Category Watch
 const CG_SRC = 'https://raw.githubusercontent.com/mjbaguhin/cpc-tracker/main/category.json';
+const VR_SRC = 'https://raw.githubusercontent.com/mjbaguhin/cpc-tracker/main/variation.json';
+const RB_SRC = 'https://raw.githubusercontent.com/mjbaguhin/cpc-tracker/main/rules.json';
 
 // Amazon's case creation entry point
 const CASE_URL = 'https://sellercentral.amazon.com/help/center?redirectSource=HelpHub';
@@ -1012,6 +1015,12 @@ async function load(fresh){
   grab(CG_SRC, 'json', fresh)
     .then(j => { buildCg(j); if(S.view === 'category') render(); else chrome(); })
     .catch(e => { CG_ERR = e.message; if(S.view === 'category') render(); });
+  grab(RB_SRC, 'json', fresh)
+    .then(j => { buildRb(j); if(['lc','vr','catalog'].indexOf(S.view) !== -1) render(); })
+    .catch(e => { RB_ERR = e.message; if(['lc','vr','catalog'].indexOf(S.view) !== -1) render(); });
+  grab(VR_SRC, 'json', fresh)
+    .then(j => { buildVr(j); if(S.view === 'vr') render(); else chrome(); })
+    .catch(e => { VR_ERR = e.message; if(S.view === 'vr') render(); });
 
   // Ratings arrive after the first paint and trigger a rebuild
   grab(SRC, 'json', fresh)
@@ -3993,6 +4002,153 @@ function openBb(r){
    from Amazon, so they are checked against Amazon's rules instead. */
 let LC = [], LC_META = {}, LC_ERR = '';
 const LC_F = {show:'all', q:'', sort:'', dir:1, tier:'', group:false};
+/* ---------- Rulebook screening ----------
+   rules.json holds Amazon's listing rules and the two brand guides' rules,
+   each with its source and the day it was last checked. Every day, when the
+   modules load fresh data, the live Amazon copy and the correct copy in the
+   Master SKU sheet are screened against it. Severity: amazon (Amazon rule),
+   brand (our brand guide), guide (Amazon guidance, not a hard rule). */
+let RB = null, RB_ERR = '';
+function buildRb(j){ RB_ERR = ''; RB = j && Array.isArray(j.rules) ? j : null; if(!RB) RB_ERR = 'rules.json has no rules'; }
+const RB_SEV = {amazon:['Amazon rule', 'lc-bad'], brand:['Brand guide', 'lc-small'], guide:['Amazon guidance', 'lc-gray']};
+function rbAgeDays(){ return RB && RB.verified ? Math.max(0, Math.floor((Date.now() - new Date(RB.verified + 'T00:00:00').getTime()) / 86400000)) : null; }
+function rbStale(){ const a = rbAgeDays(); return a === null || a > ((RB && RB.recheckDays) || 30); }
+const rbEsc = s=> String(s).replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+function rbPhraseRe(w){
+  // Whole words or phrases, any case. Symbols like #1 match as typed.
+  const a = /^\w/.test(w) ? '(?<![\\w-])' : '', b = /\w$/.test(w) ? '(?![\\w-])' : '';
+  return new RegExp(a + rbEsc(w).replace(/[ -]/g, '[ -]?') + b, 'i');
+}
+function rbBytes(t){ try { return new TextEncoder().encode(t).length; } catch(e){ return unescape(encodeURIComponent(t)).length; } }
+/* One text against one rule. Returns a short finding, or '' when it passes. */
+function rbTest(rule, text, ctx){
+  let t = String(text || '');
+  if(!t.trim()) return '';
+  // The brand name is exempt from title rules (special characters, repeats)
+  if(ctx.brand) t = t.replace(new RegExp(rbEsc(ctx.brand), 'gi'), ' ');
+  (rule.except || []).forEach(x=>{ if(rule.kind === 'phrases') t = t.replace(rbPhraseRe(x), ' '); });
+  switch(rule.kind){
+    case 'maxChars': { const n = String(text).length; return n > rule.value ? `${n} characters, over ${rule.value}` : ''; }
+    case 'maxBytes': { const n = rbBytes(String(text)); return n > rule.value ? `${n} bytes, over ${rule.value}` : ''; }
+    case 'range': { const n = String(text).length; return n < rule.min ? `${n} characters, under ${rule.min}` : n > rule.max ? `${n} characters, over ${rule.max}` : ''; }
+    case 'chars': { const hit = [...new Set([...t].filter(ch=> rule.value.indexOf(ch) !== -1))]; return hit.length ? 'Has ' + hit.join(' ') : ''; }
+    case 'emoji': { const m = t.match(/\p{Extended_Pictographic}/gu); return m ? 'Has ' + [...new Set(m)].join(' ') : ''; }
+    case 'regex': { const m = t.match(new RegExp(rule.value, rule.flags === undefined ? 'i' : rule.flags)); return m ? `Has \u201c${m[0]}\u201d` : ''; }
+    case 'phrases': { const hit = (rule.words || []).filter(w=> rbPhraseRe(w).test(t));
+      // Drop a word already covered by a longer phrase found ("sale" inside "on sale")
+      // and spelling twins (food safe, food-safe) only once
+      const nk = w=> w.toLowerCase().replace(/[ -]/g, '');
+      const keep = hit.filter((w,i)=> !hit.some(o=> o !== w && o.length > w.length && nk(o) !== nk(w) && rbPhraseRe(w).test(o)) && hit.findIndex(o=> nk(o) === nk(w)) === i);
+      return keep.length ? 'Uses ' + keep.map(w=> `\u201c${w}\u201d`).join(', ') : ''; }
+    case 'repeat': { const ex = new Set((rule.except || []).map(x=> x.toLowerCase())), n = {};
+      t.toLowerCase().split(/[^a-z0-9']+/).filter(Boolean).forEach(w=>{ if(ex.has(w) || /^\d+$/.test(w)) return; const k = w.length > 3 ? w.replace(/(es|s)$/, '') : w; n[k] = (n[k] || 0) + 1; });
+      const over = Object.keys(n).filter(k=> n[k] > rule.value); return over.length ? 'Repeats ' + over.map(k=> `\u201c${k}\u201d ${n[k]} times`).join(', ') : ''; }
+  }
+  return '';
+}
+function rbFor(module, brand, name){
+  if(!RB) return [];
+  return RB.rules.filter(r=> r.module === module && (!r.brand || r.brand === brand) && (!r.when || new RegExp(r.when, 'i').test(name || '')));
+}
+/* Listing Copy: every field, live and correct. Returns findings. */
+const RB_FIELD = {title:'title', ih:'ih', b1:'bullet', b2:'bullet', b3:'bullet', b4:'bullet', b5:'bullet', gk:'gk', desc:'desc'};
+function rbScreenLc(r){
+  const out = [];
+  if(!RB || !r.f) return out;
+  const rules = rbFor('lc', r.brand, r.name), f = r.f;
+  Object.keys(RB_FIELD).forEach(k=>{
+    const x = f[k]; if(!x) return;
+    const live = k === 'gk' || k === 'ih' ? '' : (x.s === 'match' ? (x.c || '') : (x.l || ''));
+    const corr = x.c || '';
+    rules.filter(ru=> ru.field && ru.field.indexOf(RB_FIELD[k]) !== -1).forEach(ru=>{
+      const a = live ? rbTest(ru, live, {brand: r.brand}) : '', b = corr && corr !== live ? rbTest(ru, corr, {brand: r.brand}) : (live ? '' : rbTest(ru, corr, {brand: r.brand}));
+      if(a || b) out.push({id: ru.id, sev: ru.sev, field: k, live: a, corr: corr === live ? a : b, same: corr === live && !!a, rule: ru});
+    });
+  });
+  // At least three bullets, on Amazon and in Plytix
+  rules.filter(ru=> ru.kind === 'minCount').forEach(ru=>{
+    const bl = ['b1','b2','b3','b4','b5'].map(k=> f[k] || {});
+    const nLive = bl.filter(x=> x.s === 'match' ? x.c : x.l).length, nCorr = bl.filter(x=> x.c).length;
+    if(!r.nolive && nLive < ru.value) out.push({id: ru.id, sev: ru.sev, field: 'b1', live: `${nLive} bullets on Amazon`, corr: nCorr < ru.value ? `${nCorr} in Plytix` : '', rule: ru});
+    else if(nCorr < ru.value && nCorr) out.push({id: ru.id, sev: ru.sev, field: 'b1', live: '', corr: `${nCorr} bullets in Plytix`, rule: ru});
+  });
+  return out;
+}
+/* Variation: theme rules per child, using its family */
+function rbScreenVr(r, fam){
+  const out = [];
+  if(!RB || !r.exp || !r.exp.isVar) return out;
+  const nt = t=> String(t || '').toLowerCase().replace(/[^a-z]/g, '').replace(/name$/, '').replace(/^colour$/, 'color')
+    .replace(/^(numberofitems|itempackagequantity|packagequantity|unitcount|itemcount)$/, 'count').replace(/^itemshape$/, 'shape').replace(/^(modelnumber)$/, 'model');
+  const mine = [r.exp.t1, r.exp.t2].filter(Boolean);
+  rbFor('vr', r.brand, r.name).forEach(ru=>{
+    if(ru.kind === 'themeShare'){
+      const off = mine.filter(t=> ru.value.indexOf(nt(t)) === -1);
+      if(off.length) out.push({id: ru.id, sev: ru.sev, field: 'theme', corr: `Theme ${off.join(' + ')}`, rule: ru});
+    }
+    if(ru.kind === 'sameTheme' && fam.length > 1){
+      const key = x=> [x.exp.t1, x.exp.t2].filter(Boolean).map(nt).sort().join('+');
+      const counts = {}; fam.forEach(x=> counts[key(x)] = (counts[key(x)] || 0) + 1);
+      const main = Object.keys(counts).sort((a,b)=> counts[b] - counts[a])[0];
+      const ex = fam.find(x=> key(x) === main);
+      if(Object.keys(counts).length > 1 && key(r) !== main) out.push({id: ru.id, sev: ru.sev, field: 'theme', corr: `This child: ${mine.join(' + ') || 'none'}. Most siblings: ${[ex.exp.t1, ex.exp.t2].filter(Boolean).join(' + ') || 'none'}`, rule: ru});
+    }
+    if(ru.kind === 'uniqueValues' && fam.length > 1){
+      const val = x=> [x.exp.v1, x.exp.v2].map(v=> String(v || '').toLowerCase().replace(/[^a-z0-9]/g, '')).join('|');
+      const twins = fam.filter(x=> x.asin !== r.asin && val(x) === val(r) && val(r).replace('|', ''));
+      if(twins.length) out.push({id: ru.id, sev: ru.sev, field: 'value', corr: `Same values as ${twins.map(x=> x.sku).join(', ')}: ${[r.exp.v1, r.exp.v2].filter(Boolean).join(' / ')}`, rule: ru});
+    }
+  });
+  return out;
+}
+function rbChip(hits){
+  if(!RB) return '<span class="lcchip lc-gray" data-tip="Rulebook not loaded">\u2014</span>';
+  if(!hits.length) return '<span class="lcchip lc-ok" data-tip="Passes every rule in the rulebook">OK</span>';
+  const a = hits.filter(h=> h.sev === 'amazon').length, b = hits.filter(h=> h.sev === 'brand').length, g = hits.length - a - b;
+  const tip = hits.slice(0, 6).map(h=> `${(RB_SEV[h.sev] || [''])[0]}: ${h.rule.text.split('. ')[0]}`).join(' \u2022 ');
+  return `<span class="lcchip ${a ? 'lc-bad' : b ? 'lc-small' : 'lc-gray'}" data-tip="${esc(tip)}">${[a ? a + ' Amazon' : '', b ? b + ' brand' : '', g ? g + ' guidance' : ''].filter(Boolean).join(', ')}</span>`;
+}
+const RB_FNAME = {title:'Title', ih:'Item Highlights', b1:'Bullet 1', b2:'Bullet 2', b3:'Bullet 3', b4:'Bullet 4', b5:'Bullet 5', gk:'Backend keywords', desc:'Description', theme:'Variation theme', value:'Variation value'};
+function rbBlock(hits){
+  if(!RB) return `<div class="why"><b>Rule screening off:</b> rules.json not loaded${RB_ERR ? ' (' + esc(RB_ERR) + ')' : ''}.</div>`;
+  const head = `<div class="lcf-l" style="margin-top:.8rem">Rule screening, rulebook checked ${esc(shortDate(RB.verified))}${rbStale() ? ' <b style="color:var(--warn)">(due for a re-check)</b>' : ''}</div>`;
+  if(!hits.length) return head + '<div class="lcf-r" style="color:var(--ok)">Passes every rule in the rulebook.</div>';
+  const ord = {amazon:0, brand:1, guide:2};
+  return head + hits.slice().sort((a,b)=> (ord[a.sev] || 0) - (ord[b.sev] || 0)).map(h=> `<div class="lcf"><div class="lcf-h"><b>${esc(RB_FNAME[h.field] || h.field)}</b> <span class="lcchip ${(RB_SEV[h.sev] || ['', 'lc-gray'])[1]}">${esc((RB_SEV[h.sev] || [h.sev])[0])}</span> <span class="mut" style="font-size:.75rem">${esc(h.rule.sure || '')}</span></div>`+
+    `<div class="lcf-t" style="margin-top:.3rem">${esc(h.rule.text)}</div>`+
+    (h.same ? `<div class="lcf-r">On Amazon and in Plytix: ${esc(h.live)}</div>` :
+      (h.live ? `<div class="lcf-r">On Amazon: ${esc(h.live)}</div>` : '') + (h.corr ? `<div class="lcf-r">${h.field === 'theme' || h.field === 'value' ? 'Master SKU sheet' : 'In Plytix (the fix)'}: ${esc(h.corr)}</div>` : ''))+
+    (h.rule.src && h.rule.src.length ? `<div class="lcf-r" style="color:var(--muted)">Source: ${h.rule.src.map(s=> s[1] ? `<a href="${esc(s[1])}" target="_blank" rel="noopener">${esc(s[0])}</a>` : esc(s[0])).join(', ')}</div>` : '')+
+  '</div>').join('');
+}
+function rbBanner(){
+  if(!RB) return `<div class="why"><b>Rule screening is off:</b> the rulebook (rules.json) did not load${RB_ERR ? ' (' + esc(RB_ERR) + ')' : ''}. Upload rules.json to the cpc-tracker repo.</div>`;
+  const a = rbAgeDays();
+  return rbStale() ? `<div class="why"><b>Rulebook due for a re-check:</b> last checked against Amazon ${a} days ago (${esc(shortDate(RB.verified))}). <button class="work" data-rbopen="1">Open the rulebook</button></div>` : '';
+}
+/* The rulebook: every rule, its source and when it was checked */
+function openRulebook(){
+  const d = document.getElementById('detail');
+  if(!RB){ d.innerHTML = '<h2>Rulebook</h2>' + rbBanner(); document.getElementById('veil').hidden = false; return; }
+  const grp = [['lc', 'Listing Copy'], ['vr', 'Variation']];
+  const ask = `Please re-check the ALM Console rulebook (rules.json in mjbaguhin/cpc-tracker, last checked ${RB.verified}). Search for any Amazon listing policy changes since then (titles, Item Highlights, bullets, description, backend search terms, variations, review sharing), check every rule below is still current, and give me an updated rules.json with sources and today's date.\n\n` +
+    RB.rules.map(r=> `- ${r.id}: ${r.text}`).join('\n');
+  d.innerHTML = '<h2>Rulebook</h2>'+
+    `<h3>Checked against Amazon ${esc(shortDate(RB.verified))} (${rbAgeDays()} days ago). Re-check every ${RB.recheckDays || 30} days.</h3>`+
+    (rbStale() ? '<div class="why"><b>Due for a re-check.</b> Copy the request below and paste it into a Claude chat in this Project.</div>' : '')+
+    '<div class="why">Screening runs every day on the newest data: the live Amazon copy and the correct copy in the Master SKU sheet, against every rule here. The rules themselves only change when they are re-checked, because Amazon\u2019s policy pages need a login and can\u2019t be read automatically.</div>'+
+    grp.map(g=> `<h2 style="margin-top:1rem">${g[1]}</h2>` + RB.rules.filter(r=> r.module === g[0]).map(r=>
+      `<div class="lcf"><div class="lcf-h"><b>${esc(r.id)}</b> <span class="lcchip ${(RB_SEV[r.sev] || ['', 'lc-gray'])[1]}">${esc((RB_SEV[r.sev] || [r.sev])[0])}</span>${r.brand ? ` <span class="mut" style="font-size:.75rem">${esc(r.brand)} only${r.when ? ', ' + esc(r.when) + ' listings' : ''}</span>` : ''} <span class="mut" style="font-size:.75rem">${esc(r.sure || '')}</span></div>`+
+      `<div class="lcf-t" style="margin-top:.3rem">${esc(r.text)}</div>`+
+      (r.src && r.src.length ? `<div class="lcf-r" style="color:var(--muted)">Source: ${r.src.map(s=> s[1] ? `<a href="${esc(s[1])}" target="_blank" rel="noopener">${esc(s[0])}</a>` : esc(s[0])).join(', ')}</div>` : '')+
+      '</div>').join('')).join('')+
+    (RB.notScreened && RB.notScreened.length ? '<h2 style="margin-top:1rem">Modules with no screenable rule</h2>' + RB.notScreened.map(x=> `<div class="lcf-r"><b>${esc(x[0])}:</b> ${esc(x[1])}</div>`).join('') : '')+
+    '<div class="act-row"><button class="work strong" id="rbAsk">Copy a re-check request for Claude</button></div>';
+  document.getElementById('rbAsk').onclick = e=> (navigator.clipboard ? navigator.clipboard.writeText(ask) : Promise.reject())
+    .then(()=> e.target.textContent = 'Copied. Paste it into Claude').catch(()=> window.prompt('Copy:', ask));
+  document.getElementById('veil').hidden = false;
+}
+
 const LC_COLS = [['title','Title'], ['ih','Highlight'], ['b1','Bullet 1'], ['b2','Bullet 2'], ['b3','Bullet 3'],
                  ['b4','Bullet 4'], ['b5','Bullet 5'], ['gk','Keywords'], ['desc','Description']];
 const LC_S = {
@@ -4020,8 +4176,9 @@ function lcRows(){
     const f = c.f || {};
     const bad = LC_COLS.filter(x=> f[x[0]] && (LC_BAD.indexOf(f[x[0]].s) !== -1 || f[x[0]].rule)).map(x=> x[0]);
     const blank = LC_COLS.filter(x=> f[x[0]] && f[x[0]].s === 'noplytix').map(x=> x[0]);
+    const rb = rbScreenLc(Object.assign({}, c, {name: (row && row.name) || c.name || c.asin}));
     return Object.assign({}, c, {name: (row && row.name) || c.name || c.asin, tier: c.tier || (row && row.tier) || '',
-      bad, blank, allOk: !c.nolive && !bad.length});
+      bad, blank, allOk: !c.nolive && !bad.length, rb, rbA: rb.filter(h=> h.sev === 'amazon'), rbB: rb.filter(h=> h.sev === 'brand')});
   });
 }
 
@@ -4033,7 +4190,8 @@ function lcChip(x){
   return `<span class="lcchip ${d[1]}" data-tip="${esc(tip)}">${d[0]}</span>`;
 }
 
-const LC_SORT = { product: r=> r.name, stock: r=> stockOf(r, 'US'), pct: r=> r.pct, bad: r=> r.bad.length, since: r=> r.since || '' };
+const LC_SORT = { product: r=> r.name, stock: r=> stockOf(r, 'US'), pct: r=> r.pct, bad: r=> r.bad.length, since: r=> r.since || '',
+  rb: r=> -(r.rbA.length * 100 + r.rbB.length * 10 + r.rb.length) };
 LC_COLS.forEach(c=> LC_SORT['f_' + c[0]] = r=> r.nolive ? 9 : stRank((r.f || {})[c[0]]));
 
 function renderLc(){
@@ -4049,14 +4207,15 @@ function renderLc(){
   const gk = has('gk');
 
   let rows = all;
-  const pick = {good, wrong, title: has('title'), bullets: bul, desc: has('desc'), gk, blank};
+  const rbA = all.filter(r=> r.rbA.length), rbB = all.filter(r=> r.rbB.length);
+  const pick = {good, wrong, title: has('title'), bullets: bul, desc: has('desc'), gk, blank, rba: rbA, rbb: rbB};
   if(pick[LC_F.show]) rows = pick[LC_F.show];
   if(LC_F.tier) rows = rows.filter(r=> (r.tier || 'N') === LC_F.tier);
   if(LC_F.q){ const q = LC_F.q.toLowerCase(); rows = rows.filter(r=> (r.sku + ' ' + r.asin + ' ' + r.name).toLowerCase().indexOf(q) !== -1); }
   rows = LC_F.sort && LC_SORT[LC_F.sort] ? sortBy(rows, LC_SORT[LC_F.sort], LC_F.dir)
        : sortBy(rows, r=> (r.nolive ? 2000 : 0) + (r.pct === null ? 1000 : r.pct) * 10 + (TIER_RANK[r.tier] !== undefined ? TIER_RANK[r.tier] : 5), 1);
 
-  const order = ['all', 'good', 'wrong', 'title', 'bullets', 'desc', 'gk', 'blank']; let n = 0;
+  const order = ['all', 'good', 'wrong', 'title', 'bullets', 'desc', 'gk', 'blank', 'rba', 'rbb']; let n = 0;
   const tile = (k, val, cls, note)=>{ const f = order[n++];
     return `<div class="cpt-tile bbtile${LC_F.show === f ? ' on' : ''}" role="button" tabindex="0" data-show="${f}" title="Show these in the table"><div class="k">${k}</div><div class="v ${cls || ''}">${val}</div><div class="n">${note || '&nbsp;'}</div></div>`; };
   const list = a=> esc(a.map(r=> r.sku).slice(0,3).join(', ')) + (a.length > 3 ? '\u2026' : '');
@@ -4074,18 +4233,21 @@ function renderLc(){
       tile('Description wrong', has('desc').length, has('desc').length ? 'bad' : 'good', has('desc').length ? list(has('desc')) : 'None')+
       tile('Keyword rule issues', gk.length, gk.length ? 'bad' : 'good', gk.length ? list(gk) : 'All under 249 bytes')+
       tile('Blank in Plytix', blank.length, blank.length ? 'warn' : 'good', blank.length ? 'Fields with no correct copy' : 'None')+
+      tile('Breaks an Amazon rule', RB ? rbA.length : '\u2014', !RB ? '' : rbA.length ? 'bad' : 'good', !RB ? 'Rulebook not loaded' : rbA.length ? list(rbA) : 'None, live or in Plytix')+
+      tile('Brand guide issues', RB ? rbB.length : '\u2014', !RB ? '' : rbB.length ? 'warn' : 'good', !RB ? 'Rulebook not loaded' : rbB.length ? list(rbB) : 'None')+
     '</div></section>'+
+    rbBanner()+
     '<div class="cpt-tools"><div class="seg" id="lcSeg">'+
       [['all','All ' + all.length], ['wrong','Wrong copy ' + wrong.length], ['title','Title ' + has('title').length],
        ['bullets','Bullets ' + bul.length], ['desc','Description ' + has('desc').length], ['gk','Keywords ' + gk.length],
-       ['blank','Blank in Plytix ' + blank.length]]
+       ['blank','Blank in Plytix ' + blank.length], ['rba','Amazon rules ' + rbA.length], ['rbb','Brand guide ' + rbB.length]]
         .map(b=> `<button data-show="${b[0]}" aria-pressed="${LC_F.show === b[0]}">${b[1]}</button>`).join('')+
     '</div><div class="seg" id="lcTier">'+
       ['', 'A', 'B', 'C', 'X', 'N'].map(t=> `<button data-t="${t}" aria-pressed="${LC_F.tier === t}">${t ? 'Tier ' + t : 'All tiers'}</button>`).join('')+
     '</div>'+
     `<input id="lcQ" type="search" placeholder="Search SKU, ASIN or product" value="${esc(LC_F.q)}" aria-label="Search Listing Copy">`+
     (LC_F.sort ? '<button id="lcUnsort">Clear sort</button>' : '')+
-    grpBtn(LC_F) + dlBtns() +
+    grpBtn(LC_F) + dlBtns() + '<button data-rbopen="1">Rulebook</button>' +
     `<span class="count">${rows.length} of ${all.length}</span></div>`;
 
   if(!LC.length){
@@ -4100,15 +4262,17 @@ function renderLc(){
       H('product', 'Product')+
       H('stock', 'US stock', 'num', 'Available units in FBA, from BigQuery. Sort to see empty first.')+
       H('pct', 'Correct %', 'b-cpt c', 'Fields on Amazon that match Plytix, out of the fields we can compare.')+
+      H('rb', 'Rules', 'b-gap c', 'Screened every day against the rulebook (Amazon rules and our brand guide), live copy and Plytix. Sort to bring problems to the top.')+
       LC_COLS.map(c=> H('f_' + c[0], c[1], (c[0] === 'gk' ? 'b-sim' : 'b-gap') + ' c', 'Sort to bring problems to the top.')).join('')+
       H('since', 'Copy last changed', 'b-move', 'The day the live Amazon copy last changed, as Keepa saw it.', 'desc')+
       '</tr></thead><tbody>'+
-      grpMap(LC_F, rows, 13, r=> `<tr class="row" tabindex="0" data-lc="${esc(r.asin)}">`+
+      grpMap(LC_F, rows, 14, r=> `<tr class="row" tabindex="0" data-lc="${esc(r.asin)}">`+
         `<td class="prod"><div class="p-name"><span class="dot" style="background:${r.nolive ? '#94a3b8' : r.allOk ? '#1f9d55' : '#d64545'}"></span>${esc(String(r.name).slice(0, 60))}</div>`+
           `<div class="p-id"><span>SKU</span>${skuL(r.sku)}${cpy(r.sku)}</div><div class="p-id"><span>ASIN</span>${asinL(r.asin)}${cpy(r.asin)}</div>`+
           `${r.tier ? `<span class="p-size">Tier ${esc(r.tier)}</span>` : ''}</td>`+
         stockTd(r, 'US')+
         `<td class="c">${r.nolive ? '<span class="mut">Not checked yet</span>' : r.pct === null ? '<span class="mut">\u2014</span>' : bbBar(r.pct)}</td>`+
+        `<td class="c">${rbChip(r.rb)}</td>`+
         LC_COLS.map(c=> `<td class="c">${r.nolive ? '' : lcChip(r.f[c[0]])}</td>`).join('')+
         `<td>${r.since ? esc(shortDate(r.since)) : '<span class="mut">No change seen</span>'}${r.extra ? `<span class="was">${r.extra} extra bullet${r.extra > 1 ? 's' : ''} on Amazon</span>` : ''}</td>`+
       '</tr>', r=> r.bad.length, 'with wrong copy')+
@@ -4118,6 +4282,7 @@ function renderLc(){
 
   wireSort(v, LC_F, renderLc);
   wireGrpDl(v, LC_F, renderLc, ()=> dlLc(rows));
+  [...v.querySelectorAll('[data-rbopen]')].forEach(b=> b.onclick = openRulebook);
   const setShow = f=>{ LC_F.show = f; renderLc(); };
   [...v.querySelectorAll('#lcSeg button')].forEach(b=> b.onclick = ()=> setShow(b.dataset.show));
   [...v.querySelectorAll('.bbtile')].forEach(t=>{
@@ -4174,6 +4339,7 @@ function openLc(r){
       `<dt>Last change</dt><dd>${r.since ? esc(shortDate(r.since)) : 'No change seen'}${r.liveChecked ? ', checked ' + esc(shortDate(r.liveChecked)) : ''}</dd>`+
     '</dl>'+
     '<div class="lcleg"><mark class="lc-miss">yellow</mark> = in Plytix, not on Amazon. <mark class="lc-extra">red</mark> = on Amazon, not in Plytix.</div>'+
+    rbBlock(r.rb)+
     LC_COLS.map(block).join('')+
     '<div class="act-row">'+
       `<a class="work" href="https://www.amazon.com/dp/${esc(r.asin)}" target="_blank" rel="noopener">Open on Amazon</a>`+
@@ -4596,7 +4762,8 @@ function cgPitch(list){
   const gKeys = Object.keys(groups);
 
   // 1. Who and what
-  chat.push(`Hi, I'm MJ from Barnyard Designs, the brand owner. I need a category correction on ${site} for ` +
+  const brand = list[0].brand || 'Barnyard Designs';
+  chat.push(`Hi, I'm MJ from ${brand}, the brand owner. I need a category correction on ${site} for ` +
     (one ? `ASIN ${one.asin} (SKU ${one.sku}), ${one.name}` :
      useParents ? `${list.length} child ASINs in ${parents.length === 1 ? 'one variation family' : parents.length + ' variation families'}` :
      `${list.length} ASINs`) + '. The details are below.');
@@ -4669,13 +4836,13 @@ function cgPitch(list){
     'IF THEY SAY...', ...ifSay.map(x=> `${x[0]}\n   Say: "${x[1]}"`)].join('\n');
 
   // Case form: everything in one place, children always listed in full
-  const body = [`I am requesting a category correction on the ${mk} marketplace for Barnyard Designs, where we are the brand owner.`, '',
+  const body = [`I am requesting a category correction on the ${mk} marketplace for ${brand}, where we are the brand owner.`, '',
     ...famKeys.flatMap(k=> [famLine(k) + ':', kids(fam[k].rows), '']),
     ...gKeys.flatMap(k=> { const g = groups[k], now = cgNowLines(g.rows);
       return [`Correct category${gKeys.length > 1 ? ' for ' + g.rows.map(r=> r.sku).join(', ') : ''}:`, cgCorrectLines(g.v), '', ...(now ? [(g.rows.every(r=>{ const k = pcOf(r); return k && k.res === 'wrong' && !k.stale; }) ? 'What the detail page shows now (checked):' : 'What our category data shows now:'), now, ''] : [])]; }),
     ...chat.slice(2 + gKeys.length * 2, -1).filter(m=> !/^Correct category|^What the page/.test(m)).flatMap(m=> [m, '']),
     `Could you please update ${one ? 'this ASIN' : 'these ASINs'} to the values above and confirm once the change has been applied?`, '',
-    'Thank you,', 'MJ Baguhin', 'Barnyard Designs, Cross Path Capital LLC'].join('\n').replace(/\n{3,}/g, '\n\n');
+    'Thank you,', 'MJ Baguhin', `${brand}, Cross Path Capital LLC`].join('\n').replace(/\n{3,}/g, '\n\n');
   const clean = t=> noDash(String(t));
   return {chat:chat.map(clean), call:clean(call), ifSay:ifSay.map(x=> [x[0], clean(x[1])]), cid:caseIds[caseIds.length - 1] || '', read:null,
           body:clean(body), subject: clean(`Category correction: ${one ? one.asin + ' (' + one.sku + ')' : parents.length ? parents.map(k=> 'parent ' + k).join(', ') : list.length + ' ASINs'} on ${site}`), follow: !!caseIds.length};
@@ -4761,9 +4928,12 @@ function lcVal(x, side){ if(!x) return ''; if(side === 'c') return x.c || ''; re
 function dlLc(rows){
   const head = ['SKU','ASIN','Product','Tier','US stock','Correct %'];
   LC_COLS.forEach(c=> head.push(c[1] + ' check', c[1] + ' correct (Master SKU)', c[1] + ' on Amazon'));
+  head.push('Amazon rule issues', 'Brand guide issues', 'Amazon guidance');
+  const rbTxt = (r, sev)=> (r.rb || []).filter(h=> h.sev === sev).map(h=> `${RB_FNAME[h.field] || h.field}: ${h.live || h.corr} (${h.rule.id})`).join('; ');
   csvSave('listing-copy', head.concat(['Parent SKU','Parent ASIN']), rows.map(r=>{
     const cells = [r.sku, r.asin, r.name, r.tier, stockOf(r, 'US'), r.pct];
     LC_COLS.forEach(c=>{ const x = (r.f || {})[c[0]]; cells.push(x ? (LC_S[x.s] || [x.s])[0] : '', lcVal(x, 'c'), c[0] === 'gk' ? '(backend, not visible)' : lcVal(x, 'l')); });
+    cells.push(rbTxt(r, 'amazon'), rbTxt(r, 'brand'), rbTxt(r, 'guide'));
     return withParent(r, cells);
   }));
 }
@@ -4881,6 +5051,398 @@ function cgTips(){
   document.getElementById('veil').hidden = false;
 }
 
+/* ---------- Variation module ----------
+   Per child, US and Canada, from variation.json (Variation Watch, daily):
+   in the right family, theme, value, and (US) reviews shared with siblings.
+   Correct values: the Master SKU sheet. Amazon side: Keepa, as Keepa sees it.
+   Per family: ASINs in the family on Amazon that are not active in the
+   Master SKU sheet. */
+let VR = [], VR_FAMS = [], VR_META = {}, VR_ERR = '', VR_VIEW = [];
+const VR_F = {show:'all', q:'', sort:'', dir:1, tier:'', mk:'US', group:false};
+const VR_COLS = [['fam','Family'], ['theme','Theme'], ['value','Value'], ['rev','Reviews shared']];
+const VR_S = {
+  match:   ['OK', 'lc-ok', 'Same as the Master SKU sheet'],
+  wrong:   ['Wrong', 'lc-bad', 'Different from the Master SKU sheet'],
+  split:   ['Split off', 'lc-bad', 'Not in its family on Amazon'],
+  na:      ['\u2014', 'lc-none', 'Not needed for this listing'],
+  blank:   ['Blank in Master SKU', 'lc-gray', 'No correct value in the Master SKU sheet'],
+  unknown: ['Can\u2019t check', 'lc-gray', 'No live value to compare'],
+  nodata:  ['Not checked yet', 'lc-gray', 'No live data from Amazon yet']
+};
+const VR_BAD = ['wrong', 'split'];
+const VR_LABEL = {fam:'Family', theme:'Variation theme', value:'Variation value', rev:'Review sharing'};
+
+function buildVr(j){
+  VR_ERR = '';
+  VR_META = {updated: j && j.updated || '', revFrom: j && j.reviewsFrom || '', revErr: j && j.reviewsError || ''};
+  VR = (j && j.rows) || []; VR_FAMS = (j && j.families) || [];
+}
+function vrFam(mk, pasin){ return VR_FAMS.find(f=> f.mk === mk && f.pasin === pasin) || null; }
+function vrRows(mk){
+  return VR.filter(r=> r.mk === (mk || VR_F.mk)).map(r=>{
+    const row = ROWS.find(x=> x.asin === r.asin);
+    const c = r.c || {};
+    const bad = VR_COLS.filter(x=> c[x[0]] && VR_BAD.indexOf(c[x[0]].s) !== -1).map(x=> x[0]);
+    const blank = VR_COLS.filter(x=> c[x[0]] && c[x[0]].s === 'blank').map(x=> x[0]);
+    const core = bad.filter(k=> k !== 'rev');
+    const fam = r.exp && r.exp.pasin ? VR.filter(x=> x.mk === r.mk && x.exp && x.exp.pasin === r.exp.pasin) : [];
+    const rb = rbScreenVr(r, fam);
+    return Object.assign({}, r, {name: (row && row.name) || r.name || r.asin, tier: r.tier || (row && row.tier) || '',
+      rb, rbA: rb.filter(h=> h.sev === 'amazon'),
+      bad, core, blank, allOk: !r.nolive && !core.length, fullOk: !r.nolive && !bad.length,
+      // A case is for Amazon to fix: a child out of its family, or reviews not pooled.
+      // Wrong theme or value we fix ourselves with a flat file.
+      caseable: bad.filter(k=> k === 'rev' || (k === 'fam' && c.fam && c.fam.e)) });
+  });
+}
+function vrChip(x, nolive){
+  if(nolive) return '<span class="lcchip lc-gray">Not checked yet</span>';
+  const d = VR_S[(x || {}).s] || VR_S.na;
+  const lab = x && x.s === 'na' && x.note && /Standalone/.test(x.note) ? 'Standalone' : d[0];
+  return `<span class="lcchip ${d[1]}" data-tip="${esc((x && x.note) || d[2])}">${lab}${x && x.s === 'match' && x.note && /Close match/.test(x.note) ? ' \u24d8' : ''}</span>`;
+}
+function vrCaseInfo(r){
+  const k = r.kase;
+  return k && k.id ? {id:k.id, date:k.replyDate || k.d, notes:k.reply || '', link:k.link || '', kind:k.kind || ''} : null;
+}
+function vrFamilyRows(key, mk){
+  return vrRows(mk).filter(r=>{ const p = parentOf(r); return (p.pasin && p.pasin === key) || (!p.pasin && p.psku === key); }).filter(r=> r.caseable.length);
+}
+const VR_SORT = { product: r=> r.name, stock: r=> stockOf(r, VR_F.mk), pct: r=> r.pct, since: r=> r.since || '',
+  cs: r=> !r.caseable.length ? 2 : vrCaseInfo(r) ? 1 : 0 };
+const VR_RANK = {split:0, wrong:0, unknown:3, blank:4, match:6, na:7};
+VR_COLS.forEach(c=> VR_SORT['f_' + c[0]] = r=> r.nolive ? 9 : ((r.c || {})[c[0]] ? (VR_RANK[r.c[c[0]].s] !== undefined ? VR_RANK[r.c[c[0]].s] : 5) : 9));
+
+function renderVariation(){
+  document.getElementById('msg').hidden = true;
+  document.getElementById('bar').innerHTML = '';
+  const v = document.getElementById('cptView');
+  const all = vrRows(), live = all.filter(r=> !r.nolive);
+  const checked = live.reduce((t,r)=> t + (r.checked || 0), 0), ok = live.reduce((t,r)=> t + (r.ok || 0), 0);
+  const pct = checked ? Math.round(ok / checked * 1000) / 10 : 0;
+  const has = k=> all.filter(r=> r.bad.indexOf(k) !== -1);
+  const split = all.filter(r=> r.c && r.c.fam && r.c.fam.s === 'split'), other = all.filter(r=> r.c && r.c.fam && r.c.fam.s === 'wrong');
+  const wrong = all.filter(r=> r.bad.length), good = all.filter(r=> r.fullOk), blank = all.filter(r=> r.blank.length);
+  const risk = all.filter(r=> r.risk);
+  const fams = VR_FAMS.filter(f=> f.mk === VR_F.mk), strange = fams.filter(f=> f.strangers && f.strangers.some(s=> !s.ours));
+  const rbA = all.filter(r=> r.rbA.length);
+  const pick = {good, wrong, split, other, theme: has('theme'), value: has('value'), rev: has('rev'), risk, blank, rba: rbA};
+
+  let rows = pick[VR_F.show] || all;
+  if(VR_F.tier) rows = rows.filter(r=> (r.tier || 'N') === VR_F.tier);
+  if(VR_F.q){ const q = VR_F.q.toLowerCase(); rows = rows.filter(r=> (r.sku + ' ' + r.asin + ' ' + r.name + ' ' + (r.par || {}).pasin).toLowerCase().indexOf(q) !== -1); }
+  rows = VR_F.sort && VR_SORT[VR_F.sort] ? sortBy(rows, VR_SORT[VR_F.sort], VR_F.dir)
+       : sortBy(rows, r=> (r.nolive ? 2000 : 0) + (r.bad.length ? 0 : 1000) + (r.pct === null ? 500 : r.pct) + (TIER_RANK[r.tier] !== undefined ? TIER_RANK[r.tier] : 5) / 10, 1);
+  VR_VIEW = rows;
+
+  const tile = (k, val, cls, note, f)=>
+    `<div class="cpt-tile bbtile${VR_F.show === f ? ' on' : ''}" role="button" tabindex="0" data-show="${f}" title="Show these in the table"><div class="k">${k}</div><div class="v ${cls || ''}">${val}</div><div class="n">${note || '&nbsp;'}</div></div>`;
+  const list = a=> esc(a.map(r=> r.sku).slice(0,3).join(', ')) + (a.length > 3 ? '\u2026' : '');
+  const t1 = (label, a, f, warn)=> tile(label, a.length, a.length ? (warn ? 'warn' : 'bad') : 'good', a.length ? list(a) : 'All OK', f);
+  const isCA = VR_F.mk === 'CA';
+  let html =
+    '<section class="cpt-top"><div class="cpt-head"><h2>Variation</h2>'+
+      `<span class="sub">Amazon ${VR_F.mk} vs the Master SKU sheet, ${all.length} active listings in ${fams.length} families</span>`+
+      (VR_META.updated ? `<span class="cpt-live"><i></i>Checked ${esc(VR_META.updated)} ET</span>` : '')+
+    '</div><div class="cpt-tiles">'+
+      tile('Variation correct %', pct + '%', pct >= 98 ? 'good' : pct >= 90 ? 'warn' : 'bad', `${ok} of ${checked} checks match (family, theme, value)`, 'all')+
+      tile('Listings 100% correct', `${good.length}<span style="font-size:1rem;color:var(--c-night-mut)"> of ${all.length}</span>`, good.length === all.length ? 'good' : 'warn', 'Reviews shared included', 'good')+
+      t1('Split off from family', split, 'split') + t1('In the wrong family', other, 'other') +
+      t1('Theme wrong', has('theme'), 'theme') + t1('Value wrong', has('value'), 'value') +
+      (isCA ? tile('Reviews shared', '\u2014', '', 'No live review counts for Canada', 'all')
+            : t1('Reviews not shared', has('rev'), 'rev')) +
+      t1('Theme may split reviews', risk, 'risk', true) +
+      tile('Blank in Master SKU', blank.length, blank.length ? 'warn' : 'good', blank.length ? 'Correct value missing' : 'None', 'blank')+
+      tile('Breaks a variation rule', RB ? rbA.length : '\u2014', !RB ? '' : rbA.length ? 'bad' : 'good', !RB ? 'Rulebook not loaded' : rbA.length ? list(rbA) : 'Themes and values OK in the Master SKU sheet', 'rba')+
+    '</div></section>'+
+    rbBanner()+
+    '<div class="cpt-tools"><div class="seg" id="vrMk">'+
+      ['US','CA'].map(m=>{ const n = vrRows(m).filter(r=> r.bad.length).length;
+        return `<button data-mk="${m}" aria-pressed="${VR_F.mk === m}">${m === 'US' ? 'Amazon US' : 'Amazon CA'} ${n ? '<span class="badge" style="margin-left:.3rem">' + n + '</span>' : ''}</button>`; }).join('')+
+    '</div><div class="seg" id="vrSeg">'+
+      [['all','All ' + all.length], ['wrong','Wrong ' + wrong.length], ['blank','Blank in Master SKU ' + blank.length]]
+        .map(b=> `<button data-show="${b[0]}" aria-pressed="${VR_F.show === b[0]}">${b[1]}</button>`).join('')+
+    '</div><div class="seg" id="vrTier">'+
+      ['', 'A', 'B', 'C', 'X', 'N'].map(t=> `<button data-t="${t}" aria-pressed="${VR_F.tier === t}">${t ? 'Tier ' + t : 'All tiers'}</button>`).join('')+
+    '</div>'+
+    `<input id="vrQ" type="search" placeholder="Search SKU, ASIN, parent or product" value="${esc(VR_F.q)}" aria-label="Search Variation">`+
+    (VR_F.sort ? '<button id="vrUnsort">Clear sort</button>' : '')+
+    grpBtn(VR_F) + dlBtns() + '<button id="vrTips">Why does this happen?</button><button data-rbopen="1">Rulebook</button>' +
+    (rows.some(r=> r.core.some(k=> k === 'theme' || k === 'value' || k === 'fam')) ? '<button id="vrFlatT">Download flat file values</button>' : '') +
+    `<span class="count">${rows.length} of ${all.length}</span></div>`;
+
+  if(VR_META.revErr && !isCA) html += `<div class="why"><b>Review counts not loaded:</b> ${esc(VR_META.revErr)}. Reviews shared shows Can\u2019t check until the next run.</div>`;
+  if(strange.length) html += '<div class="why"><b>Not ours in our family?</b> ' +
+    strange.map(f=> `${esc(f.pname || f.psku)} (${esc(f.pasin)}): ${f.strangers.filter(s=> !s.ours).map(s=> esc(s.asin)).join(', ')}`).join('; ') +
+    '. These ASINs are in the family on Amazon but not in the Master SKU sheet. <button class="work" id="vrStr">Check and report</button></div>';
+
+  if(!VR.length){
+    html += VR_ERR ? '<div class="cpt-empty"><b>Variation feed not found yet</b>Run setupVariationWatchDaily in the CPC Keepa Fetcher project. It reads Keepa and creates variation.json.</div>'
+                   : '<div class="cpt-empty"><b>Loading Variation</b></div>';
+  } else if(!rows.length){
+    html += '<div class="cpt-empty"><b>Nothing here</b>Pick All or clear the search.</div>';
+  } else {
+    const H = (k, label, cls, tip, d)=> `<th data-s="${k}" data-d="${d || 'asc'}" class="${cls || ''}">${label}${tip ? `<span class="qi" tabindex="0" data-tip="${esc(tip)}">?</span>` : ''}${sortArrow(VR_F, k)}</th>`;
+    const mk = VR_F.mk;
+    html += '<table class="cpt-table bb-table lc-table cg-table"><thead><tr>'+
+      H('product', 'Product')+
+      H('stock', isCA ? 'CA stock' : 'US stock', 'num', 'Available units in FBA, from BigQuery. Sort to see empty first.')+
+      H('pct', 'Correct %', 'b-cpt c', 'Family, theme and value checks that match the Master SKU sheet, out of the ones we can compare. Reviews shared is not in this number.')+
+      VR_COLS.map(c=> H('f_' + c[0], c[1], 'b-gap c', c[0] === 'rev' ? 'Same review count as most siblings, as Keepa sees it. US only.' : 'Sort to bring problems to the top.')).join('')+
+      H('since', 'Last changed on Amazon', 'b-move', 'The day the family, theme or value last changed on Amazon, as Keepa saw it.', 'desc')+
+      H('cs', 'Case', 'b-case', 'A case is for a child out of its family or reviews not shared. Wrong theme or value: flat file.')+
+      '</tr></thead><tbody>'+
+      grpMap(VR_F, rows, 10, r=> `<tr class="row" tabindex="0" data-vr="${esc(r.asin)}">`+
+        `<td class="prod"><div class="p-name"><span class="dot" style="background:${r.nolive ? '#94a3b8' : r.fullOk ? '#1f9d55' : '#d64545'}"></span>${esc(String(r.name).slice(0, 60))}</div>`+
+          `<div class="p-id"><span>SKU</span>${skuL(r.sku, mk)}${cpy(r.sku)}</div><div class="p-id"><span>ASIN</span>${asinL(r.asin, mk)}${cpy(r.asin)}</div>`+
+          `${r.tier ? `<span class="p-size">Tier ${esc(r.tier)}</span>` : ''}${r.risk ? `<span class="p-size" data-tip="${esc(r.risk)}" style="background:#fff4e0;color:#8a5a00">Theme may split reviews</span>` : ''}${r.rbA.length ? `<span class="p-size" data-tip="${esc(r.rbA.map(h=> h.rule.text + ' ' + h.corr).join(' \u2022 '))}" style="background:#fde8e8;color:#9b1c1c">Breaks a variation rule</span>` : ''}</td>`+
+        stockTd(r, mk)+
+        `<td class="c">${r.nolive ? '<span class="mut">Not checked yet</span>' : r.pct === null ? '<span class="mut">\u2014</span>' : bbBar(r.pct)}</td>`+
+        VR_COLS.map(c=> `<td class="c">${vrChip((r.c || {})[c[0]], r.nolive)}</td>`).join('')+
+        `<td>${r.since ? esc(shortDate(r.since)) : '<span class="mut">No change seen</span>'}</td>`+
+        `<td>${r.caseable.length ? (()=>{ const ci = vrCaseInfo(r);
+            return `<button class="work strong" data-vrcase="${esc(r.asin)}">${ci ? 'Follow up' : 'Draft case'}</button>`+
+              (ci ? `<span class="was">Case ${esc(ci.id)}${ci.date ? ', ' + esc(shortDate(ci.date)) : ''}</span>` : ''); })()
+          : r.core.length ? '<span class="mut">Flat file</span>' : ''}</td>`+
+      '</tr>', r=> r.bad.length, 'need a look', VR_F.mk,
+      p=> vrFamilyRows(p.pasin || p.psku, VR_F.mk).length ? `<button class="work strong" data-vrfam="${esc(p.pasin || p.psku)}">Draft case for this family</button>` : '')+
+      '</tbody></table>';
+  }
+  v.innerHTML = stockAlert() + html;
+
+  wireSort(v, VR_F, renderVariation);
+  [...v.querySelectorAll('[data-rbopen]')].forEach(b=> b.onclick = openRulebook);
+  wireGrpDl(v, VR_F, renderVariation, ()=> dlVr(rows));
+  const tp = document.getElementById('vrTips'); if(tp) tp.onclick = vrTips;
+  const ft = document.getElementById('vrFlatT'); if(ft) ft.onclick = ()=> dlVrFlat(rows);
+  const st = document.getElementById('vrStr'); if(st) st.onclick = ()=> vrStrangerDraft(strange);
+  const setShow = f=>{ VR_F.show = f; renderVariation(); };
+  [...v.querySelectorAll('#vrSeg button')].forEach(b=> b.onclick = ()=> setShow(b.dataset.show));
+  [...v.querySelectorAll('#vrMk button')].forEach(b=> b.onclick = ()=>{ VR_F.mk = b.dataset.mk; renderVariation(); });
+  [...v.querySelectorAll('.bbtile')].forEach(t=>{
+    const go = ()=>{ setShow(t.dataset.show); const tb = document.querySelector('#cptView .cg-table, #cptView .cpt-empty'); if(tb && tb.scrollIntoView) tb.scrollIntoView({behavior:'smooth', block:'start'}); };
+    t.onclick = go; t.onkeydown = e=>{ if(e.key === 'Enter') go(); };
+  });
+  [...v.querySelectorAll('#vrTier button')].forEach(b=> b.onclick = ()=>{ VR_F.tier = b.dataset.t; renderVariation(); });
+  const q = document.getElementById('vrQ');
+  if(q) q.oninput = ()=>{ VR_F.q = q.value; const pos = q.selectionStart; renderVariation(); const q2 = document.getElementById('vrQ'); q2.focus(); q2.setSelectionRange(pos, pos); };
+  const un = document.getElementById('vrUnsort');
+  if(un) un.onclick = ()=>{ VR_F.sort = ''; renderVariation(); };
+  [...v.querySelectorAll('button[data-vrfam]')].forEach(b=> b.onclick = e=>{ e.stopPropagation(); vrDraft(vrFamilyRows(b.dataset.vrfam, VR_F.mk)); });
+  [...v.querySelectorAll('button[data-vrcase]')].forEach(b=> b.onclick = e=>{
+    e.stopPropagation(); const r = all.find(x=> x.asin === b.dataset.vrcase); if(r) vrDraft([r]);
+  });
+  [...v.querySelectorAll('tr.row[data-vr]')].forEach(tr=>{
+    const open = ()=>{ const r = all.find(x=> x.asin === tr.dataset.vr); if(r) openVr(r); };
+    tr.onclick = open; tr.onkeydown = e=>{ if(e.key === 'Enter') open(); };
+  });
+}
+
+function openVr(r){
+  const d = document.getElementById('detail'), mk = r.mk, c = r.c || {};
+  const f = r.par && r.par.pasin ? vrFam(mk, r.par.pasin) : null;
+  const block = col=>{
+    const x = c[col[0]];
+    if(!x || x.s === 'na') return '';
+    return `<div class="lcf"><div class="lcf-h"><b>${col[1]}</b> ${vrChip(x)}</div>`+
+      `<div class="lcf-l">${col[0] === 'rev' ? 'Most siblings show' : 'Master SKU says'}</div><div class="lcf-t">${x.e ? esc(x.e) : '<span class="mut">blank</span>'}</div>`+
+      `<div class="lcf-l">${col[0] === 'rev' ? 'This child shows' : 'Amazon has'}</div><div class="lcf-t">${x.a ? esc(x.a) : '<span class="mut">nothing</span>'}</div>`+
+      (x.note ? `<div class="lcf-r" style="color:var(--muted)">${esc(x.note)}</div>` : '')+
+    '</div>';
+  };
+  const ci = vrCaseInfo(r);
+  const famN = r.par && r.par.pasin ? vrFamilyRows(r.par.pasin, mk).length : 0;
+  d.innerHTML =
+    `<h2>Variation \u00b7 ${esc(mk)}</h2>`+
+    `<h3>${skuL(r.sku, mk)} ${esc(r.name)}</h3>`+
+    '<dl>'+
+      `<dt>ASIN</dt><dd class="mono">${asinL(r.asin, mk)}${cpy(r.asin)}</dd>`+
+      (r.par && r.par.pasin ? `<dt>Parent</dt><dd class="mono">${asinL(r.par.pasin, mk)}${cpy(r.par.pasin)} ${esc(r.par.psku || '')}</dd>` : '<dt>Parent</dt><dd>None (standalone in the Master SKU sheet)</dd>')+
+      `<dt>Correct %</dt><dd class="${r.allOk ? 'ok' : 'warn'}">${r.pct === null ? '\u2014' : r.pct + '%'}${r.checked ? ` (${r.ok} of ${r.checked} checks)` : ''}</dd>`+
+      `<dt>To fix</dt><dd>${r.bad.length ? esc(r.bad.map(k=> VR_LABEL[k]).join(', ')) : 'Nothing'}</dd>`+
+      (f ? `<dt>Family on Amazon</dt><dd>${f.live ? `${f.onAmazon} children, theme ${esc((f.dims || []).join(' + ') || 'unknown')}` : 'Parent not read yet'}${f.strangers && f.strangers.length ? `<br>Not active in the Master SKU sheet: ${f.strangers.map(s=> esc(s.asin) + (s.ours ? ' (ours, not active)' : ' (not found)')).join(', ')}` : ''}</dd>` : '')+
+      `<dt>Last change</dt><dd>${r.since ? esc(shortDate(r.since)) : 'No change seen'}${r.liveChecked ? ', checked ' + esc(shortDate(r.liveChecked)) : ''}</dd>`+
+    '</dl>'+
+    (r.risk ? `<div class="why"><b>Theme note:</b> ${esc(r.risk)}</div>` : '')+
+    (r.caseable.length ? `<div class="act-row"><button class="work strong" id="vrOne">${ci ? 'Follow up on case ' + esc(ci.id) : 'Draft case'}</button>`+
+      (famN > 1 ? `<button class="work strong" id="vrFamOne">Draft case for the whole family (${famN})</button>` : '')+
+      '<button class="work" id="vrWhy">Why does this happen?</button></div>'+
+      (ci && ci.notes ? `<div class="lcf-r" style="color:var(--muted)">Amazon\u2019s last reply (${esc(shortDate(ci.date))}): ${esc(ci.notes)}${ci.link ? ` <a href="${esc(ci.link)}" target="_blank" rel="noopener">Open in Gmail</a>` : ''}</div>` : '') : '')+
+    (r.core.some(k=> k !== 'rev') && !r.caseable.length ? '<div class="act-row"><button class="work strong" id="vrFlatOne">Download flat file values</button><button class="work" id="vrWhy">Why does this happen?</button></div>' : '')+
+    (r.nolive ? '<div class="why">No live data from Amazon yet for this listing.</div>' : VR_COLS.map(block).join(''))+
+    rbBlock(r.rb)+
+    '<div class="why">Family, theme and value: Keepa\u2019s last read, as Keepa sees it, not the page itself. Reviews: the review counts from the nightly rating run (Keepa). Case number and last reply: Gmail. Correct values: the Master SKU sheet.</div>';
+  const one = document.getElementById('vrOne'); if(one) one.onclick = ()=> vrDraft([r]);
+  const fo = document.getElementById('vrFamOne'); if(fo) fo.onclick = ()=> vrDraft(vrFamilyRows(r.par.pasin, mk));
+  const fl = document.getElementById('vrFlatOne'); if(fl) fl.onclick = ()=> dlVrFlat([r]);
+  const wy = document.getElementById('vrWhy'); if(wy) wy.onclick = vrTips;
+  document.getElementById('veil').hidden = false;
+}
+
+/* ---------- Variation case drafts (chat first, then call, then case form) ----------
+   Two kinds: children out of their family (relink), and reviews not shared.
+   Wrong theme or value never gets a case: we fix it with a flat file. */
+function vrThemeOf(r){ return [r.exp.t1, r.exp.t2].filter(Boolean).join(' and ') || 'variation theme'; }
+function vrValsOf(r){ return [[r.exp.t1, r.exp.v1], [r.exp.t2, r.exp.v2]].filter(p=> p[0]).map(p=> `${p[0]}: ${p[1] || 'n/a'}`).join(', '); }
+const VR_SHARE_OK = /^(colou?r|colou?rname|pattern|patternname|size|sizename|numberofitems|itempackagequantity|packagequantity|unitcount|model|modelname)$/;
+function vrEligible(r){ return [r.exp.t1, r.exp.t2].filter(Boolean).every(t=> VR_SHARE_OK.test(String(t).toLowerCase().replace(/[^a-z]/g, ''))); }
+
+function vrPitch(list){
+  const mk = list[0].mk, site = mk === 'CA' ? 'amazon.ca' : 'amazon.com', brand = list[0].brand || 'Barnyard Designs';
+  const relink = list.filter(r=> r.caseable.indexOf('fam') !== -1), revs = list.filter(r=> r.caseable.indexOf('rev') !== -1);
+  const one = list.length === 1 ? list[0] : null;
+  const cases = list.map(vrCaseInfo).filter(Boolean), caseIds = [...new Set(cases.map(c=> c.id))];
+  const pasins = [...new Set(list.map(r=> r.exp.pasin).filter(Boolean))];
+  const useParents = list.length > CG_MAX_ASINS;
+  const kid = r=> `${r.asin} (SKU ${r.sku})`;
+  const fam = p=>{ const r = list.find(x=> x.exp.pasin === p) || {par:{}}; return `Parent ASIN ${p}, parent SKU ${r.par.psku || 'n/a'} (${r.par.pname || 'variation family'})`; };
+  const chat = [], ifSay = [];
+  const asOf = longToday();
+
+  chat.push(`Hi, I'm MJ from ${brand}, the brand owner. I need help with ${pasins.length === 1 ? 'a variation family' : pasins.length + ' variation families'} on ${site}: ` +
+    [relink.length ? `${relink.length === 1 ? 'one child is' : relink.length + ' children are'} not showing in ${relink.length === 1 ? 'its' : 'their'} family` : '',
+     revs.length ? `reviews are not shared across the family` : ''].filter(Boolean).join(', and ') + '. The details are below.');
+  chat.push(pasins.map(fam).join('\n'));
+
+  if(relink.length){
+    chat.push(`Children to restore to their parent:\n` + (useParents && relink.length > CG_MAX_ASINS
+      ? `${relink.length} children. I have the full list ready.`
+      : relink.map(r=> `${kid(r)}: parent ${r.exp.pasin}, ${vrValsOf(r)}`).join('\n')));
+    chat.push(`What our catalog data shows now (${asOf}):\n` + relink.slice(0, CG_MAX_ASINS).map(r=>
+      `${r.asin}: ${r.c.fam.s === 'split' ? 'shows on its own, not in any family' : 'is in family ' + r.c.fam.a + ' instead'}`).join('\n') +
+      (relink.length > CG_MAX_ASINS ? `\nand ${relink.length - CG_MAX_ASINS} more the same way` : ''));
+    if(useParents && relink.length > CG_MAX_ASINS) pasins.forEach(p=> ifSay.push([`"Please send the list of children for ${p}."`, relink.filter(r=> r.exp.pasin === p).map(r=> `${kid(r)}: ${vrValsOf(r)}`).join('; ')]));
+  }
+  if(revs.length){
+    const byFam = {};
+    revs.forEach(r=> (byFam[r.exp.pasin] = byFam[r.exp.pasin] || []).push(r));
+    chat.push(Object.keys(byFam).map(p=>{ const rs = byFam[p];
+      return `In family ${p}, most children show ${rs[0].c.rev.e} reviews. These show a different count:\n` +
+        rs.slice(0, useParents ? 3 : 99).map(r=> `${kid(r)}: ${r.c.rev.a} reviews`).join('\n') + (useParents && rs.length > 3 ? `\nand ${rs.length - 3} more` : ''); }).join('\n\n'));
+    const elig = revs.every(vrEligible), th = [...new Set(revs.map(vrThemeOf))].join(' / ');
+    chat.push(elig
+      ? `These children are the same product. They differ only by ${th}. Your review sharing guidelines keep reviews shared for color, pattern, same-function size and pack size variations.`
+      : `These children differ by ${th}. Please confirm whether they qualify for review sharing, and if not, what we need to change.`);
+  }
+  if(caseIds.length) chat.push(`We contacted you about ${one ? 'this ASIN' : 'these ASINs'} before on case${caseIds.length > 1 ? 's' : ''} ${caseIds.join(' and ')}.`);
+  chat.push(`Please send this to the catalog team to ` + [relink.length ? `restore ${relink.length === 1 ? 'this child' : 'these children'} to ${relink.length === 1 ? 'its parent' : 'their parents'} with the values above` : '',
+    revs.length ? `re-check review sharing for ${pasins.length === 1 ? 'this family' : 'these families'}` : ''].filter(Boolean).join(' and ') + ', add these notes to a case, and send me the case number.');
+
+  if(relink.length) ifSay.push(
+    ['"Please use the Variation Wizard."', 'The Variation Wizard was retired at the end of August 2026. Please ask the catalog team to relink the child, or tell me the exact upload you need.'],
+    ['"Delete the child and create it again."', 'Deleting means the SKU cannot be reused for 24 hours. I would rather the catalog team relinks it. Please escalate.'],
+    ['"It can take up to two hours to show."', `Our data shows ${relink.length === 1 ? 'it has' : 'they have'} been out of the family since ${shortDate(relink.map(r=> r.since).filter(Boolean).sort()[0] || '') || 'before today'}, so it is past that.`]);
+  if(revs.length){
+    if(revs.every(vrEligible)) ifSay.push(['"Reviews are shared only for the same core product."', (()=>{ const th = [...new Set(revs.map(vrThemeOf))].join(' / ').toLowerCase(); return `They are the same product. Only the ${th} ${/ and | \/ /.test(th) ? 'differ, which are differences' : 'differs, which is one of the differences'} your guidelines list as eligible.`; })()]);
+    ifSay.push(['"Please update the variation theme."', 'Which theme do you recommend for these children? I will update it by flat file and come back if the reviews still do not pool.']);
+  }
+
+  const call = ['BEFORE THE CALL', `Have open: ${caseIds.length ? 'case ' + caseIds.join(', ') + ', ' : ''}this page, and the children list.`, '',
+    '1. SAY WHO YOU ARE', `"${chat[0].replace("Hi, I'm MJ", 'Hi, my name is MJ Baguhin, calling')}"`, '',
+    '2. GIVE THE DETAILS', ...chat.slice(1, -1).map(m=> '"' + m.replace(/\n/g, '; ') + '"'), '',
+    '3. MAKE THE ASK', `"${chat[chat.length - 1]}"`, '',
+    '4. BEFORE YOU HANG UP', 'Ask for the case number and the agent\u2019s name. Write them down.', '',
+    'IF THEY SAY...', ...ifSay.map(x=> `${x[0]}\n   Say: "${x[1]}"`)].join('\n');
+
+  const body = [`I am requesting help with a variation family on the ${mk} marketplace for ${brand}, where we are the brand owner.`, '',
+    ...pasins.map(p=> fam(p)), '',
+    ...(relink.length ? ['Children to restore to their parent, with their variation values:', ...relink.map(r=> `${kid(r)}: parent ${r.exp.pasin}, ${vrValsOf(r)}`), '',
+      `What our catalog data shows now (${asOf}):`, ...relink.map(r=> `${r.asin}: ${r.c.fam.s === 'split' ? 'shows on its own, not in any family' : 'is in family ' + r.c.fam.a + ' instead'}`), ''] : []),
+    ...(revs.length ? chat.filter(m=> /^In family |^These children /.test(m)).flatMap(m=> [m, '']) : []),
+    ...(caseIds.length ? [chat.find(m=> /^We contacted you/.test(m)), ''] : []),
+    `Could you please ${[relink.length ? 'restore these children to their parents with the values above' : '', revs.length ? 're-check review sharing for this family' : ''].filter(Boolean).join(' and ')}, and confirm once it is done?`, '',
+    'Thank you,', 'MJ Baguhin', `${brand}, Cross Path Capital LLC`].join('\n').replace(/\n{3,}/g, '\n\n');
+  const clean = t=> noDash(String(t));
+  return {chat:chat.map(clean), call:clean(call), ifSay:ifSay.map(x=> [x[0], clean(x[1])]), cid:caseIds[caseIds.length - 1] || '', read:null,
+          body:clean(body), follow: !!caseIds.length,
+          subject: clean(`${relink.length ? 'Variation family repair' : 'Review sharing'}: ${pasins.length ? pasins.map(p=> 'parent ' + p).join(', ') : one.asin} on ${site}`)};
+}
+function vrDraft(list){
+  list = list.filter(r=> r.caseable.length);
+  if(!list.length) return;
+  const P = vrPitch(list);
+  showDraft(list.length === 1 ? `${list[0].sku} ${list[0].name}` : `${list.length} listings, ${list[0].mk}`, P.body,
+    {follow:P.follow, subject:P.subject, caseId:P.cid, rows:[], pitch:P});
+}
+// ASINs in our family on Amazon that are not in the Master SKU sheet: Amazon's
+// FAQ sends an incorrectly linked product to the Account Health report form
+function vrStrangerDraft(fams){
+  const mk = VR_F.mk, site = mk === 'CA' ? 'amazon.ca' : 'amazon.com';
+  const text = ['Subject: Product incorrectly added to our variation family on ' + site, '',
+    'Check first: open each ASIN below and make sure it is not one of ours (an old listing or another brand of ours). Only send this for ASINs that are not ours.', '',
+    `We are the brand owner. The following ASINs appear in our variation families on ${site} but are not our products:`, '',
+    ...fams.flatMap(f=> [`Parent ASIN ${f.pasin}, parent SKU ${f.psku || 'n/a'} (${f.pname || 'variation family'}):`, ...f.strangers.filter(s=> !s.ours).map(s=> `${s.asin}, https://www.${site}/dp/${s.asin}`), '']),
+    'Please remove these ASINs from our variation families.', '', 'Thank you,', 'MJ Baguhin', 'Cross Path Capital LLC'].join('\n');
+  showDraft('Report products not ours in our families', text, {subject: 'Product incorrectly added to our variation family on ' + site});
+}
+
+/* ---------- Downloads ---------- */
+function dlVr(rows){
+  const h = ['Market','SKU','ASIN','Amazon link','Product','Tier','Stock','Correct %'];
+  VR_COLS.forEach(c=> h.push(c[1] + ' check', c[1] + (c[0] === 'rev' ? ' most siblings' : ' correct (Master SKU)'), c[1] + (c[0] === 'rev' ? ' this child' : ' on Amazon')));
+  csvSave('variation-' + VR_F.mk.toLowerCase(), h.concat(['Theme note','Rule issues','Case ID','Last case note','Parent SKU','Parent ASIN']), rows.map(r=>{
+    const cells = [r.mk, r.sku, r.asin, `https://www.amazon.${r.mk === 'CA' ? 'ca' : 'com'}/dp/${r.asin}`, r.name, r.tier, stockOf(r, r.mk), r.pct];
+    VR_COLS.forEach(c=>{ const x = (r.c || {})[c[0]] || {}; cells.push(r.nolive ? 'Not checked yet' : (VR_S[x.s] || [x.s || ''])[0], x.e || '', x.a || ''); });
+    const ci = vrCaseInfo(r); cells.push(r.risk || '', (r.rb || []).map(x=> `${x.corr} (${x.rule.id})`).join('; '), ci ? ci.id : '', ci ? ci.notes : '');
+    return withParent(r, cells);
+  }));
+}
+function dlVrFlat(rows){
+  const list = rows.filter(r=> r.core.length && r.exp && r.exp.isVar);
+  csvSave('variation-flat-file-values-' + VR_F.mk.toLowerCase(),
+    ['item_sku (Seller SKU)', 'update_delete', 'parent_child (Parentage)', 'parent_sku (Parent SKU)', 'relationship_type (Relationship Type)',
+     'variation_theme (pick the matching Valid Values entry)', 'Theme 1', 'Value 1', 'Theme 2', 'Value 2', 'ASIN', 'Marketplace', 'What is wrong', 'Amazon has now'],
+    list.map(r=> [r.sku, 'PartialUpdate', 'child', r.par.psku || '', 'Variation', [r.exp.t1, r.exp.t2].filter(Boolean).join(' + '),
+      r.exp.t1, r.exp.v1, r.exp.t2, r.exp.v2, r.asin, r.mk === 'CA' ? 'amazon.ca' : 'amazon.com',
+      r.core.map(k=> VR_LABEL[k]).join(', '), [r.c.fam && r.c.fam.s !== 'match' ? (r.c.fam.a ? 'parent ' + r.c.fam.a : 'no parent') : '', r.c.theme && r.c.theme.a ? 'theme ' + r.c.theme.a : '', r.c.value && r.c.value.a ? 'value ' + r.c.value.a : ''].filter(Boolean).join('; ')]));
+}
+
+/* ---------- Why this happens (checked sources only) ---------- */
+const VR_TIPS = [
+  {t:'Amazon split reviews by how much the children differ', sure:'Confirmed by Amazon (Feb 2026 update)',
+   d:'Since Feb 12 2026, reviews stay pooled only when children differ in small ways: color or pattern, size with the same function, pack size or quantity, model fitment. Children that work differently get their own reviews. Amazon said reviews can be shared again after a theme is corrected.',
+   do:'If the theme is Color, Pattern or Size and reviews still split, open a case (Draft case). If the theme is Style, Set Name or Shape, check whether the children really are the same product first.',
+   src:[['PPC Land', 'https://ppc.land/amazon-splits-variation-reviews-in-bid-to-stop-misleading-ratings/'], ['My Amazon Guy', 'https://myamazonguy.com/news/amazon-product-variation-review-sharing/']]},
+  {t:'Amazon or another seller changed the family', sure:'Confirmed by Amazon (Help page)',
+   d:'Amazon says it manages variation families for the customer experience and moves products it thinks are unrelated. Other sellers on the same page can also change a family.',
+   do:'Child split off: Draft case. ASIN in our family that is not ours: Check and report (Account Health).',
+   src:[['Amazon: Variation relationship FAQ', 'https://sellercentral.amazon.com/help/hub/reference/G201951410']]},
+  {t:'An inactive child does not show in the family', sure:'Confirmed by Amazon (Help page)',
+   d:'A family only includes children that are Active in Seller Central. An inactive child is not shown on the page.',
+   do:'Check the child in Manage All Inventory. If it is inactive (out of stock is different), fix that first.',
+   src:[['Amazon: Variation relationship FAQ', 'https://sellercentral.amazon.com/help/hub/reference/G201951410']]},
+  {t:'Removed or renamed variation themes', sure:'Confirmed by Amazon (Seller Forums)',
+   d:'Amazon removed unused variation themes. An update that uses a removed theme fails with \u201cthe value specified is invalid\u201d.',
+   do:'Use a theme from the Valid Values tab of the current template for the product type.',
+   src:[['Amazon Seller Forums', 'https://sellercentral.amazon.com/seller-forums/discussions/t/29b9e0b4-2b4d-4caa-b4af-83b57c47862d']]},
+  {t:'The Variation Wizard is gone', sure:'Reported by seller news sites',
+   d:'Amazon retired the Variation Wizard at the end of August 2026. Variations are now added from Add Products with a pre-filled spreadsheet, or by flat file.',
+   do:'Fix theme and value by flat file (Download flat file values). Moving a child to another parent: delete the child, wait 24 hours, add it again with the new Parent SKU (Amazon\u2019s steps).',
+   src:[['EcomCrew', 'https://www.ecomcrew.com/amazon-just-made-it-easier-to-add-variations-and-is-retiring-the-variation-wizard-in-august/']]}
+];
+function vrTips(){
+  const d = document.getElementById('detail');
+  d.innerHTML = '<h2>Why variation problems happen</h2><h3>Read this before you open a case</h3>'+
+    VR_TIPS.map((x,i)=> `<div class="lcf"><div class="lcf-h"><b>${i + 1}. ${esc(x.t)}</b> <span class="lcchip ${/Confirmed/.test(x.sure) ? 'lc-ok' : 'lc-small'}">${esc(x.sure)}</span></div>`+
+      `<div class="lcf-t" style="margin-top:.35rem">${esc(x.d)}</div>`+
+      `<div class="lcf-l">What to do</div><div class="lcf-t">${esc(x.do)}</div>`+
+      (x.src.length ? `<div class="lcf-r" style="color:var(--muted)">Source: ${x.src.map(s=> `<a href="${esc(s[1])}" target="_blank" rel="noopener">${esc(s[0])}</a>`).join(', ')}</div>` : '')+
+    '</div>').join('')+
+    '<h2 style="margin-top:1rem">Which fix for which problem</h2>'+
+    '<ol style="font-size:.86rem;line-height:1.6;padding-left:1.2rem">'+
+      '<li><b>Theme wrong or value wrong:</b> no case. Click Download flat file values, copy the values into the template for the product type, keep update_delete as PartialUpdate, and upload.</li>'+
+      '<li><b>Split off from family:</b> check the child is Active. Wait two hours after any upload. Then Draft case.</li>'+
+      '<li><b>In the wrong family:</b> if it is our listing, fix the Parent SKU by flat file, or delete the child, wait 24 hours, and add it again with the right Parent SKU. Draft case if it will not move.</li>'+
+      '<li><b>Reviews not shared:</b> Draft case. The draft only says the children qualify when the theme is on Amazon\u2019s list.</li>'+
+      '<li><b>Not ours in our family:</b> Check and report, after opening each ASIN to make sure it is not ours.</li>'+
+    '</ol>'+
+    '<div class="act-row"><button class="work strong" id="vrFlat">Download flat file values</button></div>'+
+    '<div class="lcf-r" style="color:var(--muted)">Template column names can differ by product type, so match by the name in brackets.</div>';
+  const fb = document.getElementById('vrFlat');
+  if(fb) fb.onclick = ()=> dlVrFlat(VR_VIEW.length ? VR_VIEW : vrRows());
+  document.getElementById('veil').hidden = false;
+}
+
 /* ---------- Catalog overview: every module on one page ----------
    One card per module with its main percentage, the reasons behind it, and
    a button to open the module. Numbers come from the same live data the
@@ -4938,9 +5500,12 @@ function renderOverview(){
   if(typeof LC !== 'undefined' && LC.length){
     const rows = lcRows().filter(r=> !r.nolive), ok = rows.filter(r=> r.allOk);
     const avg = rows.length ? Math.round(rows.reduce((t,r)=> t + (r.pct || 0), 0) / rows.length * 10) / 10 : null;
+    const rbA = rows.filter(r=> r.rbA.length), rbB = rows.filter(r=> r.rbB.length), strictOk = ok.filter(r=> !r.rbA.length);
     cards.push(ovCard('Listing Copy', avg, `Average correct copy across ${rows.length} listings (title, bullets, description)` +
-      `<br>Listings with every field correct: <b>${ovPct(ok.length, rows.length)}%</b> (${ok.length} of ${rows.length})`,
-      ovCount(rows, r=> r.bad, k=> (LC_COLS.find(c=> c[0] === k) || [k, k])[1] + ' not matching'), 'lcBtn', '', ovPct(ok.length, rows.length)));
+      `<br>Listings with every field correct and no Amazon rule broken: <b>${ovPct(strictOk.length, rows.length)}%</b> (${strictOk.length} of ${rows.length})`,
+      ovCount(rows, r=> r.bad, k=> (LC_COLS.find(c=> c[0] === k) || [k, k])[1] + ' not matching')
+        .concat(RB ? [['Break an Amazon rule (live or in Plytix)', rbA.length], ['Brand guide issues', rbB.length]].filter(x=> x[1]) : []), 'lcBtn',
+      RB ? '' : '<div class="ov-note">Rule screening off: rulebook not loaded.</div>', ovPct(strictOk.length, rows.length)));
   } else cards.push(ovCard('Listing Copy', null, 'Copy feed not loaded', [], 'lcBtn'));
   // List Price
   if(typeof lpRows === 'function'){
@@ -4948,6 +5513,19 @@ function renderOverview(){
     cards.push(ovCard('List Price', ovPct(set.length, rows.length), `${set.length} of ${rows.length} listings have a List Price`,
       rows.length - set.length ? [['List Price empty', rows.length - set.length]] : [], 'lpBtn'));
   }
+  // Variation, US and CA
+  ['US','CA'].forEach(mk=>{
+    if(!VR.length){ if(mk === 'US') cards.push(ovCard('Variation', null, 'Variation feed not loaded', [], 'vrBtn')); return; }
+    const live = vrRows(mk).filter(r=> !r.nolive), good = live.filter(r=> r.fullOk);
+    const okN = live.reduce((t,r)=> t + (r.ok || 0), 0), chkN = live.reduce((t,r)=> t + (r.checked || 0), 0);
+    const inCase = live.filter(r=> r.caseable.length && vrCaseInfo(r)).length;
+    cards.push(ovCard(`Variation ${mk}`, ovPct(okN, chkN),
+      `${okN} of ${chkN} family, theme and value checks correct<br>Listings fully correct${mk === 'US' ? ', reviews shared included' : ''}: <b>${ovPct(good.length, live.length)}%</b> (${good.length} of ${live.length})` +
+      (inCase ? `<br>Already raised with Amazon (case on file): <b>${inCase}</b>` : ''),
+      ovCount(live, r=> r.bad, k=> ({fam:'Not in the right family', theme:'Theme wrong', value:'Value wrong', rev:'Reviews not shared'})[k] || k)
+        .concat(RB && live.filter(r=> r.rbA.length).length ? [['Break a variation rule (Master SKU sheet)', live.filter(r=> r.rbA.length).length]] : []), 'vrBtn',
+      mk === 'CA' ? '<div class="ov-note">Reviews shared can\u2019t be checked for Canada (no live review counts).</div>' : '', ovPct(good.length, live.length)));
+  });
   const avg = k=> OV_SCORES.length ? Math.round(OV_SCORES.reduce((t,x)=> t + x[k], 0) / OV_SCORES.length * 10) / 10 : null;
   const hMain = avg('main'), hStrict = avg('strict');
   const hCls = hMain === null ? '' : hMain >= 95 ? 'ok' : hMain >= 80 ? 'mid' : 'bad';
@@ -4958,8 +5536,10 @@ function renderOverview(){
   v.innerHTML = stockAlert() +
     '<section class="cpt-top"><div class="cpt-head"><h2>Catalog overview</h2>'+
     `<span class="sub">Every module at a glance. Green is 95% or more, amber 80% to 95%, red below 80%.</span></div></section>`+
-    health + `<div class="ov-grid">${cards.join('')}</div>`;
+    health + (RB ? `<div class="why"><b>Daily rule screening:</b> Listing Copy and Variation are screened every day against the rulebook (Amazon rules and our brand guides), last checked against Amazon ${esc(shortDate(RB.verified))}${rbStale() ? ', <b>due for a re-check</b>' : ''}. <button class="work" data-rbopen="1">Open the rulebook</button></div>` : rbBanner()) +
+    `<div class="ov-grid">${cards.join('')}</div>`;
   [...v.querySelectorAll('button[data-go]')].forEach(b=> b.onclick = ()=> document.getElementById(b.dataset.go).click());
+  [...v.querySelectorAll('[data-rbopen]')].forEach(b=> b.onclick = openRulebook);
 }
 
 function closeDetail(){ document.getElementById('veil').hidden = true; }
@@ -5239,13 +5819,13 @@ function render(){
   TARGETS = null;      // re-read from today's data on every redraw
   renderView();
   chrome();
-  if(['cpt','bb','lc','lp','category','catalog'].indexOf(S.view) !== -1) document.getElementById('ov').hidden = true;
+  if(['cpt','bb','lc','lp','vr','category','catalog'].indexOf(S.view) !== -1) document.getElementById('ov').hidden = true;
   else bandHeaders();
 }
 
 function renderView(){
 
-  const isCpt = ['cpt','bb','lc','lp','category','catalog'].indexOf(S.view) !== -1;
+  const isCpt = ['cpt','bb','lc','lp','vr','category','catalog'].indexOf(S.view) !== -1;
   document.getElementById('cptView').hidden  = !isCpt;
   document.getElementById('mainWrap').hidden = isCpt;
   document.getElementById('bar').hidden      = isCpt;
@@ -5256,6 +5836,7 @@ function renderView(){
   if(S.view === 'bb'){ renderBb(); return; }
   if(S.view === 'lc'){ renderLc(); return; }
   if(S.view === 'lp'){ renderLp(); return; }
+  if(S.view === 'vr'){ renderVariation(); return; }
   if(S.view === 'category'){ renderCategory(); return; }
   if(S.view === 'catalog'){ renderOverview(); return; }
 
@@ -5487,6 +6068,10 @@ function chrome(){
     const nLp = lpRows().filter(r=> !r.set).length;
     document.getElementById('lpBtn').innerHTML = 'List Price' + (nLp ? `<span class="badge">${nLp}</span>` : '');
   }
+  if(VR.length){
+    const nVr = vrRows('US').concat(vrRows('CA')).filter(r=> r.bad.length).length;
+    document.getElementById('vrBtn').innerHTML = 'Variation' + (nVr ? `<span class="badge">${nVr}</span>` : '');
+  }
   document.getElementById('casesBtn').innerHTML =
     'Cases' + (CASES.length ? `<span class="badge">${CASES.length}</span>` : '');
 }
@@ -5668,6 +6253,7 @@ const cptBtn   = document.getElementById('cptBtn');
 const bbBtn    = document.getElementById('bbBtn');
 const lcBtn    = document.getElementById('lcBtn');
 const lpBtn    = document.getElementById('lpBtn');
+const vrBtn    = document.getElementById('vrBtn');
 
 let PANEL_BEFORE_CPT = null;
 
@@ -5676,7 +6262,7 @@ function go(view){
   // The CPT view has its own controls, so the filter panel folds away while
   // it is open and comes back as it was when you leave.
   // The CPT and Buy Box views both own the screen
-  const own = x=> ['cpt','bb','lc','lp','category','catalog'].indexOf(x) !== -1;
+  const own = x=> ['cpt','bb','lc','lp','vr','category','catalog'].indexOf(x) !== -1;
   if(own(view) && !own(S.view)){
     PANEL_BEFORE_CPT = !document.getElementById('panel').hidden;
     setPanel(false);
@@ -5693,6 +6279,7 @@ function go(view){
   bbBtn.setAttribute('aria-pressed', view === 'bb');
   lcBtn.setAttribute('aria-pressed', view === 'lc');
   lpBtn.setAttribute('aria-pressed', view === 'lp');
+  vrBtn.setAttribute('aria-pressed', view === 'vr');
   catalogBtn.setAttribute('aria-pressed', view === 'catalog');
   render();
 }
@@ -5702,6 +6289,7 @@ cptBtn.onclick   = ()=> go('cpt');
 bbBtn.onclick    = ()=> go('bb');
 lcBtn.onclick    = ()=> go('lc');
 lpBtn.onclick    = ()=> go('lp');
+vrBtn.onclick    = ()=> go('vr');
 
 homeBtn.onclick    = ()=> go('checklist');
 catalogBtn.onclick = ()=> go('catalog');
