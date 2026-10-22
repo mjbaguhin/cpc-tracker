@@ -730,6 +730,12 @@ a.work:hover{background:var(--accent);color:#fff}
 /* Fits the screen: no sideways scrolling needed on a laptop */
 .cpt-table.bb-table{min-width:0;table-layout:auto}
 .pc{font-size:.72rem;margin-top:.25rem;font-weight:600}.pc-ok{color:var(--ok)}.pc-bad{color:var(--warn)}
+.ov-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:1rem;padding:0 1rem 1.5rem}
+.ov-card{background:var(--card,#fff);border:1px solid var(--line,#e2e8f0);border-radius:12px;padding:1rem 1.1rem}
+.ov-h{display:flex;justify-content:space-between;align-items:center;gap:.5rem}.ov-h h3{margin:0;font-size:1.05rem}
+.ov-pct{font-size:2.2rem;font-weight:800;margin:.4rem 0 .1rem}.ov-pct.ok{color:var(--ok)}.ov-pct.mid{color:#b7791f}.ov-pct.bad{color:var(--warn)}
+.ov-sub{font-size:.85rem;color:var(--muted)}.ov-r{margin:.6rem 0 0;padding-left:1.1rem;font-size:.86rem;line-height:1.6}.ov-r b{display:inline-block;min-width:2rem}
+.ov-note{font-size:.76rem;color:var(--muted);margin-top:.5rem}
 .stk-alert{background:#fbe2df;color:#7a1a10;border:1px solid #f0b4ab;border-radius:8px;padding:.6rem .9rem;margin:.6rem 1rem;font-size:.86rem;line-height:1.5}
 #cptView .cpt-tile .n{white-space:normal}
 .bbtile{cursor:pointer;transition:border-color .15s}
@@ -4282,7 +4288,7 @@ function renderLp(){
    correct value is from the Master SKU sheet. */
 let CG = [], CG_META = {}, CG_ERR = '', CG_VIEW = [];
 const CG_F = {show:'all', q:'', sort:'', dir:1, tier:'', mk:'US', group:false};
-const CG_COLS = [['gl','GL'], ['pt','Product Type'], ['path','Full path'], ['itk','ITK'], ['node','Browse node']];
+const CG_COLS = [['gl','GL'], ['pt','Product Type'], ['sd','Search dept'], ['path','Full path'], ['itk','ITK'], ['node','Browse node']];
 const CG_S = {
   match:    ['OK', 'lc-ok', 'Same as the Master SKU sheet'],
   leaf:     ['Last level OK', 'lc-small', 'The last level matches, the levels above it differ'],
@@ -4364,7 +4370,7 @@ function renderCategory(){
        : sortBy(rows, r=> (r.nolive ? 2000 : 0) + (r.pct === null ? 1000 : r.pct) * 10 + (TIER_RANK[r.tier] !== undefined ? TIER_RANK[r.tier] : 5), 1);
   CG_VIEW = rows;
 
-  const order = ['all','good','wrong','gl','pt','path','itk','node','blank']; let n = 0;
+  const order = ['all','good','wrong','gl','pt','sd','path','itk','node','blank']; let n = 0;
   const tile = (k, val, cls, note)=>{ const f = order[n++];
     return `<div class="cpt-tile bbtile${CG_F.show === f ? ' on' : ''}" role="button" tabindex="0" data-show="${f}" title="Show these in the table"><div class="k">${k}</div><div class="v ${cls || ''}">${val}</div><div class="n">${note || '&nbsp;'}</div></div>`; };
   const list = a=> esc(a.map(r=> r.sku).slice(0,3).join(', ')) + (a.length > 3 ? '\u2026' : '');
@@ -4377,7 +4383,7 @@ function renderCategory(){
       tile('Category correct %', pct + '%', pct >= 98 ? 'good' : pct >= 90 ? 'warn' : 'bad', `${ok} of ${checked} checks match`)+
       tile('Listings 100% correct', `${good.length}<span style="font-size:1rem;color:var(--c-night-mut)"> of ${all.length}</span>`, good.length === all.length ? 'good' : 'warn', '')+
       tile('Listings with a wrong category', wrong.length, wrong.length ? 'bad' : 'good', wrong.length ? list(wrong) : 'None')+
-      t1('GL wrong', 'gl') + t1('Product Type wrong', 'pt') + t1('Full path wrong', 'path') + t1('ITK wrong', 'itk') + t1('Browse node wrong', 'node')+
+      t1('GL wrong', 'gl') + t1('Product Type wrong', 'pt') + t1('Search dept wrong', 'sd') + t1('Full path wrong', 'path') + t1('ITK wrong', 'itk') + t1('Browse node wrong', 'node')+
       tile('Blank in Master SKU', blank.length, blank.length ? 'warn' : 'good', blank.length ? 'Correct value missing' : 'None')+
     '</div></section>'+
     '<div class="cpt-tools"><div class="seg" id="cgMk">'+
@@ -4412,7 +4418,7 @@ function renderCategory(){
       H('since', 'Last changed on Amazon', 'b-move', 'The day any of these category values last changed on Amazon, as Keepa saw it.', 'desc')+
       H('cs', 'Case', 'b-case', 'Needs a case first, then follow-ups, then fine.')+
       '</tr></thead><tbody>'+
-      grpMap(CG_F, rows, 10, r=> `<tr class="row" tabindex="0" data-cg="${esc(r.asin)}">`+
+      grpMap(CG_F, rows, 11, r=> `<tr class="row" tabindex="0" data-cg="${esc(r.asin)}">`+
         `<td class="prod"><div class="p-name"><span class="dot" style="background:${r.nolive ? '#94a3b8' : r.allOk ? '#1f9d55' : '#d64545'}"></span>${esc(String(r.name).slice(0, 60))}</div>`+
           `<div class="p-id"><span>SKU</span>${skuL(r.sku, mk)}${cpy(r.sku)}</div><div class="p-id"><span>ASIN</span>${asinL(r.asin, mk)}${cpy(r.asin)}</div>`+
           `${r.tier ? `<span class="p-size">Tier ${esc(r.tier)}</span>` : ''}</td>`+
@@ -4515,7 +4521,7 @@ function openCg(r){
    One listing or many. A listing with a case on file gets a follow-up that
    names the case and answers Amazon's last note. Values come from the
    Master SKU sheet (correct) and Keepa (live), never guessed. */
-const CG_LABEL = {gl:'GL', pt:'Product Type', path:'Browse path', itk:'Item type keyword', node:'Browse node'};
+const CG_LABEL = {gl:'GL', pt:'Product Type', sd:'Search department', path:'Browse path', itk:'Item type keyword', node:'Browse node'};
 function cgCaseInfo(r){
   // Live only: the case number and Amazon's latest reply come from Gmail (Category Watch)
   const k = r.kase;
@@ -4556,6 +4562,7 @@ function cgNowLines(rows){
   if(c.node && c.node.a && c.node.s !== 'match') L.push(`Browse node: ${c.node.a}`);
   if(c.path && c.path.a && c.path.s !== 'match') L.push(`Browse path: ${c.path.a}`);
   if(c.pt && c.pt.s === 'wrong') L.push(`Product type: ${c.pt.a}`);
+  if(c.sd && c.sd.s === 'wrong') L.push(`Search department: ${c.sd.a}`);
   if(c.itk && (c.itk.s === 'wrong' || c.itk.s === 'missing')) L.push(`Item type keyword: ${c.itk.a || 'none'}`);
   if(c.gl && c.gl.s === 'wrong') L.push(`GL: ${c.gl.a}`);
   return L.join('\n');
@@ -4859,6 +4866,63 @@ function cgTips(){
   document.getElementById('veil').hidden = false;
 }
 
+/* ---------- Catalog overview: every module on one page ----------
+   One card per module with its main percentage, the reasons behind it, and
+   a button to open the module. Numbers come from the same live data the
+   modules use, so the two always agree. */
+function ovCard(title, pct, sub, reasons, btnId, extra){
+  const cls = pct === null ? '' : pct >= 95 ? 'ok' : pct >= 80 ? 'mid' : 'bad';
+  return `<div class="ov-card"><div class="ov-h"><h3>${esc(title)}</h3><button class="work strong" data-go="${btnId}">Open ${esc(title)} \u2192</button></div>`+
+    `<div class="ov-pct ${cls}">${pct === null ? '<span class="mut">No data</span>' : pct + '%'}</div><div class="ov-sub">${sub}</div>`+
+    (reasons.length ? `<ul class="ov-r">${reasons.map(r=> `<li><b>${r[1]}</b> ${esc(r[0])}</li>`).join('')}</ul>` : '<div class="ov-sub" style="color:var(--ok)">Nothing to fix.</div>')+
+    (extra || '') + '</div>';
+}
+const ovPct = (a, b)=> b ? Math.round(a / b * 1000) / 10 : null;
+const ovCount = (list, keyFn, labelFn)=>{ const m = {}; list.forEach(r=> [].concat(keyFn(r)).forEach(k=>{ if(k) m[k] = (m[k] || 0) + 1; })); return Object.keys(m).sort((a,b)=> m[b] - m[a]).map(k=> [labelFn(k), m[k]]); };
+
+function renderOverview(){
+  document.getElementById('msg').hidden = true;
+  document.getElementById('bar').innerHTML = '';
+  const v = document.getElementById('cptView'), cards = [];
+
+  // Category, US and CA
+  ['US','CA'].forEach(mk=>{
+    const all = CG.length ? cgRows(mk) : [], live = all.filter(r=> !r.nolive), good = live.filter(r=> r.allOk);
+    cards.push(ovCard(`Category ${mk}`, ovPct(good.length, live.length), `${good.length} of ${live.length} listings fully correct`,
+      ovCount(live, r=> r.bad, k=> (CG_COLS.find(c=> c[0] === k) || [k, k])[1] + ' wrong'), 'quickCat',
+      mk === 'US' ? '<div class="ov-note">GL shows Can\u2019t check until BigQuery has product-group.</div>' : ''));
+  });
+  // CPT tracker
+  if(typeof CPT !== 'undefined' && CPT.length){
+    const rows = cptRows(), fine = rows.filter(r=> r.action === 'none');
+    cards.push(ovCard('CPT tracker', ovPct(fine.length, rows.length), `${fine.length} of ${rows.length} listings need no action`,
+      ovCount(rows.filter(r=> r.action !== 'none'), r=> r.action, k=> (ACTIONS[k] || {}).group || k), 'cptBtn'));
+  } else cards.push(ovCard('CPT tracker', null, 'CPT feed not loaded', [], 'cptBtn'));
+  // Buy Box
+  if(typeof BB !== 'undefined' && BB.length){
+    const rows = bbRows(), has = rows.filter(r=> r.has);
+    cards.push(ovCard('Buy Box', ovPct(has.length, rows.length), `${has.length} of ${rows.length} listings have the Buy Box`,
+      ovCount(rows.filter(r=> !r.has), r=> r.why || 'unknown', k=> (BB_WHY[k] || {t:k}).t), 'bbBtn'));
+  } else cards.push(ovCard('Buy Box', null, 'Buy Box feed not loaded', [], 'bbBtn'));
+  // Listing Copy
+  if(typeof LC !== 'undefined' && LC.length){
+    const rows = lcRows().filter(r=> !r.nolive), ok = rows.filter(r=> r.allOk);
+    cards.push(ovCard('Listing Copy', ovPct(ok.length, rows.length), `${ok.length} of ${rows.length} listings with fully correct copy`,
+      ovCount(rows, r=> r.bad, k=> (LC_COLS.find(c=> c[0] === k) || [k, k])[1] + ' not matching'), 'lcBtn'));
+  } else cards.push(ovCard('Listing Copy', null, 'Copy feed not loaded', [], 'lcBtn'));
+  // List Price
+  if(typeof lpRows === 'function'){
+    const rows = lpRows(), set = rows.filter(r=> r.set);
+    cards.push(ovCard('List Price', ovPct(set.length, rows.length), `${set.length} of ${rows.length} listings have a List Price`,
+      rows.length - set.length ? [['List Price empty', rows.length - set.length]] : [], 'lpBtn'));
+  }
+  v.innerHTML = stockAlert() +
+    '<section class="cpt-top"><div class="cpt-head"><h2>Catalog overview</h2>'+
+    `<span class="sub">Every module at a glance. Green is 95% or more, amber 80% to 95%, red below 80%.</span></div></section>`+
+    `<div class="ov-grid">${cards.join('')}</div>`;
+  [...v.querySelectorAll('button[data-go]')].forEach(b=> b.onclick = ()=> document.getElementById(b.dataset.go).click());
+}
+
 function closeDetail(){ document.getElementById('veil').hidden = true; }
 
 
@@ -5136,13 +5200,13 @@ function render(){
   TARGETS = null;      // re-read from today's data on every redraw
   renderView();
   chrome();
-  if(['cpt','bb','lc','lp','category'].indexOf(S.view) !== -1) document.getElementById('ov').hidden = true;
+  if(['cpt','bb','lc','lp','category','catalog'].indexOf(S.view) !== -1) document.getElementById('ov').hidden = true;
   else bandHeaders();
 }
 
 function renderView(){
 
-  const isCpt = ['cpt','bb','lc','lp','category'].indexOf(S.view) !== -1;
+  const isCpt = ['cpt','bb','lc','lp','category','catalog'].indexOf(S.view) !== -1;
   document.getElementById('cptView').hidden  = !isCpt;
   document.getElementById('mainWrap').hidden = isCpt;
   document.getElementById('bar').hidden      = isCpt;
@@ -5154,6 +5218,7 @@ function renderView(){
   if(S.view === 'lc'){ renderLc(); return; }
   if(S.view === 'lp'){ renderLp(); return; }
   if(S.view === 'category'){ renderCategory(); return; }
+  if(S.view === 'catalog'){ renderOverview(); return; }
 
   const rows = visible();
   strip(rows);
@@ -5572,7 +5637,7 @@ function go(view){
   // The CPT view has its own controls, so the filter panel folds away while
   // it is open and comes back as it was when you leave.
   // The CPT and Buy Box views both own the screen
-  const own = x=> ['cpt','bb','lc','lp','category'].indexOf(x) !== -1;
+  const own = x=> ['cpt','bb','lc','lp','category','catalog'].indexOf(x) !== -1;
   if(own(view) && !own(S.view)){
     PANEL_BEFORE_CPT = !document.getElementById('panel').hidden;
     setPanel(false);
