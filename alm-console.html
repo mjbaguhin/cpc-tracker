@@ -4363,7 +4363,7 @@ function renderCategory(){
   const pct = checked ? Math.round(ok / checked * 1000) / 10 : 0;
   const has = k=> all.filter(r=> r.bad.indexOf(k) !== -1);
   const wrong = all.filter(r=> r.bad.length), good = all.filter(r=> r.allOk), blank = all.filter(r=> r.blank.length);
-  const pick = {good, wrong, gl: has('gl'), pt: has('pt'), path: has('path'), itk: has('itk'), node: has('node'), blank};
+  const pick = {good, wrong, gl: has('gl'), pt: has('pt'), sd: has('sd'), path: has('path'), itk: has('itk'), node: has('node'), blank};
 
   let rows = pick[CG_F.show] || all;
   if(CG_F.tier) rows = rows.filter(r=> (r.tier || 'N') === CG_F.tier);
@@ -4578,6 +4578,10 @@ function cgPitch(list){
   const sharedNodes = new Set(allRows.filter(r=> r.c && r.c.path && r.c.path.shared).map(r=> String(r.c.node.e)));
   const glSeen = list.some(r=> r.c && r.c.gl && (r.c.gl.s === 'match' || r.c.gl.s === 'wrong'));
   const ifSay = [], chat = [];
+  // Which problems this request is about. Path and node wording only when the path or node is wrong.
+  const kinds = new Set(list.flatMap(r=> r.bad));
+  const pathish = kinds.has('path') || kinds.has('node');
+  const deptish = kinds.has('sd') || kinds.has('gl');
 
   // Families: the parent for this marketplace, with the children in this request
   const fam = {};
@@ -4624,11 +4628,13 @@ function cgPitch(list){
   // 4. Shared node and earlier cases
   const node0 = cgCorrect(list[0]).node;
   const stopAt = leafName((list[0].c.path || {}).a) || 'the wrong category';
-  const saidOk = cases.some(c=> /already|correct|tied to|redirect|shared/i.test(c.notes || ''));
-  const prev = !caseIds.length ? '' : saidOk
+  const saidOk = pathish && cases.some(c=> /already|correct|tied to|redirect|shared/i.test(c.notes || ''));
+  const prev = !caseIds.length ? '' : !pathish
+    ? ` We contacted you about ${one ? 'this ASIN' : 'these ASINs'} before on case${caseIds.length > 1 ? 's' : ''} ${caseIds.join(' and ')}.`
+    : saidOk
     ? ` On case${caseIds.length > 1 ? 's' : ''} ${caseIds.join(' and ')} your team said the node was correct, but the page${one ? '' : 's'} still ${one ? 'stops' : 'stop'} at ${stopAt}.`
     : ` This was raised before on case${caseIds.length > 1 ? 's' : ''} ${caseIds.join(' and ')}, and the page${one ? '' : 's'} still ${one ? 'stops' : 'stop'} at ${stopAt}.`;
-  if(sharedNodes.has(String(node0)))
+  if(pathish && sharedNodes.has(String(node0)))
     chat.push(`We understand browse node ${node0} is shared and the page can show a different path for it. That is fine. The problem is ${one ? 'this ASIN is' : 'these ASINs are'} not in node ${node0} at all.` + prev);
   else if(prev) chat.push(prev.trim());
 
@@ -4636,17 +4642,24 @@ function cgPitch(list){
   famKeys.filter(k=> !k.startsWith('solo:')).forEach(k=>{
     // Only siblings with the SAME correct values are proof (pumpkin and pea differ)
     const fine = allRows.filter(x=> parentOf(x).pasin === k && list.indexOf(x) === -1 && x.c && !x.bad.length && x.c.node && x.c.node.s === 'match' && JSON.stringify(cgCorrect(x)) === JSON.stringify(cgCorrect(fam[k].rows[0])));
-    if(fine.length) chat.push(`In the same family, ${fine.map(x=> `${x.asin} (SKU ${x.sku})`).join(', ')} ${fine.length === 1 ? 'already has' : 'already have'} these values and ${fine.length === 1 ? 'shows' : 'show'} correctly. Please match the others to ${fine.length === 1 ? 'it' : 'them'}.`);
+    const named = fine.slice(0, 3).map(x=> `${x.asin} (SKU ${x.sku})`).join(', ') + (fine.length > 3 ? `, and ${fine.length - 3} more` : '');
+    if(fine.length) chat.push(`In the same family, ${named} ${fine.length === 1 ? 'already has' : 'already have'} these values and ${fine.length === 1 ? 'shows' : 'show'} correctly. Please match the others to ${fine.length === 1 ? 'it' : 'them'}.`);
   });
 
   // 5. The ask
   chat.push(`Please send this to the catalog team to update ${one ? 'this ASIN' : useParents ? 'all the children listed' : 'these ASINs'} to the values above, add these notes to a case, and send me the case number.`);
 
-  ifSay.push(
-    ['"It is assigned based on the detail page and how customers find products."', 'The product type, item type keyword and browse node in our catalog all point to the correct category. Please escalate to the catalog team for a manual review.'],
+  ifSay.push(['"It is assigned based on the detail page and how customers find products."', 'The product type, item type keyword and browse node in our catalog all point to the correct category. Please escalate to the catalog team for a manual review.']);
+  if(pathish) ifSay.push(
     ['"Please use the browse node tool."', 'I would rather the catalog team makes the change, so the listing is not locked by repeated tool requests.'],
-    ['"It is already tied to the correct node."', `The live page still shows ${stopAt}. Please check the browse node the detail page uses, not only the backend value.`],
-    ['"Please upload a flat file."', 'Download flat file values in the Category module, make a PartialUpdate, then come back with the processing report if it does not change.']);
+    ['"It is already tied to the correct node."', `The live page still shows ${stopAt}. Please check the browse node the detail page uses, not only the backend value.`]);
+  if(deptish){
+    const gls = [...new Set(list.map(r=> cgCorrect(r).gl).filter(Boolean))].join(' / ');
+    const sds = [...new Set(list.map(r=> cgCorrect(r).sd).filter(Boolean))].join(' / ');
+    ifSay.push(['"The search department cannot be changed." or "We cannot change the GL."',
+      `Please send it to the catalog team for a manual review. Our catalog says the GL should be ${gls || 'the one above'}${sds ? ' and the search department ' + sds : ''}. They can check the GL and product group on ${one ? 'this ASIN' : 'these ASINs'}.`]);
+  }
+  ifSay.push(['"Please upload a flat file."', 'Download flat file values in the Category module, make a PartialUpdate, then come back with the processing report if it does not change.']);
 
   const call = ['BEFORE THE CALL', `Have open: ${caseIds.length ? 'case ' + caseIds.join(', ') + ', ' : ''}this page, and the children list.`, '',
     '1. SAY WHO YOU ARE', `"${chat[0].replace("Hi, I'm MJ", 'Hi, my name is MJ Baguhin, calling')}"`, '',
@@ -4659,7 +4672,7 @@ function cgPitch(list){
   const body = [`I am requesting a category correction on the ${mk} marketplace for Barnyard Designs, where we are the brand owner.`, '',
     ...famKeys.flatMap(k=> [famLine(k) + ':', kids(fam[k].rows), '']),
     ...gKeys.flatMap(k=> { const g = groups[k], now = cgNowLines(g.rows);
-      return [`Correct category${gKeys.length > 1 ? ' for ' + g.rows.map(r=> r.sku).join(', ') : ''}:`, cgCorrectLines(g.v), '', ...(now ? ['What the detail page shows now:', now, ''] : [])]; }),
+      return [`Correct category${gKeys.length > 1 ? ' for ' + g.rows.map(r=> r.sku).join(', ') : ''}:`, cgCorrectLines(g.v), '', ...(now ? [(g.rows.every(r=>{ const k = pcOf(r); return k && k.res === 'wrong' && !k.stale; }) ? 'What the detail page shows now (checked):' : 'What our category data shows now:'), now, ''] : [])]; }),
     ...chat.slice(2 + gKeys.length * 2, -1).filter(m=> !/^Correct category|^What the page/.test(m)).flatMap(m=> [m, '']),
     `Could you please update ${one ? 'this ASIN' : 'these ASINs'} to the values above and confirm once the change has been applied?`, '',
     'Thank you,', 'MJ Baguhin', 'Barnyard Designs, Cross Path Capital LLC'].join('\n').replace(/\n{3,}/g, '\n\n');
