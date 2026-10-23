@@ -756,6 +756,15 @@ a.work:hover{background:var(--accent);color:#fff}
 .lcf-r{font-size:.78rem;color:#a3261a;margin-top:.3rem}
 mark.lc-miss{background:#fff1b8;color:inherit;border-radius:2px}
 mark.lc-extra{background:#fbd5cf;color:inherit;border-radius:2px}
+#detail.wide{width:min(78rem,100%)}
+.lcsbs{display:grid;grid-template-columns:1fr 1fr;gap:.6rem;margin-top:.45rem}
+.lcsbs > div{border:1px solid var(--line);border-radius:6px;padding:.45rem .55rem;min-width:0}
+.lcsbs .lcsbs-h{display:flex;align-items:center;gap:.4rem;margin-bottom:.25rem}
+.lcsbs .lcsbs-h .lcf-l{margin:0}
+.lcsbs .lcsbs-h button{margin-left:auto;font-size:.72rem}
+.lcsbs .ok-side{background:rgba(31,157,85,.06)}
+.lcsbs .live-side{background:rgba(214,69,69,.05)}
+@media(max-width:700px){ .lcsbs{grid-template-columns:1fr} }
 .lcleg{font-size:.76rem;color:var(--muted);margin:.4rem 0}
 .bb-table tbody td.prod{min-width:13rem !important}
 .bb-table td.prod .p-name{white-space:normal;max-width:16rem}
@@ -910,6 +919,7 @@ const VR_SRC = 'https://raw.githubusercontent.com/mjbaguhin/cpc-tracker/main/var
 const RB_SRC = 'https://raw.githubusercontent.com/mjbaguhin/cpc-tracker/main/rules.json';
 const CA_SRC = 'https://raw.githubusercontent.com/mjbaguhin/cpc-tracker/main/ca.json';
 const BS_SRC = 'https://raw.githubusercontent.com/mjbaguhin/cpc-tracker/main/bsr.json';
+const CH_SRC = 'https://raw.githubusercontent.com/mjbaguhin/cpc-tracker/main/history.json';
 
 // Amazon's case creation entry point
 const CASE_URL = 'https://sellercentral.amazon.com/help/center?redirectSource=HelpHub';
@@ -1018,6 +1028,9 @@ async function load(fresh){
   grab(CG_SRC, 'json', fresh)
     .then(j => { buildCg(j); if(S.view === 'category') render(); else if(S.view === 'catalog') render(); else chrome(); })
     .catch(e => { CG_ERR = e.message; if(S.view === 'category') render(); });
+  grab(CH_SRC, 'json', fresh)
+    .then(j => { CH = j || null; CH_ERR = ''; if(S.view === 'lc' || S.view === 'catalog') render(); })
+    .catch(e => { CH_ERR = e.message; });
   grab(BS_SRC, 'json', fresh)
     .then(j => { buildBs(j); if(S.view === 'bs' || S.view === 'catalog') render(); else if(S.view === 'catalog') render(); else chrome(); })
     .catch(e => { BS_ERR = e.message; if(S.view === 'bs') render(); });
@@ -2023,7 +2036,15 @@ function nextLine(r){
   if(!n) return mailLine(r);
   const last = (r.events || [])[0];
   return (last ? `<span class="mailst m-wait">Last: ${esc(EV_LABEL[last.kind] || last.kind)}${last.who === 'us' ? ' to ' + (last.ch === 'jassy' ? 'Jassy team' : 'case') : ''}, ${shortDate(last.d)}</span>` : '')+
-    `<span class="mailst ${n.due === 'now' ? 'm-bad' : 'm-wait'}">Next: ${esc(n.text)}</span>`;
+    `<span class="mailst ${n.due === 'now' ? 'm-bad' : 'm-wait'}">Next: ${esc(n.text)}${n.link ? ` <a href="${esc(n.link)}" target="_blank" rel="noopener">Open</a>` : ''}</span>` +
+    jassyLine(r, n);
+}
+// A Jassy team case waiting on Amazon: their reply goes to Jack's account, so remind to look in Seller Central
+function jassyOpen(r){ return (r.mailCases || []).filter(c=> c.ch === 'jassy' && ['waiting','received','pending'].indexOf(c.status) !== -1); }
+function jassyLine(r, n){
+  const j = jassyOpen(r).filter(c=> !(n && n.link && c.cid && n.link.indexOf(c.cid) !== -1));
+  return j.map(c=> `<span class="mailst m-bad">Also: check Jassy case ${esc(c.cid || '')} in Seller Central (replies go to Jack\u2019s account)` +
+    ` <a href="${esc(c.cid ? caseLink(c.cid) : CASE_URL)}" target="_blank" rel="noopener">Open</a></span>`).join('');
 }
 function mailLine(r){
   const m = r.mail;
@@ -2073,6 +2094,12 @@ function caseStep(r){
   if(c.status === 'waiting' || c.status === 'received' || c.status === 'pending'){
     const from = c.status === 'waiting' ? c.lastUs : (c.lastAmazon || c.lastUs);
     if(!from) return null;
+    // Andy Jassy team replies go to Jack's Amazon account, so Gmail may not have them:
+    // the case itself in Seller Central is the only sure place (MJ, Oct 23)
+    if(c.ch === 'jassy' && c.cid) return {text:`Check case ${c.cid} in Seller Central. Jassy team replies go to Jack\u2019s account`, due:'now', link: caseLink(c.cid),
+      how:`Gmail may not show their reply. Open case ${c.cid} in Seller Central (Case Log). If there is no reply and it is past ${shortDate(addDays(from, wait))}, use Draft follow-up.`};
+    if(c.ch === 'jassy') return {text:'Check Seller Central for the Jassy team reply (it goes to Jack\u2019s account)', due:'now', link: CASE_URL,
+      how:'Gmail may not show their reply. Look in Seller Central, Case Log, for the newest case about this ASIN.'};
     const due = addDays(from, wait);
     const what = c.status === 'pending' ? `${who} sent it to another team and will update us` :
                  c.status === 'received' ? `${who} received it` : `Waiting for the ${who}`;
@@ -2374,7 +2401,7 @@ function showDraft(title, text, opt){
   };
   document.getElementById('dCopySubj').onclick = e=> copy(subj, e.target, 'Subject copied');
   document.getElementById('dCopy').onclick = e=> copy(ta(), e.target, 'Description copied');
-  document.getElementById('veil').hidden = false;
+  document.getElementById('detail').classList.remove('wide'); document.getElementById('veil').hidden = false;
 }
 
 /* Today's date written out, so every number in a draft is dated */
@@ -2789,7 +2816,7 @@ function jassyEmail(rows){
   ].filter((x,i,a)=> !(x === '' && a[i-1] === '')).join('\n');
   return {subject, body};
 }
-const CPT_F = {show:'all', q:'', group:'action', sort:'', dir:1,
+const CPT_F = {show:'all', q:'', group:'pasin', sort:'', dir:1,   // grouped by parent by default (MJ, Oct 22)
   min:{}, max:{}, tiers:new Set(), sizes:new Set(), stockOnly:false, hideOpen:false, more:false};
 
 // Columns that take a min/max filter
@@ -2922,8 +2949,8 @@ function renderCpt(){
       '</div>'+
     '</section>'+
     rbBanner()+
-    (RB ? (()=>{ const n = all.filter(r=> (r.rb || []).some(h=> h.sev === 'amazon')); return `<div class="why"><b>Rule screening:</b> ${n.length ? `${n.length} listing${n.length === 1 ? '' : 's'} break${n.length === 1 ? 's' : ''} an Amazon pricing rule (${esc(n.map(r=> r.sku).slice(0,4).join(', '))}${n.length > 4 ? '\u2026' : ''}). Open a listing to see which.` : 'No listing breaks an Amazon pricing rule.'} <button class="work" data-rbopen="1">Rulebook</button></div>`; })() : '')+
-    mk2Note('Case drafts here are written for the US team and amazon.com. Change the marketplace and currency before you send one for Canada.')+
+    (RB ? (()=>{ const n = all.filter(r=> (r.rb || []).some(h=> h.sev === 'amazon')); return `<div class="why"><b>Amazon rules:</b> ${n.length ? `${n.length} failed (${esc(n.map(r=> r.sku).slice(0,4).join(', '))}${n.length > 4 ? '\u2026' : ''})` : '<span style="color:var(--ok)">Passed</span>'} <button class="work" data-rbopen="1">Rulebook</button></div>`; })() : '')+
+    mk2Note('Drafts say amazon.com: edit before sending for CA')+
     '<div class="cpt-tools">' + mk2Seg() +
       '<div class="seg" id="cptSeg">'+
         [['all','All ' + all.length],
@@ -2933,11 +2960,7 @@ function renderCpt(){
          ['due','Follow-up due ' + all.filter(r=> { const n = nextStep(r); return n && n.due === 'now'; }).length]]
           .map(b=> `<button data-show="${b[0]}" aria-pressed="${CPT_F.show === b[0]}">${b[1]}</button>`).join('')+
       '</div>'+
-      '<span class="mut" style="font-size:.8rem;margin-left:.3rem">Group by</span>'+
-      '<div class="seg" id="cptGrp">'+
-        [['action','What to do'], ['none','Flat list'], ['parent','Parent name'], ['psku','Parent SKU'], ['pasin','Parent ASIN']]
-          .map(b=> `<button data-g="${b[0]}" aria-pressed="${CPT_F.group === b[0]}">${b[1]}</button>`).join('')+
-      '</div>'+
+      `<button id="cptGrpPar" aria-pressed="${CPT_F.group === 'pasin'}" title="Off: grouped by what to do">Group by parent</button>`+
       `<input id="cptQ" type="search" placeholder="Search SKU, ASIN or product" value="${esc(CPT_F.q)}" aria-label="Search CPT tracker">`+
       (CPT_F.sort ? '<button id="cptUnsort" title="Back to the default order">Clear sort</button>' : '')+
       (rows.some(r=> r.action === 'open' || r.action === 'follow') ? `<button id="cptCaseAll" class="work">Copy one case for the ${rows.filter(r=> r.action === 'open' || r.action === 'follow').length} shown</button>` : '')+
@@ -3089,11 +3112,11 @@ function cptBody(rows){
     return ['open','follow','watch','oos','none'].map(a=>{
       const g = rows.filter(r=> r.action === a);
       if(!g.length) return '';
-      const sub = a === 'open' ? 'The CPT is below our sale price for the size. No case on file.'
-               : a === 'follow' ? 'Same, but a case is already on file. Reply on it with the latest numbers.'
-               : a === 'watch' ? 'The CPT is at or above our sale price, so we can sell at the sale price without a case.'
-               : a === 'oos' ? 'The CPT is too low, but we have no stock to sell. Raise a case when stock is back.'
-               : 'Our price and the CPT agree.';
+      const sub = a === 'open' ? 'CPT below sale price. No case yet.'
+               : a === 'follow' ? 'Case on file. Follow up.'
+               : a === 'watch' ? 'CPT at or above sale price. No case needed.'
+               : a === 'oos' ? 'CPT low, no stock. Case after restock.'
+               : 'All good.';
       const btns = (a === 'open' || a === 'follow')
         ? `<div class="agh-b">`+
           (a === 'follow' ? `<button class="work strong" data-gfu="${a}">Draft one follow-up for these ${g.length}</button>` : '')+
@@ -3251,7 +3274,8 @@ function wireCpt(v, all){
     CPT_F.min = {}; CPT_F.max = {}; CPT_F.tiers.clear(); CPT_F.sizes.clear(); CPT_F.stockOnly = false; CPT_F.hideOpen = false; renderCpt(); };
   const un = document.getElementById('cptUnsort');
   if(un) un.onclick = ()=>{ CPT_F.sort = ''; CPT_F.dir = 1; renderCpt(); };
-  [...v.querySelectorAll('#cptGrp button')].forEach(b=> b.onclick = ()=>{ CPT_F.group = b.dataset.g; renderCpt(); });
+  const gp = document.getElementById('cptGrpPar');
+  if(gp) gp.onclick = ()=>{ CPT_F.group = CPT_F.group === 'pasin' ? 'action' : 'pasin'; renderCpt(); };
   const q = document.getElementById('cptQ');
   if(q){
     q.oninput = ()=>{ CPT_F.q = q.value; renderCpt();
@@ -3323,17 +3347,17 @@ function timelineBlock(r){
 function cptChecklist(r){
   const coir = /^DMC-/.test(r.sku || '');
   const items = [
-    'Screenshot Pricing Health (threshold and date) and our price on every channel.',
-    'Tell Haris the listing lost the Featured Offer. Sponsored Products stop, but Sponsored Brands and Sponsored Display may keep spending. Haris decides; you do not change campaigns.',
-    'Check Google Shopping for every retailer with an equivalent item. If one match drops off, the threshold can lock onto another.'
+    'Screenshot Pricing Health + our price on every channel',
+    'Tell Haris (lost Featured Offer)',
+    'Google Shopping: check equivalent items'
   ].concat(coir ? [
-    'Weave type updated to tufted? Plytix first, then a PartialUpdate (never a full Update).',
-    'Pile height from the latest V-Trust report for this SKU, marked verified.',
-    'Bullets, description and images updated the same day to match.',
-    'Processing report read, live page checked, change logged (SKU, date, old and new value).'
+    'Weave type = Tufted (Plytix, then PartialUpdate)',
+    'Pile height from V-Trust, verified',
+    'Bullets, description, images match',
+    'Processing report read, live page checked, logged'
   ] : []);
-  return `<div class="why" style="margin:.4rem 0"><b>Before you send a case</b><ol style="margin:.3rem 0 0;padding-left:1.1rem">${items.map(x=> `<li>${esc(x)}</li>`).join('')}</ol>` +
-    '<div style="margin-top:.35rem">Every line in the case must be true and checkable. Fill the [brackets] yourself and delete any line you cannot prove.</div></div>';
+  return `<div class="why" style="margin:.4rem 0"><b>Before you send</b><ol style="margin:.3rem 0 0;padding-left:1.1rem">${items.map(x=> `<li>${esc(x)}</li>`).join('')}</ol>` +
+    '<div style="margin-top:.35rem">Fill the [brackets]. Delete any line you can\u2019t prove.</div></div>';
 }
 function caseBlock(r){
   const v = r.verdict;
@@ -3342,8 +3366,8 @@ function caseBlock(r){
   return `<h2 style="margin-top:1.1rem">What to do</h2>`+ cptChecklist(r) +
     `<p style="margin:.2rem 0 .4rem"><span class="ac ac-${r.action}">${esc(ACTIONS[r.action].label || 'No action')}</span>`+
     `<span class="mut" style="font-size:.8rem;margin-left:.5rem">${strength} for a wrong match (${v.points} points)</span></p>`+
-    (r.caseIds && r.caseIds.length ? `<p class="mut" style="font-size:.84rem">Case on file: <span class="mono">${esc(r.caseIds.join(', '))}</span>. Reply on the newest one with the evidence below.</p>` : '')+
-    (v.open ? `<p class="mut" style="font-size:.84rem">Case ${esc(v.open.id)} is already open for this ASIN (${esc(v.open.status || 'open')}). Reply on it instead of opening another.</p>` : '')+
+    (r.caseIds && r.caseIds.length ? `<p class="mut" style="font-size:.84rem">Case on file: <span class="mono">${esc(r.caseIds.join(', '))}</span>. Reply on the newest.</p>` : '')+
+    (v.open ? `<p class="mut" style="font-size:.84rem">Case ${esc(v.open.id)} open (${esc(v.open.status || 'open')}). Reply there.</p>` : '')+
     '<ul class="why-list">' + v.why.map(w=> `<li>${esc(w)}</li>`).join('') + '</ul>'+
     timelineBlock(r)+
     factsBlock(r)+
@@ -3362,7 +3386,7 @@ function caseBlock(r){
       `<p style="font-size:.84rem;margin:.3rem 0"><b>${esc(r.mail.subject)}</b><br><span class="mut">${esc(r.mail.date)}</span></p>`+
       `<p style="font-size:.84rem;color:var(--muted)">${esc(r.mail.snippet)}\u2026</p>`+
       `<p><button class="work" id="openMail">Open this email in Gmail</button></p>`
-      : r.latestReply ? '' : `<p class="mut" style="font-size:.8rem;margin-top:.6rem">No Amazon email about this listing in the last 90 days. Amazon may have answered inside the Seller Central case.</p>`)+
+      : r.latestReply ? '' : `<p class="mut" style="font-size:.8rem;margin-top:.6rem">No Amazon email in 90 days. Check the case in Seller Central.</p>`)+
     ((r.action === 'open' || r.action === 'follow')
       ? '<div class="act-row">'+
           `<button class="work strong" id="mailBtn">${hasJassy(r) ? 'Draft follow-up to Andy Jassy team' : 'Draft email to Andy Jassy team'}</button>`+
@@ -3476,7 +3500,7 @@ function openChangeLog(){
     a.href = URL.createObjectURL(new Blob([lines.join('\n')], {type:'text/csv'}));
     a.download = 'cpt-daily-' + todayStr() + '.csv'; a.click();
   };
-  document.getElementById('veil').hidden = false;
+  document.getElementById('detail').classList.remove('wide'); document.getElementById('veil').hidden = false;
 }
 
 function openCpt(r){
@@ -3546,7 +3570,7 @@ function openCpt(r){
   document.getElementById('phBtn').onclick = ()=>
     window.open('https://sellercentral.amazon.com/pricing/health', '_blank', 'noopener');
   d.insertAdjacentHTML('beforeend', rbBlock(r.rb || []));
-  document.getElementById('veil').hidden = false;
+  document.getElementById('detail').classList.remove('wide'); document.getElementById('veil').hidden = false;
 }
 
 
@@ -3722,7 +3746,7 @@ function openDetail(row, check){
   };
   document.getElementById('closeBtn').onclick = closeDetail;
 
-  document.getElementById('veil').hidden = false;
+  document.getElementById('detail').classList.remove('wide'); document.getElementById('veil').hidden = false;
 }
 
 /* ---------- Buy Box module ----------
@@ -3873,7 +3897,7 @@ function renderBb(){
       rbTile(all, 'Breaks an Amazon pricing rule')+
     '</div></section>'+
     rbBanner()+
-    mk2Note('Out of stock uses CA stock, which needs Canada rows in BigQuery.')+
+    mk2Note('No CA stock yet')+
     '<div class="cpt-tools">' + mk2Seg() + '<div class="seg" id="bbSeg">'+
       [['all','All ' + all.length], ['no','No Buy Box ' + no.length], ['oos','Out of stock ' + by('oos').length],
        ['seller','Another seller ' + (by('amazon').length + by('seller').length)], ['other','Other reason ' + oth.length],
@@ -3991,7 +4015,7 @@ function bbSlack(no){
     (navigator.clipboard ? navigator.clipboard.writeText(t) : Promise.reject())
       .then(()=> e.target.textContent = 'Copied').catch(()=> window.prompt('Copy this text:', t));
   };
-  document.getElementById('veil').hidden = false;
+  document.getElementById('detail').classList.remove('wide'); document.getElementById('veil').hidden = false;
 }
 
 function openBb(r){
@@ -4026,7 +4050,7 @@ function openBb(r){
     '</div>'+
     '<div class="why">Buy Box from Keepa\u2019s last check, usually a few hours old. Stock from the FBA inventory files.</div>';
   d.insertAdjacentHTML('beforeend', rbBlock(r.rb || []));
-  document.getElementById('veil').hidden = false;
+  document.getElementById('detail').classList.remove('wide'); document.getElementById('veil').hidden = false;
 }
 
 /* ---------- Listing Copy module ----------
@@ -4172,8 +4196,8 @@ function rbScreenRow(module, r){
 }
 // A small panel with a listing's rule findings, for modules without their own panel
 function rbOpenRow(title, hits){
-  document.getElementById('detail').innerHTML = `<h2>Rule screening</h2><h3>${esc(title)}</h3>` + rbBlock(hits);
-  document.getElementById('veil').hidden = false;
+  document.getElementById('detail').innerHTML = `<h2>Amazon rules</h2><h3>${esc(title)}</h3>` + rbBlock(hits);
+  document.getElementById('detail').classList.remove('wide'); document.getElementById('veil').hidden = false;
 }
 function rbTile(rows, label){
   if(!RB) return `<div class="cpt-tile"><div class="k">${esc(label)}</div><div class="v">\u2014</div><div class="n">Rulebook not loaded</div></div>`;
@@ -4182,7 +4206,7 @@ function rbTile(rows, label){
 }
 function rbChip(hits){
   if(!RB) return '<span class="lcchip lc-gray" data-tip="Rulebook not loaded">\u2014</span>';
-  if(!hits.length) return '<span class="lcchip lc-ok" data-tip="Passes every rule in the rulebook">OK</span>';
+  if(!hits.length) return '<span class="lcchip lc-ok">Passed</span>';
   const a = hits.filter(h=> h.sev === 'amazon').length, b = hits.filter(h=> h.sev === 'brand').length, g = hits.length - a - b;
   const tip = hits.slice(0, 6).map(h=> `${(RB_SEV[h.sev] || [''])[0]}: ${h.rule.text.split('. ')[0]}`).join(' \u2022 ');
   // The reasons, right under the chip: worst first, two shown, the rest in the panel
@@ -4195,9 +4219,9 @@ function rbChip(hits){
 }
 const RB_FNAME = {rating:'Star rating', price:'Price', node:'Browse node', itk:'Item type keyword', title:'Title', ih:'Item Highlights', b1:'Bullet 1', b2:'Bullet 2', b3:'Bullet 3', b4:'Bullet 4', b5:'Bullet 5', gk:'Backend keywords', desc:'Description', theme:'Variation theme', value:'Variation value'};
 function rbBlock(hits){
-  if(!RB) return `<div class="why"><b>Rule screening off:</b> rules.json not loaded${RB_ERR ? ' (' + esc(RB_ERR) + ')' : ''}.</div>`;
-  const head = `<div class="lcf-l" style="margin-top:.8rem">Rule screening, rulebook checked ${esc(shortDate(RB.verified))}${rbStale() ? ' <b style="color:var(--warn)">(due for a re-check)</b>' : ''}</div>`;
-  if(!hits.length) return head + '<div class="lcf-r" style="color:var(--ok)">Passes every rule in the rulebook.</div>';
+  if(!RB) return `<div class="why"><b>Amazon rules:</b> rulebook not loaded.</div>`;
+  const head = `<div class="lcf-l" style="margin-top:.8rem">Amazon rules${rbStale() ? ' <b style="color:var(--warn)">(rulebook due for a re-check)</b>' : ''}</div>`;
+  if(!hits.length) return head + '<div class="lcf-r" style="color:var(--ok)"><b>Passed</b></div>';
   const ord = {amazon:0, brand:1, guide:2};
   return head + hits.slice().sort((a,b)=> (ord[a.sev] || 0) - (ord[b.sev] || 0)).map(h=> `<div class="lcf"><div class="lcf-h"><b>${esc(RB_FNAME[h.field] || h.field)}</b> <span class="lcchip ${(RB_SEV[h.sev] || ['', 'lc-gray'])[1]}">${esc((RB_SEV[h.sev] || [h.sev])[0])}</span> <span class="mut" style="font-size:.75rem">${esc(h.rule.sure || '')}</span></div>`+
     `<div class="lcf-t" style="margin-top:.3rem">${esc(h.rule.text)}</div>`+
@@ -4207,14 +4231,14 @@ function rbBlock(hits){
   '</div>').join('');
 }
 function rbBanner(){
-  if(!RB) return `<div class="why"><b>Rule screening is off:</b> the rulebook (rules.json) did not load${RB_ERR ? ' (' + esc(RB_ERR) + ')' : ''}. Upload rules.json to the cpc-tracker repo.</div>`;
+  if(!RB) return `<div class="why"><b>Amazon rules off:</b> upload rules.json to GitHub.</div>`;
   const a = rbAgeDays();
-  return rbStale() ? `<div class="why"><b>Rulebook due for a re-check:</b> last checked against Amazon ${a} days ago (${esc(shortDate(RB.verified))}). <button class="work" data-rbopen="1">Open the rulebook</button></div>` : '';
+  return rbStale() ? `<div class="why"><b>Rulebook due for a re-check</b> (${a} days). <button class="work" data-rbopen="1">Open</button></div>` : '';
 }
 /* The rulebook: every rule, its source and when it was checked */
 function openRulebook(){
   const d = document.getElementById('detail');
-  if(!RB){ d.innerHTML = '<h2>Rulebook</h2>' + rbBanner(); document.getElementById('veil').hidden = false; return; }
+  if(!RB){ d.innerHTML = '<h2>Rulebook</h2>' + rbBanner(); document.getElementById('detail').classList.remove('wide'); document.getElementById('veil').hidden = false; return; }
   const grp = [['lc', 'Listing Copy'], ['vr', 'Variation'], ['cg', 'Category'], ['lp', 'List Price'], ['bb', 'Buy Box'], ['cpt', 'CPT tracker'], ['bsr', 'BSR']];
   const ask = `Please re-check the ALM Console rulebook (rules.json in mjbaguhin/cpc-tracker, last checked ${RB.verified}). Search for any Amazon policy changes since then (titles, Item Highlights, bullets, description, backend search terms, variations, review sharing, categories and browse nodes, List Price and reference prices, Featured Offer and fair pricing, star ratings, reviews and Best Sellers Rank, deals eligibility), check every rule below is still current, and give me an updated rules.json with sources and today's date.\n\n` +
     RB.rules.map(r=> `- ${r.id}: ${r.text}`).join('\n');
@@ -4231,15 +4255,288 @@ function openRulebook(){
     '<div class="act-row"><button class="work strong" id="rbAsk">Copy a re-check request for Claude</button></div>';
   document.getElementById('rbAsk').onclick = e=> (navigator.clipboard ? navigator.clipboard.writeText(ask) : Promise.reject())
     .then(()=> e.target.textContent = 'Copied. Paste it into Claude').catch(()=> window.prompt('Copy:', ask));
-  document.getElementById('veil').hidden = false;
+  document.getElementById('detail').classList.remove('wide'); document.getElementById('veil').hidden = false;
 }
 
+
+/* ---------- Plytix checks: typing and copy-paste slips in the source of truth ----------
+   Plytix is the source of truth, kept by hand, so these look for the slips
+   people make: broken characters, placeholders, double spaces, repeated
+   words, unclosed brackets, HTML in plain fields, a bullet pasted twice, the
+   same title on two different listings, a title without the brand, and inches
+   in metric copy (or the other way round). Short notes only. */
+const PX_NAME = {title:'Title', ih:'Item Highlights', b1:'Bullet 1', b2:'Bullet 2', b3:'Bullet 3', b4:'Bullet 4', b5:'Bullet 5', desc:'Description', gk:'Keywords'};
+const PX_FIX = [[/\u00e2\u20ac\u2122|\u00e2\u20ac\u02dc/g, "\u2019"], [/\u00e2\u20ac\u0153|\u00e2\u20ac\u009d|\u00e2\u20ac\u009c/g, '"'], [/\u00e2\u20ac\u201c|\u00e2\u20ac\u201d/g, '-'], [/\u00c2(?=[\s\u00a0])/g, ''], [/[ \t]{2,}/g, ' ']];
+function pxClean(t){ let v = String(t || ''); PX_FIX.forEach(f=> v = v.replace(f[0], f[1])); return v.trim(); }
+function pxOne(k, t, mk, cmList){
+  const out = [], v = String(t || '');
+  if(!v) return out;
+  if(/\u00e2\u20ac|\u00c3[\u0080-\u00bf]|\u00c2[\u00a0-\u00bf\s]/.test(v)) out.push({k, m:'Broken characters (\u00e2\u20ac\u2026)', fix:true});
+  if(/^\s*(nan|none|null|n\/a|tbd|todo|lorem)\b/i.test(v) || /\[[^\]]{0,40}\]|\bxxx+\b/i.test(v)) out.push({k, m:'Placeholder text'});
+  if(/[ \t]{2,}/.test(v) || v !== v.trim()) out.push({k, m:'Extra spaces', fix:true});
+  const rw = v.match(/\b([a-z]{2,})\s+\1\b/i); if(rw) out.push({k, m:`Word twice: \u201c${rw[1]} ${rw[1]}\u201d`});
+  // A curly quote right after a number is an inch mark (4.25\u201d), not a quote
+  const q = v.replace(/(\d)\s?[\u201d\u2033"]/g, '$1');
+  const bal = (a, b)=> (q.split(a).length - 1) !== (q.split(b).length - 1);
+  if(bal('(', ')') || bal('[', ']') || bal('\u201c', '\u201d')) out.push({k, m:'Unclosed bracket or quote'});
+  if(k !== 'desc' && /<\/?[a-z][^>]*>|&[a-z]+;/i.test(v)) out.push({k, m:'HTML in a plain field'});
+  if(k !== 'gk'){
+    const cm = /\d\s?(cm|mm|centimet)/i.test(v), inch = /\d\s?("|\u201d|in\b|inch|inches|ft\b|feet)/i.test(v);
+    // CA: only judge fields that really come from a (cm) column (CA Watch says which)
+    if(mk === 'CA' && Array.isArray(cmList)){
+      if(cmList.indexOf(k) !== -1 && inch && !cm) out.push({k, m:'Inches in the (cm) copy'});
+      if(cmList.indexOf(k) === -1 && inch && !cm) out.push({k, m:'No (cm) version: CA uses the US text'});
+    }
+    if(mk === 'US' && cm && !inch) out.push({k, m:'Metric only in US copy'});
+  }
+  return out;
+}
+function pxChecks(rows, mk){
+  const titles = {}, brandStart = {};
+  rows.forEach(r=>{ const t = ((r.f || {}).title || {}).c; if(t){ const n = t.toLowerCase().replace(/\s+/g, ' ').trim(); (titles[n] = titles[n] || []).push(r); }
+    if(t && r.brand){ const b = brandStart[r.brand] = brandStart[r.brand] || {y:0, n:0}; t.toLowerCase().indexOf(r.brand.toLowerCase()) === 0 ? b.y++ : b.n++; } });
+  rows.forEach(r=>{
+    const f = r.f || {}, out = [];
+    Object.keys(PX_NAME).forEach(k=>{ if(f[k] && f[k].c) out.push(...pxOne(k, f[k].c, mk, r.cm)); });
+    const t = f.title && f.title.c;
+    if(t){
+      const same = titles[t.toLowerCase().replace(/\s+/g, ' ').trim()].filter(x=> x.asin !== r.asin);
+      if(same.length) out.push({k:'title', m:'Same title as ' + same.slice(0, 2).map(x=> x.sku).join(', ')});
+      const b = brandStart[r.brand];
+      if(r.brand && b && b.y >= 4 * Math.max(1, b.n) && t.toLowerCase().indexOf(r.brand.toLowerCase()) !== 0) out.push({k:'title', m:`Doesn\u2019t start with ${r.brand}`});
+    }
+    const bl = ['b1','b2','b3','b4','b5'].map(k=> ((f[k] || {}).c || '').trim().toLowerCase());
+    bl.forEach((x, i)=>{ const j = bl.indexOf(x); if(x && j !== i) out.push({k:'b' + (i + 1), m:`Same as Bullet ${j + 1}`}); });
+    r.px = out;
+  });
+}
+function pxChip(r){
+  if(!r.px || !r.px.length) return '';
+  return `<span class="p-size" style="background:#fff4e0;color:#8a5a00" data-tip="${esc(r.px.slice(0, 4).map(x=> PX_NAME[x.k] + ': ' + x.m).join(' \u2022 '))}">Plytix check</span>`;
+}
+
+/* ---------- Upload files ----------
+   Amazon: values to paste into your category template, update_delete =
+   PartialUpdate, only the wrong fields filled (blank cells are left alone).
+   Plytix copy that breaks a rule or looks off is left out, so it is fixed in
+   Plytix first. Plytix: SKU + Plytix column names, for when Amazon has the
+   right text, and a cleanup file for the slips that can be fixed safely. */
+const LC_AMZ_COL = {title:'item_name (Title)', b1:'bullet_point1 (Bullet Point)', b2:'bullet_point2 (Bullet Point)', b3:'bullet_point3 (Bullet Point)',
+  b4:'bullet_point4 (Bullet Point)', b5:'bullet_point5 (Bullet Point)', desc:'product_description (Product Description)'};
+const LC_PX_COL = {title:'Product Title', ih:'Item Highlight', b1:'Bullet Point 1', b2:'Bullet Point 2', b3:'Bullet Point 3', b4:'Bullet Point 4', b5:'Bullet Point 5', desc:'Product Description', gk:'Generic Keywords'};
+const lcWrong = r=> Object.keys(LC_AMZ_COL).filter(k=> r.f && r.f[k] && ['wrong','small','missing'].indexOf(r.f[k].s) !== -1 && r.f[k].c);
+function lcSkipWhy(r, k){
+  const hit = (r.rb || []).find(h=> h.field === k && (h.sev === 'amazon' || h.sev === 'brand') && (h.same || h.corr));
+  if(hit) return (RB_SEV[hit.sev] || [hit.sev])[0] + ': ' + (hit.same ? hit.live : hit.corr);
+  const px = (r.px || []).find(x=> x.k === k);
+  return px ? 'Plytix check: ' + px.m : '';
+}
+function lcAmazonFile(rows){
+  const skipped = [], out = [];
+  rows.forEach(r=>{
+    const ks = lcWrong(r); if(!ks.length) return;
+    const ok = ks.filter(k=>{ const w = lcSkipWhy(r, k); if(w) skipped.push([r.sku, PX_NAME[k], w]); return !w; });
+    if(!ok.length) return;
+    const pt = (typeof CG !== 'undefined' ? CG : []).find(x=> x.mk === MK2 && x.asin === r.asin);
+    out.push([(pt && pt.exp && pt.exp.pt) || '', r.sku, 'PartialUpdate', ...Object.keys(LC_AMZ_COL).map(k=> ok.indexOf(k) !== -1 ? r.f[k].c : ''), r.asin, MK2 === 'CA' ? 'amazon.ca' : 'amazon.com']);
+  });
+  if(out.length) csvSave('amazon-copy-upload-' + MK2.toLowerCase(), ['feed_product_type (Product Type)', 'item_sku (Seller SKU)', 'update_delete (Update Delete)',
+    ...Object.values(LC_AMZ_COL), 'ASIN (reference)', 'Marketplace (reference)'], out);
+  lcFileNote('Amazon upload values', out.length, skipped,
+    'Paste into your category template by column name. Keep update_delete = PartialUpdate. Blank cells are left as they are.');
+}
+function lcPlytixFile(rows){
+  const out = [], cm = MK2 === 'CA' ? ' (cm)' : '';
+  const ks = Object.keys(LC_AMZ_COL);
+  rows.forEach(r=>{ const w = lcWrong(r).filter(k=> r.f[k].l); if(w.length) out.push([r.usSku || r.sku, ...ks.map(k=> w.indexOf(k) !== -1 ? r.f[k].l : ''), r.asin]); });
+  if(out.length) csvSave('plytix-import-from-amazon-' + MK2.toLowerCase(), ['SKU', ...ks.map(k=> LC_PX_COL[k] + cm), 'ASIN (reference)'], out);
+  lcFileNote('Plytix import (Amazon\u2019s text)', out.length, [], 'Only for fields where Amazon is right. Delete the columns you don\u2019t want, then import into Plytix matched by SKU.');
+}
+function lcCleanFile(rows){
+  const out = [], cm = MK2 === 'CA' ? ' (cm)' : '', ks = Object.keys(PX_NAME);
+  rows.forEach(r=>{ const fx = [...new Set((r.px || []).filter(x=> x.fix).map(x=> x.k))]; if(fx.length) out.push([r.usSku || r.sku, ...ks.map(k=> fx.indexOf(k) !== -1 ? pxClean(r.f[k].c) : ''), r.asin]); });
+  if(out.length) csvSave('plytix-cleanup-' + MK2.toLowerCase(), ['SKU', ...ks.map(k=> LC_PX_COL[k] + cm), 'ASIN (reference)'], out);
+  lcFileNote('Plytix cleanup', out.length, [], 'Fixes broken characters and extra spaces only. Check, then import into Plytix matched by SKU.');
+}
+function lcFileNote(what, n, skipped, how, leftLabel){
+  const d = document.getElementById('detail');
+  d.innerHTML = `<h2>${esc(what)}</h2><h3>${n ? n + ' listing' + (n > 1 ? 's' : '') + ' in the file' : 'Nothing to put in the file'}</h3>` +
+    `<div class="why">${esc(how)}</div>` +
+    (skipped.length ? `<div class="lcf-l" style="margin-top:.8rem">${esc(leftLabel || 'Left out: fix in Plytix first')} (${skipped.length})</div>` +
+      '<table class="cpt-table" style="font-size:.8rem"><tbody>' + skipped.map(x=> `<tr><td>${esc(x[0])}</td><td>${esc(x[1])}</td><td>${esc(x[2])}</td></tr>`).join('') + '</tbody></table>' : '');
+  document.getElementById('detail').classList.remove('wide'); document.getElementById('veil').hidden = false;
+}
+/* ---------- Proposed fixes for rule issues ----------
+   Only approved swaps: the Barnyard Designs guide's "Use instead" column, the
+   Seedboy guide's "leave claims out", and Amazon's rules. Every proposal is
+   screened again; only one that passes is marked Passed. Words cut from a
+   title to reach 75 characters move to the backend keywords when they fit,
+   so search visibility is kept. Drafts only: check before you use them. */
+const FX_SWAP = {
+  // Only words with an approved replacement. Claims that would have to be
+  // deleted are left for a real rewrite (Ask Claude), so no sentence breaks.
+  'Barnyard Designs': [
+    [/\b(premium|luxurious|designer)\b/gi, 'well made'],
+    [/\b(eco[- ]?friendly|biodegradable|sustainable)\b/gi, 'natural'],
+    [/\bhand[- ]?(made|woven|painted)\b/gi, 'crafted'],
+    [/\belevate([sd]?)\b/gi, 'refresh$1'], [/\bcurated\b/gi, 'chosen'], [/\baesthetic\b/gi, 'look']
+  ],
+  'Seedboy': [
+    [/\b(dietary |nutritional )?supplements?\b/gi, 'food']
+  ],
+  all: [
+    [/\b(made from|contains) (bamboo|soy)\b/gi, 'made of $2'],
+    [/[^.!?]*\b(full refund|money[- ]back|if not satisfied|unconditional guarantee|satisfaction guaranteed|100% guarantee)\b[^.!?]*[.!?]?/gi, ''],
+    [/(https?:\/\/\S+|www\.\S+|\b[\w.+-]+@[\w-]+\.[a-z]{2,}\b)/gi, ''],
+    [/[\u2122\u00ae\u00a9\u2020\u2021\u00a2\u00a3\u00a5\u20ac]/g, ''], [/\u2026/g, '...'], [/\u00b1/g, '+/-'], [/~/g, 'about '],
+    [/\p{Extended_Pictographic}\uFE0F?/gu, '']
+  ]
+};
+// Seedboy blend names are names, not claims (Seedboy guide section 8)
+const FX_KEEP = /\b(hormone balance|gut health|immunity|longevity) blend\b/gi;
+function fxTidy(t){
+  return t.replace(/\(\s*\)|\[\s*\]/g, '').replace(/\s+([,.;:!?)])/g, '$1').replace(/([(])\s+/g, '$1')
+    .replace(/,\s*,+/g, ',').replace(/([^.])\.{2}(?!\.)/g, '$1.').replace(/^[\s,;:\-\u2013\u2014|]+|[\s,;:\-\u2013\u2014|]+$/g, '').replace(/\s{2,}/g, ' ')
+    .replace(/(^|[.!?]\s+)([a-z])/g, (m, a, b)=> a + b.toUpperCase()).trim();
+}
+function fxSwap(t, brand, kind){
+  let v = String(t || '');
+  const keep = []; v = v.replace(FX_KEEP, m=>{ keep.push(m); return '\u0000' + (keep.length - 1) + '\u0000'; });
+  if(kind === 'title') v = v.replace(/[!$?_{}^\u00ac\u00a6]/g, ' ');
+  [].concat(FX_SWAP.all, FX_SWAP[brand] || []).forEach(x=> v = v.replace(x[0], x[1]));
+  v = v.replace(/\u0000(\d+)\u0000/g, (m, i)=> keep[+i]);
+  return fxTidy(v);
+}
+// A word used more than twice in a title: keep the first two
+function fxRepeat(t, brand){
+  const ex = new Set(['a','an','the','and','or','but','nor','for','so','yet','of','in','on','at','to','by','with','from','into','onto','over','under','per','as','up','off','x']);
+  const b = new Set(String(brand || '').toLowerCase().split(/\s+/)), n = {};
+  return fxTidy(String(t).split(/(\s+)/).filter(w=>{
+    const k = w.toLowerCase().replace(/[^a-z0-9']/g, ''); if(!k || ex.has(k) || b.has(k) || /^\d+$/.test(k)) return true;
+    const kk = k.length > 3 ? k.replace(/(es|s)$/, '') : k; n[kk] = (n[kk] || 0) + 1; return n[kk] <= 2;
+  }).join(''));
+}
+// Title over 75: keep whole leading parts, drop the tail; return what was dropped too
+function fxShort(t, max){
+  if(t.length <= max) return {t, dropped:''};
+  const parts = t.split(/(\s*[,|(]\s*|\s+[-\u2013\u2014]\s+)/);
+  let out = '';
+  for(let i = 0; i < parts.length; i += 2){ const next = out + (i ? parts[i - 1] : '') + parts[i]; if(next.replace(/[\s,(|\-\u2013\u2014]+$/, '').length > max) break; out = next; }
+  out = fxTidy(out.replace(/[\s,(|\-\u2013\u2014]+$/, ''));
+  return out.length >= 25 ? {t: out, dropped: t.slice(out.length)} : {t, dropped:''};
+}
+// Backend keywords: no brand names, ASINs, temporary or subjective words, no repeats of visible copy, 249 bytes
+function fxKeywords(gk, r, extra){
+  // Take out only what breaks a rule; drop words already in the title or bullets
+  // only while it is still over 249 bytes, so search reach is kept
+  const bad = /^(barnyard|designs|seedboy|sale|discount(ed)?|latest|best|cheapest|amazing|#1)$/i, seen = new Set();
+  let words = (String(gk || '') + ' ' + String(extra || '')).toLowerCase().split(/[\s,;]+/)
+    .filter(w=> w && !/^b0[a-z0-9]{8}$/.test(w) && !bad.test(w) && !seen.has(w) && seen.add(w));
+  const vis = new Set();
+  ['title','b1','b2','b3','b4','b5'].forEach(k=> String(((r.f || {})[k] || {}).c || '').toLowerCase().split(/[^a-z0-9']+/).forEach(w=> w && vis.add(w)));
+  for(let i = words.length - 1; i >= 0 && rbBytes(words.join(' ')) > 249; i--) if(vis.has(words[i])) words.splice(i, 1);
+  while(words.length && rbBytes(words.join(' ')) > 249) words.pop();
+  return words.join(' ');
+}
+/* One proposal per field with a rule issue on the Plytix side (or on both) */
+function fxProposals(r){
+  if(!RB || !r.f) return [];
+  const hits = (r.rb || []).filter(h=> (h.same || h.corr) && h.sev !== 'guide');
+  const fields = [...new Set(hits.map(h=> h.field))].filter(k=> r.f[k] && r.f[k].c);
+  const out = []; let moved = '';
+  fields.filter(k=> k !== 'gk').forEach(k=>{
+    const was = r.f[k].c, kind = k === 'title' ? 'title' : k === 'ih' ? 'ih' : k === 'desc' ? 'desc' : 'bullet';
+    let t = fxSwap(was, r.brand, kind);
+    if(kind === 'title'){ t = fxRepeat(t, r.brand); const sh = fxShort(t, 75); if(sh.dropped){ moved += ' ' + sh.dropped.replace(/[^\w\s'-]/g, ' '); } t = sh.t; }
+    if(kind === 'ih' && t.length > 125) t = fxShort(t, 125).t;
+    out.push(fxCheck(r, k, was, t, hits.filter(h=> h.field === k)));
+  });
+  if(fields.indexOf('gk') !== -1 || moved.trim()){
+    const was = (r.f.gk || {}).c || '';
+    out.push(fxCheck(r, 'gk', was, fxKeywords(was, r, moved), hits.filter(h=> h.field === 'gk'), moved.trim()));
+  }
+  return out.filter(p=> p.t !== p.was || p.left.length);
+}
+function fxCheck(r, k, was, t, fixedHits, moved){
+  const rules = rbFor('lc', r.brand, r.name, MK2).filter(ru=> ru.field && ru.field.indexOf(RB_FIELD[k]) !== -1 && ru.sev !== 'guide');
+  const left = rules.map(ru=> ({ru, m: rbTest(ru, t, {brand: r.brand})})).filter(x=> x.m);
+  return {k, was, t, left, fixed: fixedHits, moved: moved || '', seedboy: r.brand === 'Seedboy'};
+}
+function fxAsk(r, p){
+  const lim = {title:'75 characters', ih:'125 characters', gk:'249 bytes', desc:'2000 characters'}[p.k] || 'under 255 characters';
+  return [`Please rewrite this ${PX_NAME[p.k] || p.k} for ${r.brand} ${r.sku} (ASIN ${r.asin}, Amazon ${MK2}) so it passes every rule and keeps its search strength.`,
+    r.brand === 'Seedboy' ? 'Use the seedboy:rules and seedboy:copy skills and only facts from the Claims and Compliance file.' : 'Follow the Barnyard Designs Brand Guide v1.0 (section 5, Use instead).',
+    `Limit: ${lim}. Keep the brand, the product, the design and the size. Keep the strongest search words; anything cut from a title can go to the backend keywords.`,
+    'If a flagged word is true and verified for this product (for example food safe with the supplier\u2019s confirmation), tell me instead of removing it.',
+    'Rules it breaks now: ' + [...new Set(p.fixed.map(h=> h.rule.text.split('. ')[0]))].join(' | '),
+    '', 'Current text:', p.was, '', 'Give me the new text only, then one line on what changed.'].join('\n');
+}
+function fxBlock(r){
+  const P = fxProposals(r);
+  if(!P.length) return '';
+  return '<div class="lcf-l" style="margin-top:.9rem">Proposed fixes (draft)</div>' + P.map((p, i)=> p.t === p.was && p.left.length
+    // Nothing safe to swap: a real rewrite is needed
+    ? `<div class="lcf" style="border-left:3px solid var(--warn)"><div class="lcf-h"><b>${esc(PX_NAME[p.k] || p.k)}</b> <span class="lcchip lc-small">No safe auto-fix: ${esc(p.left.map(x=> x.m).join('; '))}</span>`+
+      (p.seedboy ? ' <span class="lcchip lc-gray">Needs Jack or Sam OK</span>' : '') + `<button class="work strong" data-fxask="${i}">Ask Claude</button></div></div>`
+    : `<div class="lcf" style="border-left:3px solid ${p.left.length ? 'var(--warn)' : 'var(--ok)'}"><div class="lcf-h"><b>${esc(PX_NAME[p.k] || p.k)}</b> `+
+      (p.left.length ? `<span class="lcchip lc-small">Still: ${esc(p.left.map(x=> x.m).join('; '))}</span>` : '<span class="lcchip lc-ok">Passed</span>')+
+      (p.seedboy ? ' <span class="lcchip lc-gray">Needs Jack or Sam OK</span>' : '')+
+      ` <span class="mut" style="font-size:.7rem">${p.k === 'gk' ? rbBytes(p.t) + ' bytes' : p.t.length + ' chars'}</span>`+
+      `<button class="work strong" data-fxcopy="${i}">Copy fix</button><button class="work" data-fxask="${i}">Ask Claude</button></div>`+
+      `<div class="lcf-t" style="margin-top:.3rem">${lcMark(p.t, p.was, 'lc-miss') || '<span class="mut">(empty)</span>'}</div>`+
+      (p.moved ? `<div class="lcf-r" style="color:var(--muted)">Moved from the title: ${esc(p.moved.replace(/\s+/g, ' ').trim())}</div>` : '')+
+    '</div>').join('') + '<div class="lcf-r" style="color:var(--muted)">Yellow = changed. Check it reads well, then fix it in Plytix.</div>';
+}
+function fxWire(d, r){
+  const P = fxProposals(r);
+  const put = (b, t)=> (navigator.clipboard ? navigator.clipboard.writeText(t) : Promise.reject())
+    .then(()=>{ const w = b.textContent; b.textContent = 'Copied'; setTimeout(()=> b.textContent = w, 1500); }).catch(()=> window.prompt('Copy this text:', t));
+  [...d.querySelectorAll('button[data-fxcopy]')].forEach(b=> b.onclick = ()=> put(b, P[+b.dataset.fxcopy].t));
+  [...d.querySelectorAll('button[data-fxask]')].forEach(b=> b.onclick = ()=> put(b, fxAsk(r, P[+b.dataset.fxask])));
+}
+// Every passing proposal in one Plytix import file
+function fxFile(rows){
+  const cm = MK2 === 'CA' ? ' (cm)' : '', ks = Object.keys(PX_NAME), out = [], left = [];
+  rows.forEach(r=>{ const P = fxProposals(r); if(!P.length) return;
+    const ok = P.filter(p=> !p.left.length); P.filter(p=> p.left.length).forEach(p=> left.push([r.sku, PX_NAME[p.k], p.left.map(x=> x.m).join('; ')]));
+    if(ok.length) out.push([r.usSku || r.sku, ...ks.map(k=>{ const p = ok.find(x=> x.k === k); return p ? p.t : ''; }), r.asin, r.brand === 'Seedboy' ? 'Needs Jack or Sam OK' : '']); });
+  if(out.length) csvSave('plytix-proposed-fixes-' + MK2.toLowerCase(), ['SKU', ...ks.map(k=> LC_PX_COL[k] + cm), 'ASIN (reference)', 'Note (reference)'], out);
+  lcFileNote('Proposed fixes for Plytix', out.length, left, 'Drafts that pass every rule. Read each one, then import into Plytix matched by SKU. Seedboy rows need Jack or Sam OK first.', 'Left out: still failing, use Ask Claude');
+}
+
+/* ---------- Which side changed (history.json, Copy History, daily) ----------
+   amazon: Amazon changed and Plytix did not, so a backend edit or Amazon's own
+   rewrite (Amazon doesn't say who). plytix: Plytix changed, not on Amazon yet.
+   old: different since before tracking started. */
+let CH = null, CH_ERR = '';
+const CH_LAB = {amazon:['Changed on Amazon', 'lc-bad'], plytix:['Not pushed yet', 'lc-small'], old:['Old mismatch', 'lc-gray'], checking:['Checking', 'lc-gray'], slack:['Explained in Slack', 'lc-ok']};
+// Notes from Slack about this listing (Cowork task, via Copy History)
+function chNotesOf(r){ return (CH && CH.notes && CH.notes[MK2 + '|' + r.asin]) || []; }
+function chNoteChip(n){ return `<span class="lcchip lc-ok" data-tip="${esc(n.text)}">Slack: ${esc(n.who || 'note')} ${esc(shortDate(n.d))}</span>`; }
+function chAgeDays(){ return CH && CH.day ? Math.max(0, Math.floor((Date.now() - new Date(CH.day + 'T00:00:00').getTime()) / 86400000)) : null; }
+function chWhy(r, k){
+  const h = CH && CH.fields && CH.fields[MK2 + '|' + r.asin] && CH.fields[MK2 + '|' + r.asin][k];
+  if(!h) return {s:'old'};
+  const a = h.amazon, p = h.plytix;
+  if(a && (!p || a.d >= p.d)) return {s:'amazon', d:a.d, before:a.before, after:a.after};
+  if(p) return {s:'plytix', d:p.d, before:p.before, after:p.after};
+  if(h.pending) return {s:'checking', d:h.pending};
+  return {s:'old'};
+}
+function chChip(w){
+  const L = CH_LAB[w.s] || CH_LAB.old;
+  const tip = w.s === 'amazon' ? 'Seen on Amazon ' + w.d + '. Plytix did not change. A colleague\u2019s backend edit or Amazon\u2019s own rewrite.'
+            : w.s === 'plytix' ? 'Plytix changed ' + w.d + '. Amazon still shows the old text.'
+            : w.s === 'checking' ? 'Amazon shows new text since ' + w.d + '. Confirmed after a second read.'
+            : 'Different since before tracking started' + (CH && CH.started ? ' (' + CH.started + ')' : '') + '.';
+  return `<span class="lcchip ${L[1]}" data-tip="${esc(tip)}">${L[0]}${w.d && w.s !== 'old' ? ' ' + esc(shortDate(w.d)) : ''}</span>`;
+}
 const LC_COLS = [['title','Title'], ['ih','Highlight'], ['b1','Bullet 1'], ['b2','Bullet 2'], ['b3','Bullet 3'],
                  ['b4','Bullet 4'], ['b5','Bullet 5'], ['gk','Keywords'], ['desc','Description']];
 const LC_S = {
   match:    ['OK', 'lc-ok', 'Same as Plytix'],
-  small:    ['Small diff', 'lc-small', 'Almost the same as Plytix, a few words differ'],
-  wrong:    ['Wrong', 'lc-bad', 'Different from Plytix'],
+  small:    ['Small mismatch', 'lc-small', 'Almost the same as Plytix, a few words differ'],
+  wrong:    ['Mismatch', 'lc-bad', 'Different from Plytix. Either side could be the one to fix'],
   missing:  ['Missing', 'lc-bad', 'In Plytix but not on Amazon'],
   noplytix: ['Blank in Plytix', 'lc-gray', 'Plytix has no correct copy for this field'],
   cantread: ['Can\u2019t check', 'lc-gray', 'Amazon does not show this field on its own, so it can\u2019t be compared'],
@@ -4286,11 +4583,25 @@ function mk2Seg(){
 function mk2Wire(v){ [...v.querySelectorAll('button[data-mk2]')].forEach(b=> b.onclick = ()=> setMk2(b.dataset.mk2)); }
 function mk2Note(what){
   if(MK2 !== 'CA') return '';
-  if(LC_CA === null) return `<div class="why"><b>Amazon CA:</b> ${CA_ERR ? 'ca.json not found. Run setupCaWatchDaily in the CPC Keepa Fetcher project.' : 'loading the Canada data.'}</div>`;
-  return `<div class="why"><b>Amazon CA</b>, read from amazon.ca ${CA_META.updated ? esc(CA_META.updated) + ' ET' : ''}. Prices are in CAD.${what ? ' ' + what : ''}</div>`;
+  if(LC_CA === null) return `<div class="why"><b>Amazon CA:</b> ${CA_ERR ? 'no ca.json yet. Run setupCaWatchDaily.' : 'loading\u2026'}</div>`;
+  return `<div class="why"><b>Amazon CA</b> \u00b7 ${CA_META.updated ? esc(CA_META.updated) + ' ET' : ''} \u00b7 CAD${what ? ' \u00b7 ' + what : ''}</div>`;
 }
 
 function lcRows(){
+  const out = lcRowsRaw();
+  pxChecks(out, MK2);
+  out.forEach(r=>{
+    r.why = {};
+    r.bad.forEach(k=>{ if(r.f && r.f[k] && LC_BAD.indexOf(r.f[k].s) !== -1 && r.f[k].s !== 'rule') r.why[k] = chWhy(r, k); });
+    const ss = Object.values(r.why).map(w=> w.s);
+    r.notes = chNotesOf(r);
+    r.cause = ss.indexOf('amazon') !== -1 ? 'amazon' : ss.indexOf('plytix') !== -1 ? 'plytix' : ss.length ? 'old' : '';
+    // A Slack note about this listing explains a change on Amazon or an old mismatch
+    if((r.cause === 'amazon' || r.cause === 'old') && r.notes.length) r.cause = 'slack';
+  });
+  return out;
+}
+function lcRowsRaw(){
   return LC.map(c=>{
     const row = (c.sku && ROWS.find(x=> x.sku === c.sku)) || ROWS.find(x=> x.asin === c.asin);
     const f = c.f || {};
@@ -4321,21 +4632,25 @@ function renderLc(){
   const all = lcRows();
   const checked = all.reduce((t,r)=> t + (r.checked || 0), 0), ok = all.reduce((t,r)=> t + (r.ok || 0), 0);
   const pct = checked ? Math.round(ok / checked * 1000) / 10 : 0;
-  const has = k=> all.filter(r=> r.bad.indexOf(k) !== -1);
-  const bul = all.filter(r=> r.bad.some(k=> /^b\d$/.test(k)));
-  const wrong = all.filter(r=> r.bad.length), good = all.filter(r=> r.allOk), blank = all.filter(r=> r.blank.length);
-  const gk = has('gk');
+  // Mismatch = Amazon text differs from Plytix. Rule issues are counted separately.
+  const MM = ['small', 'wrong', 'missing'];
+  const mm = (r, k)=> r.f && r.f[k] && MM.indexOf(r.f[k].s) !== -1;
+  const has = k=> all.filter(r=> mm(r, k));
+  const bul = all.filter(r=> ['b1','b2','b3','b4','b5'].some(k=> mm(r, k)));
+  const wrong = all.filter(r=> LC_COLS.some(c=> mm(r, c[0]))), good = all.filter(r=> r.allOk), blank = all.filter(r=> r.blank.length);
+  const gk = all.filter(r=> r.bad.indexOf('gk') !== -1);
 
   let rows = all;
-  const rbA = all.filter(r=> r.rbA.length), rbB = all.filter(r=> r.rbB.length);
-  const pick = {good, wrong, title: has('title'), bullets: bul, desc: has('desc'), gk, blank, rba: rbA, rbb: rbB};
+  const rbA = all.filter(r=> r.rbA.length), rbB = all.filter(r=> r.rbB.length), pxOff = all.filter(r=> r.px && r.px.length);
+  const chA = all.filter(r=> r.cause === 'amazon'), chP = all.filter(r=> r.cause === 'plytix'), chO = all.filter(r=> r.cause === 'old'), chS = all.filter(r=> r.cause === 'slack');
+  const pick = {good, wrong, title: has('title'), bullets: bul, desc: has('desc'), gk, blank, rba: rbA, rbb: rbB, px: pxOff, cha: chA, chp: chP, cho: chO, chs: chS};
   if(pick[LC_F.show]) rows = pick[LC_F.show];
   if(LC_F.tier) rows = rows.filter(r=> (r.tier || 'N') === LC_F.tier);
   if(LC_F.q){ const q = LC_F.q.toLowerCase(); rows = rows.filter(r=> (r.sku + ' ' + r.asin + ' ' + r.name).toLowerCase().indexOf(q) !== -1); }
   rows = LC_F.sort && LC_SORT[LC_F.sort] ? sortBy(rows, LC_SORT[LC_F.sort], LC_F.dir)
        : sortBy(rows, r=> (r.nolive ? 2000 : 0) + (r.pct === null ? 1000 : r.pct) * 10 + (TIER_RANK[r.tier] !== undefined ? TIER_RANK[r.tier] : 5), 1);
 
-  const order = ['all', 'good', 'wrong', 'title', 'bullets', 'desc', 'gk', 'blank', 'rba', 'rbb']; let n = 0;
+  const order = ['all', 'good', 'wrong', 'cha', 'chp', 'cho', 'chs', 'title', 'bullets', 'desc', 'gk', 'blank', 'rba', 'rbb', 'px']; let n = 0;
   const tile = (k, val, cls, note)=>{ const f = order[n++];
     return `<div class="cpt-tile bbtile${LC_F.show === f ? ' on' : ''}" role="button" tabindex="0" data-show="${f}" title="Show these in the table"><div class="k">${k}</div><div class="v ${cls || ''}">${val}</div><div class="n">${note || '&nbsp;'}</div></div>`; };
   const list = a=> esc(a.map(r=> r.sku).slice(0,3).join(', ')) + (a.length > 3 ? '\u2026' : '');
@@ -4347,21 +4662,29 @@ function renderLc(){
     '</div><div class="cpt-tiles">'+
       tile('Correct copy %', pct + '%', pct >= 98 ? 'good' : pct >= 90 ? 'warn' : 'bad', `${ok} of ${checked} fields match Plytix`)+
       tile('Listings 100% correct', `${good.length}<span style="font-size:1rem;color:var(--c-night-mut)"> of ${all.length}</span>`, good.length === all.length ? 'good' : 'warn', '')+
-      tile('Listings with wrong copy', wrong.length, wrong.length ? 'bad' : 'good', wrong.length ? list(wrong) : 'None')+
-      tile('Title wrong', has('title').length, has('title').length ? 'bad' : 'good', has('title').length ? list(has('title')) : 'None')+
-      tile('Bullets wrong', bul.length, bul.length ? 'bad' : 'good', bul.length ? list(bul) : 'None')+
-      tile('Description wrong', has('desc').length, has('desc').length ? 'bad' : 'good', has('desc').length ? list(has('desc')) : 'None')+
+      tile('Listings with a mismatch', wrong.length, wrong.length ? 'bad' : 'good', wrong.length ? list(wrong) : 'None')+
+      (CH ? tile('Changed on Amazon', chA.length, chA.length ? 'bad' : 'good', chA.length ? list(chA) : 'None')+
+            tile('Not pushed yet', chP.length, chP.length ? 'warn' : 'good', chP.length ? list(chP) : 'None')+
+            tile('Old mismatch', chO.length, chO.length ? 'warn' : 'good', CH.started ? 'Before ' + esc(shortDate(CH.started)) : '')+
+            tile('Explained in Slack', chS.length, chS.length ? 'good' : '', chS.length ? list(chS) : 'None')
+          : (()=>{ const t = tile('Which side changed', '\u2014', '', CH_ERR ? 'No history yet' : 'Loading\u2026'); n += 3; return t; })())+
+      tile('Title mismatch', has('title').length, has('title').length ? 'bad' : 'good', has('title').length ? list(has('title')) : 'None')+
+      tile('Bullets mismatch', bul.length, bul.length ? 'bad' : 'good', bul.length ? list(bul) : 'None')+
+      tile('Description mismatch', has('desc').length, has('desc').length ? 'bad' : 'good', has('desc').length ? list(has('desc')) : 'None')+
       tile('Keyword rule issues', gk.length, gk.length ? 'bad' : 'good', gk.length ? list(gk) : 'All under 249 bytes')+
       tile('Blank in Plytix', blank.length, blank.length ? 'warn' : 'good', blank.length ? 'Fields with no correct copy' : 'None')+
       tile('Breaks an Amazon rule', RB ? rbA.length : '\u2014', !RB ? '' : rbA.length ? 'bad' : 'good', !RB ? 'Rulebook not loaded' : rbA.length ? list(rbA) : 'None, live or in Plytix')+
       tile('Brand guide issues', RB ? rbB.length : '\u2014', !RB ? '' : rbB.length ? 'warn' : 'good', !RB ? 'Rulebook not loaded' : rbB.length ? list(rbB) : 'None')+
+      tile('Plytix looks off', pxOff.length, pxOff.length ? 'warn' : 'good', pxOff.length ? list(pxOff) : 'None')+
     '</div></section>'+
     rbBanner()+
-    mk2Note('The correct copy is the metric (cm) copy in the Master SKU sheet, which is what amazon.ca uses. A field with no (cm) version uses the US copy.')+
+    mk2Note('Checked against the (cm) copy')+
+    (CH && chAgeDays() > 2 ? `<div class="why"><b>History not updated</b> for ${chAgeDays()} days. Check Copy History in Apps Script.</div>` : '')+
     '<div class="cpt-tools">' + mk2Seg() + '<div class="seg" id="lcSeg">'+
-      [['all','All ' + all.length], ['wrong','Wrong copy ' + wrong.length], ['title','Title ' + has('title').length],
+      [['all','All ' + all.length], ['wrong','Mismatch ' + wrong.length], ['title','Title ' + has('title').length],
        ['bullets','Bullets ' + bul.length], ['desc','Description ' + has('desc').length], ['gk','Keywords ' + gk.length],
-       ['blank','Blank in Plytix ' + blank.length], ['rba','Amazon rules ' + rbA.length], ['rbb','Brand guide ' + rbB.length]]
+       ['cha','Changed on Amazon ' + all.filter(r=> r.cause === 'amazon').length], ['chp','Not pushed yet ' + all.filter(r=> r.cause === 'plytix').length],
+       ['blank','Blank in Plytix ' + blank.length], ['rba','Amazon rules ' + rbA.length], ['rbb','Brand guide ' + rbB.length], ['px','Plytix check ' + pxOff.length]]
         .map(b=> `<button data-show="${b[0]}" aria-pressed="${LC_F.show === b[0]}">${b[1]}</button>`).join('')+
     '</div><div class="seg" id="lcTier">'+
       ['', 'A', 'B', 'C', 'X', 'N'].map(t=> `<button data-t="${t}" aria-pressed="${LC_F.tier === t}">${t ? 'Tier ' + t : 'All tiers'}</button>`).join('')+
@@ -4369,6 +4692,9 @@ function renderLc(){
     `<input id="lcQ" type="search" placeholder="Search SKU, ASIN or product" value="${esc(LC_F.q)}" aria-label="Search Listing Copy">`+
     (LC_F.sort ? '<button id="lcUnsort">Clear sort</button>' : '')+
     grpBtn(LC_F) + dlBtns() + '<button data-rbopen="1">Rulebook</button>' +
+    (rows.some(r=> lcWrong(r).length) ? '<button id="lcAmzF" class="work strong">Amazon upload file</button><button id="lcPxF">Plytix file (Amazon text)</button>' : '') +
+    (rows.some(r=> (r.px || []).some(x=> x.fix)) ? '<button id="lcPxClean">Plytix cleanup file</button>' : '') +
+    (RB && rows.some(r=> (r.rb || []).some(h=> (h.same || h.corr) && h.sev !== 'guide')) ? '<button id="lcFxF">Proposed fixes file</button>' : '') +
     `<span class="count">${rows.length} of ${all.length}</span></div>`;
 
   if(!LC.length){
@@ -4390,7 +4716,7 @@ function renderLc(){
       grpMap(LC_F, rows, 14, r=> `<tr class="row" tabindex="0" data-lc="${esc(r.asin)}">`+
         `<td class="prod"><div class="p-name"><span class="dot" style="background:${r.nolive ? '#94a3b8' : r.allOk ? '#1f9d55' : '#d64545'}"></span>${esc(String(r.name).slice(0, 60))}</div>`+
           `<div class="p-id"><span>SKU</span>${skuL(r.sku, MK2)}${cpy(r.sku)}</div><div class="p-id"><span>ASIN</span>${asinL(r.asin, MK2)}${cpy(r.asin)}</div>`+
-          `${r.tier ? `<span class="p-size">Tier ${esc(r.tier)}</span>` : ''}</td>`+
+          `${r.tier ? `<span class="p-size">Tier ${esc(r.tier)}</span>` : ''}${pxChip(r)}${r.cause === 'slack' ? ' ' + chNoteChip(r.notes[0]) : r.cause && r.cause !== 'old' ? ' ' + chChip(Object.values(r.why).find(w=> w.s === r.cause)) : ''}</td>`+
         stockTd(r, MK2)+
         `<td class="c">${r.nolive ? '<span class="mut">Not checked yet</span>' : r.pct === null ? '<span class="mut">\u2014</span>' : bbBar(r.pct)}</td>`+
         `<td class="c">${rbChip(r.rb)}</td>`+
@@ -4402,6 +4728,10 @@ function renderLc(){
   v.innerHTML = html;
 
   wireSort(v, LC_F, renderLc);
+  const af = document.getElementById('lcAmzF'); if(af) af.onclick = ()=> lcAmazonFile(rows);
+  const pf = document.getElementById('lcPxF'); if(pf) pf.onclick = ()=> lcPlytixFile(rows);
+  const cf = document.getElementById('lcPxClean'); if(cf) cf.onclick = ()=> lcCleanFile(rows);
+  const ff = document.getElementById('lcFxF'); if(ff) ff.onclick = ()=> fxFile(rows);
   mk2Wire(v);
   wireGrpDl(v, LC_F, renderLc, ()=> dlLc(rows));
   [...v.querySelectorAll('[data-rbopen]')].forEach(b=> b.onclick = openRulebook);
@@ -4442,12 +4772,26 @@ function openLc(r){
     if(x.s === 'none') return '';
     const st = LC_S[x.rule && x.s !== 'rule' && x.s !== 'rulesok' ? 'rule' : x.s] || LC_S.none;
     const showLive = x.l && x.s !== 'match';
+    const len = t=> `<span class="mut" style="font-size:.7rem">${String(t || '').length} chars</span>`;
+    const w = (r.why || {})[c[0]];
+    const whyLine = !w ? '' : `<div class="lcf-r" style="color:inherit;margin:.35rem 0">${chChip(w)}` +
+      (w.s === 'amazon' ? ' <b>Keep it</b> = use Plytix file (Amazon text). <b>Revert</b> = Amazon upload file.' : w.s === 'plytix' ? ' Push it: Amazon upload file.' : '') + '</div>' +
+      (w.s === 'amazon' && w.before ? `<div class="lcf-r" style="color:var(--muted)">Amazon before: ${esc(String(w.before).slice(0, 300))}${String(w.before).length > 300 ? '\u2026' : ''}</div>` : '');
+    // The Plytix text itself breaks a rule: say so before it gets pasted to Amazon
+    const pyHits = (r.rb || []).filter(h=> h.field === c[0] && (h.same || h.corr));
+    const warn = pyHits.length ? `<div class="lcf-r"><b>Before you paste:</b> the Plytix copy has ${pyHits.length === 1 ? 'a rule issue' : pyHits.length + ' rule issues'} (${esc(pyHits.map(h=> (RB_SEV[h.sev] || [h.sev])[0] + ': ' + (h.same ? h.live : h.corr)).join('; '))}). Fix it in Plytix first, then copy.</div>` : '';
     return `<div class="lcf"><div class="lcf-h"><b>${c[1]}</b> ${lcChip(x)}`+
-      (x.c ? ` <button class="work" data-copy="${c[0]}">Copy correct</button>` : '')+'</div>'+
-      (x.rule ? `<div class="lcf-r">${esc(x.rule)}</div>` : '')+
+      (x.c && !showLive ? ` <button class="work" data-copy="${c[0]}">Copy correct</button>` : '')+'</div>'+
+      (x.rule ? `<div class="lcf-r">${esc(x.rule)}</div>` : '')+ whyLine +
       (c[0] === 'gk' && x.c ? `<div class="lcf-r" style="color:var(--muted)">${x.bytes} of 249 bytes${x.dup ? `, ${x.dup} word${x.dup > 1 ? 's' : ''} already in the title or bullets` : ''}</div>` : '')+
-      (x.c ? `<div class="lcf-l">Correct (Plytix)</div><div class="lcf-t">${showLive ? lcMark(x.c, x.l, 'lc-miss') : esc(x.c)}</div>` : '')+
-      (showLive ? `<div class="lcf-l">Live on Amazon</div><div class="lcf-t">${lcMark(x.l, x.c, 'lc-extra')}</div>` : '')+
+      (showLive && x.c
+        // Side by side: what it should be (left) and what Amazon shows (right)
+        ? '<div class="lcsbs">'+
+            `<div class="ok-side"><div class="lcsbs-h"><span class="lcf-l">Correct (Plytix${MK2 === 'CA' ? ', cm' : ''})</span>${len(x.c)}<button class="work strong" data-copy="${c[0]}">Copy correct</button></div><div class="lcf-t">${lcMark(x.c, x.l, 'lc-miss')}</div>${warn}</div>`+
+            `<div class="live-side"><div class="lcsbs-h"><span class="lcf-l">Live on Amazon ${MK2}</span>${len(x.l)}<button class="work" data-copylive="${c[0]}">Copy live</button></div><div class="lcf-t">${lcMark(x.l, x.c, 'lc-extra')}</div></div>`+
+          '</div>'
+        : (x.c ? `<div class="lcf-l">Correct (Plytix)</div><div class="lcf-t">${esc(x.c)}</div>${warn}` : '') +
+          (showLive ? `<div class="lcf-l">Live on Amazon</div><div class="lcf-t">${lcMark(x.l, x.c, 'lc-extra')}</div>` : ''))+
       (x.s === 'small' || x.s === 'wrong' ? `<div class="lcf-r" style="color:var(--muted)">${Math.round((x.sim || 0) * 100)}% of the words match</div>` : '')+
     '</div>';
   };
@@ -4461,18 +4805,36 @@ function openLc(r){
       `<dt>Last change</dt><dd>${r.since ? esc(shortDate(r.since)) : 'No change seen'}${r.liveChecked ? ', checked ' + esc(shortDate(r.liveChecked)) : ''}</dd>`+
     '</dl>'+
     '<div class="lcleg"><mark class="lc-miss">yellow</mark> = in Plytix, not on Amazon. <mark class="lc-extra">red</mark> = on Amazon, not in Plytix.</div>'+
+    ((r.notes || []).length ? '<div class="why" style="border-left:3px solid var(--ok)"><b>From Slack:</b><ul style="margin:.2rem 0 0;padding-left:1.1rem">' +
+      r.notes.map(n=> `<li><b>${esc(n.who || '')}</b>, ${esc(shortDate(n.d))}: ${esc(n.text)}${n.plytix ? ` <span class="mut">(Plytix: ${esc(n.plytix)})</span>` : ''}${n.link ? ` <a href="${esc(n.link)}" target="_blank" rel="noopener">Open</a>` : ''}</li>`).join('') + '</ul></div>' : '')+
+    (r.px && r.px.length ? '<div class="why" style="border-left:3px solid var(--warn)"><b>Plytix looks off:</b><ul style="margin:.2rem 0 0;padding-left:1.1rem">' +
+      r.px.map(x=> `<li>${esc(PX_NAME[x.k])}: ${esc(x.m)}</li>`).join('') + '</ul></div>' : '')+
+    (r.bad.length ? `<div class="act-row"><button class="work strong" id="lcCopyAll">Copy all correct copy to fix (${r.bad.length} field${r.bad.length > 1 ? 's' : ''})</button>`+
+      (lcWrong(r).length ? '<button class="work" id="lcAmzOne">Amazon upload file</button><button class="work" id="lcPxOne">Plytix file (Amazon text)</button>' : '') +
+      ((r.px || []).some(x=> x.fix) ? '<button class="work" id="lcCleanOne">Plytix cleanup file</button>' : '') + '</div>'
+      : ((r.px || []).some(x=> x.fix) ? '<div class="act-row"><button class="work" id="lcCleanOne">Plytix cleanup file</button></div>' : ''))+
+    LC_COLS.filter(c=> r.bad.indexOf(c[0]) !== -1).map(block).join('')+
     rbBlock(r.rb)+
-    LC_COLS.map(block).join('')+
+    fxBlock(r)+
+    (r.bad.length ? '<div class="lcf-l" style="margin-top:1rem">Fields that already match</div>' : '')+
+    LC_COLS.filter(c=> r.bad.indexOf(c[0]) === -1).map(block).join('')+
     '<div class="act-row">'+
       `<a class="work" href="https://www.amazon.${MK2 === 'CA' ? 'ca' : 'com'}/dp/${esc(r.asin)}" target="_blank" rel="noopener">Open on Amazon</a>`+
       `<a class="work" href="https://sellercentral.amazon.${MK2 === 'CA' ? 'ca' : 'com'}/myinventory/inventory?searchTerm=${encodeURIComponent(r.sku)}" target="_blank" rel="noopener">Open in Seller Central</a>`+
     '</div>'+
     '<div class="why">Live copy from Keepa\u2019s last check. Correct copy from Plytix. Generic keywords are backend only, so they are checked against Amazon\u2019s rules, not compared.</div>';
-  [...d.querySelectorAll('button[data-copy]')].forEach(b=> b.onclick = ()=>{
-    const t = (r.f[b.dataset.copy] || {}).c || '';
-    (navigator.clipboard ? navigator.clipboard.writeText(t) : Promise.reject())
-      .then(()=> b.textContent = 'Copied').catch(()=> window.prompt('Copy this text:', t));
-  });
+  const put = (b, t)=> (navigator.clipboard ? navigator.clipboard.writeText(t) : Promise.reject())
+      .then(()=>{ const was = b.textContent; b.textContent = 'Copied'; setTimeout(()=> b.textContent = was, 1500); }).catch(()=> window.prompt('Copy this text:', t));
+  [...d.querySelectorAll('button[data-copy]')].forEach(b=> b.onclick = ()=> put(b, (r.f[b.dataset.copy] || {}).c || ''));
+  [...d.querySelectorAll('button[data-copylive]')].forEach(b=> b.onclick = ()=> put(b, (r.f[b.dataset.copylive] || {}).l || ''));
+  fxWire(d, r);
+  const a1 = document.getElementById('lcAmzOne'); if(a1) a1.onclick = ()=> lcAmazonFile([r]);
+  const p1 = document.getElementById('lcPxOne'); if(p1) p1.onclick = ()=> lcPlytixFile([r]);
+  const c1 = document.getElementById('lcCleanOne'); if(c1) c1.onclick = ()=> lcCleanFile([r]);
+  const all = document.getElementById('lcCopyAll');
+  if(all) all.onclick = ()=> put(all, `${r.sku} (${r.asin}), Amazon ${MK2}\n\n` +
+    LC_COLS.filter(c=> r.bad.indexOf(c[0]) !== -1 && (r.f[c[0]] || {}).c).map(c=> `${c[1]}:\n${r.f[c[0]].c}`).join('\n\n'));
+  d.classList.add('wide');
   document.getElementById('veil').hidden = false;
 }
 
@@ -4520,7 +4882,7 @@ function renderLp(){
       rbTile(all, 'Breaks a List Price rule')+
     '</div></section>'+
     rbBanner()+
-    mk2Note('The rule check compares the List Price with our CA price and the CA Sale Price in the Master SKU sheet.')+
+    mk2Note('Compared with CA Sale Price')+
     '<div class="cpt-tools">' + mk2Seg() + '<div class="seg" id="lpSeg">'+
       [['all','All ' + all.length], ['empty','Empty ' + empty.length], ['set','Set ' + set.length]]
         .map(b=> `<button data-show="${b[0]}" aria-pressed="${LP_F.show === b[0]}">${b[1]}</button>`).join('')+
@@ -4636,6 +4998,7 @@ function cgRows(mk){
     const o = Object.assign({}, r, {name: (row && row.name) || r.name || r.asin, tier: r.tier || (row && row.tier) || '',
       bad, blank, allOk: !r.nolive && !bad.length});
     o.rb = rbScreenRow('cg', o);
+    o.cst = caseNext(r.kase, !r.nolive && !bad.length);
     return o;
   });
 }
@@ -4662,7 +5025,8 @@ function renderCategory(){
   const pct = checked ? Math.round(ok / checked * 1000) / 10 : 0;
   const has = k=> all.filter(r=> r.bad.indexOf(k) !== -1);
   const wrong = all.filter(r=> r.bad.length), good = all.filter(r=> r.allOk), blank = all.filter(r=> r.blank.length);
-  const pick = {good, wrong, gl: has('gl'), pt: has('pt'), sd: has('sd'), path: has('path'), itk: has('itk'), node: has('node'), blank, rb: all.filter(r=> (r.rb || []).length)};
+  const pick = {good, wrong, gl: has('gl'), pt: has('pt'), sd: has('sd'), path: has('path'), itk: has('itk'), node: has('node'), blank, rb: all.filter(r=> (r.rb || []).length),
+                casefu: all.filter(r=> r.cst && r.cst.g === 'follow')};
 
   let rows = pick[CG_F.show] || all;
   if(CG_F.tier) rows = rows.filter(r=> (r.tier || 'N') === CG_F.tier);
@@ -4688,7 +5052,7 @@ function renderCategory(){
       tile('Blank in Master SKU', blank.length, blank.length ? 'warn' : 'good', blank.length ? 'Correct value missing' : 'None')+
       rbTile(all, 'Breaks an Amazon category rule')+
     '</div></section>'+
-    rbBanner()+
+    rbBanner()+ caseSumLine(caseSum(all.map(r=> r.cst)), 'cgCaseFu')+
     '<div class="cpt-tools"><div class="seg" id="cgMk">'+
       ['US','CA'].map(m=> `<button data-mk="${m}" aria-pressed="${CG_F.mk === m}">${m === 'US' ? 'Amazon US' : 'Amazon CA'} ${cgRows(m).filter(r=> r.bad.length).length ? '<span class="badge" style="margin-left:.3rem">' + cgRows(m).filter(r=> r.bad.length).length + '</span>' : ''}</button>`).join('')+
     '</div><div class="seg" id="cgSeg">'+
@@ -4731,15 +5095,14 @@ function renderCategory(){
         `<td class="c"><span data-rbrow="${esc(r.asin)}" style="cursor:pointer">${rbChip(r.rb || [])}</span></td>`+
         CG_COLS.map(c=> `<td class="c">${cgChip((r.c || {})[c[0]], r.nolive)}${c[0] === 'path' ? pcBadge(r) : ''}</td>`).join('')+
         `<td>${r.since ? esc(shortDate(r.since)) : '<span class="mut">No change seen</span>'}</td>`+
-        `<td>${r.bad.length ? (()=>{ const ci = cgCaseInfo(r);
-            return `<button class="work strong" data-cgcase="${esc(r.asin)}">${ci ? 'Follow up' : 'Draft case'}</button>`+
-              (ci ? `<span class="was">Case ${esc(ci.id)}${ci.date ? ', ' + esc(shortDate(ci.date)) : ''}</span>` : ''); })() : ''}</td>`+
+        `<td>${r.cst ? caseChip(r.cst) : ''}${r.bad.length && (!r.cst || r.cst.g === 'follow' || !r.cst.id) ? `<button class="work strong" data-cgcase="${esc(r.asin)}">${r.cst ? 'Follow up' : 'Draft case'}</button>` : ''}</td>`+
       '</tr>', r=> r.bad.length, 'need a look', CG_F.mk, p=> `<button class="work strong" data-cgfam="${esc(p.pasin || p.psku)}">Draft case for this family</button>`)+
       '</tbody></table>';
   }
   v.innerHTML = html;
 
   wireSort(v, CG_F, renderCategory);
+  const cfu = document.getElementById('cgCaseFu'); if(cfu) cfu.onclick = ()=>{ CG_F.show = 'casefu'; renderCategory(); };
   [...v.querySelectorAll('[data-rbopen]')].forEach(b=> b.onclick = openRulebook);
   [...v.querySelectorAll('[data-rbrow]')].forEach(b=> b.onclick = e=>{ e.stopPropagation(); const r = all.find(x=> x.asin === b.dataset.rbrow); if(r) rbOpenRow(`${r.sku} ${r.name}`, r.rb || []); });
   wireGrpDl(v, CG_F, renderCategory, ()=> dlCg(rows), ()=> dlCgCopy(rows));
@@ -4803,6 +5166,7 @@ function openCg(r){
       return `<div class="act-row"><button class="work strong" id="cgOne">${ci ? 'Follow up on case ' + esc(ci.id) : 'Draft case'}</button>${(()=>{ const p = parentOf(r), k = p.pasin || p.psku; const n = k ? cgFamilyRows(k, r.mk).length : 0;
         return n > 1 ? `<button class="work strong" id="cgFamOne" data-k="${esc(k)}">Draft case for the whole family (${n})</button>` : ''; })()}<button class="work" id="cgAi">Copy for AI review</button><button class="work" id="cgWhy">Why does this happen?</button></div>`+
         (ci && ci.notes ? `<div class="lcf-r" style="color:var(--muted)">Amazon\u2019s last reply (${esc(shortDate(ci.date))}): ${esc(ci.notes)}${ci.link ? ` <a href="${esc(ci.link)}" target="_blank" rel="noopener">Open in Gmail</a>` : ''}</div>` : ''); })() : '')+
+    caseLine(r.cst)+
     (r.nolive ? '<div class="why">No live data from Amazon yet for this listing.</div>' : CG_COLS.map(block).join(''))+
     rbBlock(r.rb || [])+
     '<div class="act-row">'+
@@ -4822,7 +5186,7 @@ function openCg(r){
   const ai = document.getElementById('cgAi');
   if(ai) ai.onclick = ()=>{ const t = cgAiText(r);
     (navigator.clipboard ? navigator.clipboard.writeText(t) : Promise.reject()).then(()=> ai.textContent = 'Copied. Paste it into the AI').catch(()=> window.prompt('Copy:', t)); };
-  document.getElementById('veil').hidden = false;
+  document.getElementById('detail').classList.remove('wide'); document.getElementById('veil').hidden = false;
 }
 
 /* ---------- Category case drafts (chat first, then call, then case form) ----------
@@ -5188,9 +5552,65 @@ function cgTips(){
     '<div class="why">Flat file steps checked against Amazon\u2019s Product Type Definitions guide (item_type_keyword, recommended_browse_nodes) and seller guides on PartialUpdate. Amazon does not publish why a listing moves. These are the reasons we could check: from Amazon\u2019s replies on our own cases, and from sellers and agencies.</div>';
   const fb = document.getElementById('cgFlat');
   if(fb) fb.onclick = ()=> dlCgFlat(CG_VIEW.length ? CG_VIEW : cgRows());
-  document.getElementById('veil').hidden = false;
+  document.getElementById('detail').classList.remove('wide'); document.getElementById('veil').hidden = false;
 }
 
+/* ---------- Case status at a glance (Category and Variation) ----------
+   Reads Amazon's latest case email (from Gmail, daily) and checks the live
+   listing, then says what to do next. Waits: 3 days for a fix to show on the
+   page, 5 days for Amazon to answer an open case, 2 days after we write. */
+const CASE_WAIT = {fix: 3, open: 5, sent: 2, doneShow: 30, old: 60};
+function caseRead(text, kind){
+  const t = String(text || '');
+  if(/your help needed|please (provide|send|attach|share|upload|confirm|reply)|we (need|require) (more|additional|the following)|could you (please )?(provide|send|share)|awaiting your (response|reply)/i.test(t)) return 'needinfo';
+  if(/(unable|not able) to (change|update|make|modify|process|approve|honou?r|fulfil|correct|reclassif|re-?categori)|cannot (change|update|make|modify|correct)|can ?not be (changed|updated|corrected)|not possible to|no changes (have been|were) made|request (was|has been) (declined|denied|rejected)|we are not able to/i.test(t)) return 'declined';
+  if(/already (correct|assigned|in the correct|mapped|set|categori[sz]ed)|(is|are) (correctly|properly) (assigned|categori[sz]ed|classified|mapped)|working as (intended|designed)|we can confirm (that )?[^.]{0,120}(correct|accurate|appropriate)/i.test(t)) return 'already';
+  if(/(have|has) been (updated|corrected|changed|fixed|modified|reclassified|recategori[sz]ed|moved|merged|re-?linked|restored)|successfully (updated|changed|corrected)|changes? (have|has) been (made|applied|completed|submitted)|should (now )?(reflect|be visible|show)|will (be )?reflect|now (shows|displays|reflects)|issue (has been|is) (resolved|fixed)/i.test(t)) return 'fixed';
+  if(/active review|in progress|(forwarded|escalated|transferred|sent|raised) (it |this |your (case|request|issue) )?to|(internal |appropriate |relevant )?team (is|will) (review|investigat|look)|allow (up to )?\d+|within \d+ (business )?(days|hours)|investigat|pending/i.test(t)) return 'open';
+  if(/we have received|thank you for (contacting|submitting)|will be reviewed/i.test(t)) return 'open';
+  if(/marked (this case )?as resolved|has been resolved|resolution for case/i.test(t)) return 'closed';
+  return kind === 'sent' ? 'sent' : t ? 'replied' : 'sent';
+}
+const caseDays = d=> d ? Math.max(0, Math.floor((Date.now() - new Date(String(d).slice(0,10) + 'T12:00:00').getTime()) / 86400000)) : null;
+// One short status and the next step. live = the listing is right on Amazon now.
+function caseNext(k, live){
+  if(!k || !(k.id || k.d)) return null;
+  const amz = k.who === 'amazon' || !!k.reply, text = k.reply || (k.who === 'amazon' ? k.text : '') || '';
+  const lastUs = k.who === 'us', d = lastUs ? k.d : (k.replyDate || k.d), n = caseDays(d);
+  const s = lastUs ? 'sent' : caseRead(text, k.kind);
+  const R = (label, cls, act, g)=> ({label, cls, act, g, s, n, id: k.id || '', link: k.link || '', text});
+  const age = caseDays(k.d);
+  // Fixed and live: shown for 30 days, then it is history
+  if(live) return age <= CASE_WAIT.doneShow ? R('Fixed and live', 'lc-ok', 'Done. Nothing to do.', 'done') : null;
+  // A case with no word for 60 days is not worth chasing: open a new one
+  if(age > CASE_WAIT.old) return R(`Old case, ${age} days`, 'lc-bad', 'Open a new case.', 'follow');
+  if(s === 'fixed') return n < CASE_WAIT.fix ? R('Amazon says fixed', 'lc-small', `Check the page after ${shortDate(new Date(Date.now() + (CASE_WAIT.fix - n) * 86400000).toISOString().slice(0,10))}.`, 'check')
+                                             : R('Fixed per Amazon, page not updated', 'lc-bad', 'Follow up: the page is still wrong.', 'follow');
+  if(s === 'already') return R('Amazon says already correct', 'lc-bad', 'Check the page. If still wrong, reply with a screenshot.', 'follow');
+  if(s === 'needinfo') return R('Amazon needs info', 'lc-bad', 'Reply with what they ask for.', 'follow');
+  if(s === 'declined') return R('Declined', 'lc-bad', 'Reply with new proof, or open a new case.', 'follow');
+  if(s === 'closed') return R('Closed, not fixed', 'lc-bad', 'Reopen: the page is still wrong.', 'follow');
+  if(s === 'open') return n < CASE_WAIT.open ? R(`In progress, ${n} day${n === 1 ? '' : 's'}`, 'lc-gray', 'Wait.', 'wait') : R(`No update in ${n} days`, 'lc-bad', 'Follow up.', 'follow');
+  if(s === 'sent') return n < CASE_WAIT.sent ? R('Sent, waiting', 'lc-gray', 'Wait for Amazon.', 'wait') : R(`No reply in ${n} days`, 'lc-bad', 'Follow up.', 'follow');
+  return R('Amazon replied', 'lc-small', 'Read the reply.', 'follow');
+}
+function caseChip(st){
+  if(!st) return '';
+  return `<span class="lcchip ${st.cls}" data-tip="${esc((st.id ? 'Case ' + st.id + '. ' : '') + st.act + (st.text ? ' Amazon: ' + st.text.slice(0, 200) : ''))}">${esc(st.label)}</span>` +
+    `<span class="was">${st.id ? 'Case ' + esc(st.id) + ' \u00b7 ' : ''}${esc(st.act)}</span>`;
+}
+function caseLine(st){
+  if(!st) return '';
+  return `<div class="why" style="border-left:3px solid ${st.g === 'done' ? 'var(--ok)' : st.g === 'follow' ? 'var(--bad)' : 'var(--warn)'}"><b>Case${st.id ? ' ' + esc(st.id) : ''}:</b> ${esc(st.label)}. ${esc(st.act)}` +
+    (st.link ? ` <a href="${esc(st.link)}" target="_blank" rel="noopener">Open in Gmail</a>` : '') + '</div>';
+}
+// Counts for one module: follow up, check the page, wait, done
+function caseSum(sts){ const c = {follow:0, check:0, wait:0, done:0}; sts.filter(Boolean).forEach(s=> c[s.g]++); return c; }
+function caseSumLine(c, onFollow){
+  const n = c.follow + c.check + c.wait + c.done; if(!n) return '';
+  return `<div class="why"><b>Cases:</b> <span style="color:var(--bad)">${c.follow} follow up</span> \u00b7 ${c.check} check the page \u00b7 ${c.wait} waiting \u00b7 <span style="color:var(--ok)">${c.done} done</span>` +
+    (c.follow ? ` <button class="work" id="${onFollow}">Show follow ups</button>` : '') + '</div>';
+}
 /* ---------- Variation module ----------
    Per child, US and Canada, from variation.json (Variation Watch, daily):
    in the right family, theme, value, and (US) reviews shared with siblings.
@@ -5234,7 +5654,7 @@ function vrRows(mk){
       r = Object.assign({}, r, fs === 'match' ? {checked:1, ok:1, pct:100} : (fs === 'wrong' || fs === 'split') ? {checked:1, ok:0, pct:0} : {checked:0, ok:0, pct:null});
     }
     return Object.assign({}, r, {name: (row && row.name) || r.name || r.asin, tier: r.tier || (row && row.tier) || '',
-      rb, rbA: rb.filter(h=> h.sev === 'amazon'),
+      rb, rbA: rb.filter(h=> h.sev === 'amazon'), cst: vrCaseOk(r.kase) ? caseNext(r.kase, !r.nolive && !bad.length) : null,
       bad, core, blank, allOk: !r.nolive && !core.length, fullOk: !r.nolive && !bad.length,
       // A case is for Amazon to fix: a child out of its family, or reviews not pooled.
       // Wrong theme or value we fix ourselves with a flat file.
@@ -5247,6 +5667,9 @@ function vrChip(x, nolive){
   const lab = x && x.s === 'na' && x.note && /Standalone/.test(x.note) ? 'Standalone' : d[0];
   return `<span class="lcchip ${d[1]}" data-tip="${esc((x && x.note) || d[2])}">${lab}${x && x.s === 'match' && x.note && /Close match/.test(x.note) ? ' \u24d8' : ''}</span>`;
 }
+// Only emails about variations count for this module (not GL, browse node or attribute cases)
+const VR_CASE_RE = /variation (family|relationship|theme)|parent[- ]child|child asins?|review sharing|reviews? (are |is )?(not )?(being )?(shared|pooled|split)|re-?link|parentage|added to (the )?(parent|family)|removed from (the )?(parent|family)/i;
+function vrCaseOk(k){ return !!k && VR_CASE_RE.test(String(k.reply || '') + ' ' + String(k.text || '')); }
 function vrCaseInfo(r){
   const k = r.kase;
   return k && k.id ? {id:k.id, date:k.replyDate || k.d, notes:k.reply || '', link:k.link || '', kind:k.kind || ''} : null;
@@ -5272,7 +5695,7 @@ function renderVariation(){
   const risk = all.filter(r=> r.risk);
   const fams = VR_FAMS.filter(f=> f.mk === VR_F.mk), strange = fams.filter(f=> f.strangers && f.strangers.some(s=> !s.ours));
   const rbA = all.filter(r=> r.rbA.length);
-  const pick = {good, wrong, split, other, theme: has('theme'), value: has('value'), rev: has('rev'), risk, blank, rba: rbA};
+  const pick = {good, wrong, split, other, theme: has('theme'), value: has('value'), rev: has('rev'), risk, blank, rba: rbA, casefu: all.filter(r=> r.cst && r.cst.g === 'follow')};
 
   let rows = pick[VR_F.show] || all;
   if(VR_F.tier) rows = rows.filter(r=> (r.tier || 'N') === VR_F.tier);
@@ -5301,7 +5724,7 @@ function renderVariation(){
       tile('Blank in Master SKU', blank.length, blank.length ? 'warn' : 'good', blank.length ? 'Correct value missing' : 'None', 'blank')+
       (!VR_TV ? '' : tile('Breaks a variation rule', RB ? rbA.length : '\u2014', !RB ? '' : rbA.length ? 'bad' : 'good', !RB ? 'Rulebook not loaded' : rbA.length ? list(rbA) : 'Themes and values OK in the Master SKU sheet', 'rba'))+
     '</div></section>'+
-    rbBanner()+
+    rbBanner()+ caseSumLine(caseSum(all.map(r=> r.cst)), 'vrCaseFu')+
     '<div class="cpt-tools"><div class="seg" id="vrMk">'+
       ['US','CA'].map(m=>{ const n = vrRows(m).filter(r=> r.bad.length).length;
         return `<button data-mk="${m}" aria-pressed="${VR_F.mk === m}">${m === 'US' ? 'Amazon US' : 'Amazon CA'} ${n ? '<span class="badge" style="margin-left:.3rem">' + n + '</span>' : ''}</button>`; }).join('')+
@@ -5346,10 +5769,8 @@ function renderVariation(){
         `<td class="c">${r.nolive ? '<span class="mut">Not checked yet</span>' : r.pct === null ? '<span class="mut">\u2014</span>' : bbBar(r.pct)}</td>`+
         VR_COLS.map(c=> `<td class="c">${vrChip((r.c || {})[c[0]], r.nolive)}</td>`).join('')+
         `<td>${r.since ? esc(shortDate(r.since)) : '<span class="mut">No change seen</span>'}</td>`+
-        `<td>${r.caseable.length ? (()=>{ const ci = vrCaseInfo(r);
-            return `<button class="work strong" data-vrcase="${esc(r.asin)}">${ci ? 'Follow up' : 'Draft case'}</button>`+
-              (ci ? `<span class="was">Case ${esc(ci.id)}${ci.date ? ', ' + esc(shortDate(ci.date)) : ''}</span>` : ''); })()
-          : r.core.length && VR_TV ? '<span class="mut">Flat file</span>' : ''}</td>`+
+        `<td>${r.cst ? caseChip(r.cst) : ''}${r.caseable.length && (!r.cst || r.cst.g === 'follow' || !r.cst.id) ? `<button class="work strong" data-vrcase="${esc(r.asin)}">${r.cst ? 'Follow up' : 'Draft case'}</button>`
+          : r.core.length && VR_TV && !r.cst ? '<span class="mut">Flat file</span>' : ''}</td>`+
       '</tr>', r=> r.bad.length, 'need a look', VR_F.mk,
       p=> vrFamilyRows(p.pasin || p.psku, VR_F.mk).length ? `<button class="work strong" data-vrfam="${esc(p.pasin || p.psku)}">Draft case for this family</button>` : '')+
       '</tbody></table>';
@@ -5357,6 +5778,7 @@ function renderVariation(){
   v.innerHTML = stockAlert() + html;
 
   wireSort(v, VR_F, renderVariation);
+  const vfu = document.getElementById('vrCaseFu'); if(vfu) vfu.onclick = ()=>{ VR_F.show = 'casefu'; renderVariation(); };
   [...v.querySelectorAll('[data-rbopen]')].forEach(b=> b.onclick = openRulebook);
   wireGrpDl(v, VR_F, renderVariation, ()=> dlVr(rows));
   const tp = document.getElementById('vrTips'); if(tp) tp.onclick = vrTips;
@@ -5409,6 +5831,7 @@ function openVr(r){
       (f ? `<dt>Family on Amazon</dt><dd>${f.live ? `${f.onAmazon} children, theme ${esc((f.dims || []).join(' + ') || 'unknown')}` : 'Parent not read yet'}${f.strangers && f.strangers.length ? `<br>Not active in the Master SKU sheet: ${f.strangers.map(s=> esc(s.asin) + (s.ours ? ' (ours, not active)' : ' (not found)')).join(', ')}` : ''}</dd>` : '')+
       `<dt>Last change</dt><dd>${r.since ? esc(shortDate(r.since)) : 'No change seen'}${r.liveChecked ? ', checked ' + esc(shortDate(r.liveChecked)) : ''}</dd>`+
     '</dl>'+
+    caseLine(r.cst)+
     (r.risk ? `<div class="why"><b>Theme note:</b> ${esc(r.risk)}</div>` : '')+
     (r.caseable.length ? `<div class="act-row"><button class="work strong" id="vrOne">${ci ? 'Follow up on case ' + esc(ci.id) : 'Draft case'}</button>`+
       (famN > 1 ? `<button class="work strong" id="vrFamOne">Draft case for the whole family (${famN})</button>` : '')+
@@ -5422,7 +5845,7 @@ function openVr(r){
   const fo = document.getElementById('vrFamOne'); if(fo) fo.onclick = ()=> vrDraft(vrFamilyRows(r.par.pasin, mk));
   const fl = document.getElementById('vrFlatOne'); if(fl) fl.onclick = ()=> dlVrFlat([r]);
   const wy = document.getElementById('vrWhy'); if(wy) wy.onclick = vrTips;
-  document.getElementById('veil').hidden = false;
+  document.getElementById('detail').classList.remove('wide'); document.getElementById('veil').hidden = false;
 }
 
 /* ---------- Variation case drafts (chat first, then call, then case form) ----------
@@ -5586,7 +6009,7 @@ function vrTips(){
     '<div class="lcf-r" style="color:var(--muted)">Template column names can differ by product type, so match by the name in brackets.</div>';
   const fb = document.getElementById('vrFlat');
   if(fb) fb.onclick = ()=> dlVrFlat(VR_VIEW.length ? VR_VIEW : vrRows());
-  document.getElementById('veil').hidden = false;
+  document.getElementById('detail').classList.remove('wide'); document.getElementById('veil').hidden = false;
 }
 
 /* ---------- BSR module ----------
@@ -5680,7 +6103,7 @@ function bsSyncChip(r){
   const ks = Object.keys(BS_SYNC), have = ks.filter(k=> r.sync[k] && r.sync[k].s !== 'na');
   if(!have.length) return '<span class="lcchip lc-gray" data-tip="Not enough siblings with data to compare">\u2014</span>';
   if(!r.off.length) return `<span class="lcchip lc-ok" data-tip="Same ${have.map(k=> BS_SYNC[k].label.toLowerCase()).join(', ')} as the family">In sync</span>`;
-  return r.off.map(k=> `<span class="lcchip lc-small" data-tip="${esc(r.sync[k].note + '. Keepa shows ' + BS_SYNC[k].fmt(r.sync[k].mine) + ' for this child. Keepa is often delayed between children, so check the live page before acting.')}">Check ${BS_SYNC[k].label}</span>`).join(' ');
+  return r.off.map(k=> `<span class="lcchip lc-small" data-tip="${esc('Family ' + BS_SYNC[k].fmt(r.sync[k].main) + ', this child ' + BS_SYNC[k].fmt(r.sync[k].mine) + '. Keepa often lags: check the live page.')}">Check ${BS_SYNC[k].label}</span>`).join(' ');
 }
 const bsStars = v=> v === null ? '<span class="mut">No rating</span>' :
   `<b style="color:${v >= 4.5 ? 'var(--ok)' : v >= 4 ? 'inherit' : v >= 3 ? 'var(--warn)' : 'var(--bad)'}">${v.toFixed(1)}</b> <span class="mut">\u2605</span>`;
@@ -5851,12 +6274,12 @@ function openBs(r){
       famAll.map(x=> `<tr${x.asin === r.asin ? ' style="font-weight:700"' : ''}><td>${asinL(x.asin, mk)} <span class="mut">${esc(x.sku)}</span></td>`+
         ['cur','rev','bsr'].map(k=> `<td class="c" style="${x.sync[k] && x.sync[k].s === 'off' ? 'color:var(--warn);font-weight:700' : ''}">${x[k] === null || x[k] === undefined ? '\u2014' : BS_SYNC[k].fmt(x[k])}</td>`).join('')+
         `<td class="c mut">${(x.rt || {}).revAsOf ? esc(shortDate(new Date(x.rt.revAsOf).toISOString().slice(0,10))) : '\u2014'}</td></tr>`).join('')+
-      '</tbody></table>' + (famAll.some(x=> x.off.length) ? '<div class="why">Keepa is often delayed between children, and the live pages are usually consistent. Open the pages above and check them before you open a case.</div><div class="act-row"><button class="work" id="bsFamOne">Draft case (after checking the live pages)</button></div>' : '') : '')+
+      '</tbody></table>' + (famAll.some(x=> x.off.length) ? '<div class="why">Keepa often lags. Check the live pages first.</div><div class="act-row"><button class="work" id="bsFamOne">Draft case (after checking the live pages)</button></div>' : '') : '')+
     rbBlock(r.rb || [])+
     `<div class="why">Star rating and ratings: Keepa (${mk === 'US' ? 'the nightly rating run' : 'CA Watch'}). BSR and units bought: Keepa\u2019s daily read. As Keepa sees it, not the page itself.</div>`;
   const one = document.getElementById('bsOne'); if(one) one.onclick = ()=> bsDraft(r);
   const fo = document.getElementById('bsFamOne'); if(fo) fo.onclick = ()=> bsFamDraft(famAll);
-  document.getElementById('veil').hidden = false;
+  document.getElementById('detail').classList.remove('wide'); document.getElementById('veil').hidden = false;
 }
 
 /* A listing with no Best Sellers Rank: chat first, then call, then case form */
@@ -5946,7 +6369,7 @@ function bsTips(){
     BS_TIPS.map((x,i)=> `<div class="lcf"><div class="lcf-h"><b>${i + 1}. ${esc(x.t)}</b> <span class="lcchip lc-ok">${esc(x.sure)}</span></div>`+
       `<div class="lcf-t" style="margin-top:.35rem">${esc(x.d)}</div><div class="lcf-l">What to do</div><div class="lcf-t">${esc(x.do)}</div>`+
       `<div class="lcf-r" style="color:var(--muted)">Source: ${x.src.map(s=> `<a href="${esc(s[1])}" target="_blank" rel="noopener">${esc(s[0])}</a>`).join(', ')}</div></div>`).join('');
-  document.getElementById('veil').hidden = false;
+  document.getElementById('detail').classList.remove('wide'); document.getElementById('veil').hidden = false;
 }
 
 /* ---------- Catalog overview: every module on one page ----------
@@ -5978,20 +6401,20 @@ function ovUnder(t){
   if(/^Listing Copy US/.test(t) && !fd[0]) return 'copy.json could not be loaded (' + fd[1] + ').';
   if(/^Category/.test(t) && !fd[0]) return 'category.json could not be loaded (' + fd[1] + ').';
   if(/^Variation/.test(t)){
-    if(!VR.length) return 'Variation Watch has not run yet, so variation.json is not on GitHub. Run setupVariationWatchDaily in CPC Keepa Fetcher.';
+    if(!VR.length) return 'Variation Watch not run yet.';
     const mk = / CA$/.test(t) ? 'CA' : 'US';
-    if(!vrRows(mk).some(r=> !r.nolive)) return `No live Keepa data for ${mk} variations yet. It fills in after the next Variation Watch run.`;
+    if(!vrRows(mk).some(r=> !r.nolive)) return `No ${mk} data yet. Fills in after the next run.`;
   }
   if(/^BSR/.test(t)){
-    if(!BS.length) return 'BSR Watch has not run yet, so bsr.json is not on GitHub. Run setupBsrWatchDaily in CPC Keepa Fetcher.';
-    if(/ CA$/.test(t) && !bsRows('CA').some(r=> r.cur !== null)) return 'No CA star ratings yet. They start after the new CA_Watch.gs runs (it now reads ratings). A score from BSR alone would be misleading.';
+    if(!BS.length) return 'BSR Watch not run yet.';
+    if(/ CA$/.test(t) && !bsRows('CA').some(r=> r.cur !== null)) return 'No CA star ratings yet. Starts after the next CA Watch run.';
   }
   if(/ CA$/.test(t) && /^(CPT tracker|Buy Box|Listing Copy|List Price)/.test(t)){
-    if(LC_CA === null) return 'CA Watch has not finished its first run, so ca.json is not on GitHub yet. Run setupCaWatchDaily in CPC Keepa Fetcher.';
+    if(LC_CA === null) return 'CA Watch first run not finished.';
     // The Buy Box score leaves out out-of-stock listings; without CA stock it can't
     if(/^Buy Box/.test(t) && !(BB_CA || []).some(r=> stockOf(r, 'CA') !== null))
-      return 'The Buy Box data from amazon.ca is live, but there is no CA stock yet, so out-of-stock listings would count as Buy Box losses. It is counted once Sam adds Canada rows to the BigQuery pull. The module page still shows the live Buy Box data.';
-    if(/^CPT/.test(t) && !(CPT_CA || []).some(r=> r.cpt !== null)) return 'Keepa has returned no CPT for any amazon.ca listing yet. If it stays empty, Keepa may not supply a CPT for Canada, and this module stays CA-off.';
+      return 'No CA stock yet, so out-of-stock would count as Buy Box losses. Waiting on Canada rows in BigQuery.';
+    if(/^CPT/.test(t) && !(CPT_CA || []).some(r=> r.cpt !== null)) return 'Keepa gives no CPT for amazon.ca yet.';
   }
   return '';
 }
@@ -6000,13 +6423,13 @@ function ovCard(title, pct, sub, reasons, btnId, extra, strict){
   if(why === OV_LOADING){
     OV_UC.push(title + ' (loading)');
     return `<div class="ov-card" style="opacity:.7"><div class="ov-h"><h3>${esc(title)}</h3><button class="work" data-go="${btnId}">Open ${esc(title)} \u2192</button></div>`+
-      `<div class="ov-pct" style="font-size:1.4rem"><span class="mut">Loading\u2026</span></div><div class="ov-sub">The data is still loading. This card fills in by itself.</div></div>`;
+      `<div class="ov-pct" style="font-size:1.4rem"><span class="mut">Loading\u2026</span></div></div>`;
   }
   if(why){
     OV_UC.push(title);
     return `<div class="ov-card" style="opacity:.85"><div class="ov-h"><h3>${esc(title)}</h3><button class="work" data-go="${btnId}">Open ${esc(title)} \u2192</button></div>`+
       `<div class="ov-pct" style="font-size:1.4rem"><span class="lcchip lc-small">Under construction</span></div>`+
-      `<div class="ov-sub">${esc(why)}</div><div class="ov-sub mut" style="margin-top:.4rem">Not counted in the overall score.</div></div>`;
+      `<div class="ov-sub">${esc(why)}</div><div class="ov-sub mut" style="margin-top:.4rem">Not counted.</div></div>`;
   }
   OV_SCORES.push({title, main: pct, strict: strict === undefined ? pct : strict});
   const cls = pct === null ? '' : pct >= 95 ? 'ok' : pct >= 80 ? 'mid' : 'bad';
@@ -6066,9 +6489,11 @@ function renderOverview(){
     const rbA = rows.filter(r=> r.rbA.length), rbB = rows.filter(r=> r.rbB.length), strictOk = ok.filter(r=> !r.rbA.length);
     cards.push(ovCard('Listing Copy US', avg, `Average correct copy across ${rows.length} listings (title, bullets, description)` +
       `<br>Listings with every field correct and no Amazon rule broken: <b>${ovPct(strictOk.length, rows.length)}%</b> (${strictOk.length} of ${rows.length})`,
-      ovCount(rows, r=> r.bad, k=> (LC_COLS.find(c=> c[0] === k) || [k, k])[1] + ' not matching')
-        .concat(RB ? [['Break an Amazon rule (live or in Plytix)', rbA.length], ['Brand guide issues', rbB.length]].filter(x=> x[1]) : []), 'lcBtn',
-      RB ? '' : '<div class="ov-note">Rule screening off: rulebook not loaded.</div>', ovPct(strictOk.length, rows.length)));
+      ovCount(rows, r=> r.bad.filter(k=> r.f && r.f[k] && ['small','wrong','missing'].indexOf(r.f[k].s) !== -1), k=> (LC_COLS.find(c=> c[0] === k) || [k, k])[1] + ' mismatch')
+        .concat(RB ? [['Break an Amazon rule (live or in Plytix)', rbA.length], ['Brand guide issues', rbB.length]].filter(x=> x[1]) : [])
+        .concat(rows.filter(r=> r.px && r.px.length).length ? [['Plytix looks off', rows.filter(r=> r.px && r.px.length).length]] : [])
+        .concat(rows.filter(r=> r.cause === 'amazon').length ? [['Changed on Amazon (not from Plytix)', rows.filter(r=> r.cause === 'amazon').length]] : []), 'lcBtn',
+      RB ? '' : '<div class="ov-note">Rules off: no rulebook.</div>', ovPct(strictOk.length, rows.length)));
   } else cards.push(ovCard('Listing Copy US', null, 'Copy feed not loaded', [], 'lcBtn'));
   // List Price
   if(typeof lpRows === 'function'){
@@ -6110,9 +6535,11 @@ function renderOverview(){
     const rbA = rows.filter(r=> r.rbA.length), rbB = rows.filter(r=> r.rbB.length), strictOk = ok.filter(r=> !r.rbA.length);
     cards.push(ovCard('Listing Copy CA', avg, `Average correct copy across ${rows.length} listings (title, bullets, description)` +
       `<br>Listings with every field correct and no Amazon rule broken: <b>${ovPct(strictOk.length, rows.length)}%</b> (${strictOk.length} of ${rows.length})`,
-      ovCount(rows, r=> r.bad, k=> (LC_COLS.find(c=> c[0] === k) || [k, k])[1] + ' not matching')
-        .concat(RB ? [['Break an Amazon rule (live or in Plytix)', rbA.length], ['Brand guide issues', rbB.length]].filter(x=> x[1]) : []), 'lcBtn',
-      RB ? '' : '<div class="ov-note">Rule screening off: rulebook not loaded.</div>', ovPct(strictOk.length, rows.length)));
+      ovCount(rows, r=> r.bad.filter(k=> r.f && r.f[k] && ['small','wrong','missing'].indexOf(r.f[k].s) !== -1), k=> (LC_COLS.find(c=> c[0] === k) || [k, k])[1] + ' mismatch')
+        .concat(RB ? [['Break an Amazon rule (live or in Plytix)', rbA.length], ['Brand guide issues', rbB.length]].filter(x=> x[1]) : [])
+        .concat(rows.filter(r=> r.px && r.px.length).length ? [['Plytix looks off', rows.filter(r=> r.px && r.px.length).length]] : [])
+        .concat(rows.filter(r=> r.cause === 'amazon').length ? [['Changed on Amazon (not from Plytix)', rows.filter(r=> r.cause === 'amazon').length]] : []), 'lcBtn',
+      RB ? '' : '<div class="ov-note">Rules off: no rulebook.</div>', ovPct(strictOk.length, rows.length)));
   } else cards.push(ovCard('Listing Copy CA', null, 'Copy feed not loaded', [], 'lcBtn'));
   // List Price
   if(typeof lpRows === 'function'){
@@ -6162,13 +6589,22 @@ function renderOverview(){
   v.innerHTML = stockAlert() +
     '<section class="cpt-top"><div class="cpt-head"><h2>Catalog overview</h2>'+
     `<span class="sub">Every module at a glance. Green is 95% or more, amber 80% to 95%, red below 80%.</span></div></section>`+
-    health + (RB ? `<div class="why"><b>Daily rule screening:</b> every module is screened every day against the rulebook (Amazon rules and our brand guides), last checked against Amazon ${esc(shortDate(RB.verified))}${rbStale() ? ', <b>due for a re-check</b>' : ''}. <button class="work" data-rbopen="1">Open the rulebook</button></div>` : rbBanner()) +
+    (()=>{ // Cases across modules: what to do today
+      const c = {follow:0, check:0, wait:0, done:0}, add = s=>{ if(s) c[s.g]++; };
+      if(CG.length) ['US','CA'].forEach(mk=> cgRows(mk).forEach(r=> add(r.cst)));
+      if(VR.length) ['US','CA'].forEach(mk=> vrRows(mk).forEach(r=> add(r.cst)));
+      let cptFu = 0, cptWait = 0;
+      if(typeof CPT !== 'undefined' && CPT_US.length) withMk2('US', ()=> cptRows().forEach(r=>{ const n = nextStep(r); if(n) n.due === 'now' ? cptFu++ : cptWait++; }));
+      const tot = c.follow + c.check + c.wait + c.done + cptFu + cptWait;
+      return tot ? `<div class="why"><b>Cases today:</b> <span style="color:var(--bad)">${c.follow + cptFu} follow up</span> \u00b7 ${c.check} check the page \u00b7 ${c.wait + cptWait} waiting \u00b7 <span style="color:var(--ok)">${c.done} fixed and live</span> <span class="mut">(Category, Variation, CPT)</span></div>` : '';
+    })() +
+    health + (RB ? `<div class="why"><b>Amazon rules:</b> checked daily. Rulebook ${esc(shortDate(RB.verified))}${rbStale() ? ', <b>due for a re-check</b>' : ''}. <button class="work" data-rbopen="1">Rulebook</button></div>` : rbBanner()) +
     `<div class="ov-grid">${cards.join('')}</div>`;
   [...v.querySelectorAll('button[data-go]')].forEach(b=> b.onclick = ()=>{ MK2 = b.dataset.mk2go === 'CA' ? 'CA' : 'US'; mk2Apply(); if(b.dataset.bsmk) BS_F.mk = b.dataset.bsmk; document.getElementById(b.dataset.go).click(); });
   [...v.querySelectorAll('[data-rbopen]')].forEach(b=> b.onclick = openRulebook);
 }
 
-function closeDetail(){ document.getElementById('veil').hidden = true; }
+function closeDetail(){ document.getElementById('veil').hidden = true; document.getElementById('detail').classList.remove('wide'); }
 
 
 /* ---------- SKU and ASIN ---------- */
@@ -6221,7 +6657,7 @@ function openIds(sku, asin){
   copy('cpAsin', asin);
 
   document.getElementById('closeBtn').onclick = closeDetail;
-  document.getElementById('veil').hidden = false;
+  document.getElementById('detail').classList.remove('wide'); document.getElementById('veil').hidden = false;
 }
 
 
@@ -6561,7 +6997,7 @@ function openPriceDetail(row, kind){
     '</div>';
 
   document.getElementById('closeBtn').onclick = closeDetail;
-  document.getElementById('veil').hidden = false;
+  document.getElementById('detail').classList.remove('wide'); document.getElementById('veil').hidden = false;
 }
 
 function tr(r, IDX){
