@@ -1016,7 +1016,12 @@ async function load(fresh){
     .then(j => { buildCpt(j); if(S.view === 'cpt' || S.view === 'bb' || S.view === 'lp') render(); else if(S.view === 'catalog') render(); else chrome(); })
     .catch(e => { CPT_ERR = e.message; if(S.view === 'cpt') render(); });
   grab(SIM_SRC, 'json', fresh)
-    .then(j => { SIM = (j && j.items) || []; SIM_META = {updated: j && j.updated || ''};
+    .then(j => { SIM_META = {updated: j && j.updated || ''};
+      // Similar items older than 3 days are not used anywhere: the CPT moves, and an
+      // old match would name the wrong reference in a case (Oct 23)
+      const age = SIM_META.updated ? Math.floor((Date.now() - new Date(SIM_META.updated.slice(0,10) + 'T12:00:00').getTime()) / 86400000) : 99;
+      SIM_META.stale = age > 3; SIM_META.age = age;
+      SIM = SIM_META.stale ? [] : ((j && j.items) || []);
                  if(S.view === 'cpt') render(); })
     .catch(e => console.warn('similar.json unavailable:', e.message));
   grab(BB_SRC, 'json', fresh)
@@ -1848,6 +1853,7 @@ function buildCptRaw(j){
     return {asin:r.asin, sku:r.sku || '', name:r.name || '', cpt:num(r.cpt), bb:num(r.bb),
             kOurs:num(r.ours), kList:num(r.list), cases:r.cases || [], mail:r.mail || null, events:r.events || [],
             mailCases:r.mailCases || [], latestReply:r.latestReply || null, caSale:num(r.caSale),
+            moves: r.moves || [], at: r.at || '',
             ours90:num(r.ours90), bb90:num(r.bb90), sold:num(r.sold),
             date:r.d || '', h, moved, from};
   });
@@ -2949,6 +2955,7 @@ function renderCpt(){
       '</div>'+
     '</section>'+
     rbBanner()+
+    (SIM_META.stale ? `<div class="why"><b>Similar items are old</b> (${esc(SIM_META.updated || 'none')}). Not used in the table or the drafts. Run runSimilarMats.</div>` : '')+
     (RB ? (()=>{ const n = all.filter(r=> (r.rb || []).some(h=> h.sev === 'amazon')); return `<div class="why"><b>Amazon rules:</b> ${n.length ? `${n.length} failed (${esc(n.map(r=> r.sku).slice(0,4).join(', '))}${n.length > 4 ? '\u2026' : ''})` : '<span style="color:var(--ok)">Passed</span>'} <button class="work" data-rbopen="1">Rulebook</button></div>`; })() : '')+
     mk2Note('Drafts say amazon.com: edit before sending for CA')+
     '<div class="cpt-tools">' + mk2Seg() +
@@ -2989,7 +2996,7 @@ function renderCpt(){
       H('cpt', 'CPT', 'b-cpt c', 'desc')+
       H('gap', 'Gap', 'b-gap c', 'desc')+
       H('move', 'Last CPT move', 'b-move')+
-      H('sim', 'Similar at CPT price', 'b-sim')+
+      H('sim', 'Similar item', 'b-sim', 'Same size coir mat priced at the CPT, from the daily Keepa search. Not used when the data is over 3 days old.')+
       H('verdict', 'What to do', 'b-case')+
       `<th data-s="trend" data-d="asc">30-day trend${qi('trend')}${sortArrow(CPT_F, 'trend')}</th>`+
       '</tr></thead><tbody>'+
@@ -3403,13 +3410,15 @@ function caseBlock(r){
 
 function simCell(r){
   const m = r.simMatch;
-  if(!m) return '<span class="mut">\u2014</span>';
+  if(SIM_META.stale) return `<span class="mut" data-tip="Similar items were last updated ${esc(SIM_META.updated || 'never')}. Run runSimilarMats in CPT_Watch.gs.">Old data (${esc(shortDate((SIM_META.updated || '').slice(0,10)) || 'none')})</span>`;
+  if(!m) return '<span class="mut">None found</span>';
   const x = m.item, where = `<span class="where">${esc(x.market)}${x.brand ? ', ' + esc(x.brand) : ''}</span>`;
   const name = `<span class="where">${esc(String(x.name || '').slice(0, 40))}</span>`;
   const price = x.link ? `<a href="${esc(x.link)}" target="_blank" rel="noopener" onclick="event.stopPropagation()">${usd(x.price)}</a>` : usd(x.price);
-  if(m.exact) return `<span class="lo" style="color:#b42318" data-tip="Priced exactly at our CPT. Amazon most likely copied this price.">Matches CPT ${price}</span>${where}${name}`;
+  const on = x.date ? ` <span class="mut">(${esc(shortDate(x.date))})</span>` : '';
+  if(m.exact) return `<span class="lo" style="color:#b42318" data-tip="Priced at our CPT on ${esc(x.date || '')}. Possibly the reference; Amazon doesn't say.">Matches CPT ${price}</span>${on}${where}${name}`;
   const note = (m.diff > 0 ? usd(m.diff) + ' above' : usd(-m.diff) + ' below') + ' the CPT' + (m.onAmazon ? ', on Amazon' : '');
-  return `<span class="lo">${price}</span><span class="was">Closest, ${note}</span>${where}${name}`;
+  return `<span class="mut" style="font-size:.78rem">Nothing at the CPT. Closest:</span> <span class="lo">${price}</span>${on}<span class="was">${note}</span>${where}${name}`;
 }
 
 function simBlock(r){
@@ -3569,6 +3578,9 @@ function openCpt(r){
   };
   document.getElementById('phBtn').onclick = ()=>
     window.open('https://sellercentral.amazon.com/pricing/health', '_blank', 'noopener');
+  if((r.moves || []).length) d.insertAdjacentHTML('afterbegin',
+    '<div class="why" style="border-left:3px solid var(--warn)"><b>CPT moves (last 7 days):</b> ' +
+    r.moves.slice().reverse().map(m=> `${esc(shortDate(m[0].slice(0,10)))}${m[0].length > 10 ? ' ' + esc(m[0].slice(11)) + ' ET' : ''}: ${usd(m[1])} \u2192 <b>${usd(m[2])}</b>`).join(' \u00b7 ') + '</div>');
   d.insertAdjacentHTML('beforeend', rbBlock(r.rb || []));
   document.getElementById('detail').classList.remove('wide'); document.getElementById('veil').hidden = false;
 }
