@@ -2935,7 +2935,7 @@ function renderCpt(){
 
   // Click a tile to show those listings (Oct 23)
   let tileN = 0;
-  const TILE_SHOW = ['gapbad', 'need', 'due', 'over', 'held', 'moved', 'all'];
+  const TILE_SHOW = ['gapbad', 'over', 'held', 'moved'];
   const tile = (k, val, cls, note) =>{ const f = TILE_SHOW[tileN++] || 'all';
     return `<div class="cpt-tile bbtile${CPT_F.show === f && !CPT_F.hist ? ' on' : ''}" role="button" tabindex="0" data-tshow="${f}" title="Show these in the table"><div class="k">${k}</div><div class="v ${cls || ''}">${val}</div>`+
     `<div class="n">${note || '&nbsp;'}</div></div>`; };
@@ -2951,21 +2951,13 @@ function renderCpt(){
         (()=>{ const c = gapBad.filter(r=> r.action === 'open' || r.action === 'follow').length, o = gapBad.filter(r=> r.ours !== null && r.cpt !== null && r.ours > r.cpt + 0.005).length, s = gapBad.filter(r=> r.action === 'oos').length;
            return tile('Gap needs work', gapBad.length, gapBad.length ? 'bad' : 'good',
              gapBad.length ? [c ? c + ' need a case' : '', o ? o + ' over the CPT' : '', s ? s + ' no stock' : ''].filter(Boolean).join(', ') : 'Every gap is fine'); })()+
-        tile('Needs a case', all.filter(r=> r.action === 'open').length +
-             `<span style="font-size:1rem;color:var(--c-night-mut)"> new, ${all.filter(r=> r.action === 'follow').length} follow up</span>`,
-             all.some(r=> r.action === 'open' || r.action === 'follow') ? 'bad' : '',
-             esc(all.filter(r=> r.action === 'open' || r.action === 'follow').map(r=> r.sku).slice(0,4).join(', ')) || 'Nothing to raise today')+
-        (()=>{ const due = all.filter(r=> { const n = nextStep(r); return n && n.due === 'now'; });
-           return tile('Do today', due.length, due.length ? 'bad' : 'good',
-             due.length ? esc(due.map(r=> r.sku).slice(0,3).join(', ')) : 'No follow-ups due'); })()+
+        // Needs a case and Do today tiles removed (MJ, Oct 23): the filter buttons still have them
         tile('Priced above the CPT ' + qi('buybox'), over.length, over.length ? 'bad' : '',
              over.length ? 'Featured Offer at risk on these' : 'None, every price is at or under')+
         tile('Held at the CPT', all.filter(r=> r.held).length, all.some(r=> r.held) ? 'warn' : '',
              'Price cut to the CPT, under our regular price')+
         tile('CPT moved, last 7 days', recent.length, recent.length ? 'warn' : '',
              recent.length ? recent.map(r=> esc(r.sku)).slice(0,3).join(', ') + (recent.length > 3 ? '\u2026' : '') : 'No changes this week')+
-        tile('ASINs with a CPT', all.length, '',
-             none ? none + ' with no CPT today' : 'All ASINs have one')+
       '</div>'+
     '</section>'+
     rbBanner()+
@@ -6265,14 +6257,9 @@ function renderBsr(){
       `<span class="sub">Star rating, ratings and Best Sellers Rank on Amazon ${mk}, ${all.length} active listings</span>`+
       (BS_META.updated ? `<span class="cpt-live"><i></i>Built ${esc(BS_META.updated)} ET</span>` : '')+
     '</div><div class="cpt-tiles">'+
-      tile('Average star rating', avg === null ? '\u2014' : avg.toFixed(2), avg === null ? '' : avg >= 4.5 ? 'good' : avg >= 4 ? 'warn' : 'bad', `${rated.length} rated listings`, 'all')+
-      tile('Rated 4.0 or higher', `${good.length}<span style="font-size:1rem;color:var(--c-night-mut)"> of ${rated.length}</span>`, good.length === rated.length ? 'good' : 'warn', rated.length ? Math.round(good.length / rated.length * 100) + '%' : '', 'good')+
-      t1('Below 4.0', low, 'low') + t1('Below 3.0 (no deals)', under3, 'under3') +
-      t1('Rating dropped (30 days)', drop, 'drop') + t1('BSR 25% worse than its 30-day average', slow, 'slow', true) +
+      // Summary tiles removed (MJ, Oct 23): average rating, 4.0+, below 4.0/3.0, rating dropped,
+      // BSR vs average, new ratings, ratings count, median BSR. The columns still show them.
       t1('No BSR on Amazon', nobsr, 'nobsr') +
-      tile('New ratings (30 days)', bsInt(gained), 'good', 'All listings together', 'all') +
-      tile('Ratings count', bsInt(totalRev), '', 'All listings, each pooled family counted once', 'all') +
-      tile('Median BSR', medBsr ? '#' + bsInt(medBsr) : '\u2014', '', `${ranked.length} listings with a BSR. Best #${ranked.length ? bsInt(ranked[0]) : '\u2014'}`, 'all') +
       syncTile('cur', 'synccur') + syncTile('rev', 'syncrev') + syncTile('bsr', 'syncbsr') +
       rbTile(all, 'Breaks a BSR rule') +
     '</div></section>'+
@@ -6485,7 +6472,8 @@ function bsTips(){
    but with family, tier and status, plus each listing's health from the other
    modules. Plytix checks flag status slips. */
 let PR = [], PR_META = {}, PR_ERR = '', PR_VIEW = [];
-const PR_F = {q:'', brand:'', status:'Active', ca:'', tier:'', fam:'', cat:'', ptype:'', room:'', chk:'', group:'pasin', sort:'', dir:1};
+// mk: which marketplace the status filter, tiles, SKU, price and stock follow (Oct 23)
+const PR_F = {mk:'US', q:'', brand:'', status:'Active', ca:'', tier:'', fam:'', cat:'', ptype:'', room:'', chk:'', group:'pasin', sort:'', dir:1};
 const PR_GROUPS = [['pasin','Parent'], ['status','SKU status'], ['tier','SKU tier'], ['brand','Brand'], ['cats','Category'], ['ptype','Product type'], ['caStatus','CA status'], ['','No groups']];
 function buildPr(j){ PR_ERR = ''; PR_META = {updated: j && j.updated || ''}; PR = (j && j.rows) || []; }
 const prNum = v=> v === undefined || v === null || v === '' ? null : Number(v);
@@ -6510,7 +6498,9 @@ function prRows(){
     const bb = (typeof BB_US !== 'undefined' ? BB_US : []).find(x=> x.asin === p.asin);
     const bs = (typeof BS !== 'undefined' ? BS : []).find(x=> x.mk === 'US' && x.asin === p.asin);
     const row = ROWS.find(x=> x.asin === p.asin);
+    const ca = PR_F.mk === 'CA';
     return Object.assign({}, p, {
+      st: ca ? (p.caStatus || '') : (p.status || ''), mkSku: ca ? (p.caSku || p.sku) : p.sku, price: ca ? p.caSale : p.sale,
       name: p.name || p.title || p.sku, fam: p.pname || (p.pasin ? p.pasin : ''),
       us: row ? row.usAvail : null, ca: row ? row.caAvail : null,
       copy: lc && lc.pct !== null && lc.pct !== undefined ? lc.pct : null,
@@ -6521,8 +6511,8 @@ function prRows(){
     });
   });
 }
-const PR_SORT = { product: r=> r.name, sku: r=> r.sku, brand: r=> r.brand || '', status: r=> r.status || '', ca: r=> r.caStatus || '', tier: r=> (TIER_RANK[r.tier] !== undefined ? TIER_RANK[r.tier] : 9),
-  fam: r=> r.fam || '', sale: r=> prNum(r.sale), list: r=> prNum(r.list), us: r=> r.us, cast: r=> r.ca, copy: r=> r.copy, star: r=> r.star, chk: r=> -r.chk.length, active: r=> r.active || '' };
+const PR_SORT = { product: r=> r.name, sku: r=> r.mkSku, brand: r=> r.brand || '', status: r=> r.st || '', ca: r=> r.caStatus || '', tier: r=> (TIER_RANK[r.tier] !== undefined ? TIER_RANK[r.tier] : 9),
+  fam: r=> r.fam || '', sale: r=> prNum(r.price), list: r=> prNum(r.list), us: r=> PR_F.mk === 'CA' ? r.ca : r.us, cast: r=> r.ca, copy: r=> r.copy, star: r=> r.star, chk: r=> -r.chk.length, active: r=> r.active || '' };
 function prOpts(all, k){ const m = {}; all.forEach(r=>{ String(r[k] || '').split(/\s*,\s*/).filter(Boolean).forEach(v=> m[v] = (m[v] || 0) + 1); }); return Object.keys(m).sort().map(v=> [v, m[v]]); }
 function prSel(id, label, opts, cur){
   return `<label class="mut" style="font-size:.75rem">${esc(label)} <select id="${id}" style="max-width:11rem"><option value="">All</option>` +
@@ -6534,32 +6524,31 @@ function renderProducts(){
   const v = document.getElementById('cptView');
   const all = prRows();
   let rows = all.filter(r=>
-    (!PR_F.brand || r.brand === PR_F.brand) && (!PR_F.status || r.status === PR_F.status) && (!PR_F.ca || r.caStatus === PR_F.ca) &&
+    (!PR_F.brand || r.brand === PR_F.brand) && (!PR_F.status || r.st === PR_F.status) && (!PR_F.ca || r.caStatus === PR_F.ca) &&
     (!PR_F.tier || r.tier === PR_F.tier) && (!PR_F.fam || r.fam === PR_F.fam) && (!PR_F.cat || String(r.cats || '').split(/\s*,\s*/).indexOf(PR_F.cat) !== -1) &&
     (!PR_F.ptype || r.ptype === PR_F.ptype) && (!PR_F.room || String(r.room || '').split(/\s*,\s*/).indexOf(PR_F.room) !== -1) && (!PR_F.chk || r.chk.length));
   if(PR_F.q){ const q = PR_F.q.toLowerCase(); rows = rows.filter(r=> [r.sku, r.asin, r.name, r.title, r.fam, r.psku, r.pasin, r.caSku, r.upc, r.fnsku, r.material, r.cats].join(' ').toLowerCase().indexOf(q) !== -1); }
   rows = PR_F.sort && PR_SORT[PR_F.sort] ? sortBy(rows, PR_SORT[PR_F.sort], PR_F.dir) : sortBy(rows, r=> (r.fam || '~') + ' ' + r.sku, 1);
   PR_VIEW = rows;
-  const cnt = (k, val)=> all.filter(r=> r[k] === val).length;
+  const cnt = (k, val)=> all.filter(r=> (k === 'status' ? r.st : r[k]) === val).length;
   const tile = (k, val, cls, note, set)=> `<div class="cpt-tile bbtile" role="button" tabindex="0" data-set="${esc(set || '')}"><div class="k">${k}</div><div class="v ${cls || ''}">${val}</div><div class="n">${note || '&nbsp;'}</div></div>`;
-  const fams = new Set(all.filter(r=> r.status === 'Active' && r.pasin).map(r=> r.pasin)).size;
+  const fams = new Set(all.filter(r=> r.st === 'Active' && (PR_F.mk === 'CA' ? r.caPasin : r.pasin)).map(r=> PR_F.mk === 'CA' ? r.caPasin : r.pasin)).size;
   const chkN = all.filter(r=> r.chk.length).length;
   let html = '<section class="cpt-top"><div class="cpt-head"><h2>Master SKU</h2>'+
-    `<span class="sub">Every product in the Master SKU sheet, ${all.length} SKUs</span>`+
+    `<span class="sub">Every product in the Master SKU sheet, ${all.length} SKUs \u00b7 Amazon ${PR_F.mk}</span>`+
     (PR_META.updated ? `<span class="cpt-live"><i></i>Built ${esc(PR_META.updated)} ET</span>` : '')+
     '</div><div class="cpt-tiles">'+
-      tile('Active', cnt('status','Active'), 'good', `${fams} variation families`, 'status=Active')+
+      tile(`Active on Amazon ${PR_F.mk}`, cnt('status','Active'), 'good', `${fams} variation families`, 'status=Active')+
       tile('Inactive', cnt('status','Inactive'), '', '', 'status=Inactive')+
       tile('In development', cnt('status','In Development'), '', '', 'status=In Development')+
-      tile('CA active', cnt('caStatus','Active'), '', '', 'ca=Active')+
-      ['A','B','C','X','N'].map(t=> tile('Tier ' + t, all.filter(r=> r.tier === t && r.status === 'Active').length, '', 'Active only', 'tier=' + t + '&status=Active')).join('')+
+      ['A','B','C','X','N'].map(t=> tile('Tier ' + t, all.filter(r=> r.tier === t && r.st === 'Active').length, '', 'Active only', 'tier=' + t + '&status=Active')).join('')+
       tile('Plytix checks', chkN, chkN ? 'warn' : 'good', chkN ? 'Status slips to look at' : 'None', 'chk=1&status=')+
     '</div></section>'+
     '<div class="cpt-tools" style="flex-wrap:wrap;gap:.4rem">'+
+      '<div class="seg" id="prMk">' + ['US','CA'].map(m=> `<button data-mk="${m}" aria-pressed="${PR_F.mk === m}">Amazon ${m}</button>`).join('') + '</div>'+
       `<input id="prQ" type="search" placeholder="Search SKU, ASIN, UPC, name, parent, material" value="${esc(PR_F.q)}" aria-label="Search the Master SKU" style="min-width:18rem">`+
       prSel('prBrand', 'Brand', prOpts(all, 'brand'), PR_F.brand)+
-      prSel('prStatus', 'SKU status', prOpts(all, 'status'), PR_F.status)+
-      prSel('prCa', 'CA status', prOpts(all, 'caStatus'), PR_F.ca)+
+      prSel('prStatus', PR_F.mk === 'CA' ? 'CA status' : 'SKU status', prOpts(all, 'st'), PR_F.status)+
       prSel('prTier', 'Tier', prOpts(all, 'tier'), PR_F.tier)+
       prSel('prFam', 'Family', prOpts(all, 'fam'), PR_F.fam)+
       prSel('prCat', 'Category', prOpts(all, 'cats'), PR_F.cat)+
@@ -6579,16 +6568,16 @@ function renderProducts(){
     const chip = (t, cls, tip)=> `<span class="lcchip ${cls}"${tip ? ` data-tip="${esc(tip)}"` : ''}>${esc(t)}</span>`;
     const stCls = s=> s === 'Active' ? 'lc-ok' : s === 'Inactive' ? 'lc-gray' : 'lc-small';
     const tr = r=> `<tr class="row" tabindex="0" data-pr="${esc(r.sku)}">`+
-      `<td class="prod"><div class="p-name">${esc(String(r.name).slice(0, 60))}</div><div class="p-id"><span>SKU</span>${r.asin ? skuL(r.sku, 'US') : esc(r.sku)}${cpy(r.sku)}</div>`+
-        (r.asin ? `<div class="p-id"><span>ASIN</span>${asinL(r.asin, 'US')}${cpy(r.asin)}</div>` : '')+
+      `<td class="prod"><div class="p-name">${esc(String(r.name).slice(0, 60))}</div><div class="p-id"><span>SKU</span>${r.asin ? skuL(r.mkSku, PR_F.mk) : esc(r.mkSku)}${cpy(r.mkSku)}</div>`+
+        (r.asin ? `<div class="p-id"><span>ASIN</span>${asinL(r.asin, PR_F.mk)}${cpy(r.asin)}</div>` : '')+
         (r.chk.length ? `<span class="p-size" style="background:#fff4e0;color:#8a5a00" data-tip="${esc(r.chk.join(' \u2022 '))}">Plytix check</span>` : '')+'</td>'+
       `<td>${esc(r.brand || '')}</td>`+
       `<td class="c">${chip(r.status || 'blank', stCls(r.status))}</td>`+
       `<td class="c">${r.caStatus ? chip(r.caStatus, stCls(r.caStatus)) : '<span class="mut">\u2014</span>'}</td>`+
       `<td class="c">${r.tier ? '<b>' + esc(r.tier) + '</b>' : '<span class="mut">\u2014</span>'}</td>`+
       `<td style="font-size:.8rem">${r.fam ? esc(String(r.fam).slice(0, 34)) : '<span class="mut">Standalone</span>'}${r.v1 ? `<div class="mut">${esc([r.v1, r.v2].filter(Boolean).join(' / '))}</div>` : ''}</td>`+
-      `<td class="num">${r.sale ? usd(r.sale) : '\u2014'}${r.list ? `<div class="mut" style="font-size:.75rem">List ${usd(r.list)}</div>` : ''}</td>`+
-      `<td class="num">${r.us === null || r.us === undefined ? '<span class="mut">\u2014</span>' : bsInt(r.us)}</td>`+
+      `<td class="num">${r.price ? usd(r.price) : '\u2014'}${r.list && PR_F.mk === 'US' ? `<div class="mut" style="font-size:.75rem">List ${usd(r.list)}</div>` : ''}</td>`+
+      `<td class="num">${(PR_F.mk === 'CA' ? r.ca : r.us) === null || (PR_F.mk === 'CA' ? r.ca : r.us) === undefined ? '<span class="mut">\u2014</span>' : bsInt(PR_F.mk === 'CA' ? r.ca : r.us)}</td>`+
       `<td class="c" style="font-size:.78rem;white-space:nowrap">`+
         (r.copy !== null ? chip('Copy ' + Math.round(r.copy) + '%', r.copy >= 100 ? 'lc-ok' : 'lc-small') + ' ' : '')+
         (r.cat !== null ? chip(r.cat ? 'Cat OK' : 'Cat wrong', r.cat ? 'lc-ok' : 'lc-bad') + ' ' : '')+
@@ -6597,10 +6586,10 @@ function renderProducts(){
       '</td></tr>';
     html += '<table class="cpt-table bb-table lc-table cg-table"><thead><tr>'+
       H('product','Product') + H('brand','Brand') + H('status','SKU status','c') + H('ca','CA status','c') + H('tier','Tier','c') +
-      H('fam','Family / variation') + H('sale','Sale price','num') + H('us','US stock','num') + H('copy','Health (US)','c') +
+      H('fam','Family / variation') + H('sale', PR_F.mk === 'CA' ? 'CA sale price' : 'Sale price','num') + H('us', PR_F.mk + ' stock','num') + H('copy','Health (US)','c') +
       '</tr></thead><tbody>';
     if(PR_F.group){
-      const g = {}; rows.forEach(r=>{ const k = PR_F.group === 'pasin' ? (r.pasin ? r.pasin : '~') : (String(r[PR_F.group] || '').split(/\s*,\s*/)[0] || '~'); (g[k] = g[k] || []).push(r); });
+      const g = {}; rows.forEach(r=>{ const pa = PR_F.mk === 'CA' ? (r.caPasin || '') : (r.pasin || ''); const k = PR_F.group === 'pasin' ? (pa ? pa : '~') : (String(r[PR_F.group] || '').split(/\s*,\s*/)[0] || '~'); (g[k] = g[k] || []).push(r); });
       Object.keys(g).sort((a,b)=> a === '~' ? 1 : b === '~' ? -1 : a.localeCompare(b)).forEach(k=>{
         const rs = g[k], first = rs[0];
         const label = k === '~' ? (PR_F.group === 'pasin' ? 'No parent' : 'Blank') : PR_F.group === 'pasin' ? (first.pname || k) : k;
@@ -6614,7 +6603,8 @@ function renderProducts(){
   v.innerHTML = html;
   wireSort(v, PR_F, renderProducts);
   const set = (k, val)=>{ PR_F[k] = val; renderProducts(); };
-  [['prBrand','brand'],['prStatus','status'],['prCa','ca'],['prTier','tier'],['prFam','fam'],['prCat','cat'],['prPtype','ptype'],['prRoom','room'],['prGroup','group']]
+  [...v.querySelectorAll('#prMk button')].forEach(b=> b.onclick = ()=> set('mk', b.dataset.mk));
+  [['prBrand','brand'],['prStatus','status'],['prTier','tier'],['prFam','fam'],['prCat','cat'],['prPtype','ptype'],['prRoom','room'],['prGroup','group']]
     .forEach(x=>{ const el = document.getElementById(x[0]); if(el) el.onchange = ()=> set(x[1], el.value); });
   const q = document.getElementById('prQ');
   if(q) q.oninput = ()=>{ PR_F.q = q.value; const pos = q.selectionStart; renderProducts(); const q2 = document.getElementById('prQ'); q2.focus(); q2.setSelectionRange(pos, pos); };
