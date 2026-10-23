@@ -63,7 +63,7 @@ header h1{
 #meta{font-size:.7rem;color:#93a0b0;letter-spacing:.02em}
 #meta b{color:#ccd6e2;font-weight:600}
 
-#toggle,#fs,#homeBtn,#quickCat,#casesBtn,#catalogBtn,#cptBtn,#bbBtn,#lcBtn,#lpBtn,#vrBtn,#bsBtn{
+#toggle,#fs,#homeBtn,#quickCat,#casesBtn,#catalogBtn,#cptBtn,#bbBtn,#lcBtn,#lpBtn,#vrBtn,#bsBtn,#prBtn{
   font-size:.74rem;padding:.24rem .6rem;
   background:transparent;color:#fff;border:1px solid #3a4652;
 }
@@ -72,12 +72,12 @@ header h1{
 #quickCat{margin-left:auto}
 #homeBtn[aria-pressed="true"],#quickCat[aria-pressed="true"],
 #casesBtn[aria-pressed="true"],
-#cptBtn[aria-pressed="true"],#bbBtn[aria-pressed="true"],#lcBtn[aria-pressed="true"],#lpBtn[aria-pressed="true"],#vrBtn[aria-pressed="true"],#bsBtn[aria-pressed="true"],
+#cptBtn[aria-pressed="true"],#bbBtn[aria-pressed="true"],#lcBtn[aria-pressed="true"],#lpBtn[aria-pressed="true"],#vrBtn[aria-pressed="true"],#bsBtn[aria-pressed="true"],#prBtn[aria-pressed="true"],
 #catalogBtn[aria-pressed="true"]{
   background:#2f4a6d;border-color:#4a6fa5;
 }
-#toggle:hover,#fs:hover,#homeBtn:hover,#quickCat:hover,#casesBtn:hover,#catalogBtn:hover,#cptBtn:hover,#bbBtn:hover,#lcBtn:hover,#lpBtn:hover,#vrBtn:hover,#bsBtn:hover{background:#1c232b}
-#toggle .badge,#homeBtn .badge,#quickCat .badge,#casesBtn .badge,#cptBtn .badge,#bbBtn .badge,#lcBtn .badge,#lpBtn .badge,#vrBtn .badge,#bsBtn .badge{
+#toggle:hover,#fs:hover,#homeBtn:hover,#quickCat:hover,#casesBtn:hover,#catalogBtn:hover,#cptBtn:hover,#bbBtn:hover,#lcBtn:hover,#lpBtn:hover,#vrBtn:hover,#bsBtn:hover,#prBtn:hover{background:#1c232b}
+#toggle .badge,#homeBtn .badge,#quickCat .badge,#casesBtn .badge,#cptBtn .badge,#bbBtn .badge,#lcBtn .badge,#lpBtn .badge,#vrBtn .badge,#bsBtn .badge,#prBtn .badge{
   display:inline-block;margin-left:.35rem;padding:0 .32rem;
   background:#a83a26;border-radius:8px;font-size:.68rem;font-weight:700;
 }
@@ -601,10 +601,10 @@ header h1{font-size:.95rem;letter-spacing:.02em;text-transform:none;font-weight:
 header h1::after{content:"";display:inline-block;width:.42rem;height:.42rem;border-radius:50%;
   background:#3fbf7f;margin-left:.45rem;vertical-align:middle}
 #meta{font-family:ui-monospace,"SF Mono",Menlo,Consolas,monospace;font-size:.72rem}
-#toggle,#fs,#homeBtn,#quickCat,#casesBtn,#catalogBtn,#cptBtn,#bbBtn,#lcBtn,#lpBtn,#vrBtn,#bsBtn{
+#toggle,#fs,#homeBtn,#quickCat,#casesBtn,#catalogBtn,#cptBtn,#bbBtn,#lcBtn,#lpBtn,#vrBtn,#bsBtn,#prBtn{
   font-size:.8rem;padding:.38rem .8rem;border-radius:7px;border-color:var(--night-line);color:#dfe5ee}
 #homeBtn[aria-pressed="true"],#quickCat[aria-pressed="true"],#casesBtn[aria-pressed="true"],
-#catalogBtn[aria-pressed="true"],#cptBtn[aria-pressed="true"],#bbBtn[aria-pressed="true"],#lcBtn[aria-pressed="true"],#lpBtn[aria-pressed="true"],#vrBtn[aria-pressed="true"],#bsBtn[aria-pressed="true"]{background:#2c4f7c;border-color:#4a76b0;color:#fff}
+#catalogBtn[aria-pressed="true"],#cptBtn[aria-pressed="true"],#bbBtn[aria-pressed="true"],#lcBtn[aria-pressed="true"],#lpBtn[aria-pressed="true"],#vrBtn[aria-pressed="true"],#bsBtn[aria-pressed="true"],#prBtn[aria-pressed="true"]{background:#2c4f7c;border-color:#4a76b0;color:#fff}
 
 /* overview band */
 #ov{background:var(--night);color:#e8edf3;padding:1.05rem 1.25rem 1.15rem;flex:0 0 auto}
@@ -797,6 +797,7 @@ a.idl:hover{color:var(--accent);border-bottom-style:solid}
   <button id="lpBtn">List Price</button>
   <button id="vrBtn">Variation</button>
   <button id="bsBtn">BSR</button>
+  <button id="prBtn">Master SKU</button>
   <button id="catalogBtn">Catalog</button>
   <button id="toggle" aria-expanded="true">Filters</button>
   <button id="fs" title="Fullscreen">Full screen</button>
@@ -920,6 +921,7 @@ const RB_SRC = 'https://raw.githubusercontent.com/mjbaguhin/cpc-tracker/main/rul
 const CA_SRC = 'https://raw.githubusercontent.com/mjbaguhin/cpc-tracker/main/ca.json';
 const BS_SRC = 'https://raw.githubusercontent.com/mjbaguhin/cpc-tracker/main/bsr.json';
 const CH_SRC = 'https://raw.githubusercontent.com/mjbaguhin/cpc-tracker/main/history.json';
+const PR_SRC = 'https://raw.githubusercontent.com/mjbaguhin/cpc-tracker/main/products.json';
 
 // Amazon's case creation entry point
 const CASE_URL = 'https://sellercentral.amazon.com/help/center?redirectSource=HelpHub';
@@ -1033,6 +1035,9 @@ async function load(fresh){
   grab(CG_SRC, 'json', fresh)
     .then(j => { buildCg(j); if(S.view === 'category') render(); else if(S.view === 'catalog') render(); else chrome(); })
     .catch(e => { CG_ERR = e.message; if(S.view === 'category') render(); });
+  grab(PR_SRC, 'json', fresh)
+    .then(j => { buildPr(j); if(S.view === 'pr') render(); else chrome(); })
+    .catch(e => { PR_ERR = e.message; if(S.view === 'pr') render(); });
   grab(CH_SRC, 'json', fresh)
     .then(j => { CH = j || null; CH_ERR = ''; if(S.view === 'lc' || S.view === 'catalog') render(); })
     .catch(e => { CH_ERR = e.message; });
@@ -2895,6 +2900,9 @@ function renderCpt(){
 
   // Filter and search
   let rows = all;
+  // Gap needs work (Oct 23): over the CPT, or a CPT under our sale target or list price (same test as the alerts)
+  const gapBad = all.filter(r=> ['open','follow','oos'].indexOf(r.action) !== -1 || (r.ours !== null && r.cpt !== null && r.ours > r.cpt + 0.005));
+  if(CPT_F.show === 'gapbad') rows = gapBad;
   if(CPT_F.show === 'over')   rows = over;
   if(CPT_F.show === 'moved')  rows = recent;
   if(CPT_F.show === 'held')   rows = all.filter(r=> r.held);
@@ -2925,9 +2933,12 @@ function renderCpt(){
   if(CPT_F.sort && CPT_SORT[CPT_F.sort]) rows = sortBy(rows, CPT_SORT[CPT_F.sort], CPT_F.dir);
   CPT_SHOWN = rows;
 
-  const tile = (k, val, cls, note) =>
-    `<div class="cpt-tile"><div class="k">${k}</div><div class="v ${cls || ''}">${val}</div>`+
-    `<div class="n">${note || '&nbsp;'}</div></div>`;
+  // Click a tile to show those listings (Oct 23)
+  let tileN = 0;
+  const TILE_SHOW = ['gapbad', 'need', 'due', 'over', 'held', 'moved', 'all'];
+  const tile = (k, val, cls, note) =>{ const f = TILE_SHOW[tileN++] || 'all';
+    return `<div class="cpt-tile bbtile${CPT_F.show === f && !CPT_F.hist ? ' on' : ''}" role="button" tabindex="0" data-tshow="${f}" title="Show these in the table"><div class="k">${k}</div><div class="v ${cls || ''}">${val}</div>`+
+    `<div class="n">${note || '&nbsp;'}</div></div>`; };
 
   let html = stockAlert() +
     '<section class="cpt-top">'+
@@ -2937,6 +2948,9 @@ function renderCpt(){
         (CPT_META.updated ? `<span class="cpt-live${fresh ? '' : ' stale'}"><i></i>Updated ${esc(CPT_META.updated)} ET, daily</span>` : '')+
       '</div>'+
       '<div class="cpt-tiles">'+
+        (()=>{ const c = gapBad.filter(r=> r.action === 'open' || r.action === 'follow').length, o = gapBad.filter(r=> r.ours !== null && r.cpt !== null && r.ours > r.cpt + 0.005).length, s = gapBad.filter(r=> r.action === 'oos').length;
+           return tile('Gap needs work', gapBad.length, gapBad.length ? 'bad' : 'good',
+             gapBad.length ? [c ? c + ' need a case' : '', o ? o + ' over the CPT' : '', s ? s + ' no stock' : ''].filter(Boolean).join(', ') : 'Every gap is fine'); })()+
         tile('Needs a case', all.filter(r=> r.action === 'open').length +
              `<span style="font-size:1rem;color:var(--c-night-mut)"> new, ${all.filter(r=> r.action === 'follow').length} follow up</span>`,
              all.some(r=> r.action === 'open' || r.action === 'follow') ? 'bad' : '',
@@ -2961,6 +2975,7 @@ function renderCpt(){
     '<div class="cpt-tools">' + mk2Seg() +
       '<div class="seg" id="cptSeg">'+
         [['all','All ' + all.length],
+         ['gapbad','Gap needs work ' + gapBad.length],
          ['need','Needs a case ' + all.filter(r=> r.action === 'open' || r.action === 'follow').length],
          ['over','Over CPT ' + over.length], ['moved','Moved 7 days ' + recent.length],
          ['held','Held at CPT ' + all.filter(r=> r.held).length],
@@ -2971,6 +2986,7 @@ function renderCpt(){
       `<input id="cptQ" type="search" placeholder="Search SKU, ASIN or product" value="${esc(CPT_F.q)}" aria-label="Search CPT tracker">`+
       (CPT_F.sort ? '<button id="cptUnsort" title="Back to the default order">Clear sort</button>' : '')+
       (rows.some(r=> r.action === 'open' || r.action === 'follow') ? `<button id="cptCaseAll" class="work">Copy one case for the ${rows.filter(r=> r.action === 'open' || r.action === 'follow').length} shown</button>` : '')+
+      `<button id="cptHist" class="work${CPT_F.hist ? ' strong' : ''}" aria-pressed="${!!CPT_F.hist}">CPT history</button>`+
       '<button id="cptLog">Price change log</button>'+
       `<button id="cptGuide" aria-pressed="${!!CPT_F.guide}">What do these prices mean?</button>`+
       `<button id="cptMore" aria-pressed="${CPT_F.more}">Column filters${activeCptFilters() ? ' <span class="fbadge">' + activeCptFilters() + '</span>' : ''}</button>`+
@@ -2980,7 +2996,9 @@ function renderCpt(){
     (CPT_F.guide ? priceGuide() : '')+
     (CPT_F.more ? cptFilterPanel() : '');
 
-  if(!all.length){
+  if(CPT_F.hist){
+    html += cptHistHtml();
+  } else if(!all.length){
     html += CPT_ERR
       ? '<div class="cpt-empty"><b>CPT feed not found yet</b>Run setupCptWatchDaily in the CPC Keepa Fetcher project. It creates cpt.json on its first run.</div>'
       : `<div class="cpt-empty"><b>${CPT.length ? 'No ASIN has a CPT today' : 'Loading CPT'}</b>${CPT.length ? 'Amazon is not holding any of our listings to a competitive price right now.' : ''}</div>`;
@@ -3212,7 +3230,12 @@ function wireCpt(v, all){
   mk2Wire(v);
   { const cdl = v.querySelector('button[data-dl]'); if(cdl) cdl.onclick = ()=> dlCpt(CPT_SHOWN); }
 
-  [...v.querySelectorAll('#cptSeg button')].forEach(b=> b.onclick = ()=>{ CPT_F.show = b.dataset.show; renderCpt(); });
+  [...v.querySelectorAll('#cptSeg button')].forEach(b=> b.onclick = ()=>{ CPT_F.show = b.dataset.show; CPT_F.hist = false; renderCpt(); });
+  [...v.querySelectorAll('.bbtile[data-tshow]')].forEach(t=>{ const go = ()=>{ CPT_F.show = t.dataset.tshow; CPT_F.hist = false; renderCpt();
+      const tb = document.querySelector('#cptView table, #cptView .cpt-empty'); if(tb && tb.scrollIntoView) tb.scrollIntoView({behavior:'smooth', block:'start'}); };
+    t.onclick = go; t.onkeydown = e=>{ if(e.key === 'Enter') go(); }; });
+  const hb = document.getElementById('cptHist'); if(hb) hb.onclick = ()=>{ CPT_F.hist = !CPT_F.hist; renderCpt(); };
+  cptHistWire(v);
   const openFollow = (title, m, rows)=> showDraft(title, m.body, {follow:true, subject:m.subject, caseId:m.toJassy ? '' : m.caseId,
     gmail: m.toJassy ? {to:m.to || MAIL.jassy, cc:MAIL.cc} : null, rows, pitch:buildPitch(rows, 'follow')});
   [...v.querySelectorAll('button[data-fu]')].forEach(b=> b.onclick = e=>{
@@ -3490,6 +3513,78 @@ function changeLog(days){
     if(x.dOurs) out.push({d:x.d, r, what:'Our price', from:x.ours - x.dOurs, to:x.ours});
   }));
   return out.sort((a,b)=> a.d < b.d ? 1 : a.d > b.d ? -1 : a.r.sku.localeCompare(b.r.sku));
+}
+/* ---------- CPT history (Oct 23) ----------
+   Every CPT move on every listing, up and down, for up to 120 days. Daily
+   points from cpt.json; the last 7 days also carry the time of day (4 reads a
+   day), so a move shows when it happened. Listings whose CPT is gone today
+   are included too. */
+const CPT_H = {days: 30, dir: '', q: '', bySku: true};
+function cptHistory(){
+  const out = [], since = new Date(Date.now() - CPT_H.days * 86400000).toISOString().slice(0,10);
+  (CPT || []).forEach(r=>{
+    const h = (r.h || []).filter(x=> x && x[0]).slice().sort((a,b)=> a[0] < b[0] ? -1 : 1);
+    const intra = {}; (r.moves || []).forEach(m=> (intra[m[0].slice(0,10)] = intra[m[0].slice(0,10)] || []).push(m));
+    for(let i = 1; i < h.length; i++){
+      const d = h[i][0], a = h[i - 1][1], b = h[i][1];
+      if(d < since) continue;
+      if(intra[d]){ intra[d].forEach(m=> out.push({r, d:m[0], from:m[1], to:m[2], kind: m[2] > m[1] ? 'up' : 'down', ours: h[i][2]})); delete intra[d]; continue; }
+      if(a === null && b === null) continue;
+      if(a !== null && b !== null && Math.abs(a - b) < 0.005) continue;
+      out.push({r, d, from:a, to:b, ours: h[i][2], kind: a === null ? 'new' : b === null ? 'gone' : b > a ? 'up' : 'down'});
+    }
+    Object.keys(intra).filter(d=> d >= since).forEach(d=> intra[d].forEach(m=> out.push({r, d:m[0], from:m[1], to:m[2], kind: m[2] > m[1] ? 'up' : 'down', ours:null})));
+  });
+  return out.sort((a,b)=> a.d < b.d ? 1 : -1);
+}
+function cptHistHtml(){
+  let L = cptHistory();
+  const all = L;
+  if(CPT_H.dir) L = L.filter(x=> x.kind === CPT_H.dir);
+  if(CPT_H.q){ const q = CPT_H.q.toLowerCase(); L = L.filter(x=> (x.r.sku + ' ' + x.r.asin + ' ' + x.r.name).toLowerCase().indexOf(q) !== -1); }
+  const n = k=> all.filter(x=> x.kind === k).length;
+  const skus = new Set(all.map(x=> x.r.asin)).size;
+  const drop = all.filter(x=> x.kind === 'down').sort((a,b)=> (a.to - a.from) - (b.to - b.from))[0];
+  const KIND = {down:['Down','lc-bad'], up:['Up','lc-ok'], new:['New CPT','lc-small'], gone:['CPT gone','lc-gray']};
+  const tile = (k, v, cls, note, dir)=> `<div class="cpt-tile bbtile${CPT_H.dir === dir ? ' on' : ''}" role="button" tabindex="0" data-hdir="${dir}"><div class="k">${k}</div><div class="v ${cls || ''}">${v}</div><div class="n">${note || '&nbsp;'}</div></div>`;
+  const when = x=> `${esc(shortDate(x.d.slice(0,10)))}${x.d.length > 10 ? ' <span class="mut">' + esc(x.d.slice(11)) + ' ET</span>' : ''}`;
+  const chg = x=> x.from !== null && x.to !== null ? `<b style="color:${x.to > x.from ? 'var(--ok)' : 'var(--bad)'}">${x.to > x.from ? '+' : '\u2212'}${usd(Math.abs(x.to - x.from))}</b> <span class="mut">${Math.round(Math.abs(x.to - x.from) / x.from * 100)}%</span>` : '';
+  const line = x=> `<tr><td>${when(x)}</td><td class="mono">${skuL(x.r.sku, MK2)}${cpy(x.r.sku)}</td><td style="font-size:.8rem">${esc(String(x.r.name || '').slice(0, 44))}</td>`+
+    `<td class="c"><span class="lcchip ${KIND[x.kind][1]}">${KIND[x.kind][0]}</span></td><td class="num">${x.from === null ? '\u2014' : usd(x.from)}</td><td class="num"><b>${x.to === null ? '\u2014' : usd(x.to)}</b></td><td class="num">${chg(x)}</td>`+
+    `<td class="num">${x.ours === null || x.ours === undefined ? '' : usd(x.ours)}</td><td class="num">${x.r.cpt === null || x.r.cpt === undefined ? '<span class="mut">none</span>' : usd(x.r.cpt)}</td></tr>`;
+  let html = '<section style="margin-top:.6rem"><div class="cpt-tiles">'+
+    tile(`Moves, last ${CPT_H.days} days`, all.length, all.length ? 'warn' : 'good', `${skus} listings affected`, '')+
+    tile('Down', n('down'), n('down') ? 'bad' : 'good', drop ? `Biggest: ${esc(drop.r.sku)} ${usd(drop.from)} \u2192 ${usd(drop.to)}` : '', 'down')+
+    tile('Up', n('up'), n('up') ? 'good' : '', '', 'up')+
+    tile('New CPT', n('new'), '', 'A CPT appeared', 'new')+
+    tile('CPT gone', n('gone'), '', 'No CPT anymore', 'gone')+
+    '</div><div class="cpt-tools">'+
+      '<div class="seg" id="hDays">' + [7, 30, 60, 120].map(dd=> `<button data-days="${dd}" aria-pressed="${CPT_H.days === dd}">${dd} days</button>`).join('') + '</div>'+
+      `<input id="hQ" type="search" placeholder="Search SKU, ASIN or product" value="${esc(CPT_H.q)}">`+
+      `<button id="hBySku" aria-pressed="${CPT_H.bySku}">Group by listing</button><button id="hDl">Download</button>`+
+      `<span class="count">${L.length} moves</span></div>`;
+  if(!L.length) html += `<div class="cpt-empty"><b>No CPT moves</b>${all.length ? 'Pick another filter.' : 'Nothing moved in this period.'}</div>`;
+  else {
+    html += '<table class="cpt-table"><thead><tr><th>When</th><th>SKU</th><th>Product</th><th class="c">Move</th><th class="num">From</th><th class="num">To</th><th class="num">Change</th><th class="num">Our price</th><th class="num">CPT now</th></tr></thead><tbody>';
+    if(CPT_H.bySku){
+      const g = {}; L.forEach(x=> (g[x.r.asin] = g[x.r.asin] || []).push(x));
+      Object.keys(g).sort((a,b)=> g[b].length - g[a].length || (g[a][0].d < g[b][0].d ? 1 : -1)).forEach(a=>{
+        const xs = g[a], r = xs[0].r, d = xs.filter(x=> x.kind === 'down').length, u = xs.filter(x=> x.kind === 'up').length;
+        html += `<tr class="gh"><td colspan="9"><b>${esc(r.sku)}</b> <span class="mut">${esc(String(r.name || '').slice(0, 50))} \u00b7 ${xs.length} move${xs.length > 1 ? 's' : ''}${d ? ', ' + d + ' down' : ''}${u ? ', ' + u + ' up' : ''} \u00b7 CPT now ${r.cpt === null || r.cpt === undefined ? 'none' : usd(r.cpt)}</span></td></tr>` + xs.map(line).join('');
+      });
+    } else html += L.map(line).join('');
+    html += '</tbody></table>';
+  }
+  return html + '<p class="mut" style="font-size:.78rem">One point per day before the last 7 days; the last 7 days show each read (4 a day) with its time.</p></section>';
+}
+function cptHistWire(v){
+  if(!CPT_F.hist) return;
+  [...v.querySelectorAll('.bbtile[data-hdir]')].forEach(t=> t.onclick = ()=>{ CPT_H.dir = CPT_H.dir === t.dataset.hdir ? '' : t.dataset.hdir; renderCpt(); });
+  [...v.querySelectorAll('#hDays button')].forEach(b=> b.onclick = ()=>{ CPT_H.days = +b.dataset.days; renderCpt(); });
+  const q = document.getElementById('hQ'); if(q) q.oninput = ()=>{ CPT_H.q = q.value; const p = q.selectionStart; renderCpt(); const q2 = document.getElementById('hQ'); q2.focus(); q2.setSelectionRange(p, p); };
+  const g = document.getElementById('hBySku'); if(g) g.onclick = ()=>{ CPT_H.bySku = !CPT_H.bySku; renderCpt(); };
+  const dl = document.getElementById('hDl'); if(dl) dl.onclick = ()=> csvSave('cpt-history-' + CPT_H.days + 'd', ['When (ET)','SKU','ASIN','Product','Move','From','To','Change','Our price','CPT now'],
+    cptHistory().filter(x=> !CPT_H.dir || x.kind === CPT_H.dir).map(x=> [x.d, x.r.sku, x.r.asin, x.r.name, x.kind, x.from, x.to, x.from !== null && x.to !== null ? Math.round((x.to - x.from) * 100) / 100 : '', x.ours ?? '', x.r.cpt ?? '']));
 }
 function openChangeLog(){
   const log = changeLog(30), d = document.getElementById('detail');
@@ -6384,6 +6479,180 @@ function bsTips(){
   document.getElementById('detail').classList.remove('wide'); document.getElementById('veil').hidden = false;
 }
 
+/* ---------- Products module ----------
+   Every product in the Master SKU sheet (products.json, Products Watch, daily).
+   Search, filter, sort and group the whole catalog, like Manage All Inventory
+   but with family, tier and status, plus each listing's health from the other
+   modules. Plytix checks flag status slips. */
+let PR = [], PR_META = {}, PR_ERR = '', PR_VIEW = [];
+const PR_F = {q:'', brand:'', status:'Active', ca:'', tier:'', fam:'', cat:'', ptype:'', room:'', chk:'', group:'pasin', sort:'', dir:1};
+const PR_GROUPS = [['pasin','Parent'], ['status','SKU status'], ['tier','SKU tier'], ['brand','Brand'], ['cats','Category'], ['ptype','Product type'], ['caStatus','CA status'], ['','No groups']];
+function buildPr(j){ PR_ERR = ''; PR_META = {updated: j && j.updated || ''}; PR = (j && j.rows) || []; }
+const prNum = v=> v === undefined || v === null || v === '' ? null : Number(v);
+// Plytix checks: status slips that cost money or hide problems
+function prChecks(p){
+  const out = [], act = p.status === 'Active';
+  const bb = (typeof BB_US !== 'undefined' ? BB_US : []).find(x=> x.asin === p.asin);
+  if(act && !p.asin) out.push('Active, no ASIN');
+  if(act && bb && (bb.ours === null || bb.ours === undefined) && (!bb.offers || bb.offers.n === null || bb.offers.n === undefined)) out.push('Active in Plytix, no offer on Amazon');
+  if(!act && bb && bb.ours !== null && bb.ours !== undefined) out.push('Inactive in Plytix, offer live on Amazon');
+  if(act && !p.tier) out.push('Active, no tier');
+  // Only what matters now: active products, and live offers (old inactive SKUs are history)
+  if(act && p.inactive && (!p.active || p.inactive > p.active)) out.push('Active but has an Inactive Date');
+  if(act && p.pasin && p.pasin === p.asin) out.push('Parent ASIN is its own ASIN');
+  if(act && p.liquidate === 'Y') out.push('Active but marked Liquidate');
+  return out;
+}
+function prRows(){
+  return PR.map(p=>{
+    const lc = (typeof LC_US !== 'undefined' ? LC_US : []).find(x=> x.asin === p.asin);
+    const cg = (typeof CG !== 'undefined' ? CG : []).find(x=> x.mk === 'US' && x.asin === p.asin);
+    const bb = (typeof BB_US !== 'undefined' ? BB_US : []).find(x=> x.asin === p.asin);
+    const bs = (typeof BS !== 'undefined' ? BS : []).find(x=> x.mk === 'US' && x.asin === p.asin);
+    const row = ROWS.find(x=> x.asin === p.asin);
+    return Object.assign({}, p, {
+      name: p.name || p.title || p.sku, fam: p.pname || (p.pasin ? p.pasin : ''),
+      us: row ? row.usAvail : null, ca: row ? row.caAvail : null,
+      copy: lc && lc.pct !== null && lc.pct !== undefined ? lc.pct : null,
+      cat: cg ? (cg.nolive ? null : !(cg.bad || []).length) : null,
+      bb: bb ? (bb.holder ? bb.holder.cls : null) : null,
+      star: bs && bs.rt && bs.rt.cur !== undefined ? bs.rt.cur : null,
+      chk: prChecks(p)
+    });
+  });
+}
+const PR_SORT = { product: r=> r.name, sku: r=> r.sku, brand: r=> r.brand || '', status: r=> r.status || '', ca: r=> r.caStatus || '', tier: r=> (TIER_RANK[r.tier] !== undefined ? TIER_RANK[r.tier] : 9),
+  fam: r=> r.fam || '', sale: r=> prNum(r.sale), list: r=> prNum(r.list), us: r=> r.us, cast: r=> r.ca, copy: r=> r.copy, star: r=> r.star, chk: r=> -r.chk.length, active: r=> r.active || '' };
+function prOpts(all, k){ const m = {}; all.forEach(r=>{ String(r[k] || '').split(/\s*,\s*/).filter(Boolean).forEach(v=> m[v] = (m[v] || 0) + 1); }); return Object.keys(m).sort().map(v=> [v, m[v]]); }
+function prSel(id, label, opts, cur){
+  return `<label class="mut" style="font-size:.75rem">${esc(label)} <select id="${id}" style="max-width:11rem"><option value="">All</option>` +
+    opts.map(o=> `<option value="${esc(o[0])}"${cur === o[0] ? ' selected' : ''}>${esc(o[0])} (${o[1]})</option>`).join('') + '</select></label>';
+}
+function renderProducts(){
+  document.getElementById('msg').hidden = true;
+  document.getElementById('bar').innerHTML = '';
+  const v = document.getElementById('cptView');
+  const all = prRows();
+  let rows = all.filter(r=>
+    (!PR_F.brand || r.brand === PR_F.brand) && (!PR_F.status || r.status === PR_F.status) && (!PR_F.ca || r.caStatus === PR_F.ca) &&
+    (!PR_F.tier || r.tier === PR_F.tier) && (!PR_F.fam || r.fam === PR_F.fam) && (!PR_F.cat || String(r.cats || '').split(/\s*,\s*/).indexOf(PR_F.cat) !== -1) &&
+    (!PR_F.ptype || r.ptype === PR_F.ptype) && (!PR_F.room || String(r.room || '').split(/\s*,\s*/).indexOf(PR_F.room) !== -1) && (!PR_F.chk || r.chk.length));
+  if(PR_F.q){ const q = PR_F.q.toLowerCase(); rows = rows.filter(r=> [r.sku, r.asin, r.name, r.title, r.fam, r.psku, r.pasin, r.caSku, r.upc, r.fnsku, r.material, r.cats].join(' ').toLowerCase().indexOf(q) !== -1); }
+  rows = PR_F.sort && PR_SORT[PR_F.sort] ? sortBy(rows, PR_SORT[PR_F.sort], PR_F.dir) : sortBy(rows, r=> (r.fam || '~') + ' ' + r.sku, 1);
+  PR_VIEW = rows;
+  const cnt = (k, val)=> all.filter(r=> r[k] === val).length;
+  const tile = (k, val, cls, note, set)=> `<div class="cpt-tile bbtile" role="button" tabindex="0" data-set="${esc(set || '')}"><div class="k">${k}</div><div class="v ${cls || ''}">${val}</div><div class="n">${note || '&nbsp;'}</div></div>`;
+  const fams = new Set(all.filter(r=> r.status === 'Active' && r.pasin).map(r=> r.pasin)).size;
+  const chkN = all.filter(r=> r.chk.length).length;
+  let html = '<section class="cpt-top"><div class="cpt-head"><h2>Master SKU</h2>'+
+    `<span class="sub">Every product in the Master SKU sheet, ${all.length} SKUs</span>`+
+    (PR_META.updated ? `<span class="cpt-live"><i></i>Built ${esc(PR_META.updated)} ET</span>` : '')+
+    '</div><div class="cpt-tiles">'+
+      tile('Active', cnt('status','Active'), 'good', `${fams} variation families`, 'status=Active')+
+      tile('Inactive', cnt('status','Inactive'), '', '', 'status=Inactive')+
+      tile('In development', cnt('status','In Development'), '', '', 'status=In Development')+
+      tile('CA active', cnt('caStatus','Active'), '', '', 'ca=Active')+
+      ['A','B','C','X','N'].map(t=> tile('Tier ' + t, all.filter(r=> r.tier === t && r.status === 'Active').length, '', 'Active only', 'tier=' + t + '&status=Active')).join('')+
+      tile('Plytix checks', chkN, chkN ? 'warn' : 'good', chkN ? 'Status slips to look at' : 'None', 'chk=1&status=')+
+    '</div></section>'+
+    '<div class="cpt-tools" style="flex-wrap:wrap;gap:.4rem">'+
+      `<input id="prQ" type="search" placeholder="Search SKU, ASIN, UPC, name, parent, material" value="${esc(PR_F.q)}" aria-label="Search the Master SKU" style="min-width:18rem">`+
+      prSel('prBrand', 'Brand', prOpts(all, 'brand'), PR_F.brand)+
+      prSel('prStatus', 'SKU status', prOpts(all, 'status'), PR_F.status)+
+      prSel('prCa', 'CA status', prOpts(all, 'caStatus'), PR_F.ca)+
+      prSel('prTier', 'Tier', prOpts(all, 'tier'), PR_F.tier)+
+      prSel('prFam', 'Family', prOpts(all, 'fam'), PR_F.fam)+
+      prSel('prCat', 'Category', prOpts(all, 'cats'), PR_F.cat)+
+      prSel('prPtype', 'Product type', prOpts(all, 'ptype'), PR_F.ptype)+
+      prSel('prRoom', 'Room', prOpts(all, 'room'), PR_F.room)+
+      `<label class="mut" style="font-size:.75rem">Group by <select id="prGroup">${PR_GROUPS.map(g=> `<option value="${g[0]}"${PR_F.group === g[0] ? ' selected' : ''}>${g[1]}</option>`).join('')}</select></label>`+
+      `<button id="prChk" aria-pressed="${!!PR_F.chk}">Plytix checks only</button>`+
+      '<button id="prReset">Clear filters</button><button id="prDl">Download</button>'+
+      `<span class="count">${rows.length} of ${all.length}</span>`+
+    '</div>';
+  if(!PR.length){
+    html += PR_ERR ? '<div class="cpt-empty"><b>Master SKU feed not found yet</b>Run setupProductsDaily in the CPC Keepa Fetcher project.</div>' : '<div class="cpt-empty"><b>Loading the Master SKU sheet</b></div>';
+  } else if(!rows.length){
+    html += '<div class="cpt-empty"><b>Nothing here</b>Clear a filter or the search.</div>';
+  } else {
+    const H = (k, label, cls)=> `<th data-s="${k}" data-d="asc" class="${cls || ''}">${label}${sortArrow(PR_F, k)}</th>`;
+    const chip = (t, cls, tip)=> `<span class="lcchip ${cls}"${tip ? ` data-tip="${esc(tip)}"` : ''}>${esc(t)}</span>`;
+    const stCls = s=> s === 'Active' ? 'lc-ok' : s === 'Inactive' ? 'lc-gray' : 'lc-small';
+    const tr = r=> `<tr class="row" tabindex="0" data-pr="${esc(r.sku)}">`+
+      `<td class="prod"><div class="p-name">${esc(String(r.name).slice(0, 60))}</div><div class="p-id"><span>SKU</span>${r.asin ? skuL(r.sku, 'US') : esc(r.sku)}${cpy(r.sku)}</div>`+
+        (r.asin ? `<div class="p-id"><span>ASIN</span>${asinL(r.asin, 'US')}${cpy(r.asin)}</div>` : '')+
+        (r.chk.length ? `<span class="p-size" style="background:#fff4e0;color:#8a5a00" data-tip="${esc(r.chk.join(' \u2022 '))}">Plytix check</span>` : '')+'</td>'+
+      `<td>${esc(r.brand || '')}</td>`+
+      `<td class="c">${chip(r.status || 'blank', stCls(r.status))}</td>`+
+      `<td class="c">${r.caStatus ? chip(r.caStatus, stCls(r.caStatus)) : '<span class="mut">\u2014</span>'}</td>`+
+      `<td class="c">${r.tier ? '<b>' + esc(r.tier) + '</b>' : '<span class="mut">\u2014</span>'}</td>`+
+      `<td style="font-size:.8rem">${r.fam ? esc(String(r.fam).slice(0, 34)) : '<span class="mut">Standalone</span>'}${r.v1 ? `<div class="mut">${esc([r.v1, r.v2].filter(Boolean).join(' / '))}</div>` : ''}</td>`+
+      `<td class="num">${r.sale ? usd(r.sale) : '\u2014'}${r.list ? `<div class="mut" style="font-size:.75rem">List ${usd(r.list)}</div>` : ''}</td>`+
+      `<td class="num">${r.us === null || r.us === undefined ? '<span class="mut">\u2014</span>' : bsInt(r.us)}</td>`+
+      `<td class="c" style="font-size:.78rem;white-space:nowrap">`+
+        (r.copy !== null ? chip('Copy ' + Math.round(r.copy) + '%', r.copy >= 100 ? 'lc-ok' : 'lc-small') + ' ' : '')+
+        (r.cat !== null ? chip(r.cat ? 'Cat OK' : 'Cat wrong', r.cat ? 'lc-ok' : 'lc-bad') + ' ' : '')+
+        (r.bb ? chip(r.bb === 'us' ? 'Buy Box' : r.bb === 'none' ? 'No Buy Box' : 'Buy Box lost', r.bb === 'us' ? 'lc-ok' : 'lc-bad') + ' ' : '')+
+        (r.star !== null ? chip(r.star.toFixed(1) + '\u2605', r.star >= 4 ? 'lc-ok' : 'lc-small') : '')+
+      '</td></tr>';
+    html += '<table class="cpt-table bb-table lc-table cg-table"><thead><tr>'+
+      H('product','Product') + H('brand','Brand') + H('status','SKU status','c') + H('ca','CA status','c') + H('tier','Tier','c') +
+      H('fam','Family / variation') + H('sale','Sale price','num') + H('us','US stock','num') + H('copy','Health (US)','c') +
+      '</tr></thead><tbody>';
+    if(PR_F.group){
+      const g = {}; rows.forEach(r=>{ const k = PR_F.group === 'pasin' ? (r.pasin ? r.pasin : '~') : (String(r[PR_F.group] || '').split(/\s*,\s*/)[0] || '~'); (g[k] = g[k] || []).push(r); });
+      Object.keys(g).sort((a,b)=> a === '~' ? 1 : b === '~' ? -1 : a.localeCompare(b)).forEach(k=>{
+        const rs = g[k], first = rs[0];
+        const label = k === '~' ? (PR_F.group === 'pasin' ? 'No parent' : 'Blank') : PR_F.group === 'pasin' ? (first.pname || k) : k;
+        const act = rs.filter(r=> r.status === 'Active').length;
+        html += `<tr class="gh"><td colspan="9"><b>${esc(label)}</b>${PR_F.group === 'pasin' && k !== '~' ? ` <span class="mut mono">${esc(k)}${first.psku ? ' \u00b7 ' + esc(first.psku) : ''}</span>` : ''}`+
+          ` <span class="mut">\u00b7 ${rs.length} SKU${rs.length > 1 ? 's' : ''}, ${act} active</span>${rs.some(r=> r.chk.length) ? ' <span class="lcchip lc-small">Plytix check</span>' : ''}</td></tr>` + rs.map(tr).join('');
+      });
+    } else html += rows.map(tr).join('');
+    html += '</tbody></table>';
+  }
+  v.innerHTML = html;
+  wireSort(v, PR_F, renderProducts);
+  const set = (k, val)=>{ PR_F[k] = val; renderProducts(); };
+  [['prBrand','brand'],['prStatus','status'],['prCa','ca'],['prTier','tier'],['prFam','fam'],['prCat','cat'],['prPtype','ptype'],['prRoom','room'],['prGroup','group']]
+    .forEach(x=>{ const el = document.getElementById(x[0]); if(el) el.onchange = ()=> set(x[1], el.value); });
+  const q = document.getElementById('prQ');
+  if(q) q.oninput = ()=>{ PR_F.q = q.value; const pos = q.selectionStart; renderProducts(); const q2 = document.getElementById('prQ'); q2.focus(); q2.setSelectionRange(pos, pos); };
+  const ck = document.getElementById('prChk'); if(ck) ck.onclick = ()=> set('chk', PR_F.chk ? '' : '1');
+  const rs = document.getElementById('prReset'); if(rs) rs.onclick = ()=>{ Object.assign(PR_F, {q:'', brand:'', status:'', ca:'', tier:'', fam:'', cat:'', ptype:'', room:'', chk:''}); renderProducts(); };
+  const dl = document.getElementById('prDl'); if(dl) dl.onclick = ()=> dlPr(rows);
+  [...v.querySelectorAll('.bbtile[data-set]')].forEach(t=> t.onclick = ()=>{
+    Object.assign(PR_F, {status:'', ca:'', tier:'', chk:''});
+    String(t.dataset.set).split('&').forEach(kv=>{ const [k, val] = kv.split('='); if(k) PR_F[k] = val || ''; });
+    renderProducts();
+  });
+  [...v.querySelectorAll('tr.row[data-pr]')].forEach(tr=>{ const open = ()=>{ const r = rows.find(x=> x.sku === tr.dataset.pr); if(r) openPr(r); }; tr.onclick = open; tr.onkeydown = e=>{ if(e.key === 'Enter') open(); }; });
+}
+function openPr(r){
+  const d = document.getElementById('detail');
+  const row = (k, v)=> v === undefined || v === null || v === '' ? '' : `<dt>${esc(k)}</dt><dd>${esc(String(v))}</dd>`;
+  d.innerHTML = `<h2>Master SKU</h2><h3>${esc(r.name)}</h3>`+
+    (r.chk.length ? `<div class="why" style="border-left:3px solid var(--warn)"><b>Plytix checks:</b> ${esc(r.chk.join(' \u00b7 '))}</div>` : '')+
+    '<dl>'+ `<dt>SKU</dt><dd class="mono">${r.asin ? skuL(r.sku, 'US') : esc(r.sku)}${cpy(r.sku)}</dd>` +
+      (r.asin ? `<dt>ASIN</dt><dd class="mono">${asinL(r.asin, 'US')}${cpy(r.asin)}</dd>` : '') +
+      row('Brand', r.brand) + row('SKU status', r.status) + row('CA status', r.caStatus) + row('CA SKU', r.caSku) + row('Tier', r.tier) +
+      row('Family', r.pname) + row('Parent ASIN', r.pasin) + row('Parent SKU', r.psku) +
+      row('Variation', [r.t1 && r.v1 ? r.t1 + ': ' + r.v1 : '', r.t2 && r.v2 ? r.t2 + ': ' + r.v2 : ''].filter(Boolean).join(' / ')) +
+      row('Title', r.title) + row('Product type', r.ptype) + row('Item type keyword', r.itk) + row('Category', r.cats) + row('Room', r.room) +
+      row('Material', r.material) + row('Color', r.color) + row('Shape', r.shape) + row('Size', r.dims) + row('Size tier', r.sizeTier) +
+      row('Sale price', r.sale ? usd(r.sale) : '') + row('List price', r.list ? usd(r.list) : '') + row('CA sale price', r.caSale ? usd(r.caSale) : '') + row('Walmart price', r.walmart ? usd(r.walmart) : '') +
+      row('US stock', r.us) + row('Active date', r.active) + row('Inactive date', r.inactive) + row('CA active date', r.caActive) + row('CA inactive date', r.caInactive) +
+      row('Liquidate', r.liquidate) + row('Probation', r.probation ? r.probation + (r.probReason ? ' (' + r.probReason + ')' : '') : '') + row('UPC', r.upc) + row('FNSKU', r.fnsku) +
+    '</dl><div class="why">From the Master SKU sheet (Plytix). Health chips: the Listing Copy, Category, Buy Box and BSR modules.</div>';
+  document.getElementById('detail').classList.remove('wide'); document.getElementById('veil').hidden = false;
+}
+function dlPr(rows){
+  csvSave('master-sku', ['SKU','ASIN','Product','Brand','SKU status','CA status','CA SKU','Tier','Family','Parent ASIN','Parent SKU','Variation 1','Variation 2','Product type','Category','Room','Material','Sale price','List price','CA sale price','US stock','Copy %','Category OK','Buy Box','Star rating','Plytix checks','Active date','Inactive date'],
+    rows.map(r=> [r.sku, r.asin || '', r.name, r.brand || '', r.status || '', r.caStatus || '', r.caSku || '', r.tier || '', r.pname || '', r.pasin || '', r.psku || '',
+      r.t1 ? r.t1 + ': ' + (r.v1 || '') : '', r.t2 ? r.t2 + ': ' + (r.v2 || '') : '', r.ptype || '', r.cats || '', r.room || '', r.material || '', r.sale || '', r.list || '', r.caSale || '',
+      r.us === null || r.us === undefined ? '' : r.us, r.copy === null ? '' : r.copy, r.cat === null ? '' : (r.cat ? 'Yes' : 'No'), r.bb || '', r.star === null ? '' : r.star, r.chk.join('; '), r.active || '', r.inactive || '']));
+}
+
 /* ---------- Catalog overview: every module on one page ----------
    One card per module with its main percentage, the reasons behind it, and
    a button to open the module. Numbers come from the same live data the
@@ -6893,13 +7162,13 @@ function render(){
   TARGETS = null;      // re-read from today's data on every redraw
   renderView();
   chrome();
-  if(['cpt','bb','lc','lp','vr','bs','category','catalog'].indexOf(S.view) !== -1) document.getElementById('ov').hidden = true;
+  if(['cpt','bb','lc','lp','vr','bs','pr','category','catalog'].indexOf(S.view) !== -1) document.getElementById('ov').hidden = true;
   else bandHeaders();
 }
 
 function renderView(){
 
-  const isCpt = ['cpt','bb','lc','lp','vr','bs','category','catalog'].indexOf(S.view) !== -1;
+  const isCpt = ['cpt','bb','lc','lp','vr','bs','pr','category','catalog'].indexOf(S.view) !== -1;
   document.getElementById('cptView').hidden  = !isCpt;
   document.getElementById('mainWrap').hidden = isCpt;
   document.getElementById('bar').hidden      = isCpt;
@@ -6912,6 +7181,7 @@ function renderView(){
   if(S.view === 'lp'){ renderLp(); return; }
   if(S.view === 'vr'){ renderVariation(); return; }
   if(S.view === 'bs'){ renderBsr(); return; }
+  if(S.view === 'pr'){ renderProducts(); return; }
   if(S.view === 'category'){ renderCategory(); return; }
   if(S.view === 'catalog'){ renderOverview(); return; }
 
@@ -7143,6 +7413,10 @@ function chrome(){
     const nLp = lpRows().filter(r=> !r.set).length;
     document.getElementById('lpBtn').innerHTML = 'List Price' + (nLp ? `<span class="badge">${nLp}</span>` : '');
   }
+  if(PR.length){
+    const nPr = prRows().filter(r=> r.chk.length).length;
+    document.getElementById('prBtn').innerHTML = 'Master SKU' + (nPr ? `<span class="badge">${nPr}</span>` : '');
+  }
   if(BS.length){
     const nBs = bsRows('US').concat(bsRows('CA')).filter(r=> r.flags.indexOf('low') !== -1 || r.flags.indexOf('nobsr') !== -1).length;
     document.getElementById('bsBtn').innerHTML = 'BSR' + (nBs ? `<span class="badge">${nBs}</span>` : '');
@@ -7334,6 +7608,7 @@ const lcBtn    = document.getElementById('lcBtn');
 const lpBtn    = document.getElementById('lpBtn');
 const vrBtn    = document.getElementById('vrBtn');
 const bsBtn    = document.getElementById('bsBtn');
+const prBtn    = document.getElementById('prBtn');
 
 let PANEL_BEFORE_CPT = null;
 
@@ -7342,7 +7617,7 @@ function go(view){
   // The CPT view has its own controls, so the filter panel folds away while
   // it is open and comes back as it was when you leave.
   // The CPT and Buy Box views both own the screen
-  const own = x=> ['cpt','bb','lc','lp','vr','bs','category','catalog'].indexOf(x) !== -1;
+  const own = x=> ['cpt','bb','lc','lp','vr','bs','pr','category','catalog'].indexOf(x) !== -1;
   if(own(view) && !own(S.view)){
     PANEL_BEFORE_CPT = !document.getElementById('panel').hidden;
     setPanel(false);
@@ -7361,6 +7636,7 @@ function go(view){
   lpBtn.setAttribute('aria-pressed', view === 'lp');
   vrBtn.setAttribute('aria-pressed', view === 'vr');
   bsBtn.setAttribute('aria-pressed', view === 'bs');
+  prBtn.setAttribute('aria-pressed', view === 'pr');
   catalogBtn.setAttribute('aria-pressed', view === 'catalog');
   render();
 }
@@ -7372,6 +7648,7 @@ lcBtn.onclick    = ()=> go('lc');
 lpBtn.onclick    = ()=> go('lp');
 vrBtn.onclick    = ()=> go('vr');
 bsBtn.onclick    = ()=> go('bs');
+prBtn.onclick    = ()=> go('pr');
 
 homeBtn.onclick    = ()=> go('checklist');
 catalogBtn.onclick = ()=> go('catalog');
