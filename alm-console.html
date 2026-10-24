@@ -2054,8 +2054,11 @@ function nextLine(r){
 function jassyOpen(r){ return (r.mailCases || []).filter(c=> c.ch === 'jassy' && ['waiting','received','pending'].indexOf(c.status) !== -1); }
 function jassyLine(r, n){
   const j = jassyOpen(r).filter(c=> !(n && n.link && c.cid && n.link.indexOf(c.cid) !== -1));
-  return j.map(c=> `<span class="mailst m-bad">Also: check Jassy case ${esc(c.cid || '')} in Seller Central (replies go to Jack\u2019s account)` +
-    ` <a href="${esc(c.cid ? caseLink(c.cid) : CASE_URL)}" target="_blank" rel="noopener">Open</a></span>`).join('');
+  if(!j.length) return '';
+  // One short line, every case once (Oct 24)
+  const ids = [...new Set(j.map(c=> c.cid).filter(Boolean))];
+  const links = ids.map(id=> `<a href="${esc(caseLink(id))}" target="_blank" rel="noopener">${esc(id)}</a>`).join(', ');
+  return `<span class="mailst m-bad">Check in Seller Central (Jassy replies go to Jack\u2019s account): ${links || `<a href="${esc(CASE_URL)}" target="_blank" rel="noopener">Case Log</a>`}</span>`;
 }
 function mailLine(r){
   const m = r.mail;
@@ -2124,7 +2127,7 @@ function caseStep(r){
     if(rejects >= 2 && !jassyUsed) return {text:'Escalate to the Andy Jassy team (2 rejections)', due:'now', how:'Seller Support said no twice. Use Draft email to Andy Jassy team and list both case numbers.'};
     return {text:'Reply with new proof', due:'now', how:`Reply on ${on}. Use Draft follow-up.`};
   }
-  if(c.status === 'restored') return {text:'Reply: we only have the Buy Box because we cut the price', due:'now', how:`Use Draft follow-up on ${on}. It asks them to raise the CPT itself.`};
+  if(c.status === 'restored') return {text:'Reply: still disputing the Competitive External Price', due:'now', how:`Use Draft follow-up on ${on}. It asks the Pricing Audit team to revalidate the threshold.`};
   if(c.status === 'replied') return {text:`Read the ${who} reply and answer`, due:'now', how:`Their words are under Latest Amazon reply. Draft follow-up quotes them and answers.`};
   if(c.status === 'fixed') return {text:'Amazon says fixed. Check the CPT tomorrow', due:addDays(c.lastAmazon, 1), how:'If the CPT is still too low tomorrow, use Draft follow-up. It says it did not change.'};
   return null;
@@ -2155,8 +2158,8 @@ function nextStepOld(r){
     if(rejects >= 2 && !jassyUsed) return {text:'Escalate to the Andy Jassy team (2 rejections)', due:'now', how:'Seller Support said no twice. Use Draft email to Andy Jassy team and list both case numbers.'};
     return {text:'Reply with new proof', due:'now', how:`Reply on case ${cid}. Point out the same-size mats with a higher CPT. Use Copy case evidence.`};
   }
-  if(last.kind === 'restored') return {text:'Reply: we only have the Buy Box because we cut the price', due:'now',
-    how:`Amazon says the Buy Box is back, but the CPT is still ${usd(r.cpt)}${r.target ? ', under our ' + usd(r.target) + ' sale price' : ''}. Use Draft follow-up: it thanks them and asks to raise the CPT itself.`};
+  if(last.kind === 'restored') return {text:'Reply: still disputing the Competitive External Price', due:'now',
+    how:`Amazon says the Buy Box is back, but the CPT is still ${usd(r.cpt)}${r.target ? ', under our ' + usd(r.target) + ' sale price' : ''}. Use Draft follow-up: it thanks them and asks the Pricing Audit team to revalidate the threshold.`};
   if(last.kind === 'replied') return {text:"Read Amazon's reply and answer", due:'now', how:'Amazon may be asking for something. Open the email and reply today, or ask Claude to read it and draft the answer.'};
   if(last.kind === 'fixed') return {text:'Amazon says fixed. Check the CPT tomorrow', due:addDays(last.d, 1), how:'If the CPT is still too low tomorrow, reply that it did not change.'};
   return null;
@@ -2221,7 +2224,7 @@ function strongFacts(r){
   const pts = (r.h || []).filter(x=> x[1] !== null);
   if(pts.length >= 2){
     const vs = pts.map(x=> x[1]), lo = Math.min(...vs), hi = Math.max(...vs);
-    if(hi > lo * 1.1) F.push({w:3, t:`Since ${shortDate(pts[0][0])} the threshold on this listing has ranged from ${usd(lo)} to ${usd(hi)}.`});
+    // (removed Oct 24) The threshold's range proves nothing about equivalency: vital info only
   }
 
   // 5. Demand and quality
@@ -2820,6 +2823,8 @@ function jassyEmail(rows){
     `I am writing on behalf of Barnyard Designs, the brand owner of the ASIN${one ? '' : 's'} below. I am disputing the accuracy of the Competitive External Price. ` +
     `Our brand account owner, Jack Fallon, is copied on this email. All numbers below are as of ${longToday()}.`, '',
     one ? caseEvidence(one) : groupEvidence(list), '',
+    // The equivalency argument: what our product is, and what the reference is (Oct 24)
+    ...(one ? [cptProductLines(one), ''] : []),
     ids.length ? 'Related cases: ' + ids.join(', ') + '.' : '',
     ids.length ? '' : '',
     'Could a member of your team ask the Pricing Audit team to revalidate the threshold, and confirm whether the reference is our exact product or an item assessed as equivalent? Thank you for your help.', '',
@@ -3212,7 +3217,8 @@ function cptRowHtml(r){
              ((r.action === 'open' || r.action === 'follow')
                ? '<div class="draft-btns">'+
                  ((r.action === 'follow' || (r.events || []).length) ? `<button class="work fresh-btn" data-fu="${esc(r.asin)}">Draft a follow-up</button>` : '')+
-                 `<button class="work fresh-btn" data-fresh="${esc(r.asin)}">Draft a fresh case</button></div>` : '') + '</td>'+
+                 `<button class="work fresh-btn" data-fresh="${esc(r.asin)}">Draft a fresh case</button>`+
+                 `<button class="work fresh-btn" data-jfresh="${esc(r.asin)}" title="New email to the Andy Jassy team">New Jassy email</button></div>` : '') + '</td>'+
           `<td class="trend">${miniSpark(r.h)}</td>`+
           '</tr>';
 }
@@ -3247,6 +3253,13 @@ function wireCpt(v, all){
     e.stopPropagation();
     const r = all.find(x=> x.asin === b.dataset.fresh);
     if(r) showDraft(`${r.sku} ${cptTitle(r)}`, freshCase(r), {rows:[r], pitch:buildPitch([r], 'fresh')});
+  });
+  // New email to the Andy Jassy team, from the row (Oct 24): opens the draft with the Gmail button
+  [...v.querySelectorAll('button[data-jfresh]')].forEach(b=> b.onclick = e=>{
+    e.stopPropagation();
+    const r = all.find(x=> x.asin === b.dataset.jfresh); if(!r) return;
+    const m = jassyEmail([r]); if(!m) return;
+    showDraft(`${r.sku} ${cptTitle(r)}: new Jassy email`, m.body, {subject: m.subject, gmail: {to: MAIL.jassy, cc: MAIL.cc}, rows: [r]});
   });
   [...v.querySelectorAll('button[data-gfresh]')].forEach(b=> b.onclick = e=>{
     e.stopPropagation();
@@ -6250,8 +6263,9 @@ function renderBsr(){
   const famOk = k=> famIds.filter(p=> fams[p].every(r=> !r.sync[k] || r.sync[k].s !== 'off') && fams[p].some(r=> r.sync[k] && r.sync[k].s === 'ok')).length;
   const famHas = k=> famIds.filter(p=> fams[p].some(r=> r.sync[k] && r.sync[k].s !== 'na')).length;
   const syncTile = (k, fl)=>{ const off = offK(k), ok = famOk(k), n = famHas(k);
-    return tile(`${BS_SYNC[k].label} in sync (Keepa)`, n ? `${ok}<span style="font-size:1rem;color:var(--c-night-mut)"> of ${n}</span>` : '\u2014',
-      !n ? '' : off.length ? 'warn' : 'good', !n ? 'No family with two children that have data' : off.length ? `${off.length} children to check on the live page: ${list(off)}` : 'Every family shows one value', fl); };
+    // Families showing one value for every child (MJ, Oct 24: values must be consistent)
+    return tile(`${BS_SYNC[k].label}: same across the family`, n ? `${ok}<span style="font-size:1rem;color:var(--c-night-mut)"> of ${n} families</span>` : '\u2014',
+      !n ? '' : off.length ? 'warn' : 'good', !n ? 'No family with two children that have data' : off.length ? `${off.length} children differ (Keepa): ${list(off)} \u00b7 check the live page` : 'Every family shows one value', fl); };
   const totalRev = (()=>{ // pooled families share one count, so count each family once
     let t = 0; const seen = {};
     all.forEach(r=>{ if(r.rev === null) return; const k = r.par && r.par.pasin && r.sync.rev && r.sync.rev.s === 'ok' ? 'f' + r.par.pasin : 'a' + r.asin; if(!seen[k]){ seen[k] = 1; t += r.rev; } });
@@ -6278,8 +6292,8 @@ function renderBsr(){
     '</div><div class="cpt-tiles">'+
       // Summary tiles removed (MJ, Oct 23): average rating, 4.0+, below 4.0/3.0, rating dropped,
       // BSR vs average, new ratings, ratings count, median BSR. The columns still show them.
-      t1('No BSR on Amazon', nobsr, 'nobsr') +
       syncTile('cur', 'synccur') + syncTile('rev', 'syncrev') + syncTile('bsr', 'syncbsr') +
+      t1('No BSR on Amazon', nobsr, 'nobsr') +
       rbTile(all, 'Breaks a BSR rule') +
     '</div></section>'+
     rbBanner()+
