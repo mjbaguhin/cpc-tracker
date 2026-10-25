@@ -922,6 +922,7 @@ const CA_SRC = 'https://raw.githubusercontent.com/mjbaguhin/cpc-tracker/main/ca.
 const BS_SRC = 'https://raw.githubusercontent.com/mjbaguhin/cpc-tracker/main/bsr.json';
 const CH_SRC = 'https://raw.githubusercontent.com/mjbaguhin/cpc-tracker/main/history.json';
 const PR_SRC = 'https://raw.githubusercontent.com/mjbaguhin/cpc-tracker/main/products.json';
+const GL_SRC = 'https://raw.githubusercontent.com/mjbaguhin/cpc-tracker/main/gl.json';
 
 // Amazon's case creation entry point
 const CASE_URL = 'https://sellercentral.amazon.com/help/center?redirectSource=HelpHub';
@@ -1035,6 +1036,9 @@ async function load(fresh){
   grab(CG_SRC, 'json', fresh)
     .then(j => { buildCg(j); if(S.view === 'category') render(); else if(S.view === 'catalog') render(); else chrome(); })
     .catch(e => { CG_ERR = e.message; if(S.view === 'category') render(); });
+  grab(GL_SRC, 'json', fresh)
+    .then(j => { GLX = j || null; if(S.view === 'category' || S.view === 'catalog') render(); })
+    .catch(()=> { GLX = null; });
   grab(PR_SRC, 'json', fresh)
     .then(j => { buildPr(j); if(S.view === 'pr') render(); else chrome(); })
     .catch(e => { PR_ERR = e.message; if(S.view === 'pr') render(); });
@@ -2819,7 +2823,7 @@ function jassyEmail(rows){
     : `Inaccurate Automated Competitive Price Threshold on ${list.length} Barnyard Designs ${list.every(r=> /^DMC-/.test(r.sku || '')) ? 'coir doormat ' : ''}ASINs`;
   const ids = [...new Set(list.flatMap(r=> r.caseIds || []))];
   const body = [
-    'Hello,', '',
+    'Dear Mr. Jassy,', '',
     `I am writing on behalf of Barnyard Designs, the brand owner of the ASIN${one ? '' : 's'} below. I am disputing the accuracy of the Competitive External Price. ` +
     `Our brand account owner, Jack Fallon, is copied on this email. All numbers below are as of ${longToday()}.`, '',
     one ? caseEvidence(one) : groupEvidence(list), '',
@@ -5101,9 +5105,33 @@ function pcBadge(r){
   return `<div class="pc ${k.res === 'ok' ? 'pc-ok' : 'pc-bad'}" title="${esc(k.note || '')}">\u2714 Page checked ${esc(when)}: path ${k.res === 'ok' ? 'OK' : 'wrong'}${k.stale ? ' (Amazon data changed since, check again)' : ''}</div>`;
 }
 
+/* GL from the FBA Inventory report (gl.json, uploaded by MJ, Oct 25) until a
+   live source exists. The report's raw GL (gl_lawn_and_garden) is matched to
+   the Master SKU name (Lawn & Patio) with the GL crosswalk (KB, Sep 9 2026).
+   US only: the report has no CA rows. */
+let GLX = null;
+const GL_KEY = {gl_lawn_and_garden:'lawn', gl_home:'home', gl_kitchen:'kitchen', gl_pet_products:'pet', gl_biss:'biss',
+  gl_drugstore:'drug', gl_furniture:'furniture', gl_office_product:'office', gl_sports:'sports'};
+const GL_NAME = {gl_lawn_and_garden:'Lawn and Garden', gl_home:'Home', gl_kitchen:'Kitchen', gl_pet_products:'Pet Products', gl_biss:'Biss',
+  gl_drugstore:'Health & Personal Care', gl_furniture:'Furniture', gl_office_product:'Office Product', gl_sports:'Sports'};
+function glKeyOf(name){
+  const t = String(name || '').toLowerCase();
+  return /lawn|patio|garden/.test(t) ? 'lawn' : /kitchen/.test(t) ? 'kitchen' : /^home/.test(t) ? 'home' : /pet/.test(t) ? 'pet' :
+    /drug|health/.test(t) ? 'drug' : /biss|industrial/.test(t) ? 'biss' : /furniture/.test(t) ? 'furniture' : /office/.test(t) ? 'office' : /sport/.test(t) ? 'sports' : t;
+}
+function glFromReport(r){
+  const raw = GLX && GLX.gl && GLX.gl[r.mk] && GLX.gl[r.mk][r.asin];
+  if(!raw || !r.c || !r.c.gl) return null;
+  const e = r.c.gl.e || '';
+  if(!e) return {s:'blank', a: GL_NAME[raw] || raw, note:`From the FBA Inventory report, ${GLX.snapshot}`};
+  return {s: glKeyOf(e) === (GL_KEY[raw] || raw) ? 'match' : 'wrong', e, a: GL_NAME[raw] || raw,
+          note:`From the FBA Inventory report, ${GLX.snapshot} (${raw})`};
+}
 function cgRows(mk){
   return CG.filter(r=> r.mk === (mk || CG_F.mk)).map(r=>{
     const row = ROWS.find(x=> x.asin === r.asin);
+    const gl = (r.c && r.c.gl && r.c.gl.s === 'unknown') ? glFromReport(r) : null;
+    if(gl) r = Object.assign({}, r, {c: Object.assign({}, r.c, {gl})});
     const c = r.c || {};
     const bad = CG_COLS.filter(x=> c[x[0]] && CG_BAD.indexOf(c[x[0]].s) !== -1).map(x=> x[0]);
     const blank = CG_COLS.filter(x=> c[x[0]] && c[x[0]].s === 'blank').map(x=> x[0]);
