@@ -5293,6 +5293,22 @@ function renderCategory(){
   });
 }
 
+// Reminder for MJ: a browse path that stops short (e.g. Outdoor D\u00e9cor instead of
+// Doormats) has a known fix in the KB. Shown before the case buttons so the copy fix
+// is tried first. Full record: KB_PDP_Browse_Path_Issues.md in the project files.
+const KB_PATH_DOC = 'https://claude.ai/artifact/GWKrWfQVMGcCnwazmfa1PB';
+function cgKbHint(r){
+  const c = r.c || {}, bad = x=> x && CG_BAD.indexOf(x.s) !== -1 && !x.shared && !x.inNode;
+  if(!bad(c.path) && !bad(c.node)) return '';
+  return '<div class="why" style="border-left:3px solid var(--warn,#c98a00)"><b>Seen this before: see KB, PDP Browse Path Issues.</b>'+
+    '<ul style="margin:.3rem 0 0;padding-left:1.1rem">'+
+    '<li>Fix the copy first. It worked within hours every time; cases took days.</li>'+
+    '<li>Put the product word (for example \u201cDoormat\u201d) in the title. Take \u201cOutdoor\u201d out of the title, and \u201cRug\u201d or \u201cOutdoor Rug\u201d out of the title and Item Highlights.</li>'+
+    '<li>Test on one low-tier child. Check the breadcrumb in a few hours, not the title text. If the gray text in Edit listing still shows the old copy, the edit did not save.</li>'+
+    '<li>Open a case only if that fails after 24 to 72 hours, or the GL is wrong.</li>'+
+    '</ul><a href="' + KB_PATH_DOC + '" target="_blank" rel="noopener">Open the full KB doc</a></div>';
+}
+
 function openCg(r){
   const d = document.getElementById('detail'), mk = r.mk;
   const block = c=>{
@@ -5318,6 +5334,7 @@ function openCg(r){
       `<dt>To fix</dt><dd>${r.bad.length ? esc(r.bad.map(k=> CG_COLS.find(c=> c[0] === k)[1]).join(', ')) : 'Nothing'}</dd>`+
       `<dt>Last change</dt><dd>${r.since ? esc(shortDate(r.since)) : 'No change seen'}${r.liveChecked ? ', checked ' + esc(shortDate(r.liveChecked)) : ''}</dd>`+
     '</dl>'+
+    cgKbHint(r)+
     (r.bad.length ? (()=>{ const ci = cgCaseInfo(r);
       return `<div class="act-row"><button class="work strong" id="cgOne">${ci ? 'Follow up on case ' + esc(ci.id) : 'Draft case'}</button>${(()=>{ const p = parentOf(r), k = p.pasin || p.psku; const n = k ? cgFamilyRows(k, r.mk).length : 0;
         return n > 1 ? `<button class="work strong" id="cgFamOne" data-k="${esc(k)}">Draft case for the whole family (${n})</button>` : ''; })()}<button class="work" id="cgAi">Copy for AI review</button><button class="work" id="cgWhy">Why does this happen?</button></div>`+
