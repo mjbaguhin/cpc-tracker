@@ -63,7 +63,7 @@ header h1{
 #meta{font-size:.7rem;color:#93a0b0;letter-spacing:.02em}
 #meta b{color:#ccd6e2;font-weight:600}
 
-#toggle,#fs,#homeBtn,#quickCat,#casesBtn,#catalogBtn,#cptBtn,#bbBtn,#lcBtn,#lpBtn,#vrBtn,#bsBtn,#prBtn{
+#toggle,#fs,#homeBtn,#quickCat,#casesBtn,#catalogBtn,#cptBtn,#bbBtn,#lcBtn,#lpBtn,#vrBtn,#bsBtn,#prBtn,#msBtn{
   font-size:.74rem;padding:.24rem .6rem;
   background:transparent;color:#fff;border:1px solid #3a4652;
 }
@@ -81,12 +81,12 @@ header h1{
 @media (max-width:700px){ #navGroups{margin-left:0;flex:1 1 100%} #navGroups .ng{padding:0 .6rem 0 0;border-left:0} }
 #homeBtn[aria-pressed="true"],#quickCat[aria-pressed="true"],
 #casesBtn[aria-pressed="true"],
-#cptBtn[aria-pressed="true"],#bbBtn[aria-pressed="true"],#lcBtn[aria-pressed="true"],#lpBtn[aria-pressed="true"],#vrBtn[aria-pressed="true"],#bsBtn[aria-pressed="true"],#prBtn[aria-pressed="true"],
+#cptBtn[aria-pressed="true"],#bbBtn[aria-pressed="true"],#lcBtn[aria-pressed="true"],#lpBtn[aria-pressed="true"],#vrBtn[aria-pressed="true"],#bsBtn[aria-pressed="true"],#prBtn[aria-pressed="true"],#msBtn[aria-pressed="true"],
 #catalogBtn[aria-pressed="true"]{
   background:#2f4a6d;border-color:#4a6fa5;
 }
-#toggle:hover,#fs:hover,#homeBtn:hover,#quickCat:hover,#casesBtn:hover,#catalogBtn:hover,#cptBtn:hover,#bbBtn:hover,#lcBtn:hover,#lpBtn:hover,#vrBtn:hover,#bsBtn:hover,#prBtn:hover{background:#1c232b}
-#toggle .badge,#homeBtn .badge,#quickCat .badge,#casesBtn .badge,#cptBtn .badge,#bbBtn .badge,#lcBtn .badge,#lpBtn .badge,#vrBtn .badge,#bsBtn .badge,#prBtn .badge{
+#toggle:hover,#fs:hover,#homeBtn:hover,#quickCat:hover,#casesBtn:hover,#catalogBtn:hover,#cptBtn:hover,#bbBtn:hover,#lcBtn:hover,#lpBtn:hover,#vrBtn:hover,#bsBtn:hover,#prBtn:hover,#msBtn:hover{background:#1c232b}
+#toggle .badge,#homeBtn .badge,#quickCat .badge,#casesBtn .badge,#cptBtn .badge,#bbBtn .badge,#lcBtn .badge,#lpBtn .badge,#vrBtn .badge,#bsBtn .badge,#prBtn .badge,#msBtn .badge{
   display:inline-block;margin-left:.35rem;padding:0 .32rem;
   background:#a83a26;border-radius:8px;font-size:.68rem;font-weight:700;
 }
@@ -610,10 +610,10 @@ header h1{font-size:.95rem;letter-spacing:.02em;text-transform:none;font-weight:
 header h1::after{content:"";display:inline-block;width:.42rem;height:.42rem;border-radius:50%;
   background:#3fbf7f;margin-left:.45rem;vertical-align:middle}
 #meta{font-family:ui-monospace,"SF Mono",Menlo,Consolas,monospace;font-size:.72rem}
-#toggle,#fs,#homeBtn,#quickCat,#casesBtn,#catalogBtn,#cptBtn,#bbBtn,#lcBtn,#lpBtn,#vrBtn,#bsBtn,#prBtn{
+#toggle,#fs,#homeBtn,#quickCat,#casesBtn,#catalogBtn,#cptBtn,#bbBtn,#lcBtn,#lpBtn,#vrBtn,#bsBtn,#prBtn,#msBtn{
   font-size:.8rem;padding:.38rem .8rem;border-radius:7px;border-color:var(--night-line);color:#dfe5ee}
 #homeBtn[aria-pressed="true"],#quickCat[aria-pressed="true"],#casesBtn[aria-pressed="true"],
-#catalogBtn[aria-pressed="true"],#cptBtn[aria-pressed="true"],#bbBtn[aria-pressed="true"],#lcBtn[aria-pressed="true"],#lpBtn[aria-pressed="true"],#vrBtn[aria-pressed="true"],#bsBtn[aria-pressed="true"],#prBtn[aria-pressed="true"]{background:#2c4f7c;border-color:#4a76b0;color:#fff}
+#catalogBtn[aria-pressed="true"],#cptBtn[aria-pressed="true"],#bbBtn[aria-pressed="true"],#lcBtn[aria-pressed="true"],#lpBtn[aria-pressed="true"],#vrBtn[aria-pressed="true"],#bsBtn[aria-pressed="true"],#prBtn[aria-pressed="true"],#msBtn[aria-pressed="true"]{background:#2c4f7c;border-color:#4a76b0;color:#fff}
 
 /* overview band */
 #ov{background:var(--night);color:#e8edf3;padding:1.05rem 1.25rem 1.15rem;flex:0 0 auto}
@@ -805,7 +805,7 @@ a.idl:hover{color:var(--accent);border-bottom-style:solid}
     <div class="ng"><div class="ng-l">Price and Buy Box <span class="ng-t" data-ngt="price"></span></div>
       <div class="ng-b" data-ng="price"><button id="cptBtn">CPT tracker</button><button id="bbBtn">Buy Box</button><button id="lpBtn">List Price</button></div></div>
     <div class="ng"><div class="ng-l">Listing health <span class="ng-t" data-ngt="listing"></span></div>
-      <div class="ng-b" data-ng="listing"><button id="lcBtn">Listing Copy</button><button id="quickCat">Category</button><button id="vrBtn">Variation</button></div></div>
+      <div class="ng-b" data-ng="listing"><button id="lcBtn">Listing Copy</button><button id="quickCat">Category</button><button id="vrBtn">Variation</button><button id="msBtn">Measurements</button></div></div>
     <div class="ng"><div class="ng-l">Performance <span class="ng-t" data-ngt="perf"></span></div>
       <div class="ng-b" data-ng="perf"><button id="bsBtn">BSR</button></div></div>
     <div class="ng"><div class="ng-l">Reference</div><div class="ng-b"><button id="prBtn">Master SKU</button></div></div>
@@ -934,6 +934,7 @@ const CH_SRC = 'https://raw.githubusercontent.com/mjbaguhin/cpc-tracker/main/his
 const PR_SRC = 'https://raw.githubusercontent.com/mjbaguhin/cpc-tracker/main/products.json';
 const GL_SRC = 'https://raw.githubusercontent.com/mjbaguhin/cpc-tracker/main/gl.json';
 const SIG_SRC = 'https://raw.githubusercontent.com/mjbaguhin/cpc-tracker/main/signals.json';
+const MS_SRC = 'https://raw.githubusercontent.com/mjbaguhin/cpc-tracker/main/measurements.json';
 
 // Amazon's case creation entry point
 const CASE_URL = 'https://sellercentral.amazon.com/help/center?redirectSource=HelpHub';
@@ -1047,6 +1048,9 @@ async function load(fresh){
   grab(CG_SRC, 'json', fresh)
     .then(j => { buildCg(j); if(S.view === 'category') render(); else if(S.view === 'catalog') render(); else chrome(); })
     .catch(e => { CG_ERR = e.message; if(S.view === 'category') render(); });
+  grab(MS_SRC, 'json', fresh)
+    .then(j => { buildMs(j); if(S.view === 'ms') render(); else chrome(); })
+    .catch(e => { MS_ERR = e.message; if(S.view === 'ms') render(); });
   grab(SIG_SRC, 'json', fresh)
     .then(j => { SIG = j || null; if(S.view === 'category' || S.view === 'catalog') render(); })
     .catch(()=> { SIG = null; });
@@ -6764,7 +6768,7 @@ function dlPr(rows){
    that module (Download, upload files, flat files) has only the ticked
    listings. Nothing ticked: everything shown, as before. */
 const SEL = {};
-const SEL_ATTR = ['data-lc','data-cg','data-vr','data-bb','data-bs','data-pr','data-asin','data-lp'];
+const SEL_ATTR = ['data-lc','data-cg','data-vr','data-bb','data-bs','data-pr','data-asin','data-lp','data-ms'];
 function selSet(){ const v = S.view || 'x'; return SEL[v] = SEL[v] || new Set(); }
 function selKey(tr){ for(const a of SEL_ATTR){ const k = tr.getAttribute(a); if(k) return k; } return ''; }
 /* Group totals in the header (Oct 26): the sum of the badges in each group */
@@ -6783,7 +6787,7 @@ function ngTotals(){
     .observe(nav, {childList: true, subtree: true, characterData: true});
 })();
 /* Sort by SKU tier in every module (Oct 26): A, B, N, C, X (TIER_RANK), click again to reverse */
-const TIER_MODS = {lc:['LC_F','renderLc'], lp:['LP_F','renderLp'], bb:['BB_F','renderBb'], category:['CG_F','renderCategory'],
+const TIER_MODS = {ms:['MS_F','renderMeasurements'], lc:['LC_F','renderLc'], lp:['LP_F','renderLp'], bb:['BB_F','renderBb'], category:['CG_F','renderCategory'],
   vr:['VR_F','renderVariation'], bs:['BS_F','renderBsr'], cpt:['CPT_F','renderCpt'], pr:['PR_F','renderProducts']};
 function tierBtn(tools){
   const m = TIER_MODS[S.view]; if(!m || tools.querySelector('.tierbtn')) return;
@@ -6848,6 +6852,174 @@ function selFilter(head, rows){
   const cols = head.map((h, i)=> /\b(SKU|ASIN)\b|item_sku/i.test(String(h)) && !/parent/i.test(String(h)) ? i : -1).filter(i=> i >= 0);
   if(!cols.length) return {rows, n: 0};
   return {rows: rows.filter(r=> cols.some(i=> set.has(String(r[i])))), n: set.size};
+}
+
+/* ---------- Measurements module (Oct 26) ----------
+   Plytix measurements (Master SKU sheet) against Amazon, US and CA:
+   size and weight vs the listing's item size (Keepa), packaged weight vs the
+   package weight (Keepa), size tier vs Amazon's Fee Preview report (what FBA
+   fees use), sizes written in the copy, and Plytix's own in/cm and lb/kg.
+   Small gaps from rounding count as the same. Out of stock is not counted. */
+let MS = [], MS_META = {}, MS_ERR = '', MS_VIEW = [];
+const MS_F = {mk:'US', show:'all', q:'', group:true, sort:'', dir:1};
+const MS_CHK = {size:'Size', weight:'Weight', pkg:'Package weight', tier:'Size tier', copy:'Size in the copy', plytix:'Plytix in/cm, lb/kg'};
+function buildMs(j){ MS_ERR = ''; MS_META = {updated: j && j.updated || '', fee: (j && j.fee) || {}}; MS = (j && j.rows) || []; }
+const msR = (v, d)=> v === null || v === undefined ? null : Math.round(v * Math.pow(10, d)) / Math.pow(10, d);
+function msTriple(a){ return (a || []).filter(x=> x !== null && x !== undefined && x > 0).sort((x, y)=> y - x); }
+function msSameDims(a, b, tolAbs){ a = msTriple(a); b = msTriple(b); if(a.length < 2 || b.length < 2) return null;
+  const n = Math.min(a.length, b.length); for(let i = 0; i < n; i++){ if(Math.abs(a[i] - b[i]) > Math.max(tolAbs, a[i] * 0.02)) return false; } return true; }
+function msSameWt(a, b, tolAbs){ if(!a || !b) return null; return Math.abs(a - b) <= Math.max(tolAbs, a * 0.05); }
+const msTierKey = t=> String(t || '').toLowerCase().replace(/size|tier|[-_\s]/g, '').replace(/oversize/, 'bulky');
+// Sizes written in the copy, e.g. 30x17, 76cm x 43cm, 36" x 24" x 0.5"
+function msCopySizes(text){
+  const out = [], re = /(\d+(?:\.\d+)?)\s*(cm|"|\u201d|in\b|inch(?:es)?)?\s*[x\u00d7]\s*(\d+(?:\.\d+)?)\s*(cm|"|\u201d|in\b|inch(?:es)?)?(?:\s*[x\u00d7]\s*(\d+(?:\.\d+)?)\s*(cm|"|\u201d|in\b|inch(?:es)?)?)?/gi;
+  const t = String(text || '');
+  let m; while((m = re.exec(t))){
+    // Only sizes the copy gives as the product's own size, not photo sizes or what it holds
+    const before = t.slice(Math.max(0, m.index - 45), m.index);
+    if(!/measur|dimension|overall|\bsize\b|\bsized\b|\(\s*$/i.test(before) || /photo|picture|holds|fits|insert|print|opening|compartment|pot\b|pots\b/i.test(before)) continue;
+    const unit = [m[2], m[4], m[6]].find(Boolean) || '';
+    out.push({txt: m[0].trim(), cm: /cm/i.test(unit), nums: [m[1], m[3], m[5]].filter(Boolean).map(Number)});
+  }
+  return out;
+}
+function msRows(mk){
+  mk = mk || MS_F.mk;
+  const lcRowsAll = typeof LC_US !== 'undefined' ? (mk === 'CA' ? (LC_CA || []) : LC_US) : [];
+  return MS.filter(r=> r.mk === mk).map(r=>{
+    const ca = mk === 'CA', px = r.px || {}, kp = r.kp, fee = r.fee;
+    const unit = ca ? 'cm' : 'in', wUnit = ca ? 'kg' : 'lb';
+    const pDims = ca ? [px.lCm, px.wCm, px.hCm] : [px.lIn, px.wIn, px.hIn];
+    const pWt = ca ? px.wtKg : px.wtLb, pPk = ca ? px.pkKg : px.pkLb;
+    const conv = mm=> mm ? (ca ? mm / 10 : mm / 25.4) : null, convW = g=> g ? (ca ? g / 1000 : g / 453.592) : null;
+    const aDims = kp ? kp.item.map(conv) : [], aWt = kp ? convW(kp.itemWt) : null, aPk = kp ? convW(kp.pkgWt) : null;
+    const st = {};
+    const sz = msSameDims(pDims, aDims, ca ? 0.6 : 0.25); st.size = sz === null ? 'na' : sz ? 'ok' : 'diff';
+    const wt = msSameWt(pWt, aWt, ca ? 0.05 : 0.1); st.weight = wt === null ? 'na' : wt ? 'ok' : 'diff';
+    const pk = msSameWt(pPk, aPk, ca ? 0.05 : 0.1); st.pkg = pk === null ? 'na' : pk ? 'ok' : 'diff';
+    st.tier = !px.tier || !fee || !fee.tier ? 'na' : msTierKey(px.tier) === msTierKey(fee.tier) ? 'ok' : 'diff';
+    // Copy: every size written in the title, bullets or description should match the Plytix size
+    const lc = lcRowsAll.find(x=> x.asin === r.asin), copyBad = [];
+    if(lc && lc.f){
+      const txt = ['title','b1','b2','b3','b4','b5','desc'].map(k=>{ const f = lc.f[k] || {}; return f.s === 'match' ? f.c : (f.l || f.c || ''); }).join(' \u2022 ');
+      const pd = msTriple(pDims), seen = {};
+      const cands = msCopySizes(txt).filter(c=>{ const k = c.nums.join('x') + (c.cm ? 'cm' : ''); if(seen[k]) return false; seen[k] = 1; return true; });
+      if(pd.length >= 2 && cands.length){
+        const tol = ca ? 1 : 0.5;
+        const fits = c=>{ const nums = c.nums.map(n=> c.cm === ca ? n : (ca ? n * 2.54 : n / 2.54)).sort((x, y)=> y - x);
+          const near = (n, q)=> q !== undefined && Math.abs(n - q) <= Math.max(tol, q * 0.04);
+          // Two sizes can be length x width, or diameter x depth on a round item
+          if(nums.length === 2) return near(nums[0], pd[0]) && (near(nums[1], pd[1]) || near(nums[1], pd[2]));
+          return nums.every((n, i)=> near(n, pd[i])); };
+        // A set can list several sizes: fine if one of them is the product's size
+        if(!cands.some(fits)) cands.forEach(c=> copyBad.push(c.txt));
+        if(ca) cands.filter(c=> !c.cm).forEach(c=> copyBad.push(c.txt + ' (inches in CA copy)'));
+      }
+      st.copy = copyBad.length ? 'diff' : 'ok';
+    } else st.copy = 'na';
+    // Plytix with itself: inches vs cm, lb vs kg, and the "L x W x H" text vs the fields
+    const pxBad = [];
+    // Plytix rounds cm and kg, so allow it: 30 in = 76.2 cm may be saved as 76
+    [['lIn','lCm','length'], ['wIn','wCm','width'], ['hIn','hCm','height']].forEach(x=>{ if(px[x[0]] && px[x[1]] && Math.abs(px[x[0]] * 2.54 - px[x[1]]) > Math.max(0.6, px[x[1]] * 0.01)) pxBad.push(`${x[2]} ${px[x[0]]} in is ${msR(px[x[0]] * 2.54, 1)} cm, Plytix says ${px[x[1]]} cm`); });
+    if(px.wtLb && px.wtKg && Math.abs(px.wtLb * 0.45359 - px.wtKg) > Math.max(0.1, px.wtKg * 0.02)) pxBad.push(`weight ${px.wtLb} lb is ${msR(px.wtLb * 0.45359, 2)} kg, Plytix says ${px.wtKg} kg`);
+    if(px.pkLb && px.pkKg && Math.abs(px.pkLb * 0.45359 - px.pkKg) > Math.max(0.1, px.pkKg * 0.02)) pxBad.push(`packaged weight ${px.pkLb} lb is ${msR(px.pkLb * 0.45359, 2)} kg, Plytix says ${px.pkKg} kg`);
+    const txtNums = String(ca ? px.dimsCm : px.dimsIn || '').match(/\d+(?:\.\d+)?/g);
+    if(txtNums && txtNums.length === 3 && msTriple(pDims).length === 3){ const a = txtNums.map(Number).sort((x, y)=> y - x), b = msTriple(pDims); if(a.length === 3 && a.some((v, i)=> Math.abs(v - b[i]) > Math.max(0.06, b[i] * 0.01))) pxBad.push(`"${ca ? px.dimsCm : px.dimsIn}" doesn\u2019t match the length, width and height fields`); }
+    st.plytix = pxBad.length ? 'diff' : (pDims.some(Boolean) || pWt ? 'ok' : 'na');
+    const keys = Object.keys(MS_CHK), checked = keys.filter(k=> st[k] !== 'na').length, ok = keys.filter(k=> st[k] === 'ok').length;
+    const bad = keys.filter(k=> st[k] === 'diff');
+    const row = ROWS.find(x=> x.asin === r.asin);
+    return Object.assign({}, r, {name: (row && row.name) || r.name || r.asin, ca, unit, wUnit, pDims, pWt, pPk, aDims, aWt, aPk, st, bad, copyBad, pxBad,
+      checked, ok, pct: checked ? Math.round(ok / checked * 1000) / 10 : null, allOk: checked > 0 && !bad.length, nokp: !kp});
+  });
+}
+const msFmt = (a, u, d)=>{ const t = (a || []).filter(x=> x); return t.length ? t.map(x=> msR(x, d)).join(' \u00d7 ') + ' ' + u : '\u2014'; };
+const msW = (v, u)=> v ? msR(v, 2) + ' ' + u : '\u2014';
+const MS_SORT = { tier: r=> (TIER_RANK[r.tier] !== undefined ? TIER_RANK[r.tier] : 9), product: r=> r.name, pct: r=> r.pct === null ? -1 : r.pct, bad: r=> -r.bad.length, stock: r=> stockOf(r, MS_F.mk) };
+function renderMeasurements(){
+  document.getElementById('msg').hidden = true;
+  document.getElementById('bar').innerHTML = '';
+  const v = document.getElementById('cptView'), mk = MS_F.mk;
+  const all = msRows(mk), pctRows = inStock(all, mk).filter(r=> r.checked);
+  const chk = pctRows.reduce((t, r)=> t + r.checked, 0), okN = pctRows.reduce((t, r)=> t + r.ok, 0);
+  const pct = chk ? Math.round(okN / chk * 1000) / 10 : null;
+  const by = k=> all.filter(r=> r.st[k] === 'diff');
+  const pick = {good: all.filter(r=> r.allOk), wrong: all.filter(r=> r.bad.length), nodata: all.filter(r=> r.nokp)};
+  Object.keys(MS_CHK).forEach(k=> pick[k] = by(k));
+  let rows = pick[MS_F.show] || all;
+  if(MS_F.q){ const q = MS_F.q.toLowerCase(); rows = rows.filter(r=> (r.sku + ' ' + r.asin + ' ' + r.name).toLowerCase().indexOf(q) !== -1); }
+  rows = MS_F.sort && MS_SORT[MS_F.sort] ? sortBy(rows, MS_SORT[MS_F.sort], MS_F.dir) : sortBy(rows, r=> (r.pname || '~') + ' ' + r.sku, 1);
+  MS_VIEW = rows;
+  const list = a=> esc(a.map(r=> r.sku).slice(0, 3).join(', ')) + (a.length > 3 ? '\u2026' : '');
+  const tile = (k, val, cls, note, f)=> `<div class="cpt-tile bbtile${MS_F.show === f ? ' on' : ''}" role="button" tabindex="0" data-show="${f}"><div class="k">${k}</div><div class="v ${cls || ''}">${val}</div><div class="n">${note || '&nbsp;'}</div></div>`;
+  const t1 = (k, f)=>{ const a = pick[f]; return tile(MS_CHK[f] + ' differs', a.length, a.length ? 'bad' : 'good', a.length ? list(a) : 'All OK', f); };
+  const fm = MS_META.fee && MS_META.fee[mk];
+  let html = '<section class="cpt-top"><div class="cpt-head"><h2>Measurements</h2>'+
+    `<span class="sub">Amazon ${mk} vs the Master SKU sheet, ${all.length} active listings</span>`+
+    (MS_META.updated ? `<span class="cpt-live"><i></i>Built ${esc(MS_META.updated)} ET</span>` : '')+
+    '</div><div class="cpt-tiles">'+
+      tile('Measurements correct %', pct === null ? '\u2014' : pct + '%', pct === null ? '' : pct >= 98 ? 'good' : pct >= 90 ? 'warn' : 'bad', pct === null ? 'No Amazon data yet' : `${okN} of ${chk} checks match${oosNote(all.filter(r=> r.checked), mk)}`, 'all')+
+      tile('Listings fully correct', `${pick.good.length}<span style="font-size:1rem;color:var(--c-night-mut)"> of ${all.length}</span>`, '', '', 'good')+
+      t1('', 'size') + t1('', 'weight') + t1('', 'pkg') + t1('', 'tier') + t1('', 'copy') + t1('', 'plytix')+
+      tile('No Amazon size yet', pick.nodata.length, pick.nodata.length ? 'warn' : 'good', pick.nodata.length ? 'Keepa sends it with the next daily read' : 'None', 'nodata')+
+    '</div></section>'+
+    `<div class="why"><b>Size tier:</b> ${fm ? `Fee Preview report ${esc(fm.date)} (${esc(fm.file)})` : 'no Fee Preview report yet. Save it in the Drive folder "ALM Fee Preview Reports".'}</div>`+
+    '<div class="cpt-tools"><div class="seg" id="msMk">' + ['US','CA'].map(m=> `<button data-mk="${m}" aria-pressed="${mk === m}">Amazon ${m}</button>`).join('') + '</div>'+
+      `<input id="msQ" type="search" placeholder="Search SKU, ASIN or product" value="${esc(MS_F.q)}">`+
+      `<button id="msGrp" aria-pressed="${MS_F.group}">Group by parent</button><button id="msDl">Download</button>`+
+      `<span class="count">${rows.length} of ${all.length}</span></div>`;
+  if(!MS.length) html += MS_ERR ? '<div class="cpt-empty"><b>Measurements feed not found yet</b>Run setupMeasurements in the CPC Keepa Fetcher project.</div>' : '<div class="cpt-empty"><b>Loading measurements</b></div>';
+  else if(!rows.length) html += '<div class="cpt-empty"><b>Nothing here</b>Pick another tile or clear the search.</div>';
+  else {
+    const chip = (s, tip)=> s === 'ok' ? '<span class="lcchip lc-ok">OK</span>' : s === 'diff' ? `<span class="lcchip lc-bad"${tip ? ` data-tip="${esc(tip)}"` : ''}>Differs</span>` : '<span class="lcchip lc-gray">\u2014</span>';
+    const H = (k, label, cls)=> `<th data-s="${k}" data-d="asc" class="${cls || ''}">${label}${sortArrow(MS_F, k)}</th>`;
+    const tr = r=> `<tr class="row" tabindex="0" data-ms="${esc(r.asin)}">`+
+      `<td class="prod"><div class="p-name">${esc(String(r.name).slice(0, 56))}</div><div class="p-id"><span>SKU</span>${skuL(r.sku, mk)}${cpy(r.sku)}</div><div class="p-id"><span>ASIN</span>${asinL(r.asin, mk)}${cpy(r.asin)}</div>`+
+        (r.tier ? `<span class="p-size">Tier ${esc(r.tier)}</span>` : '') + '</td>'+
+      `<td style="font-size:.8rem">${msFmt(r.pDims, r.unit, 2)}<div class="mut">${msW(r.pWt, r.wUnit)}</div></td>`+
+      `<td style="font-size:.8rem">${msFmt(r.aDims, r.unit, 2)}<div class="mut">${msW(r.aWt, r.wUnit)}</div></td>`+
+      `<td class="c">${chip(r.st.size)} ${chip(r.st.weight)}</td>`+
+      `<td class="c" style="font-size:.8rem">${msW(r.pPk, r.wUnit)} / ${msW(r.aPk, r.wUnit)}<div>${chip(r.st.pkg)}</div></td>`+
+      `<td class="c" style="font-size:.8rem">${esc(r.px.tier || '\u2014')}<div class="mut">${esc(r.fee && r.fee.tier || '\u2014')}</div>${chip(r.st.tier)}</td>`+
+      `<td class="c">${chip(r.st.copy, r.copyBad.join(' \u2022 '))}</td>`+
+      `<td class="c">${chip(r.st.plytix, r.pxBad.join(' \u2022 '))}</td></tr>`;
+    html += '<table class="cpt-table lc-table"><thead><tr>'+ H('product','Product') + '<th>Plytix size / weight</th><th>Amazon size / weight (Keepa)</th><th class="c">Size, weight</th>'+
+      '<th class="c">Packaged weight Plytix / Amazon</th><th class="c">Size tier Plytix / Fee Preview</th>' + H('bad','Copy','c') + '<th class="c">Plytix</th></tr></thead><tbody>';
+    if(MS_F.group){
+      const g = {}; rows.forEach(r=> (g[r.pasin || '~'] = g[r.pasin || '~'] || []).push(r));
+      Object.keys(g).sort((a, b)=> a === '~' ? 1 : b === '~' ? -1 : (g[a][0].pname || a).localeCompare(g[b][0].pname || b)).forEach(k=>{
+        const rs = g[k];
+        html += `<tr class="gh"><td colspan="8"><b>${esc(k === '~' ? 'No parent' : (rs[0].pname || k))}</b> <span class="mut">${k === '~' ? '' : esc(k) + ' \u00b7 '}${rs.length} listing${rs.length > 1 ? 's' : ''}${rs.some(r=> r.bad.length) ? ', ' + rs.filter(r=> r.bad.length).length + ' with a difference' : ''}</span></td></tr>` + rs.map(tr).join('');
+      });
+    } else html += rows.map(tr).join('');
+    html += '</tbody></table><p class="mut" style="font-size:.78rem">Same within 0.25 in or 2% for sizes (0.6 cm on CA), 5% for weights. The copy allows rounding (30x17 for 30 x 16.75). Out of stock is not in the %.</p>';
+  }
+  v.innerHTML = html;
+  wireSort(v, MS_F, renderMeasurements);
+  [...v.querySelectorAll('.bbtile[data-show]')].forEach(t=> t.onclick = ()=>{ MS_F.show = MS_F.show === t.dataset.show ? 'all' : t.dataset.show; renderMeasurements(); });
+  [...v.querySelectorAll('#msMk button')].forEach(b=> b.onclick = ()=>{ MS_F.mk = b.dataset.mk; renderMeasurements(); });
+  const q = document.getElementById('msQ'); if(q) q.oninput = ()=>{ MS_F.q = q.value; const p = q.selectionStart; renderMeasurements(); const q2 = document.getElementById('msQ'); q2.focus(); q2.setSelectionRange(p, p); };
+  const gb = document.getElementById('msGrp'); if(gb) gb.onclick = ()=>{ MS_F.group = !MS_F.group; renderMeasurements(); };
+  const dl = document.getElementById('msDl'); if(dl) dl.onclick = ()=> csvSave('measurements-' + mk.toLowerCase(),
+    ['SKU','ASIN','Tier','Plytix size (' + (mk === 'CA' ? 'cm' : 'in') + ')','Plytix weight','Amazon size (Keepa)','Amazon weight','Plytix packaged weight','Amazon package weight','Plytix size tier','Fee Preview size tier','Size','Weight','Package weight','Size tier','Copy','Copy notes','Plytix','Plytix notes'],
+    rows.map(r=> [r.sku, r.asin, r.tier, msFmt(r.pDims, '', 2), msR(r.pWt, 2), msFmt(r.aDims, '', 2), msR(r.aWt, 2), msR(r.pPk, 2), msR(r.aPk, 2), r.px.tier || '', r.fee && r.fee.tier || '',
+      r.st.size, r.st.weight, r.st.pkg, r.st.tier, r.st.copy, r.copyBad.join('; '), r.st.plytix, r.pxBad.join('; ')]));
+  [...v.querySelectorAll('tr.row[data-ms]')].forEach(tr=>{ const open = ()=>{ const r = rows.find(x=> x.asin === tr.dataset.ms); if(r) openMs(r); }; tr.onclick = open; tr.onkeydown = e=>{ if(e.key === 'Enter') open(); }; });
+}
+function openMs(r){
+  const d = document.getElementById('detail'), row = (k, v)=> `<dt>${esc(k)}</dt><dd>${v}</dd>`;
+  const st = k=> r.st[k] === 'ok' ? '<span class="lcchip lc-ok">OK</span>' : r.st[k] === 'diff' ? '<span class="lcchip lc-bad">Differs</span>' : '<span class="lcchip lc-gray">Can\u2019t check</span>';
+  d.innerHTML = `<h2>Measurements</h2><h3>${esc(r.name)}</h3><dl>`+
+    row('SKU', `${skuL(r.sku, r.mk)}${cpy(r.sku)}`) + row('ASIN', `${asinL(r.asin, r.mk)}${cpy(r.asin)}`)+
+    row('Size', `${st('size')} Plytix ${msFmt(r.pDims, r.unit, 2)} \u00b7 Amazon ${msFmt(r.aDims, r.unit, 2)}`)+
+    row('Weight', `${st('weight')} Plytix ${msW(r.pWt, r.wUnit)} \u00b7 Amazon ${msW(r.aWt, r.wUnit)}`)+
+    row('Packaged weight', `${st('pkg')} Plytix ${msW(r.pPk, r.wUnit)} \u00b7 Amazon ${msW(r.aPk, r.wUnit)}`)+
+    row('Size tier', `${st('tier')} Plytix ${esc(r.px.tier || '\u2014')} \u00b7 Fee Preview ${esc(r.fee && r.fee.tier || '\u2014')}` +
+      (r.fee && r.fee.longest ? ` <span class="mut">(Amazon measured ${[r.fee.longest, r.fee.median, r.fee.shortest].filter(Boolean).join(' \u00d7 ')} ${esc(r.fee.dimUnit || '')}, ${r.fee.weight || '\u2014'} ${esc(r.fee.weightUnit || '')})</span>` : ''))+
+    row('Copy', `${st('copy')} ${r.copyBad.length ? esc(r.copyBad.join(' \u2022 ')) : ''}`)+
+    row('Plytix', `${st('plytix')} ${r.pxBad.length ? esc(r.pxBad.join(' \u2022 ')) : ''}`)+
+    '</dl>' + (r.kp ? `<div class="why">Amazon size from Keepa, read ${esc(shortDate(r.kp.d))}.</div>` : '<div class="why">No Amazon size from Keepa yet. It comes with the next daily read.</div>');
+  d.classList.remove('wide'); document.getElementById('veil').hidden = false;
 }
 
 /* ---------- Catalog overview: every module on one page ----------
@@ -7056,6 +7228,13 @@ function renderOverview(){
         .concat(RB && live.filter(r=> r.rbA.length).length ? [['Break a variation rule (Master SKU sheet)', live.filter(r=> r.rbA.length).length]] : []), 'vrBtn',
       mk === 'CA' ? '<div class="ov-note">Reviews shared can\u2019t be checked for Canada (no live review counts).</div>' : '', ovPct(good.length, live.length)));
   });
+  ['US','CA'].forEach(mk=>{
+    if(!MS.length){ if(mk === 'US') cards.push(ovCard('Measurements US', null, 'Measurements feed not loaded', [], 'msBtn')); return; }
+    const all = msRows(mk), live = inStock(all, mk).filter(r=> r.checked);
+    const okN = live.reduce((t, r)=> t + r.ok, 0), chkN = live.reduce((t, r)=> t + r.checked, 0), good = live.filter(r=> r.allOk);
+    cards.push(ovCard(`Measurements ${mk}`, chkN ? ovPct(okN, chkN) : null, `${okN} of ${chkN} measurement checks match${oosNote(all.filter(r=> r.checked), mk)}<br>Listings fully correct: <b>${ovPct(good.length, live.length)}%</b>`,
+      ovCount(live, r=> r.bad, k=> MS_CHK[k] + ' differs'), 'msBtn', '', ovPct(good.length, live.length)).replace(/data-go="msBtn"/, `data-go="msBtn" data-msmk="${mk}"`));
+  });
   const avg = k=> OV_SCORES.length ? Math.round(OV_SCORES.reduce((t,x)=> t + x[k], 0) / OV_SCORES.length * 10) / 10 : null;
   const hMain = avg('main'), hStrict = avg('strict');
   const hCls = hMain === null ? '' : hMain >= 95 ? 'ok' : hMain >= 80 ? 'mid' : 'bad';
@@ -7078,7 +7257,7 @@ function renderOverview(){
     })() +
     health + (RB ? `<div class="why"><b>Amazon rules:</b> checked daily. Rulebook ${esc(shortDate(RB.verified))}${rbStale() ? ', <b>due for a re-check</b>' : ''}. <button class="work" data-rbopen="1">Rulebook</button></div>` : rbBanner()) +
     `<div class="ov-grid">${cards.join('')}</div>`;
-  [...v.querySelectorAll('button[data-go]')].forEach(b=> b.onclick = ()=>{ MK2 = b.dataset.mk2go === 'CA' ? 'CA' : 'US'; mk2Apply(); if(b.dataset.bsmk) BS_F.mk = b.dataset.bsmk; document.getElementById(b.dataset.go).click(); });
+  [...v.querySelectorAll('button[data-go]')].forEach(b=> b.onclick = ()=>{ MK2 = b.dataset.mk2go === 'CA' ? 'CA' : 'US'; mk2Apply(); if(b.dataset.bsmk) BS_F.mk = b.dataset.bsmk; if(b.dataset.msmk) MS_F.mk = b.dataset.msmk; document.getElementById(b.dataset.go).click(); });
   [...v.querySelectorAll('[data-rbopen]')].forEach(b=> b.onclick = openRulebook);
 }
 
@@ -7359,13 +7538,13 @@ function render(){
   TARGETS = null;      // re-read from today's data on every redraw
   renderView();
   chrome();
-  if(['cpt','bb','lc','lp','vr','bs','pr','category','catalog'].indexOf(S.view) !== -1) document.getElementById('ov').hidden = true;
+  if(['cpt','bb','lc','lp','vr','bs','pr','ms','category','catalog'].indexOf(S.view) !== -1) document.getElementById('ov').hidden = true;
   else bandHeaders();
 }
 
 function renderView(){
 
-  const isCpt = ['cpt','bb','lc','lp','vr','bs','pr','category','catalog'].indexOf(S.view) !== -1;
+  const isCpt = ['cpt','bb','lc','lp','vr','bs','pr','ms','category','catalog'].indexOf(S.view) !== -1;
   document.getElementById('cptView').hidden  = !isCpt;
   document.getElementById('mainWrap').hidden = isCpt;
   document.getElementById('bar').hidden      = isCpt;
@@ -7379,6 +7558,7 @@ function renderView(){
   if(S.view === 'vr'){ renderVariation(); return; }
   if(S.view === 'bs'){ renderBsr(); return; }
   if(S.view === 'pr'){ renderProducts(); return; }
+  if(S.view === 'ms'){ renderMeasurements(); return; }
   if(S.view === 'category'){ renderCategory(); return; }
   if(S.view === 'catalog'){ renderOverview(); return; }
 
@@ -7612,6 +7792,8 @@ function chrome(){
   }
   if(PR.length){
     const nPr = prRows().filter(r=> r.chk.length).length;
+    if(MS.length){ const nMs = ['US','CA'].reduce((t, m)=> t + msRows(m).filter(r=> r.bad.length).length, 0);
+      document.getElementById('msBtn').innerHTML = 'Measurements' + (nMs ? `<span class="badge">${nMs}</span>` : ''); }
     document.getElementById('prBtn').innerHTML = 'Master SKU' + (nPr ? `<span class="badge">${nPr}</span>` : '');
   }
   if(BS.length){
@@ -7806,6 +7988,7 @@ const lpBtn    = document.getElementById('lpBtn');
 const vrBtn    = document.getElementById('vrBtn');
 const bsBtn    = document.getElementById('bsBtn');
 const prBtn    = document.getElementById('prBtn');
+const msBtn    = document.getElementById('msBtn');
 
 let PANEL_BEFORE_CPT = null;
 
@@ -7814,7 +7997,7 @@ function go(view){
   // The CPT view has its own controls, so the filter panel folds away while
   // it is open and comes back as it was when you leave.
   // The CPT and Buy Box views both own the screen
-  const own = x=> ['cpt','bb','lc','lp','vr','bs','pr','category','catalog'].indexOf(x) !== -1;
+  const own = x=> ['cpt','bb','lc','lp','vr','bs','pr','ms','category','catalog'].indexOf(x) !== -1;
   if(own(view) && !own(S.view)){
     PANEL_BEFORE_CPT = !document.getElementById('panel').hidden;
     setPanel(false);
@@ -7834,6 +8017,7 @@ function go(view){
   vrBtn.setAttribute('aria-pressed', view === 'vr');
   bsBtn.setAttribute('aria-pressed', view === 'bs');
   prBtn.setAttribute('aria-pressed', view === 'pr');
+  msBtn.setAttribute('aria-pressed', view === 'ms');
   catalogBtn.setAttribute('aria-pressed', view === 'catalog');
   render();
 }
@@ -7846,6 +8030,7 @@ lpBtn.onclick    = ()=> go('lp');
 vrBtn.onclick    = ()=> go('vr');
 bsBtn.onclick    = ()=> go('bs');
 prBtn.onclick    = ()=> go('pr');
+msBtn.onclick    = ()=> go('ms');
 
 homeBtn.onclick    = ()=> go('checklist');
 catalogBtn.onclick = ()=> go('catalog');
