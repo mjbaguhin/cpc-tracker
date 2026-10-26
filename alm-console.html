@@ -5119,13 +5119,15 @@ function glKeyOf(name){
   return /lawn|patio|garden/.test(t) ? 'lawn' : /kitchen/.test(t) ? 'kitchen' : /^home/.test(t) ? 'home' : /pet/.test(t) ? 'pet' :
     /drug|health/.test(t) ? 'drug' : /biss|industrial/.test(t) ? 'biss' : /furniture/.test(t) ? 'furniture' : /office/.test(t) ? 'office' : /sport/.test(t) ? 'sports' : t;
 }
+// The report is a stand-in until Haris has live GL values: always say so, with its age
+function glAge(){ return GLX && GLX.snapshot ? Math.max(0, Math.floor((Date.now() - new Date(GLX.snapshot + 'T12:00:00').getTime()) / 86400000)) : null; }
 function glFromReport(r){
   const raw = GLX && GLX.gl && GLX.gl[r.mk] && GLX.gl[r.mk][r.asin];
   if(!raw || !r.c || !r.c.gl) return null;
   const e = r.c.gl.e || '';
-  if(!e) return {s:'blank', a: GL_NAME[raw] || raw, note:`From the FBA Inventory report, ${GLX.snapshot}`};
+  if(!e) return {s:'blank', a: GL_NAME[raw] || raw, note:`Temporary: from the FBA Inventory report, ${GLX.snapshot}`};
   return {s: glKeyOf(e) === (GL_KEY[raw] || raw) ? 'match' : 'wrong', e, a: GL_NAME[raw] || raw,
-          note:`From the FBA Inventory report, ${GLX.snapshot} (${raw})`};
+          note:`Temporary: from the FBA Inventory report, ${GLX.snapshot} (${glAge()} days old), until live GL values are ready. Raw value ${raw}`};
 }
 function cgRows(mk){
   return CG.filter(r=> r.mk === (mk || CG_F.mk)).map(r=>{
@@ -5199,7 +5201,7 @@ function renderCategory(){
       tile('Category correct %', pct + '%', pct >= 98 ? 'good' : pct >= 90 ? 'warn' : 'bad', `${ok} of ${checked} checks match (path and node count as one)${oosTxt}`)+
       tile('Listings 100% correct', `${good.length}<span style="font-size:1rem;color:var(--c-night-mut)"> of ${all.length}</span>`, good.length === all.length ? 'good' : 'warn', '')+
       tile('Listings with a wrong category', wrong.length, wrong.length ? 'bad' : 'good', wrong.length ? list(wrong) : 'None')+
-      t1('GL wrong', 'gl') + t1('Product Type wrong', 'pt') + t1('Search dept wrong', 'sd') + t1('Full path wrong', 'path') + t1('ITK wrong', 'itk') + t1('Browse node wrong', 'node')+
+      (()=>{ const t = t1('GL wrong', 'gl'); return CG_F.mk === 'US' && GLX && GLX.snapshot ? t.replace(/<div class="n">([\s\S]*?)<\/div><\/div>$/, (m, n)=> `<div class="n">${n} \u00b7 temporary report ${esc(GLX.snapshot)}</div></div>`) : t; })() + t1('Product Type wrong', 'pt') + t1('Search dept wrong', 'sd') + t1('Full path wrong', 'path') + t1('ITK wrong', 'itk') + t1('Browse node wrong', 'node')+
       tile('Blank in Master SKU', blank.length, blank.length ? 'warn' : 'good', blank.length ? 'Correct value missing' : 'None')+
       rbTile(all, 'Breaks an Amazon category rule')+
     '</div></section>'+
@@ -6854,7 +6856,7 @@ function renderOverview(){
       (inCase ? `<br>Already raised with Amazon (case on file): <b>${inCase}</b>` : ''),
       ovCount(live, r=> r.bad, k=> (CG_COLS.find(c=> c[0] === k) || [k, k])[1] + ' wrong')
         .concat(RB && live.filter(r=> (r.rb || []).some(h=> h.sev === 'amazon')).length ? [['Break an Amazon category rule', live.filter(r=> (r.rb || []).some(h=> h.sev === 'amazon')).length]] : []), 'quickCat',
-      mk === 'US' ? '<div class="ov-note">GL shows Can\u2019t check until BigQuery has product-group.</div>' : '', ovPct(good.length, live.length)));
+      mk === 'US' ? (GLX && GLX.snapshot ? `<div class="ov-note">GL is temporary: FBA Inventory report, ${esc(GLX.snapshot)} (${glAge()} days old), until live GL values are ready.</div>` : '<div class="ov-note">GL: no report loaded yet.</div>') : '<div class="ov-note">GL can\u2019t be checked for CA yet.</div>', ovPct(good.length, live.length)));
   });
   withMk2('US', ()=>{
   // CPT tracker
