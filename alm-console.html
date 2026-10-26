@@ -2847,6 +2847,7 @@ const CPT_RANGE = [
 
 // What each sortable CPT column sorts on
 const CPT_SORT = {
+  tier: r=> (TIER_RANK[r.tier] !== undefined ? TIER_RANK[r.tier] : 9), 
   product: r=> cptTitle(r),
   ours:    r=> r.ours,
   sale:    r=> r.sale,
@@ -3196,6 +3197,7 @@ function cptRowHtml(r){
             `<div class="p-id"><span>SKU</span>${skuL(r.sku, MK2)}${cpy(r.sku)}</div>`+
             `<div class="p-id"><span>ASIN</span>${asinL(r.asin, MK2)}${cpy(r.asin)}</div>`+
             (r.size ? `<span class="p-size">${esc(r.size)}</span>` : '')+
+            (r.tier ? `<span class="p-size">Tier ${esc(r.tier)}</span>` : '')+
             stockTag(r)+
           '</td>'+
           `<td class="c"><span class="cpill ours" data-tip="${esc(TIPS.ours)}">${usd(r.ours)}</span></td>`+
@@ -3943,6 +3945,7 @@ function bbNext(r){
 }
 
 const BB_SORT = {
+  tier: r=> (TIER_RANK[r.tier] !== undefined ? TIER_RANK[r.tier] : 9), 
   product: r=> r.name, has: r=> r.has ? 1 : 0, why: r=> r.why ? Object.keys(BB_WHY).indexOf(r.why) : 99,
   us: r=> r.us, ca: r=> r.ca, ours: r=> r.ours, bb: r=> r.bb, w30: r=> r.win ? r.win.d30 : null, rb: r=> -((r.rb || []).length),
   others: r=> (r.others || []).length
@@ -4737,7 +4740,7 @@ function lcChip(x){
   return `<span class="lcchip ${d[1]}" data-tip="${esc(tip)}">${d[0]}</span>`;
 }
 
-const LC_SORT = { product: r=> r.name, stock: r=> stockOf(r, MK2), pct: r=> r.pct, bad: r=> r.bad.length, since: r=> r.since || '',
+const LC_SORT = { tier: r=> (TIER_RANK[r.tier] !== undefined ? TIER_RANK[r.tier] : 9), product: r=> r.name, stock: r=> stockOf(r, MK2), pct: r=> r.pct, bad: r=> r.bad.length, since: r=> r.since || '',
   rb: r=> -(r.rbA.length * 100 + r.rbB.length * 10 + r.rb.length) };
 LC_COLS.forEach(c=> LC_SORT['f_' + c[0]] = r=> r.nolive ? 9 : stRank((r.f || {})[c[0]]));
 
@@ -4969,7 +4972,7 @@ function lpRows(){
   }).map(r=> Object.assign(r, {rb: rbScreenRow('lp', r)}));
 }
 
-const LP_SORT = {product: r=> r.name, stock: r=> stockOf(r, MK2), set: r=> r.set ? 1 : 0, live: r=> r.live, ours: r=> r.ours, todo: r=> r.set ? 1 : 0, rb: r=> -((r.rb || []).length)};
+const LP_SORT = {tier: r=> (TIER_RANK[r.tier] !== undefined ? TIER_RANK[r.tier] : 9), product: r=> r.name, stock: r=> stockOf(r, MK2), set: r=> r.set ? 1 : 0, live: r=> r.live, ours: r=> r.ours, todo: r=> r.set ? 1 : 0, rb: r=> -((r.rb || []).length)};
 
 function renderLp(){
   document.getElementById('msg').hidden = true;
@@ -5165,7 +5168,7 @@ function cgChip(x, nolive){
   return `<span class="lcchip ${d[1]}" data-tip="${esc((x && x.note) || d[2])}">${d[0]}</span>`;
 }
 
-const CG_SORT = { rb: r=> -((r.rb || []).length), product: r=> r.name, stock: r=> stockOf(r, CG_F.mk), pct: r=> r.pct, since: r=> r.since || '',
+const CG_SORT = { tier: r=> (TIER_RANK[r.tier] !== undefined ? TIER_RANK[r.tier] : 9), rb: r=> -((r.rb || []).length), product: r=> r.name, stock: r=> stockOf(r, CG_F.mk), pct: r=> r.pct, since: r=> r.since || '',
   cs: r=> !r.bad.length ? 2 : cgCaseInfo(r) ? 1 : 0 };
 CG_COLS.forEach(c=> CG_SORT['f_' + c[0]] = r=> r.nolive ? 9 : stRank((r.c || {})[c[0]]));
 
@@ -5838,7 +5841,7 @@ function vrCaseInfo(r){
 function vrFamilyRows(key, mk){
   return vrRows(mk).filter(r=>{ const p = parentOf(r); return (p.pasin && p.pasin === key) || (!p.pasin && p.psku === key); }).filter(r=> r.caseable.length);
 }
-const VR_SORT = { product: r=> r.name, stock: r=> stockOf(r, VR_F.mk), pct: r=> r.pct, since: r=> r.since || '',
+const VR_SORT = { tier: r=> (TIER_RANK[r.tier] !== undefined ? TIER_RANK[r.tier] : 9), product: r=> r.name, stock: r=> stockOf(r, VR_F.mk), pct: r=> r.pct, since: r=> r.since || '',
   cs: r=> !r.caseable.length ? 2 : vrCaseInfo(r) ? 1 : 0 };
 const VR_RANK = {split:0, wrong:0, unknown:3, blank:4, match:6, na:7};
 VR_COLS.forEach(c=> VR_SORT['f_' + c[0]] = r=> r.nolive ? 9 : ((r.c || {})[c[0]] ? (VR_RANK[r.c[c[0]].s] !== undefined ? VR_RANK[r.c[c[0]].s] : 5) : 9));
@@ -6256,7 +6259,7 @@ function bsRowsRaw(mk){
     return o;
   });
 }
-const BS_SORT = { product: r=> r.name, stock: r=> stockOf(r, BS_F.mk), cur: r=> r.cur, d30: r=> r.d30, rev: r=> r.rev, rev30: r=> r.rev30,
+const BS_SORT = { tier: r=> (TIER_RANK[r.tier] !== undefined ? TIER_RANK[r.tier] : 9), product: r=> r.name, stock: r=> stockOf(r, BS_F.mk), cur: r=> r.cur, d30: r=> r.d30, rev: r=> r.rev, rev30: r=> r.rev30,
   bsr: r=> r.bsr || 1e12, avg30: r=> r.avg30 || 1e12, trend: r=> r.trend, sold: r=> r.sold, rb: r=> -((r.rb || []).length),
   sync: r=> -((r.off || []).length) };
 function bsSyncChip(r){
@@ -6715,9 +6718,21 @@ const SEL = {};
 const SEL_ATTR = ['data-lc','data-cg','data-vr','data-bb','data-bs','data-pr','data-asin','data-lp'];
 function selSet(){ const v = S.view || 'x'; return SEL[v] = SEL[v] || new Set(); }
 function selKey(tr){ for(const a of SEL_ATTR){ const k = tr.getAttribute(a); if(k) return k; } return ''; }
+/* Sort by SKU tier in every module (Oct 26): A, B, N, C, X (TIER_RANK), click again to reverse */
+const TIER_MODS = {lc:['LC_F','renderLc'], lp:['LP_F','renderLp'], bb:['BB_F','renderBb'], category:['CG_F','renderCategory'],
+  vr:['VR_F','renderVariation'], bs:['BS_F','renderBsr'], cpt:['CPT_F','renderCpt'], pr:['PR_F','renderProducts']};
+function tierBtn(tools){
+  const m = TIER_MODS[S.view]; if(!m || tools.querySelector('.tierbtn')) return;
+  const F = window.eval(m[0]), on = F.sort === 'tier';
+  const b = document.createElement('button'); b.className = 'tierbtn'; b.setAttribute('aria-pressed', on);
+  b.textContent = on ? (F.dir === 1 ? 'Tier A \u2192 X' : 'Tier X \u2192 A') : 'Sort by tier';
+  b.onclick = ()=>{ if(F.sort === 'tier') F.dir = -F.dir; else { F.sort = 'tier'; F.dir = 1; } window.eval(m[1])(); };
+  tools.insertBefore(b, tools.querySelector('.count') || null);
+}
 function selBar(view){
   const n = selSet().size, tools = view.querySelector('.cpt-tools');
   if(!tools) return;
+  tierBtn(tools);
   let bar = tools.querySelector('.selbar');
   if(!bar){ bar = document.createElement('span'); bar.className = 'selbar'; bar.style.cssText = 'display:inline-flex;gap:.35rem;align-items:center'; tools.appendChild(bar); }
   bar.innerHTML = (n ? `<b style="color:var(--accent,#2b6cb0)">${n} ticked</b> <span class="mut" style="font-size:.75rem">Downloads use these</span> <button data-selclear="1">Clear</button>` : '') +
