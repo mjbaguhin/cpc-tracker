@@ -5224,6 +5224,9 @@ function renderCategory(){
     `<span class="count">${rows.length} of ${all.length}</span></div>`;
   html += (()=>{ const n = all.filter(r=> r.c && r.c.path && r.c.path.shared).length;
       return n ? `<div class="why"><b>${n} listing${n === 1 ? '' : 's'} marked \u201cOK, shared node\u201d:</b> in the correct browse node, shown by Amazon under a different path that it treats as the same. Counted as correct. No case needed.</div>` : ''; })();
+  html += (()=>{ const bad = x=> x && CG_BAD.indexOf(x.s) !== -1 && !x.shared && !x.inNode;
+      const n = all.filter(r=> r.c && (bad(r.c.path) || bad(r.c.node))).length;
+      return n ? `<div class="why" style="border-left:3px solid var(--warn,#c98a00)"><b>${n} listing${n === 1 ? ' has' : 's have'} a browse path or browse node problem. Seen this before: see KB, PDP Browse Path Issues.</b> Fix the copy first (the product word such as \u201cDoormat\u201d in the title, no \u201cOutdoor\u201d in the title, no \u201cRug\u201d in the title or Item Highlights), test on one child, and check the breadcrumb in a few hours. Open a case only if that fails. <a href="${KB_PATH_DOC}" target="_blank" rel="noopener">Open the KB doc</a></div>` : ''; })();
 
   if(!CG.length){
     html += CG_ERR ? '<div class="cpt-empty"><b>Category feed not found yet</b>Run pushCategoryJson in the CPC Keepa Fetcher project. It creates category.json.</div>'
