@@ -69,7 +69,16 @@ header h1{
 }
 #homeBtn{margin-left:auto}
 #homeBtn[hidden],#casesBtn[hidden]{display:none !important}
-#quickCat{margin-left:auto}
+#quickCat{margin-left:0}
+#navGroups{display:flex;flex-wrap:wrap;align-items:flex-end;gap:.5rem 0;margin-left:auto}
+#navGroups .ng{display:flex;flex-direction:column;gap:.3rem;padding:0 .9rem;border-left:1px solid rgba(255,255,255,.14)}
+#navGroups .ng:first-child{border-left:0;padding-left:0}
+#navGroups .ng-tools{border-left:0;padding-right:0}
+#navGroups .ng-l{font-size:.6rem;letter-spacing:.08em;text-transform:uppercase;color:#93a0b0;display:flex;align-items:center;gap:.35rem;white-space:nowrap}
+#navGroups .ng-t{font-size:.62rem;letter-spacing:0;padding:0 .4rem;border-radius:9px;background:#5a2a2a;color:#ffd7d2;line-height:1.35}
+#navGroups .ng-t:empty{display:none}
+#navGroups .ng-b{display:flex;flex-wrap:wrap;gap:.4rem}
+@media (max-width:700px){ #navGroups{margin-left:0;flex:1 1 100%} #navGroups .ng{padding:0 .6rem 0 0;border-left:0} }
 #homeBtn[aria-pressed="true"],#quickCat[aria-pressed="true"],
 #casesBtn[aria-pressed="true"],
 #cptBtn[aria-pressed="true"],#bbBtn[aria-pressed="true"],#lcBtn[aria-pressed="true"],#lpBtn[aria-pressed="true"],#vrBtn[aria-pressed="true"],#bsBtn[aria-pressed="true"],#prBtn[aria-pressed="true"],
@@ -789,18 +798,19 @@ a.idl:hover{color:var(--accent);border-bottom-style:solid}
   <h1>ALM Console</h1>
   <span id="meta">Loading</span>
   <button id="homeBtn" hidden>Checklist</button>
-  <button id="quickCat">Category</button>
   <button id="casesBtn" hidden>Cases</button>
-  <button id="cptBtn">CPT tracker</button>
-  <button id="bbBtn">Buy Box</button>
-  <button id="lcBtn">Listing Copy</button>
-  <button id="lpBtn">List Price</button>
-  <button id="vrBtn">Variation</button>
-  <button id="bsBtn">BSR</button>
-  <button id="prBtn">Master SKU</button>
-  <button id="catalogBtn">Catalog</button>
-  <button id="toggle" aria-expanded="true">Filters</button>
-  <button id="fs" title="Fullscreen">Full screen</button>
+  <!-- Modules grouped by how MJ checks them each day (Oct 26) -->
+  <nav id="navGroups" aria-label="Modules">
+    <div class="ng"><div class="ng-l">Today</div><div class="ng-b"><button id="catalogBtn">Catalog</button></div></div>
+    <div class="ng"><div class="ng-l">Price and Buy Box <span class="ng-t" data-ngt="price"></span></div>
+      <div class="ng-b" data-ng="price"><button id="cptBtn">CPT tracker</button><button id="bbBtn">Buy Box</button><button id="lpBtn">List Price</button></div></div>
+    <div class="ng"><div class="ng-l">Listing health <span class="ng-t" data-ngt="listing"></span></div>
+      <div class="ng-b" data-ng="listing"><button id="lcBtn">Listing Copy</button><button id="quickCat">Category</button><button id="vrBtn">Variation</button></div></div>
+    <div class="ng"><div class="ng-l">Performance <span class="ng-t" data-ngt="perf"></span></div>
+      <div class="ng-b" data-ng="perf"><button id="bsBtn">BSR</button></div></div>
+    <div class="ng"><div class="ng-l">Reference</div><div class="ng-b"><button id="prBtn">Master SKU</button></div></div>
+    <div class="ng ng-tools"><div class="ng-l">&nbsp;</div><div class="ng-b"><button id="toggle" aria-expanded="true">Filters</button><button id="fs" title="Fullscreen">Full screen</button></div></div>
+  </nav>
 </header>
 <section id="ov" hidden></section>
 
@@ -6757,6 +6767,21 @@ const SEL = {};
 const SEL_ATTR = ['data-lc','data-cg','data-vr','data-bb','data-bs','data-pr','data-asin','data-lp'];
 function selSet(){ const v = S.view || 'x'; return SEL[v] = SEL[v] || new Set(); }
 function selKey(tr){ for(const a of SEL_ATTR){ const k = tr.getAttribute(a); if(k) return k; } return ''; }
+/* Group totals in the header (Oct 26): the sum of the badges in each group */
+function ngTotals(){
+  document.querySelectorAll('#navGroups [data-ng]').forEach(g=>{
+    const n = [...g.querySelectorAll('.badge')].reduce((t, b)=> t + (parseInt(b.textContent, 10) || 0), 0);
+    const t = document.querySelector(`#navGroups [data-ngt="${g.dataset.ng}"]`);
+    const v = n ? String(n) : '';
+    if(t && t.textContent !== v) t.textContent = v;
+  });
+}
+(function(){
+  const nav = document.getElementById('navGroups'); if(!nav || typeof MutationObserver === 'undefined') return;
+  let q = false;
+  new MutationObserver(()=>{ if(q) return; q = true; Promise.resolve().then(()=>{ q = false; ngTotals(); }); })
+    .observe(nav, {childList: true, subtree: true, characterData: true});
+})();
 /* Sort by SKU tier in every module (Oct 26): A, B, N, C, X (TIER_RANK), click again to reverse */
 const TIER_MODS = {lc:['LC_F','renderLc'], lp:['LP_F','renderLp'], bb:['BB_F','renderBb'], category:['CG_F','renderCategory'],
   vr:['VR_F','renderVariation'], bs:['BS_F','renderBsr'], cpt:['CPT_F','renderCpt'], pr:['PR_F','renderProducts']};
