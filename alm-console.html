@@ -923,6 +923,7 @@ const BS_SRC = 'https://raw.githubusercontent.com/mjbaguhin/cpc-tracker/main/bsr
 const CH_SRC = 'https://raw.githubusercontent.com/mjbaguhin/cpc-tracker/main/history.json';
 const PR_SRC = 'https://raw.githubusercontent.com/mjbaguhin/cpc-tracker/main/products.json';
 const GL_SRC = 'https://raw.githubusercontent.com/mjbaguhin/cpc-tracker/main/gl.json';
+const SIG_SRC = 'https://raw.githubusercontent.com/mjbaguhin/cpc-tracker/main/signals.json';
 
 // Amazon's case creation entry point
 const CASE_URL = 'https://sellercentral.amazon.com/help/center?redirectSource=HelpHub';
@@ -1036,6 +1037,9 @@ async function load(fresh){
   grab(CG_SRC, 'json', fresh)
     .then(j => { buildCg(j); if(S.view === 'category') render(); else if(S.view === 'catalog') render(); else chrome(); })
     .catch(e => { CG_ERR = e.message; if(S.view === 'category') render(); });
+  grab(SIG_SRC, 'json', fresh)
+    .then(j => { SIG = j || null; if(S.view === 'category' || S.view === 'catalog') render(); })
+    .catch(()=> { SIG = null; });
   grab(GL_SRC, 'json', fresh)
     .then(j => { GLX = j || null; if(S.view === 'category' || S.view === 'catalog') render(); })
     .catch(()=> { GLX = null; });
@@ -5113,6 +5117,17 @@ function pcBadge(r){
    the Master SKU name (Lawn & Patio) with the GL crosswalk (KB, Sep 9 2026).
    US only: the report has no CA rows. */
 let GLX = null;
+/* Category signals (signals.json, Category Signals script, Oct 26): the page's real
+   breadcrumb (Cowork reads it in Chrome) and the categories the listing ranks in
+   (Keepa BSR). Both can show a stuck category when Keepa's node looks right.
+   They are flags, not part of the Category correct %. */
+let SIG = null;
+function cgSig(r){
+  const s = SIG && SIG.rows && SIG.rows[r.mk + '|' + r.asin]; if(!s) return {};
+  const e = r.exp && r.exp.node ? String(r.exp.node) : '';
+  return {crumb: s.crumb && (s.crumb.s === 'short' || s.crumb.s === 'other') ? s.crumb : null, crumbOk: s.crumb && s.crumb.s === 'ok' ? s.crumb : null,
+          rank: e && s.rank && s.rank.cats.length && s.rank.cats.indexOf(e) === -1 ? s.rank : null};
+}
 const GL_KEY = {gl_lawn_and_garden:'lawn', gl_home:'home', gl_kitchen:'kitchen', gl_pet_products:'pet', gl_biss:'biss',
   gl_drugstore:'drug', gl_furniture:'furniture', gl_office_product:'office', gl_sports:'sports'};
 const GL_NAME = {gl_lawn_and_garden:'Lawn and Garden', gl_home:'Home', gl_kitchen:'Kitchen', gl_pet_products:'Pet Products', gl_biss:'Biss',
@@ -5154,6 +5169,7 @@ function cgRows(mk){
       o.checked = chk; o.ok = okn; o.pct = chk ? Math.round(okn / chk * 1000) / 10 : null;
     }
     o.rb = rbScreenRow('cg', o);
+    o.sig = cgSig(o);
     o.cst = caseNext(r.kase, !r.nolive && !bad.length);
     return o;
   });
@@ -5181,7 +5197,8 @@ function renderCategory(){
   const pct = checked ? Math.round(ok / checked * 1000) / 10 : 0;
   const has = k=> all.filter(r=> r.bad.indexOf(k) !== -1);
   const wrong = all.filter(r=> r.bad.length), good = all.filter(r=> r.allOk), blank = all.filter(r=> r.blank.length);
-  const pick = {good, wrong, gl: has('gl'), pt: has('pt'), sd: has('sd'), path: has('path'), itk: has('itk'), node: has('node'), blank, rb: all.filter(r=> (r.rb || []).length),
+  const crumbBad = all.filter(r=> r.sig && r.sig.crumb), rankBad = all.filter(r=> r.sig && r.sig.rank);
+  const pick = {good, wrong, gl: has('gl'), pt: has('pt'), sd: has('sd'), path: has('path'), itk: has('itk'), node: has('node'), blank, rb: all.filter(r=> (r.rb || []).length), crumb: crumbBad, rank: rankBad,
                 casefu: all.filter(r=> r.cst && r.cst.g === 'follow')};
 
   let rows = pick[CG_F.show] || all;
@@ -5191,7 +5208,7 @@ function renderCategory(){
        : sortBy(rows, r=> (r.nolive ? 2000 : 0) + (r.pct === null ? 1000 : r.pct) * 10 + (TIER_RANK[r.tier] !== undefined ? TIER_RANK[r.tier] : 5), 1);
   CG_VIEW = rows;
 
-  const order = ['all','good','wrong','gl','pt','sd','path','itk','node','blank']; let n = 0;
+  const order = ['all','good','wrong','gl','pt','sd','path','itk','node','blank','crumb','rank']; let n = 0;
   const tile = (k, val, cls, note)=>{ const f = order[n++];
     return `<div class="cpt-tile bbtile${CG_F.show === f ? ' on' : ''}" role="button" tabindex="0" data-show="${f}" title="Show these in the table"><div class="k">${k}</div><div class="v ${cls || ''}">${val}</div><div class="n">${note || '&nbsp;'}</div></div>`; };
   const list = a=> esc(a.map(r=> r.sku).slice(0,3).join(', ')) + (a.length > 3 ? '\u2026' : '');
@@ -5206,13 +5223,15 @@ function renderCategory(){
       tile('Listings with a wrong category', wrong.length, wrong.length ? 'bad' : 'good', wrong.length ? list(wrong) : 'None')+
       (()=>{ const t = t1('GL wrong', 'gl'); return CG_F.mk === 'US' && GLX && GLX.snapshot ? t.replace(/<div class="n">([\s\S]*?)<\/div><\/div>$/, (m, n)=> `<div class="n">${n} \u00b7 temporary report ${esc(GLX.snapshot)}</div></div>`) : t; })() + t1('Product Type wrong', 'pt') + t1('Search dept wrong', 'sd') + t1('Full path wrong', 'path') + t1('ITK wrong', 'itk') + t1('Browse node wrong', 'node')+
       tile('Blank in Master SKU', blank.length, blank.length ? 'warn' : 'good', blank.length ? 'Correct value missing' : 'None')+
+      tile('Page breadcrumb stops short', SIG ? crumbBad.length : '\u2014', !SIG ? '' : crumbBad.length ? 'warn' : 'good', !SIG ? 'No breadcrumb check yet' : crumbBad.length ? list(crumbBad) + ' \u00b7 not in the %' : 'All pages OK')+
+      tile('Ranks outside its category (Keepa BSR)', SIG ? rankBad.length : '\u2014', !SIG ? '' : rankBad.length ? 'warn' : 'good', !SIG ? 'No rank data yet' : rankBad.length ? list(rankBad) + ' \u00b7 not in the %' : 'None')+
       rbTile(all, 'Breaks an Amazon category rule')+
     '</div></section>'+
     rbBanner()+ caseSumLine(caseSum(all.map(r=> r.cst)), 'cgCaseFu')+
     '<div class="cpt-tools"><div class="seg" id="cgMk">'+
       ['US','CA'].map(m=> `<button data-mk="${m}" aria-pressed="${CG_F.mk === m}">${m === 'US' ? 'Amazon US' : 'Amazon CA'} ${cgRows(m).filter(r=> r.bad.length).length ? '<span class="badge" style="margin-left:.3rem">' + cgRows(m).filter(r=> r.bad.length).length + '</span>' : ''}</button>`).join('')+
     '</div><div class="seg" id="cgSeg">'+
-      [['all','All ' + all.length], ['wrong','Wrong ' + wrong.length], ['blank','Blank in Master SKU ' + blank.length]]
+      [['all','All ' + all.length], ['wrong','Wrong ' + wrong.length], ['blank','Blank in Master SKU ' + blank.length], ['crumb','Breadcrumb ' + crumbBad.length], ['rank','BSR category ' + rankBad.length]]
         .map(b=> `<button data-show="${b[0]}" aria-pressed="${CG_F.show === b[0]}">${b[1]}</button>`).join('')+
     '</div><div class="seg" id="cgTier">'+
       ['', 'A', 'B', 'C', 'X', 'N'].map(t=> `<button data-t="${t}" aria-pressed="${CG_F.tier === t}">${t ? 'Tier ' + t : 'All tiers'}</button>`).join('')+
@@ -5224,9 +5243,6 @@ function renderCategory(){
     `<span class="count">${rows.length} of ${all.length}</span></div>`;
   html += (()=>{ const n = all.filter(r=> r.c && r.c.path && r.c.path.shared).length;
       return n ? `<div class="why"><b>${n} listing${n === 1 ? '' : 's'} marked \u201cOK, shared node\u201d:</b> in the correct browse node, shown by Amazon under a different path that it treats as the same. Counted as correct. No case needed.</div>` : ''; })();
-  html += (()=>{ const bad = x=> x && CG_BAD.indexOf(x.s) !== -1 && !x.shared && !x.inNode;
-      const n = all.filter(r=> r.c && (bad(r.c.path) || bad(r.c.node))).length;
-      return n ? `<div class="why" style="border-left:3px solid var(--warn,#c98a00)"><b>${n} listing${n === 1 ? ' has' : 's have'} a browse path or browse node problem. Seen this before: see KB, PDP Browse Path Issues.</b> Fix the copy first (the product word such as \u201cDoormat\u201d in the title, no \u201cOutdoor\u201d in the title, no \u201cRug\u201d in the title or Item Highlights), test on one child, and check the breadcrumb in a few hours. Open a case only if that fails. <a href="${KB_PATH_DOC}" target="_blank" rel="noopener">Open the KB doc</a></div>` : ''; })();
 
   if(!CG.length){
     html += CG_ERR ? '<div class="cpt-empty"><b>Category feed not found yet</b>Run pushCategoryJson in the CPC Keepa Fetcher project. It creates category.json.</div>'
@@ -5302,7 +5318,8 @@ function renderCategory(){
 const KB_PATH_DOC = 'https://claude.ai/artifact/GWKrWfQVMGcCnwazmfa1PB';
 function cgKbHint(r){
   const c = r.c || {}, bad = x=> x && CG_BAD.indexOf(x.s) !== -1 && !x.shared && !x.inNode;
-  if(!bad(c.path) && !bad(c.node)) return '';
+  const sg = r.sig || {};
+  if(!bad(c.path) && !bad(c.node) && !sg.crumb && !sg.rank) return '';
   return '<div class="why" style="border-left:3px solid var(--warn,#c98a00)"><b>Seen this before: see KB, PDP Browse Path Issues.</b>'+
     '<ul style="margin:.3rem 0 0;padding-left:1.1rem">'+
     '<li>Fix the copy first. It worked within hours every time; cases took days.</li>'+
@@ -5337,6 +5354,8 @@ function openCg(r){
       `<dt>To fix</dt><dd>${r.bad.length ? esc(r.bad.map(k=> CG_COLS.find(c=> c[0] === k)[1]).join(', ')) : 'Nothing'}</dd>`+
       `<dt>Last change</dt><dd>${r.since ? esc(shortDate(r.since)) : 'No change seen'}${r.liveChecked ? ', checked ' + esc(shortDate(r.liveChecked)) : ''}</dd>`+
     '</dl>'+
+    (r.sig && r.sig.crumb ? `<div class="why" style="border-left:3px solid var(--warn,#c98a00)"><b>Page breadcrumb (${esc(shortDate(r.sig.crumb.d))}):</b> ${esc(r.sig.crumb.text)}. It should end at <b>${esc(r.sig.crumb.want)}</b>.</div>` : '')+
+    (r.sig && r.sig.rank ? `<div class="why" style="border-left:3px solid var(--warn,#c98a00)"><b>BSR category (Keepa, ${esc(shortDate(r.sig.rank.d))}):</b> ranks in ${esc(r.sig.rank.cats.join(', '))}, not in the correct node ${esc(String(r.exp && r.exp.node || ''))}.</div>` : '')+
     cgKbHint(r)+
     (r.bad.length ? (()=>{ const ci = cgCaseInfo(r);
       return `<div class="act-row"><button class="work strong" id="cgOne">${ci ? 'Follow up on case ' + esc(ci.id) : 'Draft case'}</button>${(()=>{ const p = parentOf(r), k = p.pasin || p.psku; const n = k ? cgFamilyRows(k, r.mk).length : 0;
