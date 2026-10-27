@@ -6345,6 +6345,8 @@ function bsRowsRaw(mk){
 const BS_SORT = { tier: r=> (TIER_RANK[r.tier] !== undefined ? TIER_RANK[r.tier] : 9), product: r=> r.name, stock: r=> stockOf(r, BS_F.mk), cur: r=> r.cur, d30: r=> r.d30, rev: r=> r.rev, rev30: r=> r.rev30,
   bsr: r=> r.bsr || 1e12, avg30: r=> r.avg30 || 1e12, trend: r=> r.trend, sold: r=> r.sold, rb: r=> -((r.rb || []).length),
   sync: r=> -((r.off || []).length) };
+// Amber when the family shows a different value (Keepa may lag)
+function bsOff(r, k){ return r.sync && r.sync[k] && r.sync[k].s === 'off' ? ';color:var(--warn,#b7791f)' : ''; }
 function bsSyncChip(r){
   if(!r.par || !r.par.pasin) return '<span class="mut">Standalone</span>';
   const ks = Object.keys(BS_SYNC), have = ks.filter(k=> r.sync[k] && r.sync[k].s !== 'na');
@@ -6436,12 +6438,13 @@ function renderBsr(){
     const H = (k, label, cls, tip, d)=> `<th data-s="${k}" data-d="${d || 'asc'}" class="${cls || ''}">${label}${tip ? `<span class="qi" tabindex="0" data-tip="${esc(tip)}">?</span>` : ''}${sortArrow(BS_F, k)}</th>`;
     html += '<table class="cpt-table bb-table lc-table cg-table"><thead><tr>'+
       H('product', 'Product')+
+      // The three MJ watches, side by side (Oct 27)
+      H('cur', 'Star rating', 'b-cpt c', 'The star rating Amazon shows, from Keepa. Amber = differs from the family.')+
+      H('rev', 'Ratings', 'b-cpt c', 'Ratings count Amazon shows. Variation families share one count when reviews are pooled. Amber = differs from the family.', 'desc')+
+      H('bsr', 'BSR', 'b-cpt c', 'Best Sellers Rank in the main category. Lower is better. Amber = far from the family.')+
       H('stock', mk + ' stock', 'num', 'Available units in FBA, from BigQuery.')+
-      H('cur', 'Star rating', 'b-cpt c', 'The star rating Amazon shows, from Keepa.')+
-      H('d30', '30-day change', 'b-cpt c', 'Star rating now minus 30 days ago.')+
-      H('rev', 'Ratings', 'b-gap c', 'Ratings count Amazon shows. Variation families share one count when reviews are pooled.', 'desc')+
+      H('d30', '30-day change', 'b-gap c', 'Star rating now minus 30 days ago.')+
       H('rev30', 'New (30 days)', 'b-gap c', 'Ratings added in the last 30 days.', 'desc')+
-      H('bsr', 'BSR', 'b-sim c', 'Best Sellers Rank in the main category. Lower is better.')+
       H('avg30', '30-day average', 'b-sim c', 'Average daily BSR over the last 30 days we have.')+
       H('trend', 'BSR vs average', 'b-sim c', 'BSR now against its 30-day average. Red means selling slower than usual. Needs 7 days of history.', 'desc')+
       H('sold', 'Bought past month', 'b-move c', 'Amazon\u2019s \u201cbought in past month\u201d count, when Amazon shows one.', 'desc')+
@@ -6453,12 +6456,12 @@ function renderBsr(){
         `<td class="prod"><div class="p-name"><span class="dot" style="background:${r.nolive ? '#94a3b8' : r.flags.some(f=> f !== 'sync') ? '#d64545' : r.flags.length ? '#d99a00' : '#1f9d55'}"></span>${esc(String(r.name).slice(0, 60))}</div>`+
           `<div class="p-id"><span>SKU</span>${skuL(r.sku, mk)}${cpy(r.sku)}</div><div class="p-id"><span>ASIN</span>${asinL(r.asin, mk)}${cpy(r.asin)}</div>`+
           `${r.tier ? `<span class="p-size">Tier ${esc(r.tier)}</span>` : ''}</td>`+
+        `<td class="c" style="font-size:1rem;font-weight:700${bsOff(r, 'cur')}">${bsStars(r.cur)}</td>`+
+        `<td class="c" style="font-size:1rem;font-weight:700${bsOff(r, 'rev')}">${bsInt(r.rev)}</td>`+
+        `<td class="c" style="font-size:1rem;font-weight:700${bsOff(r, 'bsr')}">${r.bsr ? '#' + bsInt(r.bsr) : '<span class="lcchip lc-bad">No BSR</span>'}${bsSpark((r.rk || {}).spark)}</td>`+
         stockTd(r, mk)+
-        `<td class="c">${bsStars(r.cur)}</td>`+
         `<td class="c">${bsDelta(r.d30)}</td>`+
-        `<td class="c">${bsInt(r.rev)}</td>`+
         `<td class="c">${r.rev30 === null ? '<span class="mut">\u2014</span>' : r.rev30 ? '+' + bsInt(r.rev30) : '<span class="mut">0</span>'}</td>`+
-        `<td class="c">${r.bsr ? '#' + bsInt(r.bsr) : '<span class="lcchip lc-bad">No BSR</span>'}${bsSpark((r.rk || {}).spark)}</td>`+
         `<td class="c">${r.avg30 ? '#' + bsInt(r.avg30) : '<span class="mut">\u2014</span>'}</td>`+
         `<td class="c">${r.trend === null ? '<span class="mut">' + (r.days < 7 ? 'needs 7 days' : '\u2014') + '</span>' : bsDelta(-r.trend, '%')}</td>`+
         `<td class="c">${r.sold === null ? '<span class="mut">\u2014</span>' : bsInt(r.sold) + '+'}</td>`+
