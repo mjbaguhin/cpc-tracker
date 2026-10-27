@@ -75,7 +75,22 @@ header h1{
 #navGroups .ng:first-child{border-left:0;padding-left:0}
 #navGroups .ng-tools{border-left:0;padding-right:0}
 #navGroups .ng-l{font-size:.6rem;letter-spacing:.08em;text-transform:uppercase;color:#93a0b0;display:flex;align-items:center;gap:.35rem;white-space:nowrap}
-#navGroups .ng-t{font-size:.62rem;letter-spacing:0;padding:0 .4rem;border-radius:9px;background:#5a2a2a;color:#ffd7d2;line-height:1.35}
+/* Category value cells (Oct 27) */
+td.cgtd{font-size:.82rem;min-width:7rem;vertical-align:top}
+td.cgtdp{min-width:14rem;max-width:22rem}
+.cgv{display:block;line-height:1.3}
+.cgp{font-size:.72rem;line-height:1.35}
+.cgbad{color:#c0392b;font-weight:700}
+.cgshould{display:block;font-size:.7rem;color:var(--muted,#6b7280);margin-top:.15rem}
+.cgln{display:flex;gap:.35rem;align-items:baseline;margin-bottom:.12rem}
+.cglab{flex:0 0 3.4rem;font-size:.62rem;letter-spacing:.04em;text-transform:uppercase;color:var(--muted,#6b7280)}
+#navGroups .ng-t{font-size:.62rem;letter-spacing:0;padding:0 .4rem;border-radius:9px;line-height:1.35}
+/* Percent chips: green 98%+, amber 90 to 98%, red under 90% */
+.badge.pc,.ng-t.pc-g,.ng-t.pc-a,.ng-t.pc-r,.ng-t.pc-n{font-weight:700}
+.pc-g{background:#1f6f43 !important;color:#d9f7e6 !important}
+.pc-a{background:#7a5a12 !important;color:#ffefc7 !important}
+.pc-r{background:#7a2a24 !important;color:#ffd7d2 !important}
+.pc-n{background:#3a4452 !important;color:#c9d3df !important}
 #navGroups .ng-t:empty{display:none}
 #navGroups .ng-b{display:flex;flex-wrap:wrap;gap:.4rem}
 @media (max-width:700px){ #navGroups{margin-left:0;flex:1 1 100%} #navGroups .ng{padding:0 .6rem 0 0;border-left:0} }
@@ -5215,7 +5230,44 @@ function cgChip(x, nolive){
 
 const CG_SORT = { tier: r=> (TIER_RANK[r.tier] !== undefined ? TIER_RANK[r.tier] : 9), rb: r=> -((r.rb || []).length), product: r=> r.name, stock: r=> stockOf(r, CG_F.mk), pct: r=> r.pct, since: r=> r.since || '',
   cs: r=> !r.bad.length ? 2 : cgCaseInfo(r) ? 1 : 0 };
-CG_COLS.forEach(c=> CG_SORT['f_' + c[0]] = r=> r.nolive ? 9 : stRank((r.c || {})[c[0]]));
+// Sort a column by its value, A to Z, so the same GL or product type sit together (Oct 27)
+CG_COLS.forEach(c=> CG_SORT['f_' + c[0]] = r=>{ const x = (r.c || {})[c[0]] || {}; return r.nolive ? '~' : String(cgVal(x, c[0]) || '~').toLowerCase(); });
+/* Category cells show the real value (MJ, Oct 27): the Amazon value; red when wrong,
+   with the Master SKU value under it. GL shows the GL name when it comes from the
+   report, else the Master SKU value marked as can't check. Full path in full, small. */
+function cgVal(x, k){
+  if(!x) return '';
+  const ok = x.s === 'match' || x.shared || x.inNode;
+  if(k === 'gl' && x.s === 'unknown') return x.e || '';
+  return ok ? (x.e || x.a || '') : (x.a || '');   // correct: as the Master SKU sheet writes it
+}
+/* Full path cell (Oct 27): the Master SKU path, Amazon's path (Keepa) and the page
+   breadcrumb (read by Cowork), one small line each. Red = differs. Same browse node
+   counts as correct, as agreed. */
+function cgPathCell(r){
+  if(r.nolive) return '<span class="lcchip lc-gray">Not checked yet</span>';
+  const x = (r.c || {}).path || {}, fmt = t=> esc(String(t || '').replace(/\s*>\s*/g, ' \u203a '));
+  const sg = SIG && SIG.rows && SIG.rows[r.mk + '|' + r.asin], cr = sg && sg.crumb;
+  const amzBad = CG_BAD.indexOf(x.s) !== -1;
+  const pageBad = cr && (cr.s === 'short' || cr.s === 'other');
+  const ln = (lab, t, cls, tip)=> `<span class="cgln"${tip ? ` data-tip="${esc(tip)}"` : ''}><span class="cglab">${lab}</span><span class="cgp${cls ? ' ' + cls : ''}">${t}</span></span>`;
+  return ln('Master', x.e ? fmt(x.e) : '<span class="mut">blank</span>') +
+    ln('Amazon', x.a ? fmt(x.a) : '<span class="mut">\u2014</span>', amzBad ? 'cgbad' : '', x.shared || x.inNode ? (x.note || 'Same browse node: correct') : '') +
+    ln('Page', cr ? fmt(cr.text) + ` <span class="mut">(${esc(shortDate(cr.d))})</span>` : '<span class="mut">not read yet</span>', pageBad ? 'cgbad' : '', cr ? 'Breadcrumb on the product page, read by the daily Cowork check' : 'The daily Cowork page check hasn\u2019t read this page yet');
+}
+function cgCell(x, k, nolive){
+  if(nolive) return '<span class="lcchip lc-gray">Not checked yet</span>';
+  if(!x) return '<span class="mut">\u2014</span>';
+  const path = k === 'path', fmt = t=> esc(String(t || '').replace(/\s*>\s*/g, ' \u203a '));
+  const val = (t, cls)=> `<span class="cgv${path ? ' cgp' : ''}${cls ? ' ' + cls : ''}">${fmt(t)}</span>`;
+  const tip = x.note ? ` data-tip="${esc(x.note)}"` : '';
+  if(x.shared || x.inNode) return `<span${tip}>${val(x.e || x.a)} <span class="mut" style="font-size:.7rem">\u24d8 ${x.shared ? 'shared node' : 'correct node'}</span></span>`;
+  if(x.s === 'match') return `<span${tip}>${val(x.e || x.a)}</span>`;
+  if(CG_BAD.indexOf(x.s) !== -1) return `<span${tip}>${val(x.a || '(blank on Amazon)', 'cgbad')}<span class="cgshould">should be: ${fmt(x.e || '\u2014')}</span></span>`;
+  if(x.s === 'blank') return `<span${tip}>${val(x.a || '\u2014')}<span class="cgshould" style="color:#b7791f">Master SKU is blank</span></span>`;
+  if(x.s === 'unknown' || x.s === 'cantread') return `<span${tip}>${x.e ? val(x.e, 'mut') : '<span class="mut">\u2014</span>'}<span class="cgshould">can\u2019t check on Amazon</span></span>`;
+  return `<span class="mut"${tip}>${x.a ? fmt(x.a) : '\u2014'}</span>`;
+}
 
 function renderCategory(){
   document.getElementById('msg').hidden = true;
@@ -5297,7 +5349,7 @@ function renderCategory(){
         stockTd(r, mk)+
         `<td class="c">${r.nolive ? '<span class="mut">Not checked yet</span>' : r.pct === null ? '<span class="mut">\u2014</span>' : bbBar(r.pct)}</td>`+
         `<td class="c"><span data-rbrow="${esc(r.asin)}" style="cursor:pointer">${rbChip(r.rb || [])}</span></td>`+
-        CG_COLS.map(c=> `<td class="c">${cgChip((r.c || {})[c[0]], r.nolive)}${c[0] === 'path' ? pcBadge(r) : ''}</td>`).join('')+
+        CG_COLS.map(c=> `<td class="cgtd${c[0] === 'path' ? ' cgtdp' : ''}">${c[0] === 'path' ? cgPathCell(r) + pcBadge(r) : cgCell((r.c || {})[c[0]], c[0], r.nolive)}</td>`).join('')+
         `<td>${r.since ? esc(shortDate(r.since)) : '<span class="mut">No change seen</span>'}</td>`+
         `<td>${r.cst ? caseChip(r.cst) : ''}${r.bad.length && (!r.cst || r.cst.g === 'follow' || !r.cst.id) ? `<button class="work strong" data-cgcase="${esc(r.asin)}">${r.cst ? 'Follow up' : 'Draft case'}</button>` : ''}</td>`+
       '</tr>', r=> r.bad.length, 'need a look', CG_F.mk, p=> `<button class="work strong" data-cgfam="${esc(p.pasin || p.psku)}">Draft case for this family</button>`)+
@@ -6819,13 +6871,52 @@ const SEL = {};
 const SEL_ATTR = ['data-lc','data-cg','data-vr','data-bb','data-bs','data-pr','data-asin','data-lp','data-ms'];
 function selSet(){ const v = S.view || 'x'; return SEL[v] = SEL[v] || new Set(); }
 function selKey(tr){ for(const a of SEL_ATTR){ const k = tr.getAttribute(a); if(k) return k; } return ''; }
-/* Group totals in the header (Oct 26): the sum of the badges in each group */
+/* Header shows each module's main % instead of an issue count (MJ, Oct 27).
+   US on the button, CA in the hover tip. Same numbers as each module's first tile:
+   out of stock left out. Green 98%+, amber 90 to 98%, red under 90%. */
+const PCT_CLS = v=> v === null || v === undefined ? 'pc-n' : v >= 98 ? 'pc-g' : v >= 90 ? 'pc-a' : 'pc-r';
+const pct1 = (a, b)=> b ? Math.round(a / b * 1000) / 10 : null;
+function modPct(id, mk){
+  try {
+    if(id === 'cptBtn'){ if(!CPT_US.length) return null; return withMk2(mk, ()=>{ if(mk === 'CA' && !(CPT_CA || []).some(r=> r.cpt !== null)) return null; const r = inStock(cptRows(), mk).filter(x=> x.action !== 'oos'); return pct1(r.length - r.filter(x=> x.action === 'open').length, r.length); }); }
+    if(id === 'bbBtn'){ if(!BB_US.length) return null; return withMk2(mk, ()=>{ if(mk === 'CA' && !(BB_CA || []).some(r=> stockOf(r, 'CA') !== null)) return null; const r = bbRows(), st = r.filter(x=> !isOos(x, mk)); return pct1(st.filter(x=> x.has).length, st.length); }); }
+    if(id === 'lpBtn'){ if(!CPT_US.length) return null; return withMk2(mk, ()=>{ const r = inStock(lpRows(), mk); return pct1(r.filter(x=> x.set).length, r.length); }); }
+    if(id === 'lcBtn'){ if(!LC_US.length || (mk === 'CA' && LC_CA === null)) return null; return withMk2(mk, ()=>{ const r = inStock(lcRows().filter(x=> !x.nolive && x.pct !== null && x.pct !== undefined), mk); return r.length ? Math.round(r.reduce((t, x)=> t + x.pct, 0) / r.length * 10) / 10 : null; }); }
+    if(id === 'quickCat'){ if(!CG.length) return null; const r = inStock(cgRows(mk).filter(x=> !x.nolive), mk); return pct1(r.reduce((t, x)=> t + (x.ok || 0), 0), r.reduce((t, x)=> t + (x.checked || 0), 0)); }
+    if(id === 'vrBtn'){ if(!VR.length) return null; const r = inStock(vrRows(mk).filter(x=> !x.nolive), mk); return pct1(r.reduce((t, x)=> t + (x.ok || 0), 0), r.reduce((t, x)=> t + (x.checked || 0), 0)); }
+    if(id === 'msBtn'){ if(!MS.length) return null; const r = inStock(msRows(mk), mk).filter(x=> x.checked); return pct1(r.reduce((t, x)=> t + x.ok, 0), r.reduce((t, x)=> t + x.checked, 0)); }
+    if(id === 'bsBtn'){ if(!BS.length) return null; const r = inStock(bsRows(mk), mk).filter(x=> x.cur !== null); return pct1(r.filter(x=> x.cur >= 4).length, r.length); }
+  } catch (e) { return null; }
+  return null;
+}
+const NAV_MODS = [['cptBtn','CPT tracker'], ['bbBtn','Buy Box'], ['lpBtn','List Price'], ['lcBtn','Listing Copy'], ['quickCat','Category'], ['vrBtn','Variation'], ['msBtn','Measurements'], ['bsBtn','BSR']];
+function navPercents(){
+  const all = [];
+  NAV_MODS.forEach(([id, name])=>{
+    const b = document.getElementById(id); if(!b) return;
+    const us = modPct(id, 'US'), ca = modPct(id, 'CA');
+    if(us !== null) all.push(us); if(ca !== null) all.push(ca);
+    const show = us !== null ? us : ca;
+    const html = name + (show === null ? '' : `<span class="badge pc ${PCT_CLS(show)}" data-pct="${us === null ? '' : us}">${show}%</span>`);
+    if(b.innerHTML !== html) b.innerHTML = html;
+    b.title = `US ${us === null ? '\u2014' : us + '%'} \u00b7 CA ${ca === null ? '\u2014' : ca + '%'}`;
+  });
+  // Catalog: the average of every module's US and CA %
+  const cb = document.getElementById('catalogBtn');
+  if(cb){ const v = all.length ? Math.round(all.reduce((t, x)=> t + x, 0) / all.length * 10) / 10 : null;
+    const html = 'Catalog' + (v === null ? '' : `<span class="badge pc ${PCT_CLS(v)}">${v}%</span>`); if(cb.innerHTML !== html) cb.innerHTML = html; cb.title = 'Average of every module, US and CA'; }
+  // Master SKU keeps a gray count of Plytix checks
+  const pb = document.getElementById('prBtn');
+  if(pb && typeof PR !== 'undefined' && PR.length){ const n = prRows().filter(r=> r.chk.length).length; const html = 'Master SKU' + (n ? `<span class="badge pc pc-n">${n} checks</span>` : ''); if(pb.innerHTML !== html) pb.innerHTML = html; }
+}
+/* Group labels: the average % of the modules in the group (US) */
 function ngTotals(){
   document.querySelectorAll('#navGroups [data-ng]').forEach(g=>{
-    const n = [...g.querySelectorAll('.badge')].reduce((t, b)=> t + (parseInt(b.textContent, 10) || 0), 0);
+    const ps = [...g.querySelectorAll('.badge[data-pct]')].map(b=> parseFloat(b.dataset.pct)).filter(x=> !isNaN(x));
     const t = document.querySelector(`#navGroups [data-ngt="${g.dataset.ng}"]`);
-    const v = n ? String(n) : '';
-    if(t && t.textContent !== v) t.textContent = v;
+    const avg = ps.length ? Math.round(ps.reduce((a, x)=> a + x, 0) / ps.length * 10) / 10 : null;
+    const v = avg === null ? '' : avg + '%';
+    if(t && t.textContent !== v){ t.textContent = v; t.className = 'ng-t ' + PCT_CLS(avg); }
   });
 }
 (function(){
@@ -7854,6 +7945,7 @@ function chrome(){
   }
   document.getElementById('casesBtn').innerHTML =
     'Cases' + (CASES.length ? `<span class="badge">${CASES.length}</span>` : '');
+  try { navPercents(); } catch (e) { console.warn("navPercents", e); }
 }
 
 function msg(title, sub){
