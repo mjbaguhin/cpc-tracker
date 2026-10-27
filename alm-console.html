@@ -6963,10 +6963,36 @@ function tierBtn(tools){
   b.onclick = ()=>{ if(F.sort === 'tier') F.dir = -F.dir; else { F.sort = 'tier'; F.dir = 1; } window.eval(m[1])(); };
   tools.insertBefore(b, tools.querySelector('.count') || null);
 }
+/* Collapse a family when you're done checking it (Oct 27). Click the group header;
+   the state is kept per module while you filter, sort or switch modules. */
+const GRP_CLOSED = {};
+function grpKey(gh){ const n = gh.querySelector('.pgh-name, b'); return (S.view || 'x') + '|' + (n ? n.textContent.replace(/^[\u25bc\u25b6\u25a0]\s*/, '').trim() : ''); }
+function grpApply(view){
+  view.querySelectorAll('tr.gh').forEach(gh=>{
+    const closed = !!GRP_CLOSED[grpKey(gh)];
+    let n = gh.nextElementSibling;
+    while(n && !n.classList.contains('gh')){ n.style.display = closed ? 'none' : ''; n = n.nextElementSibling; }
+    const nm = gh.querySelector('.pgh-name');
+    if(nm && /^[\u25bc\u25b6]/.test(nm.textContent)){ const want = closed ? '\u25b6' : '\u25bc'; if(nm.textContent[0] !== want) nm.firstChild.nodeValue = want + nm.firstChild.nodeValue.slice(1); }
+    gh.style.cursor = 'pointer'; gh.title = closed ? 'Click to show this group' : 'Click to hide this group';
+  });
+}
+document.addEventListener('click', e=>{
+  const gh = e.target.closest && e.target.closest('#cptView tr.gh');
+  if(!gh || e.target.closest('button, a, input, select, label')) return;
+  const k = grpKey(gh); GRP_CLOSED[k] = !GRP_CLOSED[k]; grpApply(document.getElementById('cptView'));
+});
 function selBar(view){
   const n = selSet().size, tools = view.querySelector('.cpt-tools');
   if(!tools) return;
   tierBtn(tools);
+  if(view.querySelector('tr.gh') && !tools.querySelector('.grpall')){
+    const b = document.createElement('button'); b.className = 'grpall';
+    const allClosed = [...view.querySelectorAll('tr.gh')].every(gh=> GRP_CLOSED[grpKey(gh)]);
+    b.textContent = allClosed ? 'Expand all' : 'Collapse all';
+    b.onclick = ()=>{ const close = b.textContent === 'Collapse all'; view.querySelectorAll('tr.gh').forEach(gh=> GRP_CLOSED[grpKey(gh)] = close); grpApply(view); b.textContent = close ? 'Expand all' : 'Collapse all'; };
+    tools.insertBefore(b, tools.querySelector('.count') || null);
+  }
   let bar = tools.querySelector('.selbar');
   if(!bar){ bar = document.createElement('span'); bar.className = 'selbar'; bar.style.cssText = 'display:inline-flex;gap:.35rem;align-items:center'; tools.appendChild(bar); }
   bar.innerHTML = (n ? `<b style="color:var(--accent,#2b6cb0)">${n} ticked</b> <span class="mut" style="font-size:.75rem">Downloads use these</span> <button data-selclear="1">Clear</button>` : '') +
@@ -7005,6 +7031,7 @@ function selDecorate(force){
     cb.checked = on === kids.length; cb.indeterminate = on > 0 && on < kids.length;
   });
   selBar(view);
+  grpApply(view);
 }
 // Keep the checkboxes on every redraw of any module
 (function(){
