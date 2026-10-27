@@ -5857,9 +5857,20 @@ function buildVr(j){
   VR = (j && j.rows) || []; VR_FAMS = (j && j.families) || [];
 }
 function vrFam(mk, pasin){ return VR_FAMS.find(f=> f.mk === mk && f.pasin === pasin) || null; }
+/* Amazon Variation = False in Plytix means standalone (MJ, Oct 27), even when a
+   parent ASIN is filled in. Read from the Master SKU feed (products.json, US). */
+function pxStandalone(r){
+  if(r.mk && r.mk !== 'US') return false;
+  const p = (typeof PR !== 'undefined' ? PR : []).find(x=> x.asin === r.asin || x.sku === (r.usSku || r.sku));
+  return !!p && /^(false|no|n|0)$/i.test(String(p.isVar === undefined ? '' : p.isVar).trim());
+}
 function vrRows(mk){
   return VR.filter(r=> r.mk === (mk || VR_F.mk)).map(r=>{
     const row = ROWS.find(x=> x.asin === r.asin);
+    // Standalone in Plytix and no family on Amazon: correct, not a split
+    if(r.c && r.c.fam && r.c.fam.s === 'split' && pxStandalone(r))
+      r = Object.assign({}, r, {c: Object.assign({}, r.c, {fam: {s:'match', e:'', a:'', note:'Standalone: Amazon Variation is False in Plytix'}}, r.c.rev ? {rev: {s:'na'}} : {}),
+                                exp: Object.assign({}, r.exp, {isVar: false}), par: Object.assign({}, r.par, {pasin: '', psku: ''})});
     const c = r.c || {};
     const bad = VR_COLS.filter(x=> c[x[0]] && VR_BAD.indexOf(c[x[0]].s) !== -1).map(x=> x[0]);
     const blank = VR_COLS.filter(x=> c[x[0]] && c[x[0]].s === 'blank').map(x=> x[0]);
@@ -5894,12 +5905,24 @@ function vrCaseInfo(r){
 function vrFamilyRows(key, mk){
   return vrRows(mk).filter(r=>{ const p = parentOf(r); return (p.pasin && p.pasin === key) || (!p.pasin && p.psku === key); }).filter(r=> r.caseable.length);
 }
-const VR_SORT = { tier: r=> (TIER_RANK[r.tier] !== undefined ? TIER_RANK[r.tier] : 9), product: r=> r.name, stock: r=> stockOf(r, VR_F.mk), pct: r=> r.pct, since: r=> r.since || '',
+/* Star rating, ratings count and BSR in the Variation module (Oct 27), from the
+   BSR feed (Keepa). Amber = differs from the rest of the family (Keepa may lag). */
+let VR_BS = {};
+function vrBsLoad(mk){ VR_BS = {}; if(typeof BS === 'undefined' || !BS.length) return; bsRows(mk).forEach(r=> VR_BS[r.asin] = r); }
+function vrBsTd(r, k){
+  const b = VR_BS[r.asin]; if(!b || b[k] === null || b[k] === undefined) return '<td class="num"><span class="mut">\u2014</span></td>';
+  const off = b.sync && b.sync[k] && b.sync[k].s === 'off';
+  const txt = k === 'cur' ? Number(b.cur).toFixed(1) + '\u2605' : k === 'rev' ? bsInt(b.rev) : '#' + bsInt(b.bsr);
+  return `<td class="num"${off ? ` style="color:var(--warn,#b7791f);font-weight:700" data-tip="${esc(b.sync[k].note + '. Keepa often lags: check the live page.')}"` : ''}>${txt}</td>`;
+}
+const VR_SORT = { star: r=> (VR_BS[r.asin] || {}).cur ?? -1, revs: r=> (VR_BS[r.asin] || {}).rev ?? -1, bsr: r=> (VR_BS[r.asin] || {}).bsr || 1e12,
+  tier: r=> (TIER_RANK[r.tier] !== undefined ? TIER_RANK[r.tier] : 9), product: r=> r.name, stock: r=> stockOf(r, VR_F.mk), pct: r=> r.pct, since: r=> r.since || '',
   cs: r=> !r.caseable.length ? 2 : vrCaseInfo(r) ? 1 : 0 };
 const VR_RANK = {split:0, wrong:0, unknown:3, blank:4, match:6, na:7};
 VR_COLS.forEach(c=> VR_SORT['f_' + c[0]] = r=> r.nolive ? 9 : ((r.c || {})[c[0]] ? (VR_RANK[r.c[c[0]].s] !== undefined ? VR_RANK[r.c[c[0]].s] : 5) : 9));
 
 function renderVariation(){
+  vrBsLoad(VR_F.mk);
   document.getElementById('msg').hidden = true;
   document.getElementById('bar').innerHTML = '';
   const v = document.getElementById('cptView');
@@ -5975,16 +5998,20 @@ function renderVariation(){
       H('stock', isCA ? 'CA stock' : 'US stock', 'num', 'Available units in FBA, from BigQuery. Sort to see empty first.')+
       H('pct', 'Correct %', 'b-cpt c', (VR_TV ? 'Family, theme and value checks' : 'The family check') + ' against the Master SKU sheet. Reviews shared is not in this number.')+
       VR_COLS.map(c=> H('f_' + c[0], c[1], 'b-gap c', c[0] === 'rev' ? 'Same review count as most siblings, as Keepa sees it. US only.' : 'Sort to bring problems to the top.')).join('')+
+      H('star', 'Star rating', 'num', 'From the BSR feed (Keepa). Amber = differs from the family.')+
+      H('revs', 'Ratings', 'num', 'Ratings count, from the BSR feed (Keepa). Amber = differs from the family.')+
+      H('bsr', 'BSR', 'num', 'Best Sellers Rank, from the BSR feed (Keepa). Amber = far from the family.')+
       H('since', 'Last changed on Amazon', 'b-move', 'The day the family, theme or value last changed on Amazon, as Keepa saw it.', 'desc')+
       H('cs', 'Case', 'b-case', 'A case is for a child out of its family or reviews not shared. Wrong theme or value: flat file.')+
       '</tr></thead><tbody>'+
-      grpMap(VR_F, rows, 10, r=> `<tr class="row" tabindex="0" data-vr="${esc(r.asin)}">`+
+      grpMap(VR_F, rows, 13, r=> `<tr class="row" tabindex="0" data-vr="${esc(r.asin)}">`+
         `<td class="prod"><div class="p-name"><span class="dot" style="background:${r.nolive ? '#94a3b8' : r.fullOk ? '#1f9d55' : '#d64545'}"></span>${esc(String(r.name).slice(0, 60))}</div>`+
           `<div class="p-id"><span>SKU</span>${skuL(r.sku, mk)}${cpy(r.sku)}</div><div class="p-id"><span>ASIN</span>${asinL(r.asin, mk)}${cpy(r.asin)}</div>`+
           `${r.tier ? `<span class="p-size">Tier ${esc(r.tier)}</span>` : ''}${r.risk ? `<span class="p-size" data-tip="${esc(r.risk)}" style="background:#fff4e0;color:#8a5a00">Theme may split reviews</span>` : ''}${r.rbA.length ? `<span class="p-size" data-tip="${esc(r.rbA.map(h=> h.rule.text + ' ' + h.corr).join(' \u2022 '))}" style="background:#fde8e8;color:#9b1c1c">Breaks a variation rule</span>` : ''}</td>`+
         stockTd(r, mk)+
         `<td class="c">${r.nolive ? '<span class="mut">Not checked yet</span>' : r.pct === null ? '<span class="mut">\u2014</span>' : bbBar(r.pct)}</td>`+
         VR_COLS.map(c=> `<td class="c">${vrChip((r.c || {})[c[0]], r.nolive)}</td>`).join('')+
+        vrBsTd(r, 'cur') + vrBsTd(r, 'rev') + vrBsTd(r, 'bsr')+
         `<td>${r.since ? esc(shortDate(r.since)) : '<span class="mut">No change seen</span>'}</td>`+
         `<td>${r.cst ? caseChip(r.cst) : ''}${r.caseable.length && (!r.cst || r.cst.g === 'follow' || !r.cst.id) ? `<button class="work strong" data-vrcase="${esc(r.asin)}">${r.cst ? 'Follow up' : 'Draft case'}</button>`
           : r.core.length && VR_TV && !r.cst ? '<span class="mut">Flat file</span>' : ''}</td>`+
@@ -6166,9 +6193,11 @@ function vrStrangerDraft(fams){
 function dlVr(rows){
   const h = ['Market','SKU','ASIN','Amazon link','Product','Tier','Stock','Correct %'];
   VR_COLS.forEach(c=> h.push(c[1] + ' check', c[1] + (c[0] === 'rev' ? ' most siblings' : ' correct (Master SKU)'), c[1] + (c[0] === 'rev' ? ' this child' : ' on Amazon')));
-  csvSave('variation-' + VR_F.mk.toLowerCase(), h.concat(['Theme note','Rule issues','Case ID','Last case note','Parent SKU','Parent ASIN']), rows.map(r=>{
+  vrBsLoad(VR_F.mk);
+  csvSave('variation-' + VR_F.mk.toLowerCase(), h.concat(['Star rating','Ratings','BSR','Theme note','Rule issues','Case ID','Last case note','Parent SKU','Parent ASIN']), rows.map(r=>{
     const cells = [r.mk, r.sku, r.asin, `https://www.amazon.${r.mk === 'CA' ? 'ca' : 'com'}/dp/${r.asin}`, r.name, r.tier, stockOf(r, r.mk), r.pct];
     VR_COLS.forEach(c=>{ const x = (r.c || {})[c[0]] || {}; cells.push(r.nolive ? 'Not checked yet' : (VR_S[x.s] || [x.s || ''])[0], x.e || '', x.a || ''); });
+    const bb = VR_BS[r.asin] || {}; cells.push(bb.cur ?? '', bb.rev ?? '', bb.bsr ?? '');
     const ci = vrCaseInfo(r); cells.push(r.risk || '', (r.rb || []).map(x=> `${x.corr} (${x.rule.id})`).join('; '), ci ? ci.id : '', ci ? ci.notes : '');
     return withParent(r, cells);
   }));
@@ -6263,7 +6292,8 @@ function bsGroups(vals, same){
 }
 function bsFamilySync(rows){
   const fam = {};
-  rows.forEach(r=>{ const p = r.par && r.par.pasin; if(p) (fam[p] = fam[p] || []).push(r); });
+  // Standalone listings (Amazon Variation = False in Plytix) have no family to compare with
+  rows.forEach(r=>{ const p = r.par && r.par.pasin; if(p && !pxStandalone(r)) (fam[p] = fam[p] || []).push(r); });
   Object.keys(fam).forEach(p=>{
     const kids = fam[p];
     Object.keys(BS_SYNC).forEach(k=>{
