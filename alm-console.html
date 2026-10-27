@@ -5169,8 +5169,10 @@ let SIG = null;
 function cgSig(r){
   const s = SIG && SIG.rows && SIG.rows[r.mk + '|' + r.asin]; if(!s) return {};
   const e = r.exp && r.exp.node ? String(r.exp.node) : '';
+  // Ranks today when we have them (Oct 27); the older list also holds past categories
+  const cur = s.rank && s.rank.now && Object.keys(s.rank.now).length ? Object.keys(s.rank.now) : (s.rank ? s.rank.cats : []);
   return {crumb: s.crumb && (s.crumb.s === 'short' || s.crumb.s === 'other') ? s.crumb : null, crumbOk: s.crumb && s.crumb.s === 'ok' ? s.crumb : null,
-          rank: e && s.rank && s.rank.cats.length && s.rank.cats.indexOf(e) === -1 ? s.rank : null};
+          rank: e && s.rank && cur.length && cur.indexOf(e) === -1 ? Object.assign({}, s.rank, {cats: cur}) : null};
 }
 const GL_KEY = {gl_lawn_and_garden:'lawn', gl_home:'home', gl_kitchen:'kitchen', gl_pet_products:'pet', gl_biss:'biss',
   gl_drugstore:'drug', gl_furniture:'furniture', gl_office_product:'office', gl_sports:'sports'};
@@ -5230,6 +5232,7 @@ function cgChip(x, nolive){
 
 const CG_SORT = { tier: r=> (TIER_RANK[r.tier] !== undefined ? TIER_RANK[r.tier] : 9), rb: r=> -((r.rb || []).length), product: r=> r.name, stock: r=> stockOf(r, CG_F.mk), pct: r=> r.pct, since: r=> r.since || '',
   cs: r=> !r.bad.length ? 2 : cgCaseInfo(r) ? 1 : 0 };
+CG_SORT.cgbsr = r=>{ const b = cgBsr(r); return b && b.best ? b.best : 1e12; };
 // Sort a column by its value, A to Z, so the same GL or product type sit together (Oct 27)
 CG_COLS.forEach(c=> CG_SORT['f_' + c[0]] = r=>{ const x = (r.c || {})[c[0]] || {}; return r.nolive ? '~' : String(cgVal(x, c[0]) || '~').toLowerCase(); });
 /* Category cells show the real value (MJ, Oct 27): the Amazon value; red when wrong,
@@ -5244,6 +5247,28 @@ function cgVal(x, k){
 /* Full path cell (Oct 27): the Master SKU path, Amazon's path (Keepa) and the page
    breadcrumb (read by Cowork), one small line each. Red = differs. Same browse node
    counts as correct, as agreed. */
+/* BSR column (Oct 27): "#489 in Patio, Lawn & Garden" and "#11 in Outdoor Doormats",
+   from Keepa (same call, no extra tokens). The sub-category is red when it isn't the
+   listing's correct browse node. Category names come from Amazon's path (Keepa). */
+// Best Sellers names that differ from the path name, confirmed on Amazon (MJ, Oct 27)
+const BSR_NAME = {'3742271': 'Outdoor Doormats'};
+function cgBsr(r){
+  const s = SIG && SIG.rows && SIG.rows[r.mk + '|' + r.asin], rk = s && s.rank;
+  if(!rk || !rk.now || !Object.keys(rk.now).length) return null;
+  const path = String(((r.c || {}).path || {}).a || '').split(/\s*(?:>|\u203a)\s*/).filter(Boolean);
+  const kNode = String(((r.c || {}).node || {}).a || ''), want = String(r.exp && r.exp.node || ((r.c || {}).node || {}).e || '');
+  const ids = Object.keys(rk.now), main = rk.ref && rk.now[rk.ref] ? rk.ref : null;
+  const subs = ids.filter(id=> id !== main).map(id=> ({id, rank: rk.now[id], name: BSR_NAME[id] || (id === kNode && path.length ? path[path.length - 1] : id === '553788' ? 'Outdoor Décor' : 'category ' + id), ok: !want || id === want}))
+    .sort((a, b)=> a.rank - b.rank);
+  return {d: rk.d, main: main ? {rank: rk.now[main], name: path[0] || 'main category'} : null, subs, best: subs.length ? subs[0].rank : null};
+}
+function cgBsrCell(r){
+  const b = cgBsr(r); if(!b) return '<span class="mut">\u2014</span>';
+  const n = v=> '#' + Number(v).toLocaleString('en-US');
+  return (b.main ? `<span class="cgv">${n(b.main.rank)} <span class="mut">in ${esc(b.main.name)}</span></span>` : '') +
+    b.subs.slice(0, 2).map(x=> `<span class="cgv${x.ok ? '' : ' cgbad'}"${x.ok ? '' : ` data-tip="Ranks in category ${esc(x.id)}, not the correct node ${esc(String(r.exp && r.exp.node || ''))}"`}>${n(x.rank)} <span${x.ok ? ' class="mut"' : ''}>in ${esc(x.name)}</span></span>`).join('') +
+    `<span class="cgshould">Keepa, ${esc(shortDate(b.d))}</span>`;
+}
 function cgPathCell(r){
   if(r.nolive) return '<span class="lcchip lc-gray">Not checked yet</span>';
   const x = (r.c || {}).path || {}, fmt = t=> esc(String(t || '').replace(/\s*>\s*/g, ' \u203a '));
@@ -5338,11 +5363,12 @@ function renderCategory(){
       H('stock', CG_F.mk === 'CA' ? 'CA stock' : 'US stock', 'num', 'Available units in FBA, from BigQuery. Sort to see empty first.')+
       H('pct', 'Correct %', 'b-cpt c', 'Checks on Amazon that match the Master SKU sheet, out of the ones we can compare.')+
       H('rb', 'Rules', 'b-gap c', 'Screened every day against Amazon\u2019s category rules in the rulebook. Click the chip for details.')+
-      CG_COLS.map(c=> H('f_' + c[0], c[1], 'b-gap c', 'Sort to bring problems to the top.')).join('')+
+      CG_COLS.map(c=> H('f_' + c[0], c[1], 'b-gap c', 'Sort by value, A to Z.')).join('')+
+      H('cgbsr', 'BSR', 'b-gap c', 'Main rank and sub-category rank, as on the product page (Keepa). Red = ranks in a category that is not the correct browse node. Sorts by the sub-category rank.')+
       H('since', 'Last changed on Amazon', 'b-move', 'The day any of these category values last changed on Amazon, as Keepa saw it.', 'desc')+
       H('cs', 'Case', 'b-case', 'Needs a case first, then follow-ups, then fine.')+
       '</tr></thead><tbody>'+
-      grpMap(CG_F, rows, 12, r=> `<tr class="row" tabindex="0" data-cg="${esc(r.asin)}">`+
+      grpMap(CG_F, rows, 13, r=> `<tr class="row" tabindex="0" data-cg="${esc(r.asin)}">`+
         `<td class="prod"><div class="p-name"><span class="dot" style="background:${r.nolive ? '#94a3b8' : r.allOk ? '#1f9d55' : '#d64545'}"></span>${esc(String(r.name).slice(0, 60))}</div>`+
           `<div class="p-id"><span>SKU</span>${skuL(r.sku, mk)}${cpy(r.sku)}</div><div class="p-id"><span>ASIN</span>${asinL(r.asin, mk)}${cpy(r.asin)}</div>`+
           `${r.tier ? `<span class="p-size">Tier ${esc(r.tier)}</span>` : ''}</td>`+
@@ -5350,6 +5376,7 @@ function renderCategory(){
         `<td class="c">${r.nolive ? '<span class="mut">Not checked yet</span>' : r.pct === null ? '<span class="mut">\u2014</span>' : bbBar(r.pct)}</td>`+
         `<td class="c"><span data-rbrow="${esc(r.asin)}" style="cursor:pointer">${rbChip(r.rb || [])}</span></td>`+
         CG_COLS.map(c=> `<td class="cgtd${c[0] === 'path' ? ' cgtdp' : ''}">${c[0] === 'path' ? cgPathCell(r) + pcBadge(r) : cgCell((r.c || {})[c[0]], c[0], r.nolive)}</td>`).join('')+
+        `<td class="cgtd">${cgBsrCell(r)}</td>`+
         `<td>${r.since ? esc(shortDate(r.since)) : '<span class="mut">No change seen</span>'}</td>`+
         `<td>${r.cst ? caseChip(r.cst) : ''}${r.bad.length && (!r.cst || r.cst.g === 'follow' || !r.cst.id) ? `<button class="work strong" data-cgcase="${esc(r.asin)}">${r.cst ? 'Follow up' : 'Draft case'}</button>` : ''}</td>`+
       '</tr>', r=> r.bad.length, 'need a look', CG_F.mk, p=> `<button class="work strong" data-cgfam="${esc(p.pasin || p.psku)}">Draft case for this family</button>`)+
