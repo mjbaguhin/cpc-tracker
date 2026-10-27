@@ -1052,7 +1052,7 @@ async function load(fresh){
     .then(j => { buildMs(j); if(S.view === 'ms') render(); else chrome(); })
     .catch(e => { MS_ERR = e.message; if(S.view === 'ms') render(); });
   grab(SIG_SRC, 'json', fresh)
-    .then(j => { SIG = j || null; if(S.view === 'category' || S.view === 'catalog') render(); })
+    .then(j => { SIG = j || null; if(S.view === 'category' || S.view === 'catalog' || S.view === 'lc') render(); })
     .catch(()=> { SIG = null; });
   grab(GL_SRC, 'json', fresh)
     .then(j => { GLX = j || null; if(S.view === 'category' || S.view === 'catalog') render(); })
@@ -4676,7 +4676,7 @@ const LC_S = {
   wrong:    ['Mismatch', 'lc-bad', 'Different from Plytix. Either side could be the one to fix'],
   missing:  ['Missing', 'lc-bad', 'In Plytix but not on Amazon'],
   noplytix: ['Blank in Plytix', 'lc-gray', 'Plytix has no correct copy for this field'],
-  cantread: ['Can\u2019t check', 'lc-gray', 'Amazon does not show this field on its own, so it can\u2019t be compared'],
+  cantread: ['Can\u2019t check', 'lc-gray', 'Keepa doesn\u2019t send this field. The daily Cowork page check reads it from the page; until it has, it can\u2019t be compared'],
   hidden:   ['Hidden', 'lc-gray', 'Not visible on Amazon, usually because A+ content replaces the description'],
   rulesok:  ['Rules OK', 'lc-ok', 'Backend only, so checked against Amazon\u2019s rules: under 249 bytes, no brand name'],
   rule:     ['Rule issue', 'lc-bad', 'Breaks an Amazon rule'],
@@ -4738,8 +4738,23 @@ function lcRows(){
   });
   return out;
 }
+/* Item Highlights (Oct 27): Keepa doesn't send them, so the daily Cowork page check
+   reads the line under the title. Compared here like the other fields. */
+const ihNorm = t=> String(t || '').toLowerCase().replace(/[\u2018\u2019]/g, "'").replace(/[\u201c\u201d]/g, '"').replace(/[\u2010-\u2015]/g, '-').replace(/\s+/g, ' ').replace(/[.\s]+$/, '').trim();
+function ihFromPage(c){
+  const f = c.f || {}, x = f.ih;
+  const pg = SIG && SIG.rows && SIG.rows[MK2 + '|' + c.asin] && SIG.rows[MK2 + '|' + c.asin].ih;
+  if(!x || x.s !== 'cantread' || !pg || !x.c) return c;
+  const a = ihNorm(x.c), b = ihNorm(pg.text);
+  let s2 = 'match';
+  if(a !== b){ const wa = a.split(' '), wb = new Set(b.split(' ')); const common = wa.filter(w=> wb.has(w)).length; s2 = common / Math.max(wa.length, wb.size) >= 0.9 ? 'small' : 'wrong'; }
+  const ih = Object.assign({}, x, {s: s2, l: pg.text, src: 'Page, read by Cowork ' + pg.d});
+  const checked = (c.checked || 0) + 1, ok = (c.ok || 0) + (s2 === 'match' ? 1 : 0);
+  return Object.assign({}, c, {f: Object.assign({}, f, {ih}), checked, ok, pct: Math.round(ok / checked * 1000) / 10});
+}
 function lcRowsRaw(){
-  return LC.map(c=>{
+  return LC.map(c0=>{
+    const c = ihFromPage(c0);
     const row = (c.sku && ROWS.find(x=> x.sku === c.sku)) || ROWS.find(x=> x.asin === c.asin);
     const f = c.f || {};
     const bad = LC_COLS.filter(x=> f[x[0]] && (LC_BAD.indexOf(f[x[0]].s) !== -1 || f[x[0]].rule)).map(x=> x[0]);
