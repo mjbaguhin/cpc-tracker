@@ -5156,6 +5156,7 @@ function buildCg(j){ CG_ERR = ''; CG_META = {updated: j && j.updated || '', pcUr
    of the Reference Pricing sheet through the Keepa Fetcher web app; this
    browser keeps a copy only until the next category.json has it. */
 const PC_KEY = 'cpc-page-check';
+const PC_DAYS = 7;   // a 'path OK' page check lifts a Keepa node flag for this many days
 function pcLocal(){ try { return JSON.parse(localStorage.getItem('cg_pagechecks') || '{}'); } catch(e){ return {}; } }
 function pcOf(r){
   const loc = pcLocal()[r.mk + '|' + r.asin];
@@ -5218,6 +5219,21 @@ function cgRows(mk){
     const row = ROWS.find(x=> x.asin === r.asin);
     const gl = (r.c && r.c.gl && r.c.gl.s === 'unknown') ? glFromReport(r) : null;
     if(gl) r = Object.assign({}, r, {c: Object.assign({}, r.c, {gl})});
+    // Page checked OK (MJ, Oct 28): Keepa lags, so when MJ saw the right path and
+    // BSR on the product page, the path and node count as correct while Keepa
+    // still shows the old node. It ends by itself: when Keepa catches up, when
+    // Amazon's data changes (stale), or after PC_DAYS days.
+    const pk = r.c ? pcOf(r) : null, pAge = pk && pk.d ? daysSince(pk.d.slice(0, 10)) : null;
+    if(pk && pk.res === 'ok' && !pk.stale && pAge !== null && pAge <= PC_DAYS){
+      const lift = k=> r.c[k] && CG_BAD.indexOf(r.c[k].s) !== -1;
+      if(lift('path') || lift('node')){
+        const left = PC_DAYS - pAge, when = shortDate(pk.d.slice(0, 10));
+        const note = (k, x)=> `You checked the product page ${when}: path and BSR correct. Keepa still shows ${k === 'node' ? 'node ' + x.a : 'the old path'}, so this counts as correct for ${left} more day${left === 1 ? '' : 's'}, or until Keepa updates.`;
+        const cc = Object.assign({}, r.c);
+        ['path', 'node'].forEach(k=>{ if(lift(k)) cc[k] = Object.assign({}, r.c[k], {s:'match', pcLift:true, inNode:true, note: note(k, r.c[k])}); });
+        r = Object.assign({}, r, {c: cc, pcLift: true});
+      }
+    }
     const c = r.c || {};
     const bad = CG_COLS.filter(x=> c[x[0]] && CG_BAD.indexOf(c[x[0]].s) !== -1).map(x=> x[0]);
     const blank = CG_COLS.filter(x=> c[x[0]] && c[x[0]].s === 'blank').map(x=> x[0]);
