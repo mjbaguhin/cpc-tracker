@@ -7136,8 +7136,13 @@ function msSameDims(a, b, tolAbs){ a = msTriple(a); b = msTriple(b); if(a.length
 // Size tolerance per side (MJ, Oct 28): 0.5 in or 5%, 1.3 cm for CA. Tested on the US
 // listings: wider than this barely changes the count, so what is left are real gaps.
 const MS_SIZE_PCT = 0.05;
-// Both sizes largest side first, so the two line up side by side
-const msSorted = a=> msTriple(a);
+// Sizes shown with their labels, L x W x H, in the order each source gives them
+// (MJ, Oct 28: to fix Amazon she needs to know which value is which). Plytix:
+// Product Length, Width, Height. Amazon: the listing's item length, width and
+// height as Keepa reads them. The check itself compares them largest side first.
+const msLWH = (a, u, d)=>{ const lab = ['L', 'W', 'H'];
+  const t = (a || []).map((x, i)=> x ? lab[i] + ' ' + msR(x, d) : null).filter(Boolean);
+  return t.length ? t.join(' \u00d7 ') + ' ' + u : '\u2014'; };
 function msSameWt(a, b, tolAbs){ if(!a || !b) return null; return Math.abs(a - b) <= Math.max(tolAbs, a * 0.05); }
 const msTierKey = t=> String(t || '').toLowerCase().replace(/size|tier|[-_\s]/g, '').replace(/oversize/, 'bulky');
 /* Size tier names (Oct 28, MJ chose to leave Plytix as is). Plytix and the Fee
@@ -7283,8 +7288,8 @@ function renderMeasurements(){
     const tr = r=> `<tr class="row" tabindex="0" data-ms="${esc(r.asin)}">`+
       `<td class="prod"><div class="p-name">${esc(String(r.name).slice(0, 56))}</div><div class="p-id"><span>SKU</span>${skuL(r.sku, mk)}${cpy(r.sku)}</div><div class="p-id"><span>ASIN</span>${asinL(r.asin, mk)}${cpy(r.asin)}</div>`+
         (r.tier ? `<span class="p-size">Tier ${esc(r.tier)}</span>` : '') + '</td>'+
-      `<td style="font-size:.8rem">${msFmt(msSorted(r.pDims), r.unit, 2)}<div class="mut">${msW(r.pWt, r.wUnit)}</div></td>`+
-      `<td style="font-size:.8rem">${msFmt(msSorted(r.aDims), r.unit, 2)}<div class="mut">${msW(r.aWt, r.wUnit)}</div></td>`+
+      `<td style="font-size:.8rem">${msLWH(r.pDims, r.unit, 2)}<div class="mut">${msW(r.pWt, r.wUnit)}</div></td>`+
+      `<td style="font-size:.8rem">${msLWH(r.aDims, r.unit, 2)}<div class="mut">${msW(r.aWt, r.wUnit)}</div></td>`+
       `<td class="c">${chip(r.st.size)} ${chip(r.st.weight)}</td>`+
       `<td class="c" style="font-size:.8rem">${msW(r.pPk, r.wUnit)} / ${msW(r.aPk, r.wUnit)}<div>${chip(r.st.pkg)}</div></td>`+
       `<td class="c" style="font-size:.8rem">${esc(r.px.tier || '\u2014')}<div class="mut">${esc(r.fee && r.fee.tier ? msTierName(r.fee.tier, r.mk) : '\u2014')}</div>${chip(r.st.tier)}</td>`+
@@ -7318,7 +7323,8 @@ function openMs(r){
   const st = k=> r.st[k] === 'old' ? `<span class="lcchip lc-small" data-tip="${esc(MS_OLD_TIP)}">Old Plytix name</span>` : r.st[k] === 'ok' ? '<span class="lcchip lc-ok">OK</span>' : r.st[k] === 'diff' ? '<span class="lcchip lc-bad">Differs</span>' : '<span class="lcchip lc-gray">Can\u2019t check</span>';
   d.innerHTML = `<h2>Measurements</h2><h3>${esc(r.name)}</h3><dl>`+
     row('SKU', `${skuL(r.sku, r.mk)}${cpy(r.sku)}`) + row('ASIN', `${asinL(r.asin, r.mk)}${cpy(r.asin)}`)+
-    row('Size', `${st('size')} Plytix ${msFmt(msSorted(r.pDims), r.unit, 2)} \u00b7 Amazon ${msFmt(msSorted(r.aDims), r.unit, 2)} <span class="mut">(largest side first)</span>`)+
+    row('Size', `${st('size')} Plytix ${msLWH(r.pDims, r.unit, 2)} \u00b7 Amazon ${msLWH(r.aDims, r.unit, 2)}` +
+      (r.st.size === 'diff' && r.pDims.some(Boolean) ? `<div class="mut" style="margin-top:.3rem">To match Plytix on Amazon: Item Length ${msR(r.pDims[0], 2) ?? '\u2014'}, Item Width ${msR(r.pDims[1], 2) ?? '\u2014'}, Item Height ${msR(r.pDims[2], 2) ?? '\u2014'} ${esc(r.unit)}. Check the field names on the Seller Central edit page first; the check counts a swap of sides as the same size.</div>` : ''))+
     row('Weight', `${st('weight')} Plytix ${msW(r.pWt, r.wUnit)} \u00b7 Amazon ${msW(r.aWt, r.wUnit)}`)+
     row('Packaged weight', `${st('pkg')} Plytix ${msW(r.pPk, r.wUnit)} \u00b7 Amazon ${msW(r.aPk, r.wUnit)}`)+
     row('Size tier', `${st('tier')} Plytix ${esc(r.px.tier || '\u2014')} \u00b7 Fee Preview ${esc(r.fee && r.fee.tier ? msTierName(r.fee.tier, r.mk) : '\u2014')}` + (r.st.tier === 'old' ? ` <span class="mut">(Plytix tier is from before Amazon\u2019s 2024 or 2026 tier changes; Amazon\u2019s current tier is ${esc(msTierName(r.fee.tier, r.mk))}.)</span>` : '') +
