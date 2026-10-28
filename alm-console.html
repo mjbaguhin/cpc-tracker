@@ -1977,7 +1977,9 @@ function cptRows(){
     const size = sizeOf(name, c.sku || (row && row.sku) || '');
     // Similar mats only matter for listings held back by the CPT
     const rowList = row && row.usList !== null ? row.usList : (c.kList !== undefined ? c.kList : null);
-    const heldNow = !(gap > 0) && rowList !== null && c.cpt && (rowList - c.cpt) / c.cpt * 100 >= 10;
+    const rowSale = MK2 === 'CA' ? (c.caSale ?? (row ? row.caSale : null)) : (row ? row.usSale : null);
+    const heldNow = !(gap > 0) && c.cpt && (rowSale > 0 ? rowSale - c.cpt > 0.005
+                    : rowList !== null && (rowList - c.cpt) / c.cpt * 100 >= 10);
     const sim  = (gap !== null && gap > 0) || heldNow ? simForRow(c.asin, size) : [];
     const r = Object.assign({}, c, {ours, gap, pct, size, sim, simLow: sim.length ? sim[0] : null, simMatch: null,
       sku: c.sku || (row && row.sku) || '', name,
@@ -2077,8 +2079,14 @@ function targetInfo(r){
 }
 function saleTarget(r){
   const t = r.size ? targetInfo(r) : null;
-  return t ? t.price : null;
+  if(t) return t.price;
+  // Haris's rule for every product (MJ, Oct 28): no size target, so compare
+  // the CPT with this listing's own sale price. Only when there is no sale
+  // price at all does the old list price rule apply.
+  const own = MK2 === 'CA' ? (r.caSale ?? null) : r.sale;
+  return own !== null && own !== undefined && own > 0 ? own : null;
 }
+function ownTarget(r){ return r.target !== null && !(r.size && targetInfo(r)); }
 
 /* Amazon's latest email on a listing, from CPT Watch's morning Gmail check */
 const MAIL_KIND = {
@@ -2752,7 +2760,7 @@ function caseVerdict(r){
 
   const pct = r.target !== null ? r.shortPct : (r.gap > 0 ? r.pct : r.listPct);
   if(r.target !== null && r.short > 0)
-    why.push(`CPT ${usd(r.cpt)} is ${usd(r.short)} (${r.shortPct}%) under our ${r.size} sale price of ${usd(r.target)}`);
+    why.push(`CPT ${usd(r.cpt)} is ${usd(r.short)} (${r.shortPct}%) under our ${ownTarget(r) ? '' : r.size + ' '}sale price of ${usd(r.target)}`);
   else if(r.held) why.push(`Held down: we lowered the price to ${usd(r.ours)} to keep the Buy Box, but our regular price is ${usd(r.list)}`);
   if(pct >= CASE_RULES.bigGapPct){ pts += 2; why.push(`${r.held ? 'Regular price' : 'Our price'} is ${pct}% above the CPT, too far for a normal price difference`); }
   else if(pct >= CASE_RULES.midGapPct){ pts += 1; why.push(`${r.held ? 'Regular price' : 'Our price'} is ${pct}% above the CPT`); }
@@ -3250,11 +3258,11 @@ function cptRowHtml(r){
               ? `<span class="cpill sale" data-tip="${esc(TIPS.sale)}">${usd(r.sale)}</span>` +
                 (r.list ? `<span class="was" data-tip="${esc(TIPS.list)}">List ${usd(r.list)}</span>` : '')
               : '<span class="mut">No sale</span>'}`+
-             (r.target !== null ? `<span class="tgt" data-tip="${esc(targetTip(r))}">Target ${usd(r.target)}</span>` : '')+'</td>'+
+             (r.target !== null && !ownTarget(r) ? `<span class="tgt" data-tip="${esc(targetTip(r))}">Target ${usd(r.target)}</span>` : '')+'</td>'+
           `<td class="c"><span class="cpill cpt" data-tip="${esc(TIPS.cpt)}">${usd(r.cpt)}</span></td>`+
           `<td class="c">${r.gap === null ? '<span class="mut">\u2014</span>' :
              bad ? `<span class="gap-badge over" data-tip="${esc(TIPS.over)}">+${usd(r.gap)} &middot; ${r.pct}%</span>`
-             : r.target !== null && r.short > 0.005 ? `<span class="gap-badge over" data-tip="${esc(TIPS.under)}">CPT ${usd(r.short)} too low</span><span class="was">${r.shortPct}% under the target</span>`
+             : r.target !== null && r.short > 0.005 ? `<span class="gap-badge over" data-tip="${esc(ownTarget(r) ? TIPS.underOwn : TIPS.under)}">CPT ${usd(r.short)} too low</span><span class="was">${r.shortPct}% under ${ownTarget(r) ? 'our sale price' : 'the target'}</span>`
              : r.held ? `<span class="gap-badge held" data-tip="${esc(TIPS.held)}">Held at CPT</span><span class="was">${r.listPct}% under list</span>`
                  : `<span class="gap-badge ok" data-tip="${esc(TIPS.ok)}">At or under</span>`}</td>`+
           `<td class="move">${r.moved
@@ -7638,6 +7646,7 @@ const TIPS = {
   feat:   'The price on the Add to Cart button right now.',
   gap:    'Our price compared with Amazon\u2019s limit. Red means there is a problem.',
   held:   'We dropped our price to Amazon\u2019s limit just to keep selling. We make less on every sale.',
+  underOwn: 'Amazon\u2019s limit is lower than this listing\u2019s sale price. Open a case disputing the accuracy of the Competitive External Price (equivalency), not our price.',
   under:  'Amazon\u2019s limit is lower than our usual sale price for this size. Open a case disputing the accuracy of the Competitive External Price (equivalency), not our price.',
   over:   'Our price is above Amazon\u2019s limit. The Add to Cart button is probably gone.',
   ok:     'All good. Nothing to do.',
