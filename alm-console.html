@@ -5517,7 +5517,8 @@ function openCg(r){
   [...d.querySelectorAll('button[data-pc]')].forEach(b=> b.onclick = ()=>{
     const n = (document.getElementById('pcNote') || {}).value || '';
     pcSave(r, b.dataset.pc, n);
-    openCg(r); if(typeof renderCategory === 'function' && document.getElementById('cptView')) renderCategory();
+    // Reopen with the row worked out again, so the page check shows at once (Oct 28)
+    openCg(cgRows(r.mk).find(x=> x.asin === r.asin && x.sku === r.sku) || r); if(typeof renderCategory === 'function' && document.getElementById('cptView')) renderCategory();
   });
   const fo = document.getElementById('cgFamOne');
   if(fo) fo.onclick = ()=> cgDraft(cgFamilyRows(fo.dataset.k, r.mk));
@@ -7131,9 +7132,51 @@ function buildMs(j){ MS_ERR = ''; MS_META = {updated: j && j.updated || '', fee:
 const msR = (v, d)=> v === null || v === undefined ? null : Math.round(v * Math.pow(10, d)) / Math.pow(10, d);
 function msTriple(a){ return (a || []).filter(x=> x !== null && x !== undefined && x > 0).sort((x, y)=> y - x); }
 function msSameDims(a, b, tolAbs){ a = msTriple(a); b = msTriple(b); if(a.length < 2 || b.length < 2) return null;
-  const n = Math.min(a.length, b.length); for(let i = 0; i < n; i++){ if(Math.abs(a[i] - b[i]) > Math.max(tolAbs, a[i] * 0.02)) return false; } return true; }
+  const n = Math.min(a.length, b.length); for(let i = 0; i < n; i++){ if(Math.abs(a[i] - b[i]) > Math.max(tolAbs, a[i] * MS_SIZE_PCT)) return false; } return true; }
+// Size tolerance per side (MJ, Oct 28): 0.5 in or 5%, 1.3 cm for CA. Tested on the US
+// listings: wider than this barely changes the count, so what is left are real gaps.
+const MS_SIZE_PCT = 0.05;
+// Both sizes largest side first, so the two line up side by side
+const msSorted = a=> msTriple(a);
 function msSameWt(a, b, tolAbs){ if(!a || !b) return null; return Math.abs(a - b) <= Math.max(tolAbs, a * 0.05); }
 const msTierKey = t=> String(t || '').toLowerCase().replace(/size|tier|[-_\s]/g, '').replace(/oversize/, 'bulky');
+/* Size tier names (Oct 28, MJ chose to leave Plytix as is). Plytix and the Fee
+   Preview report write the same tier differently ("Lg-Std-Non-Media" and
+   "UsLargeStandardSize"), so both are read as one name. Amazon US replaced the
+   oversize tiers with Large bulky and Extra-large (Feb 5 2024) and added Small
+   bulky (Jan 15 2026). An old US oversize name in Plytix can be more than one
+   of today's tiers, so it is shown as an old name, not as wrong. Amazon CA
+   still uses oversize names, so those are current there. */
+function msTierStd(t, mk){
+  const n0 = String(t || '').toLowerCase().replace(/[^a-z]/g, '').replace(/^us/, '').replace(/nonmedia|tier/g, '');
+  const n = /oversize$/.test(n0) ? n0 : n0.replace(/size$/, '');
+  if(!n) return null;
+  if(/^(sm|small)(std|standard)$/.test(n)) return {name:'Small standard'};
+  if(/^(lg|large)(std|standard)$/.test(n)) return {name:'Large standard'};
+  if(n === 'standard') return {name:'Standard'};
+  if(n === 'envelope') return {name:'Envelope'};
+  if(n === 'smallbulky') return {name:'Small bulky'};
+  if(n === 'largebulky') return {name:'Large bulky'};
+  if(n === 'extralarge') return {name:'Extra-large'};
+  const ov = n.match(/^(sm|small|med|medium|lg|large|special)oversize$/);
+  if(ov){
+    const w = {sm:'Small', small:'Small', med:'Medium', medium:'Medium', lg:'Large', large:'Large', special:'Special'}[ov[1]] + ' oversize';
+    return mk === 'CA' ? {name:w} : {name:w, old:true};
+  }
+  return {name:String(t)};
+}
+function msTierCheck(pt, ft, mk){
+  const a = msTierStd(pt, mk), b = msTierStd(ft, mk);
+  if(!a || !b) return 'na';
+  if(a.old) return 'old';
+  // Plytix Large bulky set before Small bulky existed (Jan 15 2026)
+  if(mk !== 'CA' && a.name === 'Large bulky' && b.name === 'Small bulky') return 'old';
+  // A US tier name in a CA row is the US value, not a CA one: can't compare
+  if(mk === 'CA' && /standard$|bulky$|extra/i.test(a.name) && a.name !== 'Standard') return 'na';
+  return a.name === b.name ? 'ok' : 'diff';
+}
+const msTierName = (t, mk)=> { const x = msTierStd(t, mk); return x ? x.name : '\u2014'; };
+const MS_OLD_TIP = 'Plytix has a tier from before Amazon\u2019s tier changes (oversize tiers replaced Feb 2024, Small bulky added Jan 2026). It may have been right then, so it is not counted. Amazon\u2019s current tier is shown below it.';
 // Sizes written in the copy, e.g. 30x17, 76cm x 43cm, 36" x 24" x 0.5"
 function msCopySizes(text){
   const out = [], re = /(\d+(?:\.\d+)?)\s*(cm|"|\u201d|in\b|inch(?:es)?)?\s*[x\u00d7]\s*(\d+(?:\.\d+)?)\s*(cm|"|\u201d|in\b|inch(?:es)?)?(?:\s*[x\u00d7]\s*(\d+(?:\.\d+)?)\s*(cm|"|\u201d|in\b|inch(?:es)?)?)?/gi;
@@ -7158,10 +7201,10 @@ function msRows(mk){
     const conv = mm=> mm ? (ca ? mm / 10 : mm / 25.4) : null, convW = g=> g ? (ca ? g / 1000 : g / 453.592) : null;
     const aDims = kp ? kp.item.map(conv) : [], aWt = kp ? convW(kp.itemWt) : null, aPk = kp ? convW(kp.pkgWt) : null;
     const st = {};
-    const sz = msSameDims(pDims, aDims, ca ? 0.6 : 0.25); st.size = sz === null ? 'na' : sz ? 'ok' : 'diff';
+    const sz = msSameDims(pDims, aDims, ca ? 1.3 : 0.5); st.size = sz === null ? 'na' : sz ? 'ok' : 'diff';
     const wt = msSameWt(pWt, aWt, ca ? 0.05 : 0.1); st.weight = wt === null ? 'na' : wt ? 'ok' : 'diff';
     const pk = msSameWt(pPk, aPk, ca ? 0.05 : 0.1); st.pkg = pk === null ? 'na' : pk ? 'ok' : 'diff';
-    st.tier = !px.tier || !fee || !fee.tier ? 'na' : msTierKey(px.tier) === msTierKey(fee.tier) ? 'ok' : 'diff';
+    st.tier = !px.tier || !fee || !fee.tier ? 'na' : msTierCheck(px.tier, fee.tier, mk);
     // Copy: every size written in the title, bullets or description should match the Plytix size
     const lc = lcRowsAll.find(x=> x.asin === r.asin), copyBad = [];
     if(lc && lc.f){
@@ -7190,7 +7233,7 @@ function msRows(mk){
     const txtNums = String(ca ? px.dimsCm : px.dimsIn || '').match(/\d+(?:\.\d+)?/g);
     if(txtNums && txtNums.length === 3 && msTriple(pDims).length === 3){ const a = txtNums.map(Number).sort((x, y)=> y - x), b = msTriple(pDims); if(a.length === 3 && a.some((v, i)=> Math.abs(v - b[i]) > Math.max(0.06, b[i] * 0.01))) pxBad.push(`"${ca ? px.dimsCm : px.dimsIn}" doesn\u2019t match the length, width and height fields`); }
     st.plytix = pxBad.length ? 'diff' : (pDims.some(Boolean) || pWt ? 'ok' : 'na');
-    const keys = Object.keys(MS_CHK), checked = keys.filter(k=> st[k] !== 'na').length, ok = keys.filter(k=> st[k] === 'ok').length;
+    const keys = Object.keys(MS_CHK), checked = keys.filter(k=> st[k] !== 'na' && st[k] !== 'old').length, ok = keys.filter(k=> st[k] === 'ok').length;
     const bad = keys.filter(k=> st[k] === 'diff');
     const row = ROWS.find(x=> x.asin === r.asin);
     return Object.assign({}, r, {name: (row && row.name) || r.name || r.asin, ca, unit, wUnit, pDims, pWt, pPk, aDims, aWt, aPk, st, bad, copyBad, pxBad,
@@ -7235,16 +7278,16 @@ function renderMeasurements(){
   if(!MS.length) html += MS_ERR ? '<div class="cpt-empty"><b>Measurements feed not found yet</b>Run setupMeasurements in the CPC Keepa Fetcher project.</div>' : '<div class="cpt-empty"><b>Loading measurements</b></div>';
   else if(!rows.length) html += '<div class="cpt-empty"><b>Nothing here</b>Pick another tile or clear the search.</div>';
   else {
-    const chip = (s, tip)=> s === 'ok' ? '<span class="lcchip lc-ok">OK</span>' : s === 'diff' ? `<span class="lcchip lc-bad"${tip ? ` data-tip="${esc(tip)}"` : ''}>Differs</span>` : '<span class="lcchip lc-gray">\u2014</span>';
+    const chip = (s, tip)=> s === 'old' ? `<span class="lcchip lc-small" data-tip="${esc(MS_OLD_TIP)}">Old Plytix name</span>` : s === 'ok' ? '<span class="lcchip lc-ok">OK</span>' : s === 'diff' ? `<span class="lcchip lc-bad"${tip ? ` data-tip="${esc(tip)}"` : ''}>Differs</span>` : '<span class="lcchip lc-gray">\u2014</span>';
     const H = (k, label, cls)=> `<th data-s="${k}" data-d="asc" class="${cls || ''}">${label}${sortArrow(MS_F, k)}</th>`;
     const tr = r=> `<tr class="row" tabindex="0" data-ms="${esc(r.asin)}">`+
       `<td class="prod"><div class="p-name">${esc(String(r.name).slice(0, 56))}</div><div class="p-id"><span>SKU</span>${skuL(r.sku, mk)}${cpy(r.sku)}</div><div class="p-id"><span>ASIN</span>${asinL(r.asin, mk)}${cpy(r.asin)}</div>`+
         (r.tier ? `<span class="p-size">Tier ${esc(r.tier)}</span>` : '') + '</td>'+
-      `<td style="font-size:.8rem">${msFmt(r.pDims, r.unit, 2)}<div class="mut">${msW(r.pWt, r.wUnit)}</div></td>`+
-      `<td style="font-size:.8rem">${msFmt(r.aDims, r.unit, 2)}<div class="mut">${msW(r.aWt, r.wUnit)}</div></td>`+
+      `<td style="font-size:.8rem">${msFmt(msSorted(r.pDims), r.unit, 2)}<div class="mut">${msW(r.pWt, r.wUnit)}</div></td>`+
+      `<td style="font-size:.8rem">${msFmt(msSorted(r.aDims), r.unit, 2)}<div class="mut">${msW(r.aWt, r.wUnit)}</div></td>`+
       `<td class="c">${chip(r.st.size)} ${chip(r.st.weight)}</td>`+
       `<td class="c" style="font-size:.8rem">${msW(r.pPk, r.wUnit)} / ${msW(r.aPk, r.wUnit)}<div>${chip(r.st.pkg)}</div></td>`+
-      `<td class="c" style="font-size:.8rem">${esc(r.px.tier || '\u2014')}<div class="mut">${esc(r.fee && r.fee.tier || '\u2014')}</div>${chip(r.st.tier)}</td>`+
+      `<td class="c" style="font-size:.8rem">${esc(r.px.tier || '\u2014')}<div class="mut">${esc(r.fee && r.fee.tier ? msTierName(r.fee.tier, r.mk) : '\u2014')}</div>${chip(r.st.tier)}</td>`+
       `<td class="c">${chip(r.st.copy, r.copyBad.join(' \u2022 '))}</td>`+
       `<td class="c">${chip(r.st.plytix, r.pxBad.join(' \u2022 '))}</td></tr>`;
     html += '<table class="cpt-table lc-table"><thead><tr>'+ H('product','Product') + '<th>Plytix size / weight</th><th>Amazon size / weight (Keepa)</th><th class="c">Size, weight</th>'+
@@ -7272,13 +7315,13 @@ function renderMeasurements(){
 }
 function openMs(r){
   const d = document.getElementById('detail'), row = (k, v)=> `<dt>${esc(k)}</dt><dd>${v}</dd>`;
-  const st = k=> r.st[k] === 'ok' ? '<span class="lcchip lc-ok">OK</span>' : r.st[k] === 'diff' ? '<span class="lcchip lc-bad">Differs</span>' : '<span class="lcchip lc-gray">Can\u2019t check</span>';
+  const st = k=> r.st[k] === 'old' ? `<span class="lcchip lc-small" data-tip="${esc(MS_OLD_TIP)}">Old Plytix name</span>` : r.st[k] === 'ok' ? '<span class="lcchip lc-ok">OK</span>' : r.st[k] === 'diff' ? '<span class="lcchip lc-bad">Differs</span>' : '<span class="lcchip lc-gray">Can\u2019t check</span>';
   d.innerHTML = `<h2>Measurements</h2><h3>${esc(r.name)}</h3><dl>`+
     row('SKU', `${skuL(r.sku, r.mk)}${cpy(r.sku)}`) + row('ASIN', `${asinL(r.asin, r.mk)}${cpy(r.asin)}`)+
-    row('Size', `${st('size')} Plytix ${msFmt(r.pDims, r.unit, 2)} \u00b7 Amazon ${msFmt(r.aDims, r.unit, 2)}`)+
+    row('Size', `${st('size')} Plytix ${msFmt(msSorted(r.pDims), r.unit, 2)} \u00b7 Amazon ${msFmt(msSorted(r.aDims), r.unit, 2)} <span class="mut">(largest side first)</span>`)+
     row('Weight', `${st('weight')} Plytix ${msW(r.pWt, r.wUnit)} \u00b7 Amazon ${msW(r.aWt, r.wUnit)}`)+
     row('Packaged weight', `${st('pkg')} Plytix ${msW(r.pPk, r.wUnit)} \u00b7 Amazon ${msW(r.aPk, r.wUnit)}`)+
-    row('Size tier', `${st('tier')} Plytix ${esc(r.px.tier || '\u2014')} \u00b7 Fee Preview ${esc(r.fee && r.fee.tier || '\u2014')}` +
+    row('Size tier', `${st('tier')} Plytix ${esc(r.px.tier || '\u2014')} \u00b7 Fee Preview ${esc(r.fee && r.fee.tier ? msTierName(r.fee.tier, r.mk) : '\u2014')}` + (r.st.tier === 'old' ? ` <span class="mut">(Plytix tier is from before Amazon\u2019s 2024 or 2026 tier changes; Amazon\u2019s current tier is ${esc(msTierName(r.fee.tier, r.mk))}.)</span>` : '') +
       (r.fee && r.fee.longest ? ` <span class="mut">(Amazon measured ${[r.fee.longest, r.fee.median, r.fee.shortest].filter(Boolean).join(' \u00d7 ')} ${esc(r.fee.dimUnit || '')}, ${r.fee.weight || '\u2014'} ${esc(r.fee.weightUnit || '')})</span>` : ''))+
     row('Copy', `${st('copy')} ${r.copyBad.length ? esc(r.copyBad.join(' \u2022 ')) : ''}`)+
     row('Plytix', `${st('plytix')} ${r.pxBad.length ? esc(r.pxBad.join(' \u2022 ')) : ''}`)+
