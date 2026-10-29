@@ -63,7 +63,7 @@ header h1{
 #meta{font-size:.7rem;color:#93a0b0;letter-spacing:.02em}
 #meta b{color:#ccd6e2;font-weight:600}
 
-#toggle,#fs,#homeBtn,#quickCat,#casesBtn,#catalogBtn,#cptBtn,#bbBtn,#lcBtn,#lpBtn,#vrBtn,#bsBtn,#prBtn,#msBtn,#rvBtn{
+#toggle,#fs,#hRefresh,#hReset,#homeBtn,#quickCat,#casesBtn,#catalogBtn,#cptBtn,#bbBtn,#lcBtn,#lpBtn,#vrBtn,#bsBtn,#prBtn,#msBtn,#rvBtn,#stBtn{
   font-size:.74rem;padding:.24rem .6rem;
   background:transparent;color:#fff;border:1px solid #3a4652;
 }
@@ -94,14 +94,24 @@ td.cgtdp{min-width:14rem;max-width:22rem}
 #navGroups .ng-t:empty{display:none}
 #navGroups .ng-b{display:flex;flex-wrap:wrap;gap:.4rem}
 @media (max-width:700px){ #navGroups{margin-left:0;flex:1 1 100%} #navGroups .ng{padding:0 .6rem 0 0;border-left:0} }
+/* Phones only (MJ, Oct 29): the module buttons become one dropdown, so a module
+   starts at the top of the screen. Wider screens never see #mSelWrap. */
+#mSelWrap{display:none}
+@media (max-width:700px){
+  #navGroups .ng:not(.ng-tools){display:none}
+  #navGroups .ng-tools .ng-l{display:none}
+  #mSelWrap{display:flex;flex-direction:column;gap:.3rem;flex:1 1 100%;margin:.2rem 0 .5rem}
+  #mSelWrap label{font-size:.7rem;letter-spacing:.06em;text-transform:uppercase;color:rgba(255,255,255,.6)}
+  #mSel{width:100%;font-size:1rem;padding:.55rem .6rem;border-radius:8px;background:#1d222a;color:#fff;border:1px solid rgba(255,255,255,.25)}
+}
 #homeBtn[aria-pressed="true"],#quickCat[aria-pressed="true"],
 #casesBtn[aria-pressed="true"],
-#cptBtn[aria-pressed="true"],#bbBtn[aria-pressed="true"],#lcBtn[aria-pressed="true"],#lpBtn[aria-pressed="true"],#vrBtn[aria-pressed="true"],#bsBtn[aria-pressed="true"],#prBtn[aria-pressed="true"],#msBtn[aria-pressed="true"],#rvBtn[aria-pressed="true"],
+#cptBtn[aria-pressed="true"],#bbBtn[aria-pressed="true"],#lcBtn[aria-pressed="true"],#lpBtn[aria-pressed="true"],#vrBtn[aria-pressed="true"],#bsBtn[aria-pressed="true"],#prBtn[aria-pressed="true"],#msBtn[aria-pressed="true"],#rvBtn[aria-pressed="true"],#stBtn[aria-pressed="true"],
 #catalogBtn[aria-pressed="true"]{
   background:#2f4a6d;border-color:#4a6fa5;
 }
-#toggle:hover,#fs:hover,#homeBtn:hover,#quickCat:hover,#casesBtn:hover,#catalogBtn:hover,#cptBtn:hover,#bbBtn:hover,#lcBtn:hover,#lpBtn:hover,#vrBtn:hover,#bsBtn:hover,#prBtn:hover,#msBtn:hover,#rvBtn:hover{background:#1c232b}
-#toggle .badge,#homeBtn .badge,#quickCat .badge,#casesBtn .badge,#cptBtn .badge,#bbBtn .badge,#lcBtn .badge,#lpBtn .badge,#vrBtn .badge,#bsBtn .badge,#prBtn .badge,#msBtn .badge,#rvBtn .badge{
+#toggle:hover,#fs:hover,#hRefresh:hover,#hReset:hover,#homeBtn:hover,#quickCat:hover,#casesBtn:hover,#catalogBtn:hover,#cptBtn:hover,#bbBtn:hover,#lcBtn:hover,#lpBtn:hover,#vrBtn:hover,#bsBtn:hover,#prBtn:hover,#msBtn:hover,#rvBtn:hover,#stBtn:hover{background:#1c232b}
+#toggle .badge,#homeBtn .badge,#quickCat .badge,#casesBtn .badge,#cptBtn .badge,#bbBtn .badge,#lcBtn .badge,#lpBtn .badge,#vrBtn .badge,#bsBtn .badge,#prBtn .badge,#msBtn .badge,#rvBtn .badge,#stBtn .badge{
   display:inline-block;margin-left:.35rem;padding:0 .32rem;
   background:#a83a26;border-radius:8px;font-size:.68rem;font-weight:700;
 }
@@ -637,10 +647,10 @@ header h1{font-size:.95rem;letter-spacing:.02em;text-transform:none;font-weight:
 header h1::after{content:"";display:inline-block;width:.42rem;height:.42rem;border-radius:50%;
   background:#3fbf7f;margin-left:.45rem;vertical-align:middle}
 #meta{font-family:ui-monospace,"SF Mono",Menlo,Consolas,monospace;font-size:.72rem}
-#toggle,#fs,#homeBtn,#quickCat,#casesBtn,#catalogBtn,#cptBtn,#bbBtn,#lcBtn,#lpBtn,#vrBtn,#bsBtn,#prBtn,#msBtn,#rvBtn{
+#toggle,#fs,#hRefresh,#hReset,#homeBtn,#quickCat,#casesBtn,#catalogBtn,#cptBtn,#bbBtn,#lcBtn,#lpBtn,#vrBtn,#bsBtn,#prBtn,#msBtn,#rvBtn,#stBtn{
   font-size:.8rem;padding:.38rem .8rem;border-radius:7px;border-color:var(--night-line);color:#dfe5ee}
 #homeBtn[aria-pressed="true"],#quickCat[aria-pressed="true"],#casesBtn[aria-pressed="true"],
-#catalogBtn[aria-pressed="true"],#cptBtn[aria-pressed="true"],#bbBtn[aria-pressed="true"],#lcBtn[aria-pressed="true"],#lpBtn[aria-pressed="true"],#vrBtn[aria-pressed="true"],#bsBtn[aria-pressed="true"],#prBtn[aria-pressed="true"],#msBtn[aria-pressed="true"],#rvBtn[aria-pressed="true"]{background:#2c4f7c;border-color:#4a76b0;color:#fff}
+#catalogBtn[aria-pressed="true"],#cptBtn[aria-pressed="true"],#bbBtn[aria-pressed="true"],#lcBtn[aria-pressed="true"],#lpBtn[aria-pressed="true"],#vrBtn[aria-pressed="true"],#bsBtn[aria-pressed="true"],#prBtn[aria-pressed="true"],#msBtn[aria-pressed="true"],#rvBtn[aria-pressed="true"],#stBtn[aria-pressed="true"]{background:#2c4f7c;border-color:#4a76b0;color:#fff}
 
 /* overview band */
 #ov{background:var(--night);color:#e8edf3;padding:1.05rem 1.25rem 1.15rem;flex:0 0 auto}
@@ -853,13 +863,14 @@ a.idl:hover{color:var(--accent);border-bottom-style:solid}
   <nav id="navGroups" aria-label="Modules">
     <div class="ng"><div class="ng-l">Today</div><div class="ng-b"><button id="catalogBtn">Catalog</button></div></div>
     <div class="ng"><div class="ng-l">Price and Buy Box <span class="ng-t" data-ngt="price"></span></div>
-      <div class="ng-b" data-ng="price"><button id="cptBtn">CPT tracker</button><button id="bbBtn">Buy Box</button><button id="lpBtn">List Price</button></div></div>
+      <div class="ng-b" data-ng="price"><button id="cptBtn">CPT tracker</button><button id="bbBtn">Buy Box</button><button id="lpBtn">List Price</button><button id="stBtn">Strike-through</button></div></div>
     <div class="ng"><div class="ng-l">Listing health <span class="ng-t" data-ngt="listing"></span></div>
       <div class="ng-b" data-ng="listing"><button id="lcBtn">Listing Copy</button><button id="quickCat">Category</button><button id="vrBtn">Variation</button><button id="msBtn">Measurements</button><button id="rvBtn">Listing Review</button></div></div>
     <div class="ng"><div class="ng-l">Performance <span class="ng-t" data-ngt="perf"></span></div>
       <div class="ng-b" data-ng="perf"><button id="bsBtn">BSR</button></div></div>
     <div class="ng"><div class="ng-l">Reference</div><div class="ng-b"><button id="prBtn">Master SKU</button></div></div>
-    <div class="ng ng-tools"><div class="ng-l">&nbsp;</div><div class="ng-b"><button id="toggle" aria-expanded="true">Filters</button><button id="fs" title="Fullscreen">Full screen</button></div></div>
+    <div id="mSelWrap"><label for="mSel">Module</label><select id="mSel"><optgroup label="Today"><option value="catalogBtn">Catalog</option></optgroup><optgroup label="Price and Buy Box"><option value="cptBtn">CPT tracker</option><option value="bbBtn">Buy Box</option><option value="lpBtn">List Price</option><option value="stBtn">Strike-through</option></optgroup><optgroup label="Listing health"><option value="lcBtn">Listing Copy</option><option value="quickCat">Category</option><option value="vrBtn">Variation</option><option value="msBtn">Measurements</option><option value="rvBtn">Listing Review</option></optgroup><optgroup label="Performance"><option value="bsBtn">BSR</option></optgroup><optgroup label="Reference"><option value="prBtn">Master SKU</option></optgroup></select></div>
+    <div class="ng ng-tools"><div class="ng-l">&nbsp;</div><div class="ng-b"><button id="toggle" aria-expanded="true">Filters</button><button id="hRefresh" title="Reload all data now. Reads the published files only: no scripts run, no Keepa tokens.">↻ Refresh</button><button id="hReset" title="Put this module’s filters, search, sort and grouping back to their defaults. Keeps the marketplace and all saved checks and marks.">Reset view</button><button id="fs" title="Fullscreen">Full screen</button></div></div>
   </nav>
 </header>
 <section id="ov" hidden></section>
@@ -1103,8 +1114,8 @@ async function load(fresh){
     .then(j => { buildMs(j); if(S.view === 'ms') render(); else chrome(); })
     .catch(e => { MS_ERR = e.message; if(S.view === 'ms') render(); });
   grab(RV_SRC, 'json', fresh)
-    .then(j => { buildRv(j); if(S.view === 'rv') render(); else chrome(); })
-    .catch(e => { RV_ERR = e.message; if(S.view === 'rv') render(); });
+    .then(j => { buildRv(j); if(S.view === 'rv' || S.view === 'st') render(); else chrome(); })
+    .catch(e => { RV_ERR = e.message; if(S.view === 'rv' || S.view === 'st') render(); });
   grab(SIG_SRC, 'json', fresh)
     .then(j => { SIG = j || null; if(S.view === 'category' || S.view === 'catalog' || S.view === 'lc') render(); })
     .catch(()=> { SIG = null; });
@@ -6976,12 +6987,13 @@ function modPct(id, mk){
     if(id === 'quickCat'){ if(!CG.length) return null; const r = inStock(cgRows(mk).filter(x=> !x.nolive), mk); return pct1(r.reduce((t, x)=> t + (x.ok || 0), 0), r.reduce((t, x)=> t + (x.checked || 0), 0)); }
     if(id === 'vrBtn'){ if(!VR.length) return null; const r = inStock(vrRows(mk).filter(x=> !x.nolive), mk); return pct1(r.reduce((t, x)=> t + (x.ok || 0), 0), r.reduce((t, x)=> t + (x.checked || 0), 0)); }
     if(id === 'msBtn'){ if(!MS.length) return null; const r = inStock(msRows(mk), mk).filter(x=> x.checked); return pct1(r.reduce((t, x)=> t + x.ok, 0), r.reduce((t, x)=> t + x.checked, 0)); }
+    if(id === 'stBtn'){ if(mk !== 'US' || !(RV.strike || []).length) return null; return pct1(RV.strike.filter(x=> x.shown).length, RV.strike.length); }
     if(id === 'rvBtn'){ if(mk !== 'US' || !RV.run) return null; const read = RV.run.read || RV.active || 0; return pct1(Math.max(0, read - rvAll().filter(r=> r.problems.length).length), read); }
     if(id === 'bsBtn'){ if(!BS.length) return null; const r = inStock(bsRows(mk), mk).filter(x=> x.cur !== null); return pct1(r.filter(x=> x.cur >= 4).length, r.length); }
   } catch (e) { return null; }
   return null;
 }
-const NAV_MODS = [['cptBtn','CPT tracker'], ['bbBtn','Buy Box'], ['lpBtn','List Price'], ['lcBtn','Listing Copy'], ['quickCat','Category'], ['vrBtn','Variation'], ['msBtn','Measurements'], ['rvBtn','Listing Review'], ['bsBtn','BSR']];
+const NAV_MODS = [['cptBtn','CPT tracker'], ['bbBtn','Buy Box'], ['lpBtn','List Price'], ['stBtn','Strike-through'], ['lcBtn','Listing Copy'], ['quickCat','Category'], ['vrBtn','Variation'], ['msBtn','Measurements'], ['rvBtn','Listing Review'], ['bsBtn','BSR']];
 function navPercents(){
   const all = [];
   NAV_MODS.forEach(([id, name])=>{
@@ -6991,12 +7003,15 @@ function navPercents(){
     const show = us !== null ? us : ca;
     const html = name + (show === null ? '' : `<span class="badge pc ${PCT_CLS(show)}" data-pct="${us === null ? '' : us}">${show}%</span>`);
     if(b.innerHTML !== html) b.innerHTML = html;
+    const mo = document.querySelector('#mSel option[value="' + id + '"]');
+    if(mo){ const t = name + (show === null ? '' : ' \u00b7 ' + show + '%'); if(mo.textContent !== t) mo.textContent = t; }
     b.title = `US ${us === null ? '\u2014' : us + '%'} \u00b7 CA ${ca === null ? '\u2014' : ca + '%'}`;
   });
   // Catalog: the average of every module's US and CA %
   const cb = document.getElementById('catalogBtn');
   if(cb){ const v = all.length ? Math.round(all.reduce((t, x)=> t + x, 0) / all.length * 10) / 10 : null;
-    const html = 'Catalog' + (v === null ? '' : `<span class="badge pc ${PCT_CLS(v)}">${v}%</span>`); if(cb.innerHTML !== html) cb.innerHTML = html; cb.title = 'Average of every module, US and CA'; }
+    const html = 'Catalog' + (v === null ? '' : `<span class="badge pc ${PCT_CLS(v)}">${v}%</span>`); if(cb.innerHTML !== html) cb.innerHTML = html; cb.title = 'Average of every module, US and CA';
+    const mo = document.querySelector('#mSel option[value="catalogBtn"]'); if(mo) mo.textContent = 'Catalog' + (v === null ? '' : ' \u00b7 ' + v + '%'); }
   // Master SKU keeps a gray count of Plytix checks
   const pb = document.getElementById('prBtn');
   if(pb && typeof PR !== 'undefined' && PR.length){ const n = prRows().filter(r=> r.chk.length).length; const html = 'Master SKU' + (n ? `<span class="badge pc pc-n">${n} checks</span>` : ''); if(pb.innerHTML !== html) pb.innerHTML = html; }
@@ -7964,6 +7979,93 @@ function rvCard(r){
     (sb && r.problems.length ? '<div class="rv-note">Seedboy listing: the fix goes through the Go-live requests sheet for Jack or Sam.</div>' : '')+
   '</div>';
 }
+/* Strike-through (Jack's PDP log, Oct 29). The weekly Cowork check writes what the
+   page shows near the price: "List Price $49.95", "Typical price $39.99" or "None".
+   Since Apr 23 2026 Amazon shows a List Price strike-through only if that price was
+   offered at another retailer recently or sold on Amazon at that price, so the
+   Master SKU List Price and Walmart price are shown beside it for Haris and Sam. */
+function rvStrike(F){
+  F = F || ST_F;
+  const ti = x=> { const i = RV_TIERS.indexOf(x.tier); return i === -1 ? 9 : i; };
+  let a = (RV.strike || []).map(x=>{
+    const row = (x.sku && ROWS.find(r=> r.sku === x.sku)) || ROWS.find(r=> r.asin === x.asin);
+    const wasShown = x.was !== null && x.was !== undefined ? !/^none$/i.test(x.was) && x.was !== '' : null;
+    const change = wasShown === null ? '' : wasShown && !x.shown ? 'lost' : !wasShown && x.shown ? 'new' : (x.was !== x.page ? 'changed' : '');
+    return Object.assign({}, x, {fam: x.family || 'No family', list: row ? row.usList : null, wm: rbWalmart(x.asin), change});
+  });
+  if(F.tier) a = a.filter(x=> x.tier === F.tier);
+  if(F.brand) a = a.filter(x=> x.brand === F.brand);
+  if(F.family) a = a.filter(x=> x.fam === F.family);
+  if(F.q){ const q = F.q.toLowerCase(); a = a.filter(x=> (x.sku + ' ' + x.asin + ' ' + x.name + ' ' + x.fam).toLowerCase().indexOf(q) !== -1); }
+  const pick = {none: x=> !x.shown, shown: x=> x.shown, lost: x=> x.change === 'lost', new: x=> x.change === 'new', all: ()=> true};
+  a = a.filter(pick[F.show] || pick.all);
+  const rank = x=> x.change === 'lost' ? 0 : !x.shown ? 1 : x.change ? 2 : 3;
+  return a.sort((x, y)=> rank(x) - rank(y) || ti(x) - ti(y) || x.fam.localeCompare(y.fam) || x.sku.localeCompare(y.sku));
+}
+function rvStrikeTable(rows){
+  const money = v=> v === null || v === undefined || v === '' ? '\u2014' : (typeof v === 'number' ? usd(v) : esc(v));
+  const chg = {lost:'<span class="lcchip lc-bad">Lost since last check</span>', new:'<span class="lcchip lc-ok">New since last check</span>', changed:'<span class="lcchip lc-small">Changed</span>'};
+  return '<div style="overflow-x:auto;margin:.4rem 1rem"><table class="rv-t" style="min-width:880px;background:#fff;border:1px solid var(--line);border-radius:8px">'+
+    '<tr><td style="padding-left:.6rem">Product</td><td>Strike-through now</td><td>Last check</td><td>Our price</td><td>List Price (Master SKU)</td><td>Walmart</td></tr>'+
+    rows.map(x=> `<tr><td style="padding-left:.6rem"><b>${esc(x.name || x.sku)}</b><div class="rv-id">${skuL(x.sku, 'US')} \u00b7 ${asinL(x.asin, 'US')} \u00b7 Tier ${esc(x.tier || '?')} \u00b7 ${esc(x.brand)}</div></td>`+
+      `<td>${x.shown ? `<span class="lcchip lc-ok">${esc(x.page)}</span>` : '<span class="lcchip lc-bad">None</span>'}${x.change ? '<div style="margin-top:.25rem">' + chg[x.change] + '</div>' : ''}</td>`+
+      `<td>${x.was === null || x.was === undefined ? '<span class="mut">\u2014</span>' : esc(x.was || 'None')}</td>`+
+      `<td>${money(x.price)}</td><td>${money(x.list)}</td><td>${money(x.wm)}</td></tr>`).join('')+
+  '</table></div><div class="rv-note" style="margin:0 1rem 1rem">Since April 23, 2026, Amazon shows a List Price strike-through only if that price was recently offered at another retailer, or bought on Amazon at that price. A "Typical price" strike-through comes from Amazon\u2019s own 90-day price history. Pricing decisions stay with Haris and Sam.</div>';
+}
+/* STRIKE-THROUGH module (MJ, Oct 29): its own page in Price and Buy Box, fed by the
+   strike-through the weekly Cowork PDP check reads on every product page. */
+const ST_F_DEF = {show:'none', tier:'', brand:'', family:'', q:''};
+const ST_F = Object.assign({}, ST_F_DEF);
+try { Object.assign(ST_F, JSON.parse(localStorage.getItem('st_state') || '{}')); } catch(e){}
+const stKeep = ()=>{ try { localStorage.setItem('st_state', JSON.stringify(ST_F)); } catch(e){} };
+function renderStrike(){
+  document.getElementById('msg').hidden = true;
+  document.getElementById('bar').innerHTML = '';
+  const v = document.getElementById('cptView'), run = RV.run;
+  const all = rvStrike(Object.assign({}, ST_F_DEF, {show:'all'})), rows = rvStrike(ST_F);
+  const n = f=> all.filter(f).length, shown = n(x=> x.shown), none = n(x=> !x.shown);
+  const lp = n(x=> /^list/i.test(x.page)), tp = n(x=> /^typical/i.test(x.page));
+  const lost = n(x=> x.change === 'lost'), gained = n(x=> x.change === 'new');
+  const fams = [...new Set(all.map(r=> r.fam))].sort(), brands = [...new Set(all.map(r=> r.brand).filter(Boolean))].sort();
+  const tile = (k, val, cls, note, f)=> `<div class="cpt-tile bbtile${ST_F.show === f ? ' on' : ''}" role="button" tabindex="0" data-sts="${f}"><div class="k">${k}</div><div class="v ${cls || ''}">${val}</div><div class="n">${note || '&nbsp;'}</div></div>`;
+  const sel = (id, label, opts, val)=> `<label class="mut" style="font-size:.78rem">${label} <select id="${id}"><option value="">All</option>${opts.map(o=> `<option value="${esc(o)}"${o === val ? ' selected' : ''}>${esc(o)}</option>`).join('')}</select></label>`;
+  let html = '<section class="cpt-top"><div class="cpt-head"><h2>Strike-through</h2>'+
+    '<span class="sub">The crossed-out price on each Amazon US product page, read by the weekly Cowork check</span>'+
+    (run ? `<span class="cpt-live"><i></i>Checked ${esc(shortDate(run.date.slice(0, 10)))}</span>` : '')+
+    '</div><div class="cpt-tiles">'+
+      tile('Pages read', all.length || '\u2014', '', run ? 'Last check ' + esc(shortDate(run.date.slice(0, 10))) : 'No check yet', 'all')+
+      tile('With a strike-through', shown, shown ? 'good' : '', `${lp} List Price, ${tp} Typical price`, 'shown')+
+      tile('No strike-through', none, none ? 'bad' : 'good', 'Tier A first', 'none')+
+      tile('Lost since last check', lost, lost ? 'bad' : 'good', RV.prevRun ? 'vs ' + esc(shortDate(RV.prevRun.date.slice(0, 10))) : 'Needs two checks', 'lost')+
+      tile('New since last check', gained, gained ? 'good' : '', RV.prevRun ? 'vs ' + esc(shortDate(RV.prevRun.date.slice(0, 10))) : 'Needs two checks', 'new')+
+    '</div></section>';
+  html += '<div class="cpt-tools rv-tools"><div class="seg" id="stSt">'+
+      [['none','No strike-through'],['lost','Lost'],['new','New'],['shown','With a strike-through'],['all','All']].map(([k, l])=> `<button data-st="${k}" aria-pressed="${ST_F.show === k}">${l}</button>`).join('')+'</div>'+
+      sel('stTier', 'Tier', RV_TIERS, ST_F.tier) + sel('stBrand', 'Brand', brands, ST_F.brand) + sel('stFam', 'Family', fams, ST_F.family)+
+      `<input id="stQ" type="search" placeholder="Search SKU, ASIN, product or family" value="${esc(ST_F.q)}">`+
+      `<button id="stCopy">Copy list for Haris and Sam</button><button id="stClr">Clear filters</button>`+
+      `<span class="count">${rows.length} of ${all.length}</span></div>`;
+  if(!RV.rows && RV_ERR) html += '<div class="cpt-empty"><b>Strike-through feed not found yet</b>It comes with the Listing Review feed (review.json).</div>';
+  else if(!RV.rows) html += '<div class="cpt-empty"><b>Loading Strike-through</b></div>';
+  else if(!all.length) html += '<div class="cpt-empty"><b>No strike-through data yet</b>The weekly Cowork PDP check fills this page from its next run.</div>';
+  else if(!rows.length) html += '<div class="cpt-empty"><b>Nothing matches these filters</b>Try Clear filters.</div>';
+  else html += rvStrikeTable(rows);
+  v.innerHTML = html;
+  const set = (k, val)=>{ ST_F[k] = val; stKeep(); renderStrike(); chrome(); };
+  [...v.querySelectorAll('[data-sts]')].forEach(t=> t.onclick = ()=> set('show', t.dataset.sts));
+  [...v.querySelectorAll('#stSt button')].forEach(b=> b.onclick = ()=> set('show', b.dataset.st));
+  [['stTier','tier'],['stBrand','brand'],['stFam','family']].forEach(([id, k])=>{ const el = document.getElementById(id); if(el) el.onchange = ()=> set(k, el.value); });
+  const q = document.getElementById('stQ'); if(q) q.oninput = ()=>{ ST_F.q = q.value; stKeep(); const p = q.selectionStart; renderStrike(); const q2 = document.getElementById('stQ'); q2.focus(); q2.setSelectionRange(p, p); };
+  const cl = document.getElementById('stClr'); if(cl) cl.onclick = ()=>{ Object.assign(ST_F, ST_F_DEF); stKeep(); renderStrike(); };
+  const cp = document.getElementById('stCopy'); if(cp) cp.onclick = ()=>{
+    const m = x=> x === null || x === undefined || x === '' ? 'n/a' : (typeof x === 'number' ? usd(x) : x);
+    const t = `Strike-through check ${run ? run.date.slice(0, 10) : ''}: ${rows.length} listing${rows.length === 1 ? '' : 's'}\n` +
+      rows.map(x=> `• ${x.sku} (Tier ${x.tier || '?'}): ${x.shown ? x.page : 'none'}${x.change === 'lost' ? ' (lost, was ' + x.was + ')' : ''}. Our price ${m(x.price)}, List Price ${m(x.list)}, Walmart ${m(x.wm)}`).join('\n');
+    (navigator.clipboard ? navigator.clipboard.writeText(t) : Promise.reject()).then(()=>{ cp.textContent = 'Copied'; }).catch(()=> window.prompt('Copy:', t));
+  };
+}
+
 function renderReview(){
   document.getElementById('msg').hidden = true;
   document.getElementById('bar').innerHTML = '';
@@ -8042,13 +8144,13 @@ function render(){
   TARGETS = null;      // re-read from today's data on every redraw
   renderView();
   chrome();
-  if(['cpt','bb','lc','lp','vr','bs','pr','ms','rv','category','catalog'].indexOf(S.view) !== -1) document.getElementById('ov').hidden = true;
+  if(['cpt','bb','lc','lp','vr','bs','pr','ms','rv','st','category','catalog'].indexOf(S.view) !== -1) document.getElementById('ov').hidden = true;
   else bandHeaders();
 }
 
 function renderView(){
 
-  const isCpt = ['cpt','bb','lc','lp','vr','bs','pr','ms','rv','category','catalog'].indexOf(S.view) !== -1;
+  const isCpt = ['cpt','bb','lc','lp','vr','bs','pr','ms','rv','st','category','catalog'].indexOf(S.view) !== -1;
   document.getElementById('cptView').hidden  = !isCpt;
   document.getElementById('mainWrap').hidden = isCpt;
   document.getElementById('bar').hidden      = isCpt;
@@ -8064,6 +8166,7 @@ function renderView(){
   if(S.view === 'pr'){ renderProducts(); return; }
   if(S.view === 'ms'){ renderMeasurements(); return; }
   if(S.view === 'rv'){ renderReview(); return; }
+  if(S.view === 'st'){ renderStrike(); return; }
   if(S.view === 'category'){ renderCategory(); return; }
   if(S.view === 'catalog'){ renderOverview(); return; }
 
@@ -8496,6 +8599,7 @@ const bsBtn    = document.getElementById('bsBtn');
 const prBtn    = document.getElementById('prBtn');
 const msBtn    = document.getElementById('msBtn');
 const rvBtn    = document.getElementById('rvBtn');
+const stBtn    = document.getElementById('stBtn');
 
 let PANEL_BEFORE_CPT = null;
 
@@ -8504,7 +8608,7 @@ function go(view){
   // The CPT view has its own controls, so the filter panel folds away while
   // it is open and comes back as it was when you leave.
   // The CPT and Buy Box views both own the screen
-  const own = x=> ['cpt','bb','lc','lp','vr','bs','pr','ms','rv','category','catalog'].indexOf(x) !== -1;
+  const own = x=> ['cpt','bb','lc','lp','vr','bs','pr','ms','rv','st','category','catalog'].indexOf(x) !== -1;
   if(own(view) && !own(S.view)){
     PANEL_BEFORE_CPT = !document.getElementById('panel').hidden;
     setPanel(false);
@@ -8526,9 +8630,15 @@ function go(view){
   prBtn.setAttribute('aria-pressed', view === 'pr');
   msBtn.setAttribute('aria-pressed', view === 'ms');
   rvBtn.setAttribute('aria-pressed', view === 'rv');
+  stBtn.setAttribute('aria-pressed', view === 'st');
   catalogBtn.setAttribute('aria-pressed', view === 'catalog');
+  const mSel = document.getElementById('mSel');
+  if(mSel){ const id = MSEL_OF[view]; if(id && mSel.value !== id) mSel.value = id; }
   render();
 }
+const MSEL_OF = {catalog:'catalogBtn', cpt:'cptBtn', bb:'bbBtn', lp:'lpBtn', st:'stBtn', lc:'lcBtn', category:'quickCat',
+  vr:'vrBtn', ms:'msBtn', rv:'rvBtn', bs:'bsBtn', pr:'prBtn'};
+document.getElementById('mSel').onchange = e=>{ const b = document.getElementById(e.target.value); if(b) b.click(); };
 
 casesBtn.onclick = ()=> go('cases');
 cptBtn.onclick   = ()=> go('cpt');
@@ -8540,6 +8650,7 @@ bsBtn.onclick    = ()=> go('bs');
 prBtn.onclick    = ()=> go('pr');
 msBtn.onclick    = ()=> go('ms');
 rvBtn.onclick    = ()=> go('rv');
+stBtn.onclick    = ()=> go('st');
 
 homeBtn.onclick    = ()=> go('checklist');
 catalogBtn.onclick = ()=> go('catalog');
@@ -8564,6 +8675,42 @@ document.addEventListener('keydown', e=>{
 });
 
 document.getElementById('bRefresh').onclick = ()=> load(true);
+
+/* Refresh and Reset view for every module (MJ, Oct 29). Refresh reuses load(true):
+   it re-reads every published file with no cache. Reset view puts the open
+   module's filter object back to how the console starts, keeping the marketplace
+   (mk); saved page checks, Reviewed marks and flags are not filter state and stay. */
+const VIEW_F = {cpt:CPT_F, bb:BB_F, lc:LC_F, lp:LP_F, category:CG_F, vr:VR_F, bs:BS_F, pr:PR_F, ms:MS_F, rv:RV_F, st:ST_F};
+const VIEW_F_DEF = {};
+Object.keys(VIEW_F).forEach(k=>{ VIEW_F_DEF[k] = JSON.parse(JSON.stringify(VIEW_F[k])); });
+VIEW_F_DEF.rv = JSON.parse(JSON.stringify(RV_F_DEF));   // these two load saved settings, so their start is the coded default
+VIEW_F_DEF.st = JSON.parse(JSON.stringify(ST_F_DEF));
+const hRefresh = document.getElementById('hRefresh'), hReset = document.getElementById('hReset');
+hRefresh.onclick = async ()=>{
+  hRefresh.disabled = true; hRefresh.textContent = '\u21bb Refreshing\u2026';
+  try { await load(true); hRefresh.textContent = '\u21bb Refreshed ' + new Date().toLocaleTimeString([], {hour:'numeric', minute:'2-digit'}); }
+  catch(e){ hRefresh.textContent = '\u21bb Refresh failed, try again'; }
+  hRefresh.disabled = false;
+  setTimeout(()=>{ hRefresh.textContent = '\u21bb Refresh'; }, 4000);
+};
+hReset.onclick = ()=>{
+  const F = VIEW_F[S.view], D = VIEW_F_DEF[S.view];
+  if(!F || !D){ hReset.textContent = 'Nothing to reset here'; setTimeout(()=>{ hReset.textContent = 'Reset view'; }, 2500); return; }
+  const mk = F.mk;
+  Object.keys(F).forEach(k=>{ if(!(k in D)) delete F[k]; });
+  Object.assign(F, JSON.parse(JSON.stringify(D)));
+  if(mk !== undefined) F.mk = mk;
+  if(S.view === 'rv') rvKeep();
+  if(S.view === 'st') stKeep();
+  render();
+  hReset.textContent = 'View reset'; setTimeout(()=>{ hReset.textContent = 'Reset view'; }, 2500);
+};
+/* The Filters panel belongs to the first version of the dashboard: its filters
+   only drive the old checklist table, which no page shows any more (every page,
+   Catalog included, folds the panel away). Hidden, not deleted (MJ, Oct 29). */
+tBtn.style.display = 'none';
+setPanel(false);
+
 document.getElementById('bCsv').onclick = csv;
 document.getElementById('bReset').onclick = ()=>{
   S.stock.clear(); S.price.clear();
