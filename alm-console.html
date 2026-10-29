@@ -7965,7 +7965,7 @@ function rvCard(r){
   const mark = m ? ` <span class="lcchip ${m.act === 'Reviewed' ? 'lc-ok' : 'lc-bad'}" title="${esc(m.note || '')}">${m.act === 'Reviewed' ? '\u2714 Reviewed' : '\u2691 Flagged'}${m.note ? ': ' + esc(m.note.slice(0, 40)) : ''}</span>` : '';
   const img = (r.problems.find(p=> p.img) || {}).img;
   const lines = r.problems.length
-    ? r.problems.map(p=> `<tr><td>${esc(p.field)}${p.result === "Can't check" ? ' <span class="mut">(can\u2019t check)</span>' : ''}</td><td class="bad">${esc(p.page || '\u2014')}</td><td>${esc(p.should || '\u2014')}${p.note ? `<div class="mut">${esc(p.note)}</div>` : ''}</td></tr>`).join('')
+    ? r.problems.map(p=> `<tr><td>${esc(p.field)}${p.result === "Can't check" ? ' <span class="mut">(can\u2019t check)</span>' : p.result === 'Missing' ? ' <span class="lcchip lc-small">Missing on Amazon</span>' : ''}<div class="mut" style="font-size:.72rem">${p.src ? esc(p.src) : 'Page check'}</div></td><td class="bad">${esc(p.page || '\u2014')}</td><td>${esc(p.should || '\u2014')}${p.note ? `<div class="mut">${esc(p.note)}</div>` : ''}</td></tr>`).join('')
     : r.fixed.map(f=> `<tr><td>${esc(f.field)}</td><td>${esc(f.was || '\u2014')}</td><td>${esc(f.should || '\u2014')} \u2714</td></tr>`).join('');
   const goLive = sb && r.problems.length ? `<button data-rvgl="${esc(r.asin)}">Copy for Go-live requests</button>` : '';
   const act = m ? `<button data-rvclear="${esc(r.asin)}">Undo</button>` :
@@ -7974,7 +7974,7 @@ function rvCard(r){
     `<div class="rv-name">${esc(r.name || r.sku)}</div>`+
     `<div class="rv-id">${skuL(r.sku, 'US')}${cpy(r.sku)} \u00b7 ${asinL(r.asin, 'US')}${cpy(r.asin)} \u00b7 Tier ${esc(r.tier || '?')} \u00b7 ${esc(r.brand)}${r.family ? ' \u00b7 ' + esc(r.family) : ''}</div></div>`+
     `<div class="rv-btns"><a href="https://www.amazon.com/dp/${esc(r.asin)}" target="_blank" rel="noopener"><button>Open PDP \u2197</button></a>${goLive}${act}${sb && !m ? `<button data-rvok="${esc(r.asin)}">\u2714 Reviewed</button>` : ''}</div></div>`+
-    `<div class="rv-body">${img ? `<img src="${esc(img)}" alt="Main image as Cowork saw it" loading="lazy">` : ''}`+
+    `<div class="rv-body">${img ? `<img src="${esc(img)}" alt="Main image" loading="lazy">` : ''}`+
     `<table class="rv-t"><tr><td>Field</td><td>${r.problems.length ? 'On the page' : 'Was'}</td><td>Should be</td></tr>${lines}</table></div>`+
     (sb && r.problems.length ? '<div class="rv-note">Seedboy listing: the fix goes through the Go-live requests sheet for Jack or Sam.</div>' : '')+
   '</div>';
@@ -8071,17 +8071,17 @@ function renderReview(){
   document.getElementById('bar').innerHTML = '';
   const v = document.getElementById('cptView'), all = rvAll(), rows = rvRows(), run = RV.run;
   const probs = all.filter(r=> r.problems.length), nNew = probs.filter(r=> r.isNew).length;
-  const nFixed = all.filter(r=> r.fixed.length).length, read = run ? (run.read || RV.active || 0) : 0;
+  const nFixed = all.filter(r=> r.fixed.length).length, read = run ? (run.read || RV.active || 0) : (RV.active || 0);
   const rev = probs.filter(r=> r.mk2 && r.mk2.act === 'Reviewed').length;
   const fams = [...new Set(all.map(r=> r.fam))].sort(), brands = [...new Set(all.map(r=> r.brand).filter(Boolean))].sort();
   const tile = (k, val, cls, note, f)=> f === '' ? `<div class="cpt-tile"><div class="k">${k}</div><div class="v ${cls || ''}">${val}</div><div class="n">${note || '&nbsp;'}</div></div>` : `<div class="cpt-tile bbtile${RV_F.status === f ? ' on' : ''}" role="button" tabindex="0" data-rvs="${f}"><div class="k">${k}</div><div class="v ${cls || ''}">${val}</div><div class="n">${note || '&nbsp;'}</div></div>`;
   const sel = (id, label, opts, val)=> `<label class="mut" style="font-size:.78rem">${label} <select id="${id}"><option value="">All</option>${opts.map(o=> `<option value="${esc(o)}"${o === val ? ' selected' : ''}>${esc(o)}</option>`).join('')}</select></label>`;
   let html = '<section class="cpt-top"><div class="cpt-head"><h2>Listing Review</h2>'+
-    `<span class="sub">Weekly check of every active Amazon US product page by Cowork</span>`+
+    `<span class="sub">Keepa details checked daily, product pages checked weekly by Cowork</span>`+
     (RV.updated ? `<span class="cpt-live"><i></i>Built ${esc(RV.updated)} ET</span>` : '')+
     '</div><div class="cpt-tiles">'+
-      tile('Last check', run ? esc(shortDate(run.date.slice(0, 10))) : '\u2014', '', run ? `${read} listings read` : 'No check yet', '')+
-      tile('All correct', run ? Math.max(0, read - probs.length) : '\u2014', 'good', run ? 'of ' + read : '', '')+
+      tile('Last page check', run ? esc(shortDate(run.date.slice(0, 10))) : '\u2014', '', run ? `${run.read || 0} pages read by Cowork` : 'Keepa checks run daily', '')+
+      tile('All correct', read ? Math.max(0, read - probs.length) : '\u2014', 'good', read ? 'of ' + read + ' active' : '', '')+
       tile('Problems', probs.length, probs.length ? 'bad' : 'good', nNew ? nNew + ' new this week' : 'none new', 'all')+
       tile('New', nNew, nNew ? 'bad' : 'good', 'Changed since last check', 'new')+
       tile('Fixed since last check', nFixed, nFixed ? 'good' : '', RV.prevRun ? 'vs ' + esc(shortDate(RV.prevRun.date.slice(0, 10))) : 'Needs two checks', 'fixed')+
@@ -8100,7 +8100,7 @@ function renderReview(){
       `<span class="count">${rows.length} of ${probs.length}</span></div>`;
   if(!RV.rows && RV_ERR) html += '<div class="cpt-empty"><b>Listing Review feed not found yet</b>Run setupListingReview in the CPC Keepa Fetcher project.</div>';
   else if(!RV.rows) html += '<div class="cpt-empty"><b>Loading Listing Review</b></div>';
-  else if(!run) html += '<div class="cpt-empty"><b>No Cowork check yet</b>The first weekly check will fill this page. Its instructions are in Cowork_Weekly_PDP_Check.md.</div>';
+  else if(!run && !probs.length) html += '<div class="cpt-empty"><b>No problems found yet</b>Keepa details are checked every day, and the weekly Cowork page check adds images and strike-throughs.</div>';
   else if(!rows.length) html += `<div class="cpt-empty"><b>${probs.length ? 'Nothing matches these filters' : 'Every listing checked is correct'}</b>${probs.length ? 'Try Clear filters.' : 'Nothing to review this week.'}</div>`;
   else if(RV_F.mode === 'one'){
     RV_F.pos = Math.max(0, Math.min(rows.length - 1, RV_F.pos || 0));
