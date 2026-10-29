@@ -63,7 +63,7 @@ header h1{
 #meta{font-size:.7rem;color:#93a0b0;letter-spacing:.02em}
 #meta b{color:#ccd6e2;font-weight:600}
 
-#toggle,#fs,#homeBtn,#quickCat,#casesBtn,#catalogBtn,#cptBtn,#bbBtn,#lcBtn,#lpBtn,#vrBtn,#bsBtn,#prBtn,#msBtn{
+#toggle,#fs,#homeBtn,#quickCat,#casesBtn,#catalogBtn,#cptBtn,#bbBtn,#lcBtn,#lpBtn,#vrBtn,#bsBtn,#prBtn,#msBtn,#rvBtn{
   font-size:.74rem;padding:.24rem .6rem;
   background:transparent;color:#fff;border:1px solid #3a4652;
 }
@@ -96,12 +96,12 @@ td.cgtdp{min-width:14rem;max-width:22rem}
 @media (max-width:700px){ #navGroups{margin-left:0;flex:1 1 100%} #navGroups .ng{padding:0 .6rem 0 0;border-left:0} }
 #homeBtn[aria-pressed="true"],#quickCat[aria-pressed="true"],
 #casesBtn[aria-pressed="true"],
-#cptBtn[aria-pressed="true"],#bbBtn[aria-pressed="true"],#lcBtn[aria-pressed="true"],#lpBtn[aria-pressed="true"],#vrBtn[aria-pressed="true"],#bsBtn[aria-pressed="true"],#prBtn[aria-pressed="true"],#msBtn[aria-pressed="true"],
+#cptBtn[aria-pressed="true"],#bbBtn[aria-pressed="true"],#lcBtn[aria-pressed="true"],#lpBtn[aria-pressed="true"],#vrBtn[aria-pressed="true"],#bsBtn[aria-pressed="true"],#prBtn[aria-pressed="true"],#msBtn[aria-pressed="true"],#rvBtn[aria-pressed="true"],
 #catalogBtn[aria-pressed="true"]{
   background:#2f4a6d;border-color:#4a6fa5;
 }
-#toggle:hover,#fs:hover,#homeBtn:hover,#quickCat:hover,#casesBtn:hover,#catalogBtn:hover,#cptBtn:hover,#bbBtn:hover,#lcBtn:hover,#lpBtn:hover,#vrBtn:hover,#bsBtn:hover,#prBtn:hover,#msBtn:hover{background:#1c232b}
-#toggle .badge,#homeBtn .badge,#quickCat .badge,#casesBtn .badge,#cptBtn .badge,#bbBtn .badge,#lcBtn .badge,#lpBtn .badge,#vrBtn .badge,#bsBtn .badge,#prBtn .badge,#msBtn .badge{
+#toggle:hover,#fs:hover,#homeBtn:hover,#quickCat:hover,#casesBtn:hover,#catalogBtn:hover,#cptBtn:hover,#bbBtn:hover,#lcBtn:hover,#lpBtn:hover,#vrBtn:hover,#bsBtn:hover,#prBtn:hover,#msBtn:hover,#rvBtn:hover{background:#1c232b}
+#toggle .badge,#homeBtn .badge,#quickCat .badge,#casesBtn .badge,#cptBtn .badge,#bbBtn .badge,#lcBtn .badge,#lpBtn .badge,#vrBtn .badge,#bsBtn .badge,#prBtn .badge,#msBtn .badge,#rvBtn .badge{
   display:inline-block;margin-left:.35rem;padding:0 .32rem;
   background:#a83a26;border-radius:8px;font-size:.68rem;font-weight:700;
 }
@@ -637,10 +637,10 @@ header h1{font-size:.95rem;letter-spacing:.02em;text-transform:none;font-weight:
 header h1::after{content:"";display:inline-block;width:.42rem;height:.42rem;border-radius:50%;
   background:#3fbf7f;margin-left:.45rem;vertical-align:middle}
 #meta{font-family:ui-monospace,"SF Mono",Menlo,Consolas,monospace;font-size:.72rem}
-#toggle,#fs,#homeBtn,#quickCat,#casesBtn,#catalogBtn,#cptBtn,#bbBtn,#lcBtn,#lpBtn,#vrBtn,#bsBtn,#prBtn,#msBtn{
+#toggle,#fs,#homeBtn,#quickCat,#casesBtn,#catalogBtn,#cptBtn,#bbBtn,#lcBtn,#lpBtn,#vrBtn,#bsBtn,#prBtn,#msBtn,#rvBtn{
   font-size:.8rem;padding:.38rem .8rem;border-radius:7px;border-color:var(--night-line);color:#dfe5ee}
 #homeBtn[aria-pressed="true"],#quickCat[aria-pressed="true"],#casesBtn[aria-pressed="true"],
-#catalogBtn[aria-pressed="true"],#cptBtn[aria-pressed="true"],#bbBtn[aria-pressed="true"],#lcBtn[aria-pressed="true"],#lpBtn[aria-pressed="true"],#vrBtn[aria-pressed="true"],#bsBtn[aria-pressed="true"],#prBtn[aria-pressed="true"],#msBtn[aria-pressed="true"]{background:#2c4f7c;border-color:#4a76b0;color:#fff}
+#catalogBtn[aria-pressed="true"],#cptBtn[aria-pressed="true"],#bbBtn[aria-pressed="true"],#lcBtn[aria-pressed="true"],#lpBtn[aria-pressed="true"],#vrBtn[aria-pressed="true"],#bsBtn[aria-pressed="true"],#prBtn[aria-pressed="true"],#msBtn[aria-pressed="true"],#rvBtn[aria-pressed="true"]{background:#2c4f7c;border-color:#4a76b0;color:#fff}
 
 /* overview band */
 #ov{background:var(--night);color:#e8edf3;padding:1.05rem 1.25rem 1.15rem;flex:0 0 auto}
@@ -783,6 +783,29 @@ a.work:hover{background:var(--accent);color:#fff}
 .lcchip{display:inline-block;font-size:.74rem;font-weight:700;padding:.18rem .45rem;border-radius:5px;white-space:nowrap;cursor:help}
 .lc-ok{background:#e4f3ee;color:#17694a}.lc-small{background:#fdf1d8;color:#8a5a00}.lc-bad{background:#fbe2df;color:#a3261a}
 .lc-gray{background:#eef1f5;color:#64748b}.lc-none{color:#94a3b8}
+/* Listing Review (Oct 29) */
+.rvcard{border:1px solid var(--line);border-radius:10px;padding:.8rem 1rem;margin:.6rem 1rem;background:#fff}
+.rvcard.done{opacity:.6}
+.rv-h{display:flex;gap:.8rem;flex-wrap:wrap;align-items:flex-start;justify-content:space-between}
+.rv-name{font-weight:700;font-size:1rem;margin:.3rem 0 0}
+.rv-id{font-size:.8rem;color:var(--muted)}
+.rv-btns{display:flex;gap:.4rem;flex-wrap:wrap}
+.rv-btns button,.rv-nav button{font-size:.8rem}
+.rv-body{display:flex;gap:.9rem;margin-top:.6rem;align-items:flex-start}
+.rv-body img{width:110px;height:110px;object-fit:contain;border:1px solid var(--line);border-radius:6px;background:#fff}
+.rv-t{width:100%;border-collapse:collapse;font-size:.84rem;table-layout:fixed}
+.rv-t td{padding:.3rem .4rem .3rem 0;border-top:1px solid var(--line);vertical-align:top;word-wrap:break-word}
+.rv-t tr:first-child td{border-top:0;color:var(--muted);font-size:.74rem}
+.rv-t .bad{color:#a3261a}
+.rv-note{font-size:.78rem;color:var(--muted);margin-top:.45rem}
+.rv-nav{display:flex;align-items:center;gap:.6rem;margin:.6rem 1rem}
+.rv-nav .pos{font-weight:700}
+.rv-gh{display:flex;align-items:center;gap:.7rem;margin:1rem 1rem .2rem;font-weight:700}
+.rv-gh button{font-size:.76rem;font-weight:400}
+.rv-more{position:relative}
+.rv-more summary{list-style:none;cursor:pointer;padding:.25rem .6rem;border:1px solid var(--line);border-radius:6px}
+.rv-more div{position:absolute;right:0;z-index:5;background:#fff;border:1px solid var(--line);border-radius:8px;padding:.4rem;min-width:220px}
+.rv-tools select{font-size:.82rem}
 .lc-table td.c{padding-left:.3rem;padding-right:.3rem}
 .lcf{border:1px solid var(--line);border-radius:8px;padding:.6rem .7rem;margin:.55rem 0}
 .lcf-h{display:flex;align-items:center;gap:.45rem;flex-wrap:wrap}
@@ -832,7 +855,7 @@ a.idl:hover{color:var(--accent);border-bottom-style:solid}
     <div class="ng"><div class="ng-l">Price and Buy Box <span class="ng-t" data-ngt="price"></span></div>
       <div class="ng-b" data-ng="price"><button id="cptBtn">CPT tracker</button><button id="bbBtn">Buy Box</button><button id="lpBtn">List Price</button></div></div>
     <div class="ng"><div class="ng-l">Listing health <span class="ng-t" data-ngt="listing"></span></div>
-      <div class="ng-b" data-ng="listing"><button id="lcBtn">Listing Copy</button><button id="quickCat">Category</button><button id="vrBtn">Variation</button><button id="msBtn">Measurements</button></div></div>
+      <div class="ng-b" data-ng="listing"><button id="lcBtn">Listing Copy</button><button id="quickCat">Category</button><button id="vrBtn">Variation</button><button id="msBtn">Measurements</button><button id="rvBtn">Listing Review</button></div></div>
     <div class="ng"><div class="ng-l">Performance <span class="ng-t" data-ngt="perf"></span></div>
       <div class="ng-b" data-ng="perf"><button id="bsBtn">BSR</button></div></div>
     <div class="ng"><div class="ng-l">Reference</div><div class="ng-b"><button id="prBtn">Master SKU</button></div></div>
@@ -962,6 +985,7 @@ const PR_SRC = 'https://raw.githubusercontent.com/mjbaguhin/cpc-tracker/main/pro
 const GL_SRC = 'https://raw.githubusercontent.com/mjbaguhin/cpc-tracker/main/gl.json';
 const SIG_SRC = 'https://raw.githubusercontent.com/mjbaguhin/cpc-tracker/main/signals.json';
 const MS_SRC = 'https://raw.githubusercontent.com/mjbaguhin/cpc-tracker/main/measurements.json';
+const RV_SRC = 'https://raw.githubusercontent.com/mjbaguhin/cpc-tracker/main/review.json';
 
 // Amazon's case creation entry point
 const CASE_URL = 'https://sellercentral.amazon.com/help/center?redirectSource=HelpHub';
@@ -1078,6 +1102,9 @@ async function load(fresh){
   grab(MS_SRC, 'json', fresh)
     .then(j => { buildMs(j); if(S.view === 'ms') render(); else chrome(); })
     .catch(e => { MS_ERR = e.message; if(S.view === 'ms') render(); });
+  grab(RV_SRC, 'json', fresh)
+    .then(j => { buildRv(j); if(S.view === 'rv') render(); else chrome(); })
+    .catch(e => { RV_ERR = e.message; if(S.view === 'rv') render(); });
   grab(SIG_SRC, 'json', fresh)
     .then(j => { SIG = j || null; if(S.view === 'category' || S.view === 'catalog' || S.view === 'lc') render(); })
     .catch(()=> { SIG = null; });
@@ -6949,11 +6976,12 @@ function modPct(id, mk){
     if(id === 'quickCat'){ if(!CG.length) return null; const r = inStock(cgRows(mk).filter(x=> !x.nolive), mk); return pct1(r.reduce((t, x)=> t + (x.ok || 0), 0), r.reduce((t, x)=> t + (x.checked || 0), 0)); }
     if(id === 'vrBtn'){ if(!VR.length) return null; const r = inStock(vrRows(mk).filter(x=> !x.nolive), mk); return pct1(r.reduce((t, x)=> t + (x.ok || 0), 0), r.reduce((t, x)=> t + (x.checked || 0), 0)); }
     if(id === 'msBtn'){ if(!MS.length) return null; const r = inStock(msRows(mk), mk).filter(x=> x.checked); return pct1(r.reduce((t, x)=> t + x.ok, 0), r.reduce((t, x)=> t + x.checked, 0)); }
+    if(id === 'rvBtn'){ if(mk !== 'US' || !RV.run) return null; const read = RV.run.read || RV.active || 0; return pct1(Math.max(0, read - rvAll().filter(r=> r.problems.length).length), read); }
     if(id === 'bsBtn'){ if(!BS.length) return null; const r = inStock(bsRows(mk), mk).filter(x=> x.cur !== null); return pct1(r.filter(x=> x.cur >= 4).length, r.length); }
   } catch (e) { return null; }
   return null;
 }
-const NAV_MODS = [['cptBtn','CPT tracker'], ['bbBtn','Buy Box'], ['lpBtn','List Price'], ['lcBtn','Listing Copy'], ['quickCat','Category'], ['vrBtn','Variation'], ['msBtn','Measurements'], ['bsBtn','BSR']];
+const NAV_MODS = [['cptBtn','CPT tracker'], ['bbBtn','Buy Box'], ['lpBtn','List Price'], ['lcBtn','Listing Copy'], ['quickCat','Category'], ['vrBtn','Variation'], ['msBtn','Measurements'], ['rvBtn','Listing Review'], ['bsBtn','BSR']];
 function navPercents(){
   const all = [];
   NAV_MODS.forEach(([id, name])=>{
@@ -7304,7 +7332,7 @@ function renderMeasurements(){
         html += `<tr class="gh"><td colspan="8"><b>${esc(k === '~' ? 'No parent' : (rs[0].pname || k))}</b> <span class="mut">${k === '~' ? '' : esc(k) + ' \u00b7 '}${rs.length} listing${rs.length > 1 ? 's' : ''}${rs.some(r=> r.bad.length) ? ', ' + rs.filter(r=> r.bad.length).length + ' with a difference' : ''}</span></td></tr>` + rs.map(tr).join('');
       });
     } else html += rows.map(tr).join('');
-    html += '</tbody></table><p class="mut" style="font-size:.78rem">Same within 0.25 in or 2% for sizes (0.6 cm on CA), 5% for weights. The copy allows rounding (30x17 for 30 x 16.75). Out of stock is not in the %.</p>';
+    html += '</tbody></table><p class="mut" style="font-size:.78rem">Same within 0.5 in or 5% per side for sizes (1.3 cm on CA), 5% for weights. The copy allows rounding (30x17 for 30 x 16.75). Out of stock is not in the %.</p>';
   }
   v.innerHTML = html;
   wireSort(v, MS_F, renderMeasurements);
@@ -7848,17 +7876,179 @@ function bandHeaders(){
 
 /* ---------- render ---------- */
 
+/* LISTING REVIEW (MJ, Oct 29 2026). A weekly Cowork task reads every active
+   listing's Amazon page and writes what is wrong to the "PDP Review" tab;
+   Review_Watch.gs turns it into review.json every hour. MJ only looks at the
+   problems, marks them Reviewed or Flags them, one by one or as a list. The
+   Cowork task only reads Amazon. Seedboy fixes go through Go-live requests. */
+let RV = {}, RV_ERR = '';
+const RV_F_DEF = {status:'all', tier:'', brand:'', family:'', order:'newest', group:false, q:'', mode:'list', pos:0};
+const RV_F = Object.assign({}, RV_F_DEF);
+try { Object.assign(RV_F, JSON.parse(localStorage.getItem('rv_state') || '{}')); } catch(e){}
+const rvKeep = ()=>{ try { localStorage.setItem('rv_state', JSON.stringify(RV_F)); } catch(e){} };
+const RV_TIERS = ['A','B','C','X','N'];
+function buildRv(j){ RV_ERR = ''; RV = j || {}; }
+function rvLocal(){ try { return JSON.parse(localStorage.getItem('rv_marks') || '{}'); } catch(e){ return {}; } }
+function rvMarkOf(r){
+  const L = rvLocal()[RV.round || ''] || {}, k = r.mk + '|' + r.asin;
+  if(L[k]) return L[k].act === 'Clear' ? null : L[k];
+  if(L.__resetAt && L.__resetAt === RV.updated) return null;   // round restarted, server not rebuilt yet
+  return r.mark || null;
+}
+function rvSave(r, act, note){
+  const all = rvLocal(), round = RV.round || '', L = all[round] = all[round] || {};
+  L[r.mk + '|' + r.asin] = {act, note: note || '', d: new Date().toISOString().slice(0, 16).replace('T', ' ')};
+  try { localStorage.setItem('rv_marks', JSON.stringify(all)); } catch(e){}
+  if(RV.webapp){
+    const q = new URLSearchParams({action:'review', mk:r.mk, sku:r.sku, asin:r.asin, act, note: note || '', round});
+    fetch(RV.webapp + '?' + q.toString(), {mode:'no-cors'}).catch(()=>{});
+  }
+}
+function rvResetRound(){
+  const all = rvLocal(), round = RV.round || '';
+  all[round] = {__resetAt: RV.updated || ''};
+  try { localStorage.setItem('rv_marks', JSON.stringify(all)); } catch(e){}
+  if(RV.webapp) fetch(RV.webapp + '?' + new URLSearchParams({action:'review', act:'Reset round', round}).toString(), {mode:'no-cors'}).catch(()=>{});
+}
+function rvAll(){
+  return (RV.rows || []).map(r=>{
+    const isNew = r.problems.some(p=> p.st === 'new'), wk = Math.max(0, ...r.problems.map(p=> p.weeks || 1));
+    return Object.assign({}, r, {isNew, wk, mk2: rvMarkOf(r), fam: r.family || 'No family'});
+  });
+}
+function rvRows(){
+  let a = rvAll();
+  const pick = {all: x=> x.problems.length, new: x=> x.isNew, open: x=> x.problems.some(p=> p.st === 'open'),
+    fixed: x=> x.fixed.length && !x.problems.length, reviewed: x=> x.mk2 && x.mk2.act === 'Reviewed', flagged: x=> x.mk2 && x.mk2.act === 'Flagged'};
+  a = a.filter(pick[RV_F.status] || pick.all);
+  if(RV_F.tier) a = a.filter(x=> x.tier === RV_F.tier);
+  if(RV_F.brand) a = a.filter(x=> x.brand === RV_F.brand);
+  if(RV_F.family) a = a.filter(x=> x.fam === RV_F.family);
+  if(RV_F.q){ const q = RV_F.q.toLowerCase(); a = a.filter(x=> (x.sku + ' ' + x.asin + ' ' + x.name + ' ' + x.fam).toLowerCase().indexOf(q) !== -1); }
+  const ti = x=> { const i = RV_TIERS.indexOf(x.tier); return i === -1 ? 9 : i; };
+  const by = {
+    tier: (x, y)=> ti(x) - ti(y) || x.fam.localeCompare(y.fam) || x.sku.localeCompare(y.sku),
+    family: (x, y)=> x.fam.localeCompare(y.fam) || ti(x) - ti(y) || x.sku.localeCompare(y.sku),
+    brand: (x, y)=> x.brand.localeCompare(y.brand) || ti(x) - ti(y) || x.sku.localeCompare(y.sku),
+    newest: (x, y)=> (y.isNew - x.isNew) || (y.wk - x.wk) || ti(x) - ti(y) || x.sku.localeCompare(y.sku)
+  };
+  return a.sort(by[RV_F.order] || by.newest);
+}
+function rvStep(d){
+  const rows = rvRows(); if(!rows.length) return;
+  RV_F.pos = Math.max(0, Math.min(rows.length - 1, (RV_F.pos || 0) + d)); rvKeep(); renderReview();
+}
+function rvNextOpen(rows, from){
+  for(let i = from + 1; i < rows.length; i++) if(!rows[i].mk2) return i;
+  return Math.min(from + 1, rows.length - 1);
+}
+function rvCard(r){
+  const sb = r.brand === 'Seedboy', m = r.mk2;
+  const tag = r.problems.length
+    ? (r.isNew ? '<span class="lcchip lc-bad">New</span>' : `<span class="lcchip lc-small">Still open, week ${r.wk}</span>`)
+    : (r.fixed.length ? '<span class="lcchip lc-ok">Fixed</span>' : '');
+  const mark = m ? ` <span class="lcchip ${m.act === 'Reviewed' ? 'lc-ok' : 'lc-bad'}" title="${esc(m.note || '')}">${m.act === 'Reviewed' ? '\u2714 Reviewed' : '\u2691 Flagged'}${m.note ? ': ' + esc(m.note.slice(0, 40)) : ''}</span>` : '';
+  const img = (r.problems.find(p=> p.img) || {}).img;
+  const lines = r.problems.length
+    ? r.problems.map(p=> `<tr><td>${esc(p.field)}${p.result === "Can't check" ? ' <span class="mut">(can\u2019t check)</span>' : ''}</td><td class="bad">${esc(p.page || '\u2014')}</td><td>${esc(p.should || '\u2014')}${p.note ? `<div class="mut">${esc(p.note)}</div>` : ''}</td></tr>`).join('')
+    : r.fixed.map(f=> `<tr><td>${esc(f.field)}</td><td>${esc(f.was || '\u2014')}</td><td>${esc(f.should || '\u2014')} \u2714</td></tr>`).join('');
+  const goLive = sb && r.problems.length ? `<button data-rvgl="${esc(r.asin)}">Copy for Go-live requests</button>` : '';
+  const act = m ? `<button data-rvclear="${esc(r.asin)}">Undo</button>` :
+    `<button data-rvflag="${esc(r.asin)}">\u2691 Flag</button>` + (sb ? '' : `<button data-rvok="${esc(r.asin)}">\u2714 Reviewed</button>`);
+  return `<div class="rvcard${m && m.act === 'Reviewed' ? ' done' : ''}" data-rv="${esc(r.asin)}"><div class="rv-h"><div>${tag}${mark}`+
+    `<div class="rv-name">${esc(r.name || r.sku)}</div>`+
+    `<div class="rv-id">${skuL(r.sku, 'US')}${cpy(r.sku)} \u00b7 ${asinL(r.asin, 'US')}${cpy(r.asin)} \u00b7 Tier ${esc(r.tier || '?')} \u00b7 ${esc(r.brand)}${r.family ? ' \u00b7 ' + esc(r.family) : ''}</div></div>`+
+    `<div class="rv-btns"><a href="https://www.amazon.com/dp/${esc(r.asin)}" target="_blank" rel="noopener"><button>Open PDP \u2197</button></a>${goLive}${act}${sb && !m ? `<button data-rvok="${esc(r.asin)}">\u2714 Reviewed</button>` : ''}</div></div>`+
+    `<div class="rv-body">${img ? `<img src="${esc(img)}" alt="Main image as Cowork saw it" loading="lazy">` : ''}`+
+    `<table class="rv-t"><tr><td>Field</td><td>${r.problems.length ? 'On the page' : 'Was'}</td><td>Should be</td></tr>${lines}</table></div>`+
+    (sb && r.problems.length ? '<div class="rv-note">Seedboy listing: the fix goes through the Go-live requests sheet for Jack or Sam.</div>' : '')+
+  '</div>';
+}
+function renderReview(){
+  document.getElementById('msg').hidden = true;
+  document.getElementById('bar').innerHTML = '';
+  const v = document.getElementById('cptView'), all = rvAll(), rows = rvRows(), run = RV.run;
+  const probs = all.filter(r=> r.problems.length), nNew = probs.filter(r=> r.isNew).length;
+  const nFixed = all.filter(r=> r.fixed.length).length, read = run ? (run.read || RV.active || 0) : 0;
+  const rev = probs.filter(r=> r.mk2 && r.mk2.act === 'Reviewed').length;
+  const fams = [...new Set(all.map(r=> r.fam))].sort(), brands = [...new Set(all.map(r=> r.brand).filter(Boolean))].sort();
+  const tile = (k, val, cls, note, f)=> f === '' ? `<div class="cpt-tile"><div class="k">${k}</div><div class="v ${cls || ''}">${val}</div><div class="n">${note || '&nbsp;'}</div></div>` : `<div class="cpt-tile bbtile${RV_F.status === f ? ' on' : ''}" role="button" tabindex="0" data-rvs="${f}"><div class="k">${k}</div><div class="v ${cls || ''}">${val}</div><div class="n">${note || '&nbsp;'}</div></div>`;
+  const sel = (id, label, opts, val)=> `<label class="mut" style="font-size:.78rem">${label} <select id="${id}"><option value="">All</option>${opts.map(o=> `<option value="${esc(o)}"${o === val ? ' selected' : ''}>${esc(o)}</option>`).join('')}</select></label>`;
+  let html = '<section class="cpt-top"><div class="cpt-head"><h2>Listing Review</h2>'+
+    `<span class="sub">Weekly check of every active Amazon US product page by Cowork</span>`+
+    (RV.updated ? `<span class="cpt-live"><i></i>Built ${esc(RV.updated)} ET</span>` : '')+
+    '</div><div class="cpt-tiles">'+
+      tile('Last check', run ? esc(shortDate(run.date.slice(0, 10))) : '\u2014', '', run ? `${read} listings read` : 'No check yet', '')+
+      tile('All correct', run ? Math.max(0, read - probs.length) : '\u2014', 'good', run ? 'of ' + read : '', '')+
+      tile('Problems', probs.length, probs.length ? 'bad' : 'good', nNew ? nNew + ' new this week' : 'none new', 'all')+
+      tile('New', nNew, nNew ? 'bad' : 'good', 'Changed since last check', 'new')+
+      tile('Fixed since last check', nFixed, nFixed ? 'good' : '', RV.prevRun ? 'vs ' + esc(shortDate(RV.prevRun.date.slice(0, 10))) : 'Needs two checks', 'fixed')+
+      tile('Reviewed this round', `${rev}<span style="font-size:1rem;color:var(--c-night-mut)"> of ${probs.length}</span>`, rev === probs.length && probs.length ? 'good' : '', 'Resets with each new check', 'reviewed')+
+    '</div></section>';
+  if(RV.running) html += `<div class="why"><b>Check in progress</b> since ${esc(RV.running.date)}: ${RV.running.read || 0} listings read so far. This page shows the last finished check until it\u2019s done.</div>`;
+  html += '<div class="cpt-tools rv-tools"><div class="seg" id="rvSt">'+
+      [['all','All problems'],['new','New'],['open','Still open'],['fixed','Fixed'],['reviewed','Reviewed'],['flagged','Flagged']].map(([k, l])=> `<button data-st="${k}" aria-pressed="${RV_F.status === k}">${l}</button>`).join('')+'</div>'+
+      `<label class="mut" style="font-size:.78rem">Review by <select id="rvOrder">${[['newest','Newest problems first'],['tier','Tier (A first)'],['family','Family'],['brand','Brand']].map(([k, l])=> `<option value="${k}"${RV_F.order === k ? ' selected' : ''}>${l}</option>`).join('')}</select></label>`+
+      sel('rvTier', 'Tier', RV_TIERS, RV_F.tier) + sel('rvBrand', 'Brand', brands, RV_F.brand) + sel('rvFam', 'Family', fams, RV_F.family)+
+      `<input id="rvQ" type="search" placeholder="Search SKU, ASIN, product or family" value="${esc(RV_F.q)}">`+
+      `<button id="rvMode" aria-pressed="${RV_F.mode === 'one'}">${RV_F.mode === 'one' ? 'Show as list' : 'Review one by one'}</button>`+
+      (RV_F.mode === 'list' ? `<button id="rvGrp" aria-pressed="${RV_F.group}">Group by family</button>` : '')+
+      `<button id="rvClr">Clear filters</button>`+
+      `<details class="rv-more"><summary aria-label="More">\u22ef</summary><div><button id="rvReset">Start this round over</button></div></details>`+
+      `<span class="count">${rows.length} of ${probs.length}</span></div>`;
+  if(!RV.rows && RV_ERR) html += '<div class="cpt-empty"><b>Listing Review feed not found yet</b>Run setupListingReview in the CPC Keepa Fetcher project.</div>';
+  else if(!RV.rows) html += '<div class="cpt-empty"><b>Loading Listing Review</b></div>';
+  else if(!run) html += '<div class="cpt-empty"><b>No Cowork check yet</b>The first weekly check will fill this page. Its instructions are in Cowork_Weekly_PDP_Check.md.</div>';
+  else if(!rows.length) html += `<div class="cpt-empty"><b>${probs.length ? 'Nothing matches these filters' : 'Every listing checked is correct'}</b>${probs.length ? 'Try Clear filters.' : 'Nothing to review this week.'}</div>`;
+  else if(RV_F.mode === 'one'){
+    RV_F.pos = Math.max(0, Math.min(rows.length - 1, RV_F.pos || 0));
+    html += `<div class="rv-nav"><button id="rvPrev">\u2190 Previous</button><span class="pos">${RV_F.pos + 1} of ${rows.length}</span><button id="rvNext">Next \u2192</button><span class="mut" style="font-size:.78rem">Arrow keys work too. On a phone, swipe.</span></div>`+
+      `<div id="rvOne">${rvCard(rows[RV_F.pos])}</div>`;
+  } else if(RV_F.group){
+    const g = {}; rows.forEach(r=> (g[r.fam] = g[r.fam] || []).push(r));
+    Object.keys(g).forEach(f=>{
+      const rs = g[f], left = rs.filter(r=> !r.mk2).length;
+      html += `<div class="rv-gh">${esc(f)} <span class="mut" style="font-weight:400">${rs.length} listing${rs.length > 1 ? 's' : ''}, ${left} to review</span>`+
+        (left ? `<button data-rvfam="${esc(f)}">Mark family reviewed</button>` : '') + '</div>' + rs.map(rvCard).join('');
+    });
+  } else html += rows.map(rvCard).join('');
+  v.innerHTML = html;
+
+  const find = a=> rows.find(x=> x.asin === a) || all.find(x=> x.asin === a);
+  const after = (r)=>{ if(RV_F.mode === 'one'){ const rs = rvRows(), i = rs.findIndex(x=> x.asin === r.asin); RV_F.pos = i === -1 ? RV_F.pos : rvNextOpen(rs, i); rvKeep(); } renderReview(); chrome(); };
+  [...v.querySelectorAll('[data-rvs]')].forEach(t=> t.onclick = ()=>{ RV_F.status = t.dataset.rvs; RV_F.pos = 0; rvKeep(); renderReview(); });
+  [...v.querySelectorAll('#rvSt button')].forEach(b=> b.onclick = ()=>{ RV_F.status = b.dataset.st; RV_F.pos = 0; rvKeep(); renderReview(); });
+  [['rvOrder','order'],['rvTier','tier'],['rvBrand','brand'],['rvFam','family']].forEach(([id, k])=>{ const el = document.getElementById(id); if(el) el.onchange = ()=>{ RV_F[k] = el.value; RV_F.pos = 0; rvKeep(); renderReview(); }; });
+  const q = document.getElementById('rvQ'); if(q) q.oninput = ()=>{ RV_F.q = q.value; RV_F.pos = 0; rvKeep(); const p = q.selectionStart; renderReview(); const q2 = document.getElementById('rvQ'); q2.focus(); q2.setSelectionRange(p, p); };
+  const md = document.getElementById('rvMode'); if(md) md.onclick = ()=>{ RV_F.mode = RV_F.mode === 'one' ? 'list' : 'one'; rvKeep(); renderReview(); };
+  const gb = document.getElementById('rvGrp'); if(gb) gb.onclick = ()=>{ RV_F.group = !RV_F.group; rvKeep(); renderReview(); };
+  const cl = document.getElementById('rvClr'); if(cl) cl.onclick = ()=>{ Object.assign(RV_F, RV_F_DEF); rvKeep(); renderReview(); };
+  const rs = document.getElementById('rvReset'); if(rs) rs.onclick = ()=>{ if(!confirm(`Clear ${probs.filter(r=> r.mk2).length} reviewed and flagged marks for this round? The history stays in the Review Marks tab.`)) return; rvResetRound(); renderReview(); chrome(); };
+  const pv = document.getElementById('rvPrev'); if(pv) pv.onclick = ()=> rvStep(-1);
+  const nx = document.getElementById('rvNext'); if(nx) nx.onclick = ()=> rvStep(1);
+  const one = document.getElementById('rvOne');
+  if(one){ let x0 = null; one.addEventListener('touchstart', e=>{ x0 = e.touches[0].clientX; }, {passive:true});
+    one.addEventListener('touchend', e=>{ if(x0 === null) return; const dx = e.changedTouches[0].clientX - x0; x0 = null; if(Math.abs(dx) > 60) rvStep(dx < 0 ? 1 : -1); }); }
+  [...v.querySelectorAll('[data-rvok]')].forEach(b=> b.onclick = ()=>{ const r = find(b.dataset.rvok); if(r){ rvSave(r, 'Reviewed'); after(r); } });
+  [...v.querySelectorAll('[data-rvflag]')].forEach(b=> b.onclick = ()=>{ const r = find(b.dataset.rvflag); if(!r) return; const n = prompt('What needs a look? (optional)', ''); if(n === null) return; rvSave(r, 'Flagged', n); after(r); });
+  [...v.querySelectorAll('[data-rvclear]')].forEach(b=> b.onclick = ()=>{ const r = find(b.dataset.rvclear); if(r){ rvSave(r, 'Clear'); renderReview(); chrome(); } });
+  [...v.querySelectorAll('[data-rvfam]')].forEach(b=> b.onclick = ()=>{ const rs2 = rows.filter(r=> r.fam === b.dataset.rvfam && !r.mk2); if(!confirm(`Mark ${rs2.length} listing${rs2.length > 1 ? 's' : ''} in ${b.dataset.rvfam} as reviewed?`)) return; rs2.forEach(r=> rvSave(r, 'Reviewed')); renderReview(); chrome(); });
+  [...v.querySelectorAll('[data-rvgl]')].forEach(b=> b.onclick = ()=>{ const r = find(b.dataset.rvgl); if(!r) return;
+    const t = r.problems.map(p=> `${r.sku} (${r.asin}): ${p.field}, change "${p.page}" to "${p.should}". Found by the weekly PDP check ${RV.run ? RV.run.date.slice(0, 10) : ''}.`).join('\n');
+    (navigator.clipboard ? navigator.clipboard.writeText(t) : Promise.reject()).then(()=>{ b.textContent = 'Copied, paste it in Go-live requests'; }).catch(()=> window.prompt('Copy:', t)); });
+}
+
 function render(){
   TARGETS = null;      // re-read from today's data on every redraw
   renderView();
   chrome();
-  if(['cpt','bb','lc','lp','vr','bs','pr','ms','category','catalog'].indexOf(S.view) !== -1) document.getElementById('ov').hidden = true;
+  if(['cpt','bb','lc','lp','vr','bs','pr','ms','rv','category','catalog'].indexOf(S.view) !== -1) document.getElementById('ov').hidden = true;
   else bandHeaders();
 }
 
 function renderView(){
 
-  const isCpt = ['cpt','bb','lc','lp','vr','bs','pr','ms','category','catalog'].indexOf(S.view) !== -1;
+  const isCpt = ['cpt','bb','lc','lp','vr','bs','pr','ms','rv','category','catalog'].indexOf(S.view) !== -1;
   document.getElementById('cptView').hidden  = !isCpt;
   document.getElementById('mainWrap').hidden = isCpt;
   document.getElementById('bar').hidden      = isCpt;
@@ -7873,6 +8063,7 @@ function renderView(){
   if(S.view === 'bs'){ renderBsr(); return; }
   if(S.view === 'pr'){ renderProducts(); return; }
   if(S.view === 'ms'){ renderMeasurements(); return; }
+  if(S.view === 'rv'){ renderReview(); return; }
   if(S.view === 'category'){ renderCategory(); return; }
   if(S.view === 'catalog'){ renderOverview(); return; }
 
@@ -8304,6 +8495,7 @@ const vrBtn    = document.getElementById('vrBtn');
 const bsBtn    = document.getElementById('bsBtn');
 const prBtn    = document.getElementById('prBtn');
 const msBtn    = document.getElementById('msBtn');
+const rvBtn    = document.getElementById('rvBtn');
 
 let PANEL_BEFORE_CPT = null;
 
@@ -8312,7 +8504,7 @@ function go(view){
   // The CPT view has its own controls, so the filter panel folds away while
   // it is open and comes back as it was when you leave.
   // The CPT and Buy Box views both own the screen
-  const own = x=> ['cpt','bb','lc','lp','vr','bs','pr','ms','category','catalog'].indexOf(x) !== -1;
+  const own = x=> ['cpt','bb','lc','lp','vr','bs','pr','ms','rv','category','catalog'].indexOf(x) !== -1;
   if(own(view) && !own(S.view)){
     PANEL_BEFORE_CPT = !document.getElementById('panel').hidden;
     setPanel(false);
@@ -8333,6 +8525,7 @@ function go(view){
   bsBtn.setAttribute('aria-pressed', view === 'bs');
   prBtn.setAttribute('aria-pressed', view === 'pr');
   msBtn.setAttribute('aria-pressed', view === 'ms');
+  rvBtn.setAttribute('aria-pressed', view === 'rv');
   catalogBtn.setAttribute('aria-pressed', view === 'catalog');
   render();
 }
@@ -8346,6 +8539,7 @@ vrBtn.onclick    = ()=> go('vr');
 bsBtn.onclick    = ()=> go('bs');
 prBtn.onclick    = ()=> go('pr');
 msBtn.onclick    = ()=> go('ms');
+rvBtn.onclick    = ()=> go('rv');
 
 homeBtn.onclick    = ()=> go('checklist');
 catalogBtn.onclick = ()=> go('catalog');
@@ -8363,6 +8557,10 @@ document.getElementById('veil').onclick = e=>{
 };
 document.addEventListener('keydown', e=>{
   if(e.key === 'Escape') closeDetail();
+  if(S.view === 'rv' && RV_F.mode === 'one' && (e.key === 'ArrowRight' || e.key === 'ArrowLeft')){
+    const t = e.target, tag = t && t.tagName; if(tag === 'INPUT' || tag === 'SELECT' || tag === 'TEXTAREA') return;
+    e.preventDefault(); rvStep(e.key === 'ArrowRight' ? 1 : -1);
+  }
 });
 
 document.getElementById('bRefresh').onclick = ()=> load(true);
