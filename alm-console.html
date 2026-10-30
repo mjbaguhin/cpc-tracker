@@ -891,9 +891,50 @@ a.idl:hover{color:var(--accent);border-bottom-style:solid}
 #navGroups .mkb:hover{outline:1px solid rgba(255,255,255,.55);outline-offset:1px}
 #navGroups .ng-b button{white-space:nowrap}
 #navGroups .mkl{white-space:nowrap}
+/* Modules in a side menu on the left (MJ, Oct 30), so the data starts near the top */
+@media (min-width:701px){
+  body{padding-left:250px}
+  #sideNav{position:fixed;left:0;top:0;bottom:0;width:250px;background:#12161c;border-right:1px solid rgba(255,255,255,.1);overflow-y:auto;padding:.7rem .55rem 1rem;z-index:60;box-sizing:border-box}
+  #sideNav .sn-t{color:#e8edf3;font-weight:700;font-size:1rem;margin:.1rem .35rem .7rem}
+  #sideNav .ng{border:0 !important;padding:0 !important;margin:0 0 .65rem;background:none}
+  #sideNav .ng-l{font-size:.6rem;color:#8b96a3;letter-spacing:.07em;text-transform:uppercase;margin:0 .4rem .25rem}
+  #sideNav .ng-b{display:flex;flex-direction:column;gap:.12rem}
+  #sideNav .ng-b button{display:flex;align-items:center;width:100%;text-align:left;padding:.34rem .5rem;font-size:.8rem;border-radius:6px;white-space:nowrap;border:1px solid transparent;background:none;color:#dfe5ec}
+  #sideNav .ng-b button:hover{background:rgba(255,255,255,.06)}
+  #sideNav .ng-b button[aria-pressed="true"]{background:#24476e;border-color:#4a78ad;color:#fff}
+  #sideNav .ng-b button{display:grid;grid-template-columns:minmax(0,1fr) 3.3rem 3.3rem;column-gap:.25rem}
+  #sideNav .ng-b button > .badge{justify-self:end;margin:0}
+  #sideNav .ng-b button > .badge:only-of-type{grid-column:3}
+  #sideNav .mkl{display:none}
+  #sideNav .sn-h{display:grid;grid-template-columns:minmax(0,1fr) 3.3rem 3.3rem;column-gap:.25rem;font-size:.6rem;color:#8b96a3;letter-spacing:.07em;margin:0 .55rem .35rem}
+  #sideNav .sn-h span{text-align:right}
+  header h1, header .brand{display:none}
+}
+@media (max-width:700px){ #sideNav{display:none} }
+/* The side menu hides itself (MJ, Oct 30). A thin strip with one colored dot
+   per module stays on the left edge; point at it to slide the menu out over the page,
+   move away and it slides back after half a second. The pin keeps it open. */
+@media (min-width:701px){
+  body{padding-left:18px}
+  body.sn-pin{padding-left:250px}
+  #sideNav{transform:translateX(-100%);transition:transform .18s ease;box-shadow:none}
+  #sideNav.open,body.sn-pin #sideNav{transform:none}
+  #sideNav.open{box-shadow:6px 0 24px rgba(0,0,0,.45)}
+  #sideRail{position:fixed;left:0;top:0;bottom:0;width:18px;background:#12161c;border-right:1px solid rgba(255,255,255,.1);z-index:59;display:flex;flex-direction:column;align-items:center;gap:7px;padding-top:66px;box-sizing:border-box;cursor:pointer}
+  body.sn-pin #sideRail{display:none}
+  #sideRail i{width:8px;height:8px;border-radius:50%;display:block;flex:none}
+  #sideRail i.g{background:#3ecf8e} #sideRail i.a{background:#f2c46b} #sideRail i.r{background:#ff6b5b} #sideRail i.n{background:#4a535f}
+  #sideRail i.on{outline:2px solid #fff;outline-offset:1px}
+  #sideRail .gap{height:6px}
+  #snPin{position:absolute;top:.55rem;right:.55rem;font-size:.75rem;background:none;border:1px solid rgba(255,255,255,.2);color:#cfd6de;border-radius:6px;padding:.15rem .45rem;cursor:pointer}
+  body.sn-pin #snPin{background:#24476e;border-color:#4a78ad;color:#fff}
+}
+@media (max-width:700px){ #sideRail{display:none} }
 </style>
 </head>
 <body>
+<div id="sideRail" aria-hidden="true"></div><aside id="sideNav"><div class="sn-t">ALM Console</div><button id="snPin" title="Keep the menu open">Pin</button><div class="sn-h"><span></span><span>US</span><span>CA</span></div></aside>
+
 
 <header>
   <h1>ALM Console</h1>
@@ -7049,7 +7090,7 @@ const NAV_MODS = [['cptBtn','CPT tracker'], ['bbBtn','Buy Box'], ['lpBtn','List 
 const NAV_CA = ['cptBtn','bbBtn','lpBtn','stBtn','lcBtn','quickCat','vrBtn','msBtn','rvBtn','bsBtn'];
 // A click on a US or CA badge switches that module's marketplace before it opens
 document.addEventListener('click', e=>{
-  const k = e.target.closest && e.target.closest('#navGroups .mkb[data-mk]'); if(!k) return;
+  const k = e.target.closest && e.target.closest('#navGroups .mkb[data-mk], #sideNav .mkb[data-mk]'); if(!k) return;
   const mk = k.dataset.mk, id = (k.closest('button') || {}).id;
   if(['cptBtn','bbBtn','lpBtn','lcBtn'].indexOf(id) !== -1){ if(MK2 !== mk){ MK2 = mk; mk2Apply(); } }
   else if(id === 'quickCat') CG_F.mk = mk; else if(id === 'vrBtn') VR_F.mk = mk;
@@ -8977,6 +9018,36 @@ document.getElementById('bReset').onclick = ()=>{
 };
 
 load();
+
+(function(){ if(window.matchMedia('(max-width:700px)').matches) return;
+  const side = document.getElementById('sideNav');
+  [...document.querySelectorAll('#navGroups > .ng:not(.ng-tools)')].forEach(g=> side.appendChild(g)); })();
+
+(function(){ if(window.matchMedia('(max-width:700px)').matches) return;
+  const side = document.getElementById('sideNav'), rail = document.getElementById('sideRail'), pin = document.getElementById('snPin');
+  let tm = null;
+  const open = ()=>{ clearTimeout(tm); side.classList.add('open'); };
+  const close = ()=>{ clearTimeout(tm); tm = setTimeout(()=> side.classList.remove('open'), 500); };
+  rail.addEventListener('mouseenter', open); side.addEventListener('mouseenter', open); side.addEventListener('mouseleave', close);
+  rail.addEventListener('mouseleave', ()=>{ if(!side.matches(':hover')) close(); });   // passed over the strip without entering the menu
+  side.addEventListener('click', e=>{ if(e.target.closest('.ng-b button') && !document.body.classList.contains('sn-pin')) side.classList.remove('open'); });
+  let pinned = false; try { pinned = localStorage.getItem('side_pin') === '1'; } catch(e){}
+  const setPin = v=>{ document.body.classList.toggle('sn-pin', v); pin.textContent = v ? 'Pinned' : 'Pin'; pin.title = v ? 'Let the menu hide itself' : 'Keep the menu open'; try { localStorage.setItem('side_pin', v ? '1' : '0'); } catch(e){} };
+  pin.onclick = ()=> setPin(!document.body.classList.contains('sn-pin')); setPin(pinned);
+  // One dot per module, colored by its lowest score (US or CA)
+  const rank = {'pc-r':3, 'pc-a':2, 'pc-g':1, 'pc-n':0}, letter = {3:'r', 2:'a', 1:'g', 0:'n'};
+  window.railPaint = ()=>{
+    const out = [];
+    [...side.querySelectorAll('.ng')].forEach((g, gi)=>{ if(gi) out.push('<span class="gap"></span>');
+      [...g.querySelectorAll('.ng-b button')].forEach(b=>{
+        const w = Math.max(0, ...[...b.querySelectorAll('.badge')].map(x=> rank[[...x.classList].find(c=> rank[c] !== undefined)] || 0));
+        out.push(`<i class="${letter[w]}${b.getAttribute('aria-pressed') === 'true' ? ' on' : ''}" title="${b.innerText.replace(/\s+/g, ' ').trim()}"></i>`); }); });
+    rail.innerHTML = out.join('');
+  };
+  const np = window.navPercents; window.navPercents = function(){ const r = np.apply(this, arguments); try { railPaint(); } catch(e){} return r; };
+  const gp = window.go; window.go = function(){ const r = gp.apply(this, arguments); try { railPaint(); } catch(e){} return r; };
+  railPaint();
+})();
 </script>
 </body>
 </html>
