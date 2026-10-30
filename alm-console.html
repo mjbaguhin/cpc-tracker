@@ -63,7 +63,7 @@ header h1{
 #meta{font-size:.7rem;color:#93a0b0;letter-spacing:.02em}
 #meta b{color:#ccd6e2;font-weight:600}
 
-#toggle,#fs,#hRefresh,#hReset,#homeBtn,#quickCat,#casesBtn,#catalogBtn,#cptBtn,#bbBtn,#lcBtn,#lpBtn,#vrBtn,#bsBtn,#prBtn,#msBtn,#rvBtn,#stBtn{
+#toggle,#fs,#hRefresh,#hReset,#hStock button,#homeBtn,#quickCat,#casesBtn,#catalogBtn,#cptBtn,#bbBtn,#lcBtn,#lpBtn,#vrBtn,#bsBtn,#prBtn,#msBtn,#rvBtn,#stBtn{
   font-size:.74rem;padding:.24rem .6rem;
   background:transparent;color:#fff;border:1px solid #3a4652;
 }
@@ -97,6 +97,12 @@ td.cgtdp{min-width:14rem;max-width:22rem}
 /* Phones only (MJ, Oct 29): the module buttons become one dropdown, so a module
    starts at the top of the screen. Wider screens never see #mSelWrap. */
 #mSelWrap{display:none}
+#hStock{display:inline-flex;gap:0;align-items:center}
+#hStock .stk-l{font-size:.72rem;color:rgba(255,255,255,.6);margin-right:.4rem}
+#hStock button{border-radius:0}
+#hStock button:first-of-type{border-radius:6px 0 0 6px}
+#hStock button:last-of-type{border-radius:0 6px 6px 0}
+#hStock button[aria-pressed="true"]{background:#2d5a8c;color:#fff}
 @media (max-width:700px){
   #navGroups .ng:not(.ng-tools){display:none}
   #navGroups .ng-tools .ng-l{display:none}
@@ -110,7 +116,7 @@ td.cgtdp{min-width:14rem;max-width:22rem}
 #catalogBtn[aria-pressed="true"]{
   background:#2f4a6d;border-color:#4a6fa5;
 }
-#toggle:hover,#fs:hover,#hRefresh:hover,#hReset:hover,#homeBtn:hover,#quickCat:hover,#casesBtn:hover,#catalogBtn:hover,#cptBtn:hover,#bbBtn:hover,#lcBtn:hover,#lpBtn:hover,#vrBtn:hover,#bsBtn:hover,#prBtn:hover,#msBtn:hover,#rvBtn:hover,#stBtn:hover{background:#1c232b}
+#toggle:hover,#fs:hover,#hRefresh:hover,#hReset:hover,#hStock button:hover,#homeBtn:hover,#quickCat:hover,#casesBtn:hover,#catalogBtn:hover,#cptBtn:hover,#bbBtn:hover,#lcBtn:hover,#lpBtn:hover,#vrBtn:hover,#bsBtn:hover,#prBtn:hover,#msBtn:hover,#rvBtn:hover,#stBtn:hover{background:#1c232b}
 #toggle .badge,#homeBtn .badge,#quickCat .badge,#casesBtn .badge,#cptBtn .badge,#bbBtn .badge,#lcBtn .badge,#lpBtn .badge,#vrBtn .badge,#bsBtn .badge,#prBtn .badge,#msBtn .badge,#rvBtn .badge,#stBtn .badge{
   display:inline-block;margin-left:.35rem;padding:0 .32rem;
   background:#a83a26;border-radius:8px;font-size:.68rem;font-weight:700;
@@ -647,7 +653,7 @@ header h1{font-size:.95rem;letter-spacing:.02em;text-transform:none;font-weight:
 header h1::after{content:"";display:inline-block;width:.42rem;height:.42rem;border-radius:50%;
   background:#3fbf7f;margin-left:.45rem;vertical-align:middle}
 #meta{font-family:ui-monospace,"SF Mono",Menlo,Consolas,monospace;font-size:.72rem}
-#toggle,#fs,#hRefresh,#hReset,#homeBtn,#quickCat,#casesBtn,#catalogBtn,#cptBtn,#bbBtn,#lcBtn,#lpBtn,#vrBtn,#bsBtn,#prBtn,#msBtn,#rvBtn,#stBtn{
+#toggle,#fs,#hRefresh,#hReset,#hStock button,#homeBtn,#quickCat,#casesBtn,#catalogBtn,#cptBtn,#bbBtn,#lcBtn,#lpBtn,#vrBtn,#bsBtn,#prBtn,#msBtn,#rvBtn,#stBtn{
   font-size:.8rem;padding:.38rem .8rem;border-radius:7px;border-color:var(--night-line);color:#dfe5ee}
 #homeBtn[aria-pressed="true"],#quickCat[aria-pressed="true"],#casesBtn[aria-pressed="true"],
 #catalogBtn[aria-pressed="true"],#cptBtn[aria-pressed="true"],#bbBtn[aria-pressed="true"],#lcBtn[aria-pressed="true"],#lpBtn[aria-pressed="true"],#vrBtn[aria-pressed="true"],#bsBtn[aria-pressed="true"],#prBtn[aria-pressed="true"],#msBtn[aria-pressed="true"],#rvBtn[aria-pressed="true"],#stBtn[aria-pressed="true"]{background:#2c4f7c;border-color:#4a76b0;color:#fff}
@@ -870,7 +876,7 @@ a.idl:hover{color:var(--accent);border-bottom-style:solid}
       <div class="ng-b" data-ng="perf"><button id="bsBtn">BSR</button></div></div>
     <div class="ng"><div class="ng-l">Reference</div><div class="ng-b"><button id="prBtn">Master SKU</button></div></div>
     <div id="mSelWrap"><label for="mSel">Module</label><select id="mSel"><optgroup label="Today"><option value="catalogBtn">Catalog</option></optgroup><optgroup label="Price and Buy Box"><option value="cptBtn">CPT tracker</option><option value="bbBtn">Buy Box</option><option value="lpBtn">List Price</option><option value="stBtn">Strike-through</option></optgroup><optgroup label="Listing health"><option value="lcBtn">Listing Copy</option><option value="quickCat">Category</option><option value="vrBtn">Variation</option><option value="msBtn">Measurements</option><option value="rvBtn">Listing Review</option></optgroup><optgroup label="Performance"><option value="bsBtn">BSR</option></optgroup><optgroup label="Reference"><option value="prBtn">Master SKU</option></optgroup></select></div>
-    <div class="ng ng-tools"><div class="ng-l">&nbsp;</div><div class="ng-b"><button id="toggle" aria-expanded="true">Filters</button><button id="hRefresh" title="Reload all data now. Reads the published files only: no scripts run, no Keepa tokens.">↻ Refresh</button><button id="hReset" title="Put this module’s filters, search, sort and grouping back to their defaults. Keeps the marketplace and all saved checks and marks.">Reset view</button><button id="fs" title="Fullscreen">Full screen</button></div></div>
+    <div class="ng ng-tools"><div class="ng-l">&nbsp;</div><div class="ng-b"><button id="toggle" aria-expanded="true">Filters</button><span id="hStock" role="group" aria-label="Stock"><span class="stk-l">Stock</span><button data-stk="all" title="Every listing">All</button><button data-stk="in" title="Only listings with FBA stock">In stock</button><button data-stk="oos" title="Only listings with 0 FBA stock">Out of stock</button></span><button id="hRefresh" title="Reload all data now. Reads the published files only: no scripts run, no Keepa tokens.">↻ Refresh</button><button id="hReset" title="Put this module’s filters, search, sort and grouping back to their defaults. Keeps the marketplace and all saved checks and marks.">Reset view</button><button id="fs" title="Fullscreen">Full screen</button></div></div>
   </nav>
 </header>
 <section id="ov" hidden></section>
@@ -7949,6 +7955,15 @@ function rvRows(){
   };
   return a.sort(by[RV_F.order] || by.newest);
 }
+function rvUnread(){
+  let a = (RV.unread || []).map(x=> Object.assign({}, x, {fam: x.family || 'No family'}));
+  if(RV_F.tier) a = a.filter(x=> x.tier === RV_F.tier);
+  if(RV_F.brand) a = a.filter(x=> x.brand === RV_F.brand);
+  if(RV_F.family) a = a.filter(x=> x.fam === RV_F.family);
+  if(RV_F.q){ const q = RV_F.q.toLowerCase(); a = a.filter(x=> (x.sku + ' ' + x.asin + ' ' + x.name + ' ' + x.fam).toLowerCase().indexOf(q) !== -1); }
+  const ti = x=> { const i = RV_TIERS.indexOf(x.tier); return i === -1 ? 9 : i; };
+  return stockKeep(a.sort((x, y)=> ti(x) - ti(y) || x.sku.localeCompare(y.sku)), 'US');
+}
 function rvStep(d){
   const rows = rvRows(); if(!rows.length) return;
   RV_F.pos = Math.max(0, Math.min(rows.length - 1, (RV_F.pos || 0) + d)); rvKeep(); renderReview();
@@ -8080,7 +8095,10 @@ function renderReview(){
     `<span class="sub">Keepa details checked daily, product pages checked weekly by Cowork</span>`+
     (RV.updated ? `<span class="cpt-live"><i></i>Built ${esc(RV.updated)} ET</span>` : '')+
     '</div><div class="cpt-tiles">'+
-      tile('Last page check', run ? esc(shortDate(run.date.slice(0, 10))) : '\u2014', '', run ? `${run.read || 0} pages read by Cowork` : 'Keepa checks run daily', '')+
+      (run ? (()=>{ const un = (RV.unread || []).length, act = RV.active || 0, done = Math.max(0, act - un);
+          return tile('Covered by the last page check', un ? `${done}<span style="font-size:1rem;color:var(--c-night-mut)"> of ${act}</span>` : 'All ' + act + ' \u2713', un ? 'bad' : 'good',
+            `Cowork, ${esc(shortDate(run.date.slice(0, 10)))}` + (un ? ` \u00b7 ${un} not checked` : ''), 'unchecked'); })()
+           : tile('Last page check', '\u2014', '', 'Keepa checks run daily', ''))+
       tile('All correct', read ? Math.max(0, read - probs.length) : '\u2014', 'good', read ? 'of ' + read + ' active' : '', '')+
       tile('Problems', probs.length, probs.length ? 'bad' : 'good', nNew ? nNew + ' new this week' : 'none new', 'all')+
       tile('New', nNew, nNew ? 'bad' : 'good', 'Changed since last check', 'new')+
@@ -8089,7 +8107,7 @@ function renderReview(){
     '</div></section>';
   if(RV.running) html += `<div class="why"><b>Check in progress</b> since ${esc(RV.running.date)}: ${RV.running.read || 0} listings read so far. This page shows the last finished check until it\u2019s done.</div>`;
   html += '<div class="cpt-tools rv-tools"><div class="seg" id="rvSt">'+
-      [['all','All problems'],['new','New'],['open','Still open'],['fixed','Fixed'],['reviewed','Reviewed'],['flagged','Flagged']].map(([k, l])=> `<button data-st="${k}" aria-pressed="${RV_F.status === k}">${l}</button>`).join('')+'</div>'+
+      [['all','All problems'],['new','New'],['open','Still open'],['fixed','Fixed'],['reviewed','Reviewed'],['flagged','Flagged'],['unchecked','Not checked']].map(([k, l])=> `<button data-st="${k}" aria-pressed="${RV_F.status === k}">${l}</button>`).join('')+'</div>'+
       `<label class="mut" style="font-size:.78rem">Review by <select id="rvOrder">${[['newest','Newest problems first'],['tier','Tier (A first)'],['family','Family'],['brand','Brand']].map(([k, l])=> `<option value="${k}"${RV_F.order === k ? ' selected' : ''}>${l}</option>`).join('')}</select></label>`+
       sel('rvTier', 'Tier', RV_TIERS, RV_F.tier) + sel('rvBrand', 'Brand', brands, RV_F.brand) + sel('rvFam', 'Family', fams, RV_F.family)+
       `<input id="rvQ" type="search" placeholder="Search SKU, ASIN, product or family" value="${esc(RV_F.q)}">`+
@@ -8097,9 +8115,19 @@ function renderReview(){
       (RV_F.mode === 'list' ? `<button id="rvGrp" aria-pressed="${RV_F.group}">Group by family</button>` : '')+
       `<button id="rvClr">Clear filters</button>`+
       `<details class="rv-more"><summary aria-label="More">\u22ef</summary><div><button id="rvReset">Start this round over</button></div></details>`+
-      `<span class="count">${rows.length} of ${probs.length}</span></div>`;
+      `<span class="count">${RV_F.status === 'unchecked' ? rvUnread().length + ' not checked' : rows.length + ' of ' + probs.length}</span></div>`;
   if(!RV.rows && RV_ERR) html += '<div class="cpt-empty"><b>Listing Review feed not found yet</b>Run setupListingReview in the CPC Keepa Fetcher project.</div>';
   else if(!RV.rows) html += '<div class="cpt-empty"><b>Loading Listing Review</b></div>';
+  else if(RV_F.status === 'unchecked'){
+    const un = rvUnread();
+    html += !run ? '<div class="cpt-empty"><b>No finished page check yet</b>Once Cowork finishes a run, any active listing it didn\u2019t read shows here.</div>'
+      : !un.length ? `<div class="cpt-empty"><b>Every active listing was checked \u2713</b>The page check on ${esc(shortDate(run.date.slice(0, 10)))} read all ${RV.active || 0} active listings.</div>`
+      : '<div style="overflow-x:auto;margin:.4rem 1rem"><table class="rv-t" style="min-width:700px;background:#fff;border:1px solid var(--line);border-radius:8px">'+
+        '<tr><td style="padding-left:.6rem">Not read by the page check on ' + esc(shortDate(run.date.slice(0, 10))) + '</td><td>Tier</td><td>Family</td><td></td></tr>'+
+        un.map(x=> `<tr><td style="padding-left:.6rem"><b>${esc(x.name || x.sku)}</b><div class="rv-id">${skuL(x.sku, 'US')}${cpy(x.sku)} \u00b7 ${asinL(x.asin, 'US')}${cpy(x.asin)} \u00b7 ${esc(x.brand)}</div></td>`+
+          `<td>${esc(x.tier || '?')}</td><td>${esc(x.family || '\u2014')}</td><td><a href="https://www.amazon.com/dp/${esc(x.asin)}" target="_blank" rel="noopener"><button>Open PDP \u2197</button></a></td></tr>`).join('')+
+        '</table></div><div class="rv-note" style="margin:0 1rem 1rem">The next weekly run picks these up. Running the Cowork task again on the same day as the check continues that run and reads only these; on a later day it starts a new full check.</div>';
+  }
   else if(!run && !probs.length) html += '<div class="cpt-empty"><b>No problems found yet</b>Keepa details are checked every day, and the weekly Cowork page check adds images and strike-throughs.</div>';
   else if(!rows.length) html += `<div class="cpt-empty"><b>${probs.length ? 'Nothing matches these filters' : 'Every listing checked is correct'}</b>${probs.length ? 'Try Clear filters.' : 'Nothing to review this week.'}</div>`;
   else if(RV_F.mode === 'one'){
@@ -8705,6 +8733,38 @@ hReset.onclick = ()=>{
   render();
   hReset.textContent = 'View reset'; setTimeout(()=>{ hReset.textContent = 'Reset view'; }, 2500);
 };
+/* Stock view for every module (MJ, Oct 30): All, In stock (FBA stock above 0) or
+   Out of stock (0). It filters what a module page shows, Master SKU included.
+   Header scores ignore it: rows are filtered only while a page is drawn
+   (STOCK_ON), never while the header percentages are worked out. Listings with
+   unknown stock show only under All. */
+let STOCK = 'all', STOCK_ON = false;
+try { STOCK = localStorage.getItem('stock_view') || 'all'; } catch(e){}
+function stockKeep(rows, mk){
+  if(!STOCK_ON || STOCK === 'all' || !Array.isArray(rows)) return rows;
+  return rows.filter(r=>{ const v = stockOf(r, mk); return v === null ? false : STOCK === 'oos' ? v === 0 : v > 0; });
+}
+(function(){
+  const g = window, mkOf = {
+    cptRows: ()=> MK2, bbRows: ()=> MK2, lcRows: ()=> MK2, lpRows: ()=> MK2, rvRows: ()=> 'US',
+    cgRows: a=> a[0] || CG_F.mk, vrRows: a=> a[0] || VR_F.mk, bsRows: a=> a[0] || BS_F.mk, msRows: a=> a[0] || MS_F.mk,
+    prRows: ()=> PR_F.mk, rvStrike: ()=> 'US'};
+  Object.keys(mkOf).forEach(n=>{ const f = g[n]; if(typeof f !== 'function') return;
+    g[n] = function(){ return stockKeep(f.apply(this, arguments), mkOf[n](arguments)); }; });
+  ['renderCpt','renderBb','renderLc','renderLp','renderVariation','renderBsr','renderProducts','renderMeasurements',
+   'renderReview','renderStrike','renderCategory'].forEach(n=>{ const f = g[n]; if(typeof f !== 'function') return;
+    g[n] = function(){ const was = STOCK_ON; STOCK_ON = true; try { return f.apply(this, arguments); } finally { STOCK_ON = was; } }; });
+  ['navPercents','modPct'].forEach(n=>{ const f = g[n]; if(typeof f !== 'function') return;
+    g[n] = function(){ const was = STOCK_ON; STOCK_ON = false; try { return f.apply(this, arguments); } finally { STOCK_ON = was; } }; });
+})();
+function stockPaint(){ [...document.querySelectorAll('#hStock button')].forEach(b=> b.setAttribute('aria-pressed', b.dataset.stk === STOCK)); }
+[...document.querySelectorAll('#hStock button')].forEach(b=> b.onclick = ()=>{
+  STOCK = b.dataset.stk; try { localStorage.setItem('stock_view', STOCK); } catch(e){}
+  stockPaint(); render();
+});
+stockPaint();
+{ const r0 = hReset.onclick; hReset.onclick = ()=>{ STOCK = 'all'; try { localStorage.setItem('stock_view', 'all'); } catch(e){} stockPaint(); r0(); }; }
+
 /* The Filters panel belongs to the first version of the dashboard: its filters
    only drive the old checklist table, which no page shows any more (every page,
    Catalog included, folds the panel away). Hidden, not deleted (MJ, Oct 29). */
