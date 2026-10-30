@@ -1979,7 +1979,18 @@ function asinL(a, mk){
 function skuL(v, mk){
   v = String(v || '').trim(); if(!v) return '';
   const host = mkOf(mk) === 'CA' ? 'sellercentral.amazon.ca' : 'sellercentral.amazon.com';
-  return `<a class="idl" href="https://${host}/myinventory/inventory?searchTerm=${encodeURIComponent(v)}" target="_blank" rel="noopener" title="Open in Manage Inventory">${esc(v)}</a>`;
+  return `<a class="idl" href="https://${host}/myinventory/inventory?searchTerm=${encodeURIComponent(v)}" target="_blank" rel="noopener" title="Open in Manage Inventory">${esc(v)}</a>` +
+    (varFalse(v) ? ' <span class="lcchip lc-small" title="Amazon Variation is False in the Master SKU sheet: this child was detached from its parent">Variation: False</span>' : '');
+}
+/* A child under a Parent SKU whose Amazon Variation is False (MJ, Oct 30): when she
+   detaches a child she sets Amazon Variation to False and clears the Parent ASIN, so
+   listings are grouped by Parent SKU and these children carry a mark. */
+let VF_SRC = null, VF = {};
+function varFalse(sku){
+  if(typeof PR === 'undefined' || !PR.length) return false;
+  if(VF_SRC !== PR){ VF_SRC = PR; VF = {};
+    PR.forEach(p=>{ if(p.psku && /^(false|no|n|0)$/i.test(String(p.isVar === undefined || p.isVar === null ? '' : p.isVar).trim())) VF[p.sku] = true; }); }
+  return !!VF[sku];
 }
 // A link click opens the page only, never the row underneath
 window.addEventListener('click', e=>{
@@ -3230,7 +3241,7 @@ function cptFilterPanel(){
 }
 
 function cptBody(rows){
-  const key = CPT_F.group;
+  const key = CPT_F.group === 'pasin' ? 'psku' : CPT_F.group;   // the "parent" grouping uses Parent SKU (Oct 30)
   if(key === 'none') return rows.map(cptRowHtml).join('');
   if(key === 'action'){
     return ['open','follow','watch','oos','none'].map(a=>{
@@ -6916,12 +6927,12 @@ function renderProducts(){
       H('fam','Family / variation') + H('sale', PR_F.mk === 'CA' ? 'CA sale price' : 'Sale price','num') + H('us', PR_F.mk + ' stock','num') + H('copy','Health (US)','c') +
       '</tr></thead><tbody>';
     if(PR_F.group){
-      const g = {}; rows.forEach(r=>{ const pa = PR_F.mk === 'CA' ? (r.caPasin || '') : (r.pasin || ''); const k = PR_F.group === 'pasin' ? (pa ? pa : '~') : (String(r[PR_F.group] || '').split(/\s*,\s*/)[0] || '~'); (g[k] = g[k] || []).push(r); });
+      const g = {}; rows.forEach(r=>{ const pa = PR_F.mk === 'CA' ? (r.caPasin || '') : (r.psku || ''); const k = PR_F.group === 'pasin' ? (pa ? pa : '~') : (String(r[PR_F.group] || '').split(/\s*,\s*/)[0] || '~'); (g[k] = g[k] || []).push(r); });
       Object.keys(g).sort((a,b)=> a === '~' ? 1 : b === '~' ? -1 : a.localeCompare(b)).forEach(k=>{
         const rs = g[k], first = rs[0];
         const label = k === '~' ? (PR_F.group === 'pasin' ? 'No parent' : 'Blank') : PR_F.group === 'pasin' ? (first.pname || k) : k;
         const act = rs.filter(r=> r.status === 'Active').length;
-        html += `<tr class="gh"><td colspan="9"><b>${esc(label)}</b>${PR_F.group === 'pasin' && k !== '~' ? ` <span class="mut mono">${esc(k)}${first.psku ? ' \u00b7 ' + esc(first.psku) : ''}</span>` : ''}`+
+        html += `<tr class="gh"><td colspan="9"><b>${esc(label)}</b>${PR_F.group === 'pasin' && k !== '~' ? ` <span class="mut mono">${esc(k)}${PR_F.mk === 'CA' ? (first.psku ? ' \u00b7 ' + esc(first.psku) : '') : (first.pasin ? ' \u00b7 ' + esc(first.pasin) : '')}</span>` : ''}`+
           ` <span class="mut">\u00b7 ${rs.length} SKU${rs.length > 1 ? 's' : ''}, ${act} active</span>${rs.some(r=> r.chk.length) ? ' <span class="lcchip lc-small">Plytix check</span>' : ''}</td></tr>` + rs.map(tr).join('');
       });
     } else html += rows.map(tr).join('');
@@ -7347,7 +7358,7 @@ function renderMeasurements(){
     html += '<table class="cpt-table lc-table"><thead><tr>'+ H('product','Product') + '<th>Plytix size / weight</th><th>Amazon size / weight (Keepa)</th><th class="c">Size, weight</th>'+
       '<th class="c">Packaged weight Plytix / Amazon</th><th class="c">Size tier Plytix / Fee Preview</th>' + H('bad','Copy','c') + '<th class="c">Plytix</th></tr></thead><tbody>';
     if(MS_F.group){
-      const g = {}; rows.forEach(r=> (g[r.pasin || '~'] = g[r.pasin || '~'] || []).push(r));
+      const g = {}; rows.forEach(r=> (g[r.psku || '~'] = g[r.psku || '~'] || []).push(r));   // by Parent SKU (Oct 30)
       Object.keys(g).sort((a, b)=> a === '~' ? 1 : b === '~' ? -1 : (g[a][0].pname || a).localeCompare(g[b][0].pname || b)).forEach(k=>{
         const rs = g[k];
         html += `<tr class="gh"><td colspan="8"><b>${esc(k === '~' ? 'No parent' : (rs[0].pname || k))}</b> <span class="mut">${k === '~' ? '' : esc(k) + ' \u00b7 '}${rs.length} listing${rs.length > 1 ? 's' : ''}${rs.some(r=> r.bad.length) ? ', ' + rs.filter(r=> r.bad.length).length + ' with a difference' : ''}</span></td></tr>` + rs.map(tr).join('');
@@ -8753,10 +8764,33 @@ function stockKeep(rows, mk){
     g[n] = function(){ return stockKeep(f.apply(this, arguments), mkOf[n](arguments)); }; });
   ['renderCpt','renderBb','renderLc','renderLp','renderVariation','renderBsr','renderProducts','renderMeasurements',
    'renderReview','renderStrike','renderCategory'].forEach(n=>{ const f = g[n]; if(typeof f !== 'function') return;
-    g[n] = function(){ const was = STOCK_ON; STOCK_ON = true; try { return f.apply(this, arguments); } finally { STOCK_ON = was; } }; });
+    g[n] = function(){ const was = STOCK_ON; STOCK_ON = true; try { return f.apply(this, arguments); } finally { STOCK_ON = was; try { ensureClearBtn(); } catch(e){} } }; });
   ['navPercents','modPct'].forEach(n=>{ const f = g[n]; if(typeof f !== 'function') return;
     g[n] = function(){ const was = STOCK_ON; STOCK_ON = false; try { return f.apply(this, arguments); } finally { STOCK_ON = was; } }; });
 })();
+/* Clear filters on every module (MJ, Oct 30). Clears what narrows the list (search,
+   show, status, tier, brand, family and the Stock filter) and keeps the sort,
+   grouping, marketplace and review mode. Modules that already have their own
+   Clear filters button keep it. */
+const CLR_KEEP = ['mk','sort','dir','group','mode','order','pos'];
+function clearFilters(){
+  const F = VIEW_F[S.view], D = VIEW_F_DEF[S.view];
+  if(F && D) Object.keys(D).forEach(k=>{ if(CLR_KEEP.indexOf(k) === -1) F[k] = JSON.parse(JSON.stringify(D[k])); });
+  STOCK = 'all'; try { localStorage.setItem('stock_view', 'all'); } catch(e){}
+  if(S.view === 'rv') rvKeep();
+  if(S.view === 'st') stKeep();
+  stockPaint(); render();
+}
+function ensureClearBtn(){
+  const bar = document.querySelector('#cptView .cpt-tools'); if(!bar || !VIEW_F[S.view]) return;
+  // A module's own Clear filters button gets the same behavior, so it is identical everywhere
+  const own = [...bar.querySelectorAll('button')].find(b=> /^\s*clear filters\s*$/i.test(b.textContent));
+  if(own){ own.onclick = clearFilters; own.title = 'Clear the search, filters and Stock filter. Keeps the sort, grouping and marketplace.'; return; }
+  const b = document.createElement('button'); b.textContent = 'Clear filters'; b.className = 'mClr';
+  b.title = 'Clear the search, filters and Stock filter. Keeps the sort, grouping and marketplace.';
+  b.onclick = clearFilters;
+  const count = bar.querySelector('.count'); count ? bar.insertBefore(b, count) : bar.appendChild(b);
+}
 function stockPaint(){ [...document.querySelectorAll('#hStock button')].forEach(b=> b.setAttribute('aria-pressed', b.dataset.stk === STOCK)); }
 [...document.querySelectorAll('#hStock button')].forEach(b=> b.onclick = ()=>{
   STOCK = b.dataset.stk; try { localStorage.setItem('stock_view', STOCK); } catch(e){}
