@@ -856,6 +856,26 @@ a.idl:hover{color:var(--accent);border-bottom-style:solid}
   border:1px solid transparent;border-radius:4px;background:transparent;color:#94a3b8;cursor:pointer;vertical-align:middle;line-height:1}
 .cpy:hover{color:var(--accent);border-color:var(--line);background:#fff}
 .cpy.ok{color:#17694a;border-color:#b9dccb;background:#e4f3ee}
+
+/* Oct 30 (MJ): each group of modules in its own box, and a tighter, smaller
+   module heading (title, tiles, stock warning) on every module */
+#navGroups{gap:.5rem}
+#navGroups .ng{border:1px solid rgba(255,255,255,.16);border-radius:10px;padding:.35rem .6rem .5rem}
+#navGroups .ng:first-child{border-left:1px solid rgba(255,255,255,.16);padding-left:.6rem}
+#navGroups .ng-tools{border-left:1px solid rgba(255,255,255,.16);padding-right:.6rem}
+.cpt-top{padding:.65rem 1rem .75rem}
+.cpt-head{margin-bottom:.55rem;gap:.6rem}
+.cpt-head h2{font-size:1.05rem}
+.cpt-head .sub{font-size:.7rem}
+.cpt-live{font-size:.68rem;padding:.12rem .45rem}
+.cpt-tiles{grid-template-columns:repeat(auto-fit,minmax(9.5rem,1fr));gap:.5rem}
+.cpt-tile{padding:.45rem .7rem .5rem}
+.cpt-tile .k{font-size:.72rem;margin-bottom:.1rem}
+.cpt-tile .v{font-size:1.35rem}
+.cpt-tile .n,#cptView .cpt-tile .n{font-size:.7rem;margin-top:.1rem}
+.stk-alert{padding:.3rem .7rem;margin:.35rem 1rem;font-size:.76rem;line-height:1.35}
+@media (max-width:700px){ #navGroups .ng{border:0;padding:0} }
+#catalogBtn .badge{margin-left:.45rem}
 </style>
 </head>
 <body>
@@ -876,7 +896,7 @@ a.idl:hover{color:var(--accent);border-bottom-style:solid}
       <div class="ng-b" data-ng="perf"><button id="bsBtn">BSR</button></div></div>
     <div class="ng"><div class="ng-l">Reference</div><div class="ng-b"><button id="prBtn">Master SKU</button></div></div>
     <div id="mSelWrap"><label for="mSel">Module</label><select id="mSel"><optgroup label="Today"><option value="catalogBtn">Catalog</option></optgroup><optgroup label="Price and Buy Box"><option value="cptBtn">CPT tracker</option><option value="bbBtn">Buy Box</option><option value="lpBtn">List Price</option><option value="stBtn">Strike-through</option></optgroup><optgroup label="Listing health"><option value="lcBtn">Listing Copy</option><option value="quickCat">Category</option><option value="vrBtn">Variation</option><option value="msBtn">Measurements</option><option value="rvBtn">Listing Review</option></optgroup><optgroup label="Performance"><option value="bsBtn">BSR</option></optgroup><optgroup label="Reference"><option value="prBtn">Master SKU</option></optgroup></select></div>
-    <div class="ng ng-tools"><div class="ng-l">&nbsp;</div><div class="ng-b"><button id="toggle" aria-expanded="true">Filters</button><span id="hStock" role="group" aria-label="Stock"><span class="stk-l">Stock</span><button data-stk="all" title="Every listing">All</button><button data-stk="in" title="Only listings with FBA stock">In stock</button><button data-stk="oos" title="Only listings with 0 FBA stock">Out of stock</button></span><button id="hRefresh" title="Reload all data now. Reads the published files only: no scripts run, no Keepa tokens.">↻ Refresh</button><button id="hReset" title="Put this module’s filters, search, sort and grouping back to their defaults. Keeps the marketplace and all saved checks and marks.">Reset view</button><button id="fs" title="Fullscreen">Full screen</button></div></div>
+    <div class="ng ng-tools"><div class="ng-l">View</div><div class="ng-b"><button id="toggle" aria-expanded="true">Filters</button><span id="hStock" role="group" aria-label="Stock"><span class="stk-l">Stock</span><button data-stk="all" title="Every listing">All</button><button data-stk="in" title="Only listings with FBA stock">In stock</button><button data-stk="oos" title="Only listings with 0 FBA stock">Out of stock</button></span><button id="hRefresh" title="Reload all data now. Reads the published files only: no scripts run, no Keepa tokens.">↻ Refresh</button><button id="hReset" title="Put this module’s filters, search, sort and grouping back to their defaults. Keeps the marketplace and all saved checks and marks.">Reset view</button><button id="fs" title="Fullscreen">Full screen</button></div></div>
   </nav>
 </header>
 <section id="ov" hidden></section>
@@ -8029,15 +8049,19 @@ function rvStrike(F){
   return a.sort((x, y)=> rank(x) - rank(y) || ti(x) - ti(y) || x.fam.localeCompare(y.fam) || x.sku.localeCompare(y.sku));
 }
 function rvStrikeTable(rows){
-  const money = v=> v === null || v === undefined || v === '' ? '\u2014' : (typeof v === 'number' ? usd(v) : esc(v));
-  const chg = {lost:'<span class="lcchip lc-bad">Lost since last check</span>', new:'<span class="lcchip lc-ok">New since last check</span>', changed:'<span class="lcchip lc-small">Changed</span>'};
-  return '<div style="overflow-x:auto;margin:.4rem 1rem"><table class="rv-t" style="min-width:880px;background:#fff;border:1px solid var(--line);border-radius:8px">'+
-    '<tr><td style="padding-left:.6rem">Product</td><td>Strike-through now</td><td>Last check</td><td>Our price</td><td>List Price (Master SKU)</td><td>Walmart</td></tr>'+
-    rows.map(x=> `<tr><td style="padding-left:.6rem"><b>${esc(x.name || x.sku)}</b><div class="rv-id">${skuL(x.sku, 'US')} \u00b7 ${asinL(x.asin, 'US')} \u00b7 Tier ${esc(x.tier || '?')} \u00b7 ${esc(x.brand)}</div></td>`+
-      `<td>${x.shown ? `<span class="lcchip lc-ok">${esc(x.page)}</span>` : '<span class="lcchip lc-bad">None</span>'}${x.change ? '<div style="margin-top:.25rem">' + chg[x.change] + '</div>' : ''}</td>`+
-      `<td>${x.was === null || x.was === undefined ? '<span class="mut">\u2014</span>' : esc(x.was || 'None')}</td>`+
+  const money = v=>{ if(v === null || v === undefined || v === '') return '\u2014'; if(typeof v === 'number') return usd(v);
+    return esc(String(v).replace(/^\s*our price\s*/i, '')); };
+  const two = !!RV.prevRun;
+  const chg = {lost:'<div class="mut" style="font-size:.74rem;color:#a3261a">Lost since last check</div>', new:'<div class="mut" style="font-size:.74rem;color:#17694a">New since last check</div>', changed:'<div class="mut" style="font-size:.74rem">Changed</div>'};
+  const tag = x=> x.shown ? `<span class="lcchip lc-ok">${esc(x.page.replace(/^typical price/i, 'Typical price'))}</span>` : '<span class="lcchip lc-bad">None</span>';
+  return '<div style="overflow-x:auto;margin:.4rem 1rem"><table class="rv-t" style="min-width:820px;background:#fff;border:1px solid var(--line);border-radius:8px">'+
+    '<colgroup><col style="width:38%"><col style="width:20%"><col style="width:12%"><col style="width:15%"><col style="width:15%"></colgroup>'+
+    '<tr><td style="padding-left:.6rem">Product</td><td>Strike-through</td><td>Our price</td><td>List Price (Master SKU)</td><td>Walmart</td></tr>'+
+    rows.map(x=> `<tr><td style="padding-left:.6rem"><div style="font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis" title="${esc(x.name || x.sku)}">${esc(x.name || x.sku)}</div>`+
+      `<div class="rv-id" style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${skuL(x.sku, 'US')} \u00b7 Tier ${esc(x.tier || '?')} \u00b7 ${esc(x.brand)}</div></td>`+
+      `<td>${tag(x)}${two && x.change ? chg[x.change] + (x.was ? `<div class="mut" style="font-size:.72rem">was ${esc(x.was)}</div>` : '') : ''}</td>`+
       `<td>${money(x.price)}</td><td>${money(x.list)}</td><td>${money(x.wm)}</td></tr>`).join('')+
-  '</table></div><div class="rv-note" style="margin:0 1rem 1rem">Since April 23, 2026, Amazon shows a List Price strike-through only if that price was recently offered at another retailer, or bought on Amazon at that price. A "Typical price" strike-through comes from Amazon\u2019s own 90-day price history. Pricing decisions stay with Haris and Sam.</div>';
+  '</table></div><div class="rv-note" style="margin:0 1rem 1rem">A List Price strike-through needs that price recently at another retailer, or sales on Amazon at that price (Amazon rule since Apr 23, 2026). A Typical price strike-through comes from Amazon\u2019s own 90-day price history. Pricing decisions stay with Haris and Sam.</div>';
 }
 /* STRIKE-THROUGH module (MJ, Oct 29): its own page in Price and Buy Box, fed by the
    strike-through the weekly Cowork PDP check reads on every product page. */
@@ -8046,6 +8070,7 @@ const ST_F = Object.assign({}, ST_F_DEF);
 try { Object.assign(ST_F, JSON.parse(localStorage.getItem('st_state') || '{}')); } catch(e){}
 const stKeep = ()=>{ try { localStorage.setItem('st_state', JSON.stringify(ST_F)); } catch(e){} };
 function renderStrike(){
+  ST_F.family = '';   // the Family dropdown was removed (Oct 30); search covers families
   document.getElementById('msg').hidden = true;
   document.getElementById('bar').innerHTML = '';
   const v = document.getElementById('cptView'), run = RV.run;
@@ -8057,19 +8082,16 @@ function renderStrike(){
   const tile = (k, val, cls, note, f)=> `<div class="cpt-tile bbtile${ST_F.show === f ? ' on' : ''}" role="button" tabindex="0" data-sts="${f}"><div class="k">${k}</div><div class="v ${cls || ''}">${val}</div><div class="n">${note || '&nbsp;'}</div></div>`;
   const sel = (id, label, opts, val)=> `<label class="mut" style="font-size:.78rem">${label} <select id="${id}"><option value="">All</option>${opts.map(o=> `<option value="${esc(o)}"${o === val ? ' selected' : ''}>${esc(o)}</option>`).join('')}</select></label>`;
   let html = '<section class="cpt-top"><div class="cpt-head"><h2>Strike-through</h2>'+
-    '<span class="sub">The crossed-out price on each Amazon US product page, read by the weekly Cowork check</span>'+
-    (run ? `<span class="cpt-live"><i></i>Checked ${esc(shortDate(run.date.slice(0, 10)))}</span>` : '')+
+    `<span class="sub">${run ? `${all.length} product pages checked by Cowork on ${esc(shortDate(run.date.slice(0, 10)))}` + (STOCK !== 'all' ? ` \u00b7 Stock: ${STOCK === 'in' ? 'In stock' : 'Out of stock'} only` : '') : 'Read from each Amazon US product page by the weekly Cowork check'}</span>`+
     '</div><div class="cpt-tiles">'+
-      tile('Pages read', all.length || '\u2014', '', run ? 'Last check ' + esc(shortDate(run.date.slice(0, 10))) : 'No check yet', 'all')+
-      tile('With a strike-through', shown, shown ? 'good' : '', `${lp} List Price, ${tp} Typical price`, 'shown')+
+      tile('With a strike-through', shown, shown ? 'good' : '', `${lp} List Price \u00b7 ${tp} Typical price`, 'shown')+
       tile('No strike-through', none, none ? 'bad' : 'good', 'Tier A first', 'none')+
-      tile('Lost since last check', lost, lost ? 'bad' : 'good', RV.prevRun ? 'vs ' + esc(shortDate(RV.prevRun.date.slice(0, 10))) : 'Needs two checks', 'lost')+
-      tile('New since last check', gained, gained ? 'good' : '', RV.prevRun ? 'vs ' + esc(shortDate(RV.prevRun.date.slice(0, 10))) : 'Needs two checks', 'new')+
+      (RV.prevRun ? tile('Changes since last check', lost + gained, lost ? 'bad' : '', `${lost} lost \u00b7 ${gained} new, vs ${esc(shortDate(RV.prevRun.date.slice(0, 10)))}`, lost ? 'lost' : 'new') : '')+
     '</div></section>';
   html += '<div class="cpt-tools rv-tools"><div class="seg" id="stSt">'+
-      [['none','No strike-through'],['lost','Lost'],['new','New'],['shown','With a strike-through'],['all','All']].map(([k, l])=> `<button data-st="${k}" aria-pressed="${ST_F.show === k}">${l}</button>`).join('')+'</div>'+
-      sel('stTier', 'Tier', RV_TIERS, ST_F.tier) + sel('stBrand', 'Brand', brands, ST_F.brand) + sel('stFam', 'Family', fams, ST_F.family)+
-      `<input id="stQ" type="search" placeholder="Search SKU, ASIN, product or family" value="${esc(ST_F.q)}">`+
+      [['none','No strike-through'],['shown','With a strike-through'],['all','All']].concat(RV.prevRun ? [['lost','Lost'],['new','New']] : []).map(([k, l])=> `<button data-st="${k}" aria-pressed="${ST_F.show === k}">${l}</button>`).join('')+'</div>'+
+      sel('stTier', 'Tier', RV_TIERS, ST_F.tier) + sel('stBrand', 'Brand', brands, ST_F.brand)+
+      `<input id="stQ" type="search" placeholder="Search product, SKU or family" value="${esc(ST_F.q)}" style="max-width:240px">`+
       `<button id="stCopy">Copy list for Haris and Sam</button><button id="stClr">Clear filters</button>`+
       `<span class="count">${rows.length} of ${all.length}</span></div>`;
   if(!RV.rows && RV_ERR) html += '<div class="cpt-empty"><b>Strike-through feed not found yet</b>It comes with the Listing Review feed (review.json).</div>';
@@ -8085,7 +8107,7 @@ function renderStrike(){
   const q = document.getElementById('stQ'); if(q) q.oninput = ()=>{ ST_F.q = q.value; stKeep(); const p = q.selectionStart; renderStrike(); const q2 = document.getElementById('stQ'); q2.focus(); q2.setSelectionRange(p, p); };
   const cl = document.getElementById('stClr'); if(cl) cl.onclick = ()=>{ Object.assign(ST_F, ST_F_DEF); stKeep(); renderStrike(); };
   const cp = document.getElementById('stCopy'); if(cp) cp.onclick = ()=>{
-    const m = x=> x === null || x === undefined || x === '' ? 'n/a' : (typeof x === 'number' ? usd(x) : x);
+    const m = x=> x === null || x === undefined || x === '' ? 'n/a' : (typeof x === 'number' ? usd(x) : String(x).replace(/^\s*our price\s*/i, ''));
     const t = `Strike-through check ${run ? run.date.slice(0, 10) : ''}: ${rows.length} listing${rows.length === 1 ? '' : 's'}\n` +
       rows.map(x=> `• ${x.sku} (Tier ${x.tier || '?'}): ${x.shown ? x.page : 'none'}${x.change === 'lost' ? ' (lost, was ' + x.was + ')' : ''}. Our price ${m(x.price)}, List Price ${m(x.list)}, Walmart ${m(x.wm)}`).join('\n');
     (navigator.clipboard ? navigator.clipboard.writeText(t) : Promise.reject()).then(()=>{ cp.textContent = 'Copied'; }).catch(()=> window.prompt('Copy:', t));
