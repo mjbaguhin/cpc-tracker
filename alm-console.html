@@ -876,6 +876,7 @@ a.idl:hover{color:var(--accent);border-bottom-style:solid}
 .stk-alert{padding:.3rem .7rem;margin:.35rem 1rem;font-size:.76rem;line-height:1.35}
 @media (max-width:700px){ #navGroups .ng{border:0;padding:0} }
 #catalogBtn .badge{margin-left:.45rem}
+#navGroups .ng-t{display:none !important}   /* group scores repeat Catalog (MJ, Oct 30) */
 </style>
 </head>
 <body>
@@ -7136,6 +7137,7 @@ function colResize(view){
 function selBar(view){
   const n = selSet().size, tools = view.querySelector('.cpt-tools');
   if(!tools) return;
+  if(S.view === 'st' || S.view === 'rv'){ const old = tools.querySelector('.selbar'); if(old) old.remove(); return; }
   tierBtn(tools);
   if(view.querySelector('tr.gh') && !tools.querySelector('.grpall')){
     const b = document.createElement('button'); b.className = 'grpall';
@@ -8053,7 +8055,14 @@ function rvStrikeTable(rows){
     return esc(String(v).replace(/^\s*our price\s*/i, '')); };
   const two = !!RV.prevRun;
   const chg = {lost:'<div class="mut" style="font-size:.74rem;color:#a3261a">Lost since last check</div>', new:'<div class="mut" style="font-size:.74rem;color:#17694a">New since last check</div>', changed:'<div class="mut" style="font-size:.74rem">Changed</div>'};
-  const tag = x=> x.shown ? `<span class="lcchip lc-ok">${esc(x.page.replace(/^typical price/i, 'Typical price'))}</span>` : '<span class="lcchip lc-bad">None</span>';
+  const amt = t=>{ const m = String(t || '').match(/\$\s*([\d,]+(?:\.\d+)?)/); return m ? Number(m[1].replace(/,/g, '')) : null; };
+  const tag = x=>{
+    if(!x.shown) return '<span class="lcchip lc-bad">None</span>';
+    if(/^list/i.test(x.page)){ const a = amt(x.page), same = a !== null && typeof x.list === 'number' && Math.abs(a - x.list) < 0.01;
+      if(same || a === null) return '<span class="lcchip lc-ok">List Price</span>';
+      if(typeof x.list !== 'number') return `<span class="lcchip lc-ok">List Price ${usd(a)}</span>`;   // nothing in the Master SKU to compare with
+      return `<span class="lcchip lc-ok">List Price ${usd(a)}</span><div class="mut" style="font-size:.72rem;color:#8a5a00">differs from Master SKU</div>`; }
+    return `<span class="lcchip lc-ok">${esc(x.page.replace(/^typical price/i, 'Typical price'))}</span>`; };
   return '<div style="overflow-x:auto;margin:.4rem 1rem"><table class="rv-t" style="min-width:820px;background:#fff;border:1px solid var(--line);border-radius:8px">'+
     '<colgroup><col style="width:38%"><col style="width:20%"><col style="width:12%"><col style="width:15%"><col style="width:15%"></colgroup>'+
     '<tr><td style="padding-left:.6rem">Product</td><td>Strike-through</td><td>Our price</td><td>List Price (Master SKU)</td><td>Walmart</td></tr>'+
@@ -8082,27 +8091,37 @@ function renderStrike(){
   const tile = (k, val, cls, note, f)=> `<div class="cpt-tile bbtile${ST_F.show === f ? ' on' : ''}" role="button" tabindex="0" data-sts="${f}"><div class="k">${k}</div><div class="v ${cls || ''}">${val}</div><div class="n">${note || '&nbsp;'}</div></div>`;
   const sel = (id, label, opts, val)=> `<label class="mut" style="font-size:.78rem">${label} <select id="${id}"><option value="">All</option>${opts.map(o=> `<option value="${esc(o)}"${o === val ? ' selected' : ''}>${esc(o)}</option>`).join('')}</select></label>`;
   let html = '<section class="cpt-top"><div class="cpt-head"><h2>Strike-through</h2>'+
-    `<span class="sub">${run ? `${all.length} product pages checked by Cowork on ${esc(shortDate(run.date.slice(0, 10)))}` + (STOCK !== 'all' ? ` \u00b7 Stock: ${STOCK === 'in' ? 'In stock' : 'Out of stock'} only` : '') : 'Read from each Amazon US product page by the weekly Cowork check'}</span>`+
+    `<span class="sub">${run ? `${all.length} product pages checked by Cowork on ${esc(shortDate(run.date.slice(0, 10)))}` : 'Read from each Amazon US product page by the weekly Cowork check'}</span>`+
     '</div><div class="cpt-tiles">'+
       tile('With a strike-through', shown, shown ? 'good' : '', `${lp} List Price \u00b7 ${tp} Typical price`, 'shown')+
-      tile('No strike-through', none, none ? 'bad' : 'good', 'Tier A first', 'none')+
+      tile('No strike-through', none, none ? 'bad' : 'good', '', 'none')+
+      (run ? (()=>{ const miss = (RV.strikeMissing || []).length, act = RV.active || 0;
+        return tile('Coverage', miss ? `${act - miss}<span style="font-size:.95rem;color:var(--c-night-mut)"> of ${act}</span>` : `All ${act} \u2713`, miss ? 'bad' : 'good',
+          miss ? `${miss} active listing${miss === 1 ? '' : 's'} not checked` : 'Every active listing checked', 'missing'); })() : '')+
       (RV.prevRun ? tile('Changes since last check', lost + gained, lost ? 'bad' : '', `${lost} lost \u00b7 ${gained} new, vs ${esc(shortDate(RV.prevRun.date.slice(0, 10)))}`, lost ? 'lost' : 'new') : '')+
     '</div></section>';
-  html += '<div class="cpt-tools rv-tools"><div class="seg" id="stSt">'+
-      [['none','No strike-through'],['shown','With a strike-through'],['all','All']].concat(RV.prevRun ? [['lost','Lost'],['new','New']] : []).map(([k, l])=> `<button data-st="${k}" aria-pressed="${ST_F.show === k}">${l}</button>`).join('')+'</div>'+
+  html += '<div class="cpt-tools rv-tools">'+
       sel('stTier', 'Tier', RV_TIERS, ST_F.tier) + sel('stBrand', 'Brand', brands, ST_F.brand)+
       `<input id="stQ" type="search" placeholder="Search product, SKU or family" value="${esc(ST_F.q)}" style="max-width:240px">`+
       `<button id="stCopy">Copy list for Haris and Sam</button><button id="stClr">Clear filters</button>`+
-      `<span class="count">${rows.length} of ${all.length}</span></div>`;
+      (ST_F.show !== 'all' ? `<span class="mut" style="font-size:.76rem">Click the highlighted box again to show all</span>` : '')+'</div>';
   if(!RV.rows && RV_ERR) html += '<div class="cpt-empty"><b>Strike-through feed not found yet</b>It comes with the Listing Review feed (review.json).</div>';
   else if(!RV.rows) html += '<div class="cpt-empty"><b>Loading Strike-through</b></div>';
   else if(!all.length) html += '<div class="cpt-empty"><b>No strike-through data yet</b>The weekly Cowork PDP check fills this page from its next run.</div>';
+  else if(ST_F.show === 'missing'){
+    const miss = RV.strikeMissing || [];
+    html += !miss.length ? `<div class="cpt-empty"><b>Every active listing was checked \u2713</b>The check on ${run ? esc(shortDate(run.date.slice(0, 10))) : ''} has a strike-through result for all ${RV.active || 0} active listings.</div>`
+      : '<div style="overflow-x:auto;margin:.4rem 1rem"><table class="rv-t" style="min-width:640px;background:#fff;border:1px solid var(--line);border-radius:8px">'+
+        '<tr><td style="padding-left:.6rem">Active listings with no strike-through result</td><td>Tier</td><td></td></tr>'+
+        miss.map(x=> `<tr><td style="padding-left:.6rem"><b>${esc(x.name || x.sku)}</b><div class="rv-id">${skuL(x.sku, 'US')} \u00b7 ${esc(x.brand)}</div></td><td>${esc(x.tier || '?')}</td>`+
+          `<td><a href="https://www.amazon.com/dp/${esc(x.asin)}" target="_blank" rel="noopener"><button>Open PDP \u2197</button></a></td></tr>`).join('')+
+        '</table></div><div class="rv-note" style="margin:0 1rem 1rem">The next weekly check picks these up, or run the Cowork task again the same day to finish this one.</div>';
+  }
   else if(!rows.length) html += '<div class="cpt-empty"><b>Nothing matches these filters</b>Try Clear filters.</div>';
   else html += rvStrikeTable(rows);
   v.innerHTML = html;
   const set = (k, val)=>{ ST_F[k] = val; stKeep(); renderStrike(); chrome(); };
-  [...v.querySelectorAll('[data-sts]')].forEach(t=> t.onclick = ()=> set('show', t.dataset.sts));
-  [...v.querySelectorAll('#stSt button')].forEach(b=> b.onclick = ()=> set('show', b.dataset.st));
+  [...v.querySelectorAll('[data-sts]')].forEach(t=> t.onclick = ()=> set('show', ST_F.show === t.dataset.sts ? 'all' : t.dataset.sts));
   [['stTier','tier'],['stBrand','brand'],['stFam','family']].forEach(([id, k])=>{ const el = document.getElementById(id); if(el) el.onchange = ()=> set(k, el.value); });
   const q = document.getElementById('stQ'); if(q) q.oninput = ()=>{ ST_F.q = q.value; stKeep(); const p = q.selectionStart; renderStrike(); const q2 = document.getElementById('stQ'); q2.focus(); q2.setSelectionRange(p, p); };
   const cl = document.getElementById('stClr'); if(cl) cl.onclick = ()=>{ Object.assign(ST_F, ST_F_DEF); stKeep(); renderStrike(); };
@@ -8419,7 +8438,7 @@ function strip(rows){
 function chrome(){
   if(!ROWS.length && !CAT.length && !CASES.length) return;
   document.getElementById('meta').innerHTML =
-    `<b>${META.skus||0}</b> SKUs \u00b7 ${esc(S.mk)} \u00b7 ratings ${esc(META.when||'?')}`+
+    `${esc(S.mk)} \u00b7 ratings ${esc(META.when||'?')}`+
     (META.tokens!==undefined && META.tokens!==null ? ` \u00b7 ${META.tokens} tokens` : '')+
     (META.note ? ` \u00b7 <span style="color:#f0b6a8">${esc(META.note)}</span>` : '')+
     (sourceNote() ? ' \u00b7 ' + sourceNote() : '');
