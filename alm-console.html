@@ -63,7 +63,7 @@ header h1{
 #meta{font-size:.7rem;color:#93a0b0;letter-spacing:.02em}
 #meta b{color:#ccd6e2;font-weight:600}
 
-#toggle,#fs,#hRefresh,#hReset,#hStock button,#homeBtn,#quickCat,#casesBtn,#catalogBtn,#cptBtn,#bbBtn,#lcBtn,#lpBtn,#vrBtn,#bsBtn,#prBtn,#msBtn,#rvBtn,#stBtn{
+#toggle,#fs,#hRefresh,#hReset,#gfClr,#hStock button,#homeBtn,#quickCat,#casesBtn,#catalogBtn,#cptBtn,#bbBtn,#lcBtn,#lpBtn,#vrBtn,#bsBtn,#prBtn,#msBtn,#rvBtn,#stBtn{
   font-size:.74rem;padding:.24rem .6rem;
   background:transparent;color:#fff;border:1px solid #3a4652;
 }
@@ -116,7 +116,7 @@ td.cgtdp{min-width:14rem;max-width:22rem}
 #catalogBtn[aria-pressed="true"]{
   background:#2f4a6d;border-color:#4a6fa5;
 }
-#toggle:hover,#fs:hover,#hRefresh:hover,#hReset:hover,#hStock button:hover,#homeBtn:hover,#quickCat:hover,#casesBtn:hover,#catalogBtn:hover,#cptBtn:hover,#bbBtn:hover,#lcBtn:hover,#lpBtn:hover,#vrBtn:hover,#bsBtn:hover,#prBtn:hover,#msBtn:hover,#rvBtn:hover,#stBtn:hover{background:#1c232b}
+#toggle:hover,#fs:hover,#hRefresh:hover,#hReset:hover,#gfClr:hover,#hStock button:hover,#homeBtn:hover,#quickCat:hover,#casesBtn:hover,#catalogBtn:hover,#cptBtn:hover,#bbBtn:hover,#lcBtn:hover,#lpBtn:hover,#vrBtn:hover,#bsBtn:hover,#prBtn:hover,#msBtn:hover,#rvBtn:hover,#stBtn:hover{background:#1c232b}
 #toggle .badge,#homeBtn .badge,#quickCat .badge,#casesBtn .badge,#cptBtn .badge,#bbBtn .badge,#lcBtn .badge,#lpBtn .badge,#vrBtn .badge,#bsBtn .badge,#prBtn .badge,#msBtn .badge,#rvBtn .badge,#stBtn .badge{
   display:inline-block;margin-left:.35rem;padding:0 .32rem;
   background:#a83a26;border-radius:8px;font-size:.68rem;font-weight:700;
@@ -653,7 +653,7 @@ header h1{font-size:.95rem;letter-spacing:.02em;text-transform:none;font-weight:
 header h1::after{content:"";display:inline-block;width:.42rem;height:.42rem;border-radius:50%;
   background:#3fbf7f;margin-left:.45rem;vertical-align:middle}
 #meta{font-family:ui-monospace,"SF Mono",Menlo,Consolas,monospace;font-size:.72rem}
-#toggle,#fs,#hRefresh,#hReset,#hStock button,#homeBtn,#quickCat,#casesBtn,#catalogBtn,#cptBtn,#bbBtn,#lcBtn,#lpBtn,#vrBtn,#bsBtn,#prBtn,#msBtn,#rvBtn,#stBtn{
+#toggle,#fs,#hRefresh,#hReset,#gfClr,#hStock button,#homeBtn,#quickCat,#casesBtn,#catalogBtn,#cptBtn,#bbBtn,#lcBtn,#lpBtn,#vrBtn,#bsBtn,#prBtn,#msBtn,#rvBtn,#stBtn{
   font-size:.8rem;padding:.38rem .8rem;border-radius:7px;border-color:var(--night-line);color:#dfe5ee}
 #homeBtn[aria-pressed="true"],#quickCat[aria-pressed="true"],#casesBtn[aria-pressed="true"],
 #catalogBtn[aria-pressed="true"],#cptBtn[aria-pressed="true"],#bbBtn[aria-pressed="true"],#lcBtn[aria-pressed="true"],#lpBtn[aria-pressed="true"],#vrBtn[aria-pressed="true"],#bsBtn[aria-pressed="true"],#prBtn[aria-pressed="true"],#msBtn[aria-pressed="true"],#rvBtn[aria-pressed="true"],#stBtn[aria-pressed="true"]{background:#2c4f7c;border-color:#4a76b0;color:#fff}
@@ -877,6 +877,15 @@ a.idl:hover{color:var(--accent);border-bottom-style:solid}
 @media (max-width:700px){ #navGroups .ng{border:0;padding:0} }
 #catalogBtn .badge{margin-left:.45rem}
 #navGroups .ng-t{display:none !important}   /* group scores repeat Catalog (MJ, Oct 30) */
+#navGroups .gf-l{font-size:.72rem;color:rgba(255,255,255,.65);display:inline-flex;align-items:center;gap:.3rem}
+#navGroups .gf-l select{font-size:.78rem;background:#1d222a;color:#e8edf3;border:1px solid rgba(255,255,255,.22);border-radius:6px;padding:.2rem .3rem}
+#gfQ{font-size:.8rem;width:15rem;max-width:100%;background:#1d222a;color:#e8edf3;border:1px solid rgba(255,255,255,.22);border-radius:6px;padding:.3rem .55rem}
+#gfQ::placeholder{color:rgba(255,255,255,.45)}
+.cov-tag{font-size:.7rem;border-radius:6px;padding:.12rem .5rem;border:1px solid}
+.cov-tag.ok{color:#7fd3a8;border-color:#2c5e46;background:#16301f}
+.cov-tag.bad{color:#ffb4a8;border-color:#6b2c25;background:#3a1612}
+.cov-list{background:#3a1612;color:#ffd9d2;font-size:.74rem;border-radius:8px;padding:.45rem .7rem;margin:-.2rem 0 .55rem;display:flex;flex-wrap:wrap;gap:.3rem .9rem}
+.cov-list .mut{color:#d9a9a0}
 </style>
 </head>
 <body>
@@ -897,7 +906,7 @@ a.idl:hover{color:var(--accent);border-bottom-style:solid}
       <div class="ng-b" data-ng="perf"><button id="bsBtn">BSR</button></div></div>
     <div class="ng"><div class="ng-l">Reference</div><div class="ng-b"><button id="prBtn">Master SKU</button></div></div>
     <div id="mSelWrap"><label for="mSel">Module</label><select id="mSel"><optgroup label="Today"><option value="catalogBtn">Catalog</option></optgroup><optgroup label="Price and Buy Box"><option value="cptBtn">CPT tracker</option><option value="bbBtn">Buy Box</option><option value="lpBtn">List Price</option><option value="stBtn">Strike-through</option></optgroup><optgroup label="Listing health"><option value="lcBtn">Listing Copy</option><option value="quickCat">Category</option><option value="vrBtn">Variation</option><option value="msBtn">Measurements</option><option value="rvBtn">Listing Review</option></optgroup><optgroup label="Performance"><option value="bsBtn">BSR</option></optgroup><optgroup label="Reference"><option value="prBtn">Master SKU</option></optgroup></select></div>
-    <div class="ng ng-tools"><div class="ng-l">View</div><div class="ng-b"><button id="toggle" aria-expanded="true">Filters</button><span id="hStock" role="group" aria-label="Stock"><span class="stk-l">Stock</span><button data-stk="all" title="Every listing">All</button><button data-stk="in" title="Only listings with FBA stock">In stock</button><button data-stk="oos" title="Only listings with 0 FBA stock">Out of stock</button></span><button id="hRefresh" title="Reload all data now. Reads the published files only: no scripts run, no Keepa tokens.">↻ Refresh</button><button id="hReset" title="Put this module’s filters, search, sort and grouping back to their defaults. Keeps the marketplace and all saved checks and marks.">Reset view</button><button id="fs" title="Fullscreen">Full screen</button></div></div>
+    <div class="ng ng-tools"><div class="ng-l">View</div><div class="ng-b"><button id="toggle" aria-expanded="true">Filters</button><span id="hStock" role="group" aria-label="Stock"><span class="stk-l">Stock</span><button data-stk="all" title="Every listing">All</button><button data-stk="in" title="Only listings with FBA stock">In stock</button><button data-stk="oos" title="Only listings with 0 FBA stock">Out of stock</button></span><label class="gf-l">Tier <select id="gfTier"><option value="">All</option><option>A</option><option>B</option><option>C</option><option>X</option><option>N</option></select></label><label class="gf-l">Brand <select id="gfBrand"><option value="">All</option><option>Barnyard Designs</option><option>Seedboy</option></select></label><input id="gfQ" type="search" placeholder="Search SKU, ASIN, product or family" autocomplete="off"><button id="gfClr" title="Clear Tier, Brand, Search, Stock and this module’s own filters. Keeps the sort, grouping and marketplace.">Clear filters</button><button id="hRefresh" title="Reload all data now. Reads the published files only: no scripts run, no Keepa tokens.">↻ Refresh</button><button id="hReset" title="Put this module’s filters, search, sort and grouping back to their defaults. Keeps the marketplace and all saved checks and marks.">Reset view</button><button id="fs" title="Fullscreen">Full screen</button></div></div>
   </nav>
 </header>
 <section id="ov" hidden></section>
@@ -8792,9 +8801,30 @@ hReset.onclick = ()=>{
    unknown stock show only under All. */
 let STOCK = 'all', STOCK_ON = false;
 try { STOCK = localStorage.getItem('stock_view') || 'all'; } catch(e){}
+/* One set of filters for every module (MJ, Oct 30): Tier, Brand and Search in the
+   View box, next to Stock. Same rule as Stock: they filter what a page shows,
+   never the header scores. Tier and brand come from the row, or the Master SKU. */
+const GF = {tier:'', brand:'', q:''};
+try { Object.assign(GF, JSON.parse(localStorage.getItem('gf') || '{}')); } catch(e){}
+const gfKeep = ()=>{ try { localStorage.setItem('gf', JSON.stringify(GF)); } catch(e){} };
+function gfInfo(r){
+  const p = (typeof PR !== 'undefined' ? PR : []).find(x=> (r.sku && x.sku === r.sku) || (r.usSku && x.sku === r.usSku)) ||
+            (typeof PR !== 'undefined' ? PR : []).find(x=> r.asin && x.asin === r.asin) || {};
+  return {tier: r.tier || p.tier || '', brand: r.brand || p.brand || '',
+    text: [r.sku, r.usSku, r.asin, r.name, r.title, r.pname, r.parent, r.family, r.fam, r.psku, p.name, p.pname, p.psku].filter(Boolean).join(' ').toLowerCase()};
+}
+function gfMatch(r){
+  if(!GF.tier && !GF.brand && !GF.q) return true;
+  const g = gfInfo(r);
+  if(GF.tier && g.tier !== GF.tier) return false;
+  if(GF.brand && g.brand !== GF.brand) return false;
+  if(GF.q && g.text.indexOf(GF.q.toLowerCase().trim()) === -1) return false;
+  return true;
+}
 function stockKeep(rows, mk){
-  if(!STOCK_ON || STOCK === 'all' || !Array.isArray(rows)) return rows;
-  return rows.filter(r=>{ const v = stockOf(r, mk); return v === null ? false : STOCK === 'oos' ? v === 0 : v > 0; });
+  if(!STOCK_ON || !Array.isArray(rows)) return rows;
+  if(STOCK !== 'all') rows = rows.filter(r=>{ const v = stockOf(r, mk); return v === null ? false : STOCK === 'oos' ? v === 0 : v > 0; });
+  return (GF.tier || GF.brand || GF.q) ? rows.filter(gfMatch) : rows;
 }
 (function(){
   const g = window, mkOf = {
@@ -8805,7 +8835,8 @@ function stockKeep(rows, mk){
     g[n] = function(){ return stockKeep(f.apply(this, arguments), mkOf[n](arguments)); }; });
   ['renderCpt','renderBb','renderLc','renderLp','renderVariation','renderBsr','renderProducts','renderMeasurements',
    'renderReview','renderStrike','renderCategory'].forEach(n=>{ const f = g[n]; if(typeof f !== 'function') return;
-    g[n] = function(){ const was = STOCK_ON; STOCK_ON = true; try { return f.apply(this, arguments); } finally { STOCK_ON = was; try { ensureClearBtn(); } catch(e){} } }; });
+    g[n] = function(){ const was = STOCK_ON; STOCK_ON = true; try { gfModuleBlank(); } catch(e){}
+      try { return f.apply(this, arguments); } finally { STOCK_ON = was; try { ensureClearBtn(); } catch(e){} try { ensureCoverage(); } catch(e){} } }; });
   ['navPercents','modPct'].forEach(n=>{ const f = g[n]; if(typeof f !== 'function') return;
     g[n] = function(){ const was = STOCK_ON; STOCK_ON = false; try { return f.apply(this, arguments); } finally { STOCK_ON = was; } }; });
 })();
@@ -8814,7 +8845,12 @@ function stockKeep(rows, mk){
    grouping, marketplace and review mode. Modules that already have their own
    Clear filters button keep it. */
 const CLR_KEEP = ['mk','sort','dir','group','mode','order','pos'];
+function gfPaint(){
+  const t = document.getElementById('gfTier'), b = document.getElementById('gfBrand'), q = document.getElementById('gfQ');
+  if(t) t.value = GF.tier; if(b) b.value = GF.brand; if(q && document.activeElement !== q) q.value = GF.q;
+}
 function clearFilters(){
+  GF.tier = ''; GF.brand = ''; GF.q = ''; gfKeep(); gfPaint();
   const F = VIEW_F[S.view], D = VIEW_F_DEF[S.view];
   if(F && D) Object.keys(D).forEach(k=>{ if(CLR_KEEP.indexOf(k) === -1) F[k] = JSON.parse(JSON.stringify(D[k])); });
   STOCK = 'all'; try { localStorage.setItem('stock_view', 'all'); } catch(e){}
@@ -8822,23 +8858,70 @@ function clearFilters(){
   if(S.view === 'st') stKeep();
   stockPaint(); render();
 }
-function ensureClearBtn(){
-  const bar = document.querySelector('#cptView .cpt-tools'); if(!bar || !VIEW_F[S.view]) return;
-  // A module's own Clear filters button gets the same behavior, so it is identical everywhere
-  const own = [...bar.querySelectorAll('button')].find(b=> /^\s*clear filters\s*$/i.test(b.textContent));
-  if(own){ own.onclick = clearFilters; own.title = 'Clear the search, filters and Stock filter. Keeps the sort, grouping and marketplace.'; return; }
-  const b = document.createElement('button'); b.textContent = 'Clear filters'; b.className = 'mClr';
-  b.title = 'Clear the search, filters and Stock filter. Keeps the sort, grouping and marketplace.';
-  b.onclick = clearFilters;
-  const count = bar.querySelector('.count'); count ? bar.insertBefore(b, count) : bar.appendChild(b);
+/* Coverage on every module (MJ, Oct 30): does this module's data include every
+   active listing? The active list is rebuilt from the Master SKU data the same way
+   the scripts build it (status Active, an ASIN, Barnyard Designs or Seedboy; CA uses
+   CA Status). Filters are ignored: it always checks the full list. */
+const ACT_BRANDS = ['Barnyard Designs', 'Seedboy'];
+let COV_OPEN = false;
+function activeOf(mk){
+  return (typeof PR !== 'undefined' ? PR : []).filter(r=> ACT_BRANDS.indexOf(r.brand) !== -1 &&
+    (mk === 'CA' ? r.caStatus === 'Active' : (r.status === 'Active' && r.asin)));
 }
+const COV_SRC = {
+  cpt: ()=> [CPT, MK2], bb: ()=> [bbRows(), MK2], lc: ()=> [lcRows(), MK2], lp: ()=> [lpRows(), MK2],
+  category: ()=> [cgRows(CG_F.mk), CG_F.mk], vr: ()=> [vrRows(VR_F.mk), VR_F.mk], bs: ()=> [bsRows(BS_F.mk), BS_F.mk],
+  ms: ()=> [msRows(MS_F.mk), MS_F.mk]};
+function ensureCoverage(){
+  const src = COV_SRC[S.view], head = document.querySelector('#cptView .cpt-head'); if(!src || !head) return;
+  const was = STOCK_ON; STOCK_ON = false; let rows, mk;
+  try { [rows, mk] = src(); } finally { STOCK_ON = was; }
+  const act = activeOf(mk); if(!act.length || !Array.isArray(rows) || !rows.length) return;
+  const have = new Set(); rows.forEach(r=> [r.sku, r.usSku, r.asin].forEach(k=> k && have.add(k)));
+  const miss = act.filter(a=> !have.has(a.sku) && !have.has(a.asin));
+  let tag = head.querySelector('.cov-tag'); if(!tag){ tag = document.createElement('span'); tag.className = 'cov-tag'; head.appendChild(tag); }
+  const extra = S.view === 'cpt' ? ` \u00b7 ${rows.filter(c=> c.cpt !== null && c.cpt !== undefined).length} have a CPT from Amazon` : '';
+  tag.innerHTML = (miss.length ? `${act.length - miss.length} of ${act.length} active covered \u00b7 <u>${miss.length} missing</u>` : `\u2713 All ${act.length} active covered`) + extra;
+  tag.className = 'cov-tag ' + (miss.length ? 'bad' : 'ok');
+  tag.title = miss.length ? 'Click to see which active listings are not in this module' : `Every active ${mk} listing in the Master SKU sheet is in this module`;
+  let list = document.querySelector('#cptView .cov-list');
+  if(list) list.remove();
+  if(miss.length){
+    tag.style.cursor = 'pointer';
+    tag.onclick = ()=>{ COV_OPEN = !COV_OPEN; ensureCoverage(); };
+    if(COV_OPEN){
+      list = document.createElement('div'); list.className = 'cov-list';
+      list.innerHTML = '<b>Active listings not in this module</b> ' + miss.map(a=> `<span>${esc(a.sku)} <span class="mut">${esc((a.name || '').slice(0, 40))} \u00b7 Tier ${esc(a.tier || '?')}</span></span>`).join('');
+      head.insertAdjacentElement('afterend', list);
+    }
+  } else { tag.onclick = null; tag.style.cursor = ''; }
+}
+function gfModuleBlank(){
+  const F = typeof VIEW_F !== 'undefined' ? VIEW_F[S.view] : null; if(!F) return;
+  ['q','tier','brand'].forEach(k=>{ if(k in F && F[k]) F[k] = ''; });
+}
+function ensureClearBtn(){
+  const bar = document.querySelector('#cptView .cpt-tools'); if(!bar) return;
+  // The View box has Tier, Brand, Search and Clear filters for every module
+  bar.querySelectorAll('input[type="search"]').forEach(e=> e.remove());
+  ['stTier','stBrand','rvTier','rvBrand','prBrand','prTier'].forEach(id=>{ const e = bar.querySelector('#' + id); if(e){ const l = e.closest('label'); (l && bar.contains(l) ? l : e).remove(); } });
+  [...bar.querySelectorAll('button')].forEach(b=>{ const t = b.textContent.trim();
+    if(/^(all tiers|tier [abcxn])$/i.test(t) || /^clear filters$/i.test(t)) b.remove(); });
+  [...bar.querySelectorAll('.seg')].forEach(sg=>{ if(!sg.children.length) sg.remove(); });
+}
+{ const t = document.getElementById('gfTier'), b = document.getElementById('gfBrand'), q = document.getElementById('gfQ'), c = document.getElementById('gfClr');
+  if(t) t.onchange = ()=>{ GF.tier = t.value; gfKeep(); render(); };
+  if(b) b.onchange = ()=>{ GF.brand = b.value; gfKeep(); render(); };
+  if(q){ let tm = null; q.oninput = ()=>{ clearTimeout(tm); tm = setTimeout(()=>{ GF.q = q.value; gfKeep(); render(); }, 200); }; }
+  if(c) c.onclick = ()=> clearFilters();
+  gfPaint(); }
 function stockPaint(){ [...document.querySelectorAll('#hStock button')].forEach(b=> b.setAttribute('aria-pressed', b.dataset.stk === STOCK)); }
 [...document.querySelectorAll('#hStock button')].forEach(b=> b.onclick = ()=>{
   STOCK = b.dataset.stk; try { localStorage.setItem('stock_view', STOCK); } catch(e){}
   stockPaint(); render();
 });
 stockPaint();
-{ const r0 = hReset.onclick; hReset.onclick = ()=>{ STOCK = 'all'; try { localStorage.setItem('stock_view', 'all'); } catch(e){} stockPaint(); r0(); }; }
+{ const r0 = hReset.onclick; hReset.onclick = ()=>{ STOCK = 'all'; try { localStorage.setItem('stock_view', 'all'); } catch(e){} GF.tier = ''; GF.brand = ''; GF.q = ''; gfKeep(); gfPaint(); stockPaint(); r0(); }; }
 
 /* The Filters panel belongs to the first version of the dashboard: its filters
    only drive the old checklist table, which no page shows any more (every page,
