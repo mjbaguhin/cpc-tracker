@@ -930,6 +930,22 @@ a.idl:hover{color:var(--accent);border-bottom-style:solid}
   body.sn-pin #snPin{background:#24476e;border-color:#4a78ad;color:#fff}
 }
 @media (max-width:700px){ #sideRail{display:none} }
+/* Tier: pick one or more (MJ, Nov 3) */
+#gfTierWrap{position:relative}
+#gfTierBtn{font-size:.78rem;background:#1d222a;color:#e8edf3;border:1px solid rgba(255,255,255,.22);border-radius:6px;padding:.2rem .45rem;cursor:pointer;white-space:nowrap}
+#gfTierPop{position:absolute;top:calc(100% + 4px);left:0;z-index:80;background:#1d222a;border:1px solid rgba(255,255,255,.25);border-radius:8px;padding:.45rem .55rem;display:flex;flex-direction:column;gap:.3rem;min-width:8rem;box-shadow:0 8px 22px rgba(0,0,0,.45)}
+#gfTierPop[hidden]{display:none}
+#gfTierPop label{display:flex;gap:.4rem;align-items:center;color:#e8edf3;font-size:.8rem;cursor:pointer;white-space:nowrap}
+#gfTierPop #gfTierAll{margin-top:.2rem;font-size:.74rem;background:none;border:1px solid rgba(255,255,255,.22);color:#cfd6de;border-radius:6px;padding:.15rem .4rem;cursor:pointer}
+/* Supplier: pick one or more (MJ, Nov 3), same look as Tier */
+#gfSupWrap{position:relative}
+#gfSupBtn{font-size:.78rem;background:#1d222a;color:#e8edf3;border:1px solid rgba(255,255,255,.22);border-radius:6px;padding:.2rem .45rem;cursor:pointer;white-space:nowrap;max-width:14rem;overflow:hidden;text-overflow:ellipsis}
+#gfSupPop{position:absolute;top:calc(100% + 4px);left:0;z-index:80;background:#1d222a;border:1px solid rgba(255,255,255,.25);border-radius:8px;padding:.45rem .55rem;display:flex;flex-direction:column;gap:.3rem;min-width:13rem;max-height:60vh;overflow-y:auto;box-shadow:0 8px 22px rgba(0,0,0,.45)}
+#gfSupPop[hidden]{display:none}
+#gfSupList{display:flex;flex-direction:column;gap:.3rem}
+#gfSupPop label{display:flex;gap:.4rem;align-items:center;color:#e8edf3;font-size:.8rem;cursor:pointer;white-space:nowrap}
+#gfSupPop label .mut{color:#8b96a3;font-size:.72rem}
+#gfSupPop #gfSupAll{margin-top:.2rem;font-size:.74rem;background:none;border:1px solid rgba(255,255,255,.22);color:#cfd6de;border-radius:6px;padding:.15rem .4rem;cursor:pointer}
 </style>
 </head>
 <body>
@@ -943,7 +959,7 @@ a.idl:hover{color:var(--accent);border-bottom-style:solid}
   <button id="casesBtn" hidden>Cases</button>
   <!-- Modules grouped by how MJ checks them each day (Oct 26) -->
   <nav id="navGroups" aria-label="Modules">
-    <div class="ng"><div class="ng-l">Today</div><div class="ng-b"><button id="catalogBtn">Catalog</button></div></div>
+    <div class="ng"><div class="ng-l">Today</div><div class="ng-b"><button id="catalogBtn">Catalog</button><button id="tkBtn">My tasks</button></div></div>
     <div class="ng"><div class="ng-l">Price and Buy Box <span class="ng-t" data-ngt="price"></span></div>
       <div class="ng-b" data-ng="price"><button id="cptBtn">CPT tracker</button><button id="bbBtn">Buy Box</button><button id="lpBtn">List Price</button><button id="stBtn">Strike-through</button></div></div>
     <div class="ng"><div class="ng-l">Listing health <span class="ng-t" data-ngt="listing"></span></div>
@@ -951,8 +967,8 @@ a.idl:hover{color:var(--accent);border-bottom-style:solid}
     <div class="ng"><div class="ng-l">Performance <span class="ng-t" data-ngt="perf"></span></div>
       <div class="ng-b" data-ng="perf"><button id="bsBtn">BSR</button></div></div>
     <div class="ng"><div class="ng-l">Reference</div><div class="ng-b"><button id="prBtn">Master SKU</button></div></div>
-    <div id="mSelWrap"><label for="mSel">Module</label><select id="mSel"><optgroup label="Today"><option value="catalogBtn">Catalog</option></optgroup><optgroup label="Price and Buy Box"><option value="cptBtn">CPT tracker</option><option value="bbBtn">Buy Box</option><option value="lpBtn">List Price</option><option value="stBtn">Strike-through</option></optgroup><optgroup label="Listing health"><option value="lcBtn">Listing Copy</option><option value="quickCat">Category</option><option value="vrBtn">Variation</option><option value="msBtn">Measurements</option><option value="rvBtn">Listing Review</option></optgroup><optgroup label="Performance"><option value="bsBtn">BSR</option></optgroup><optgroup label="Reference"><option value="prBtn">Master SKU</option></optgroup></select></div>
-    <div class="ng ng-tools"><div class="ng-l">View</div><div class="ng-b"><button id="toggle" aria-expanded="true">Filters</button><span id="hStock" role="group" aria-label="Stock"><span class="stk-l">Stock</span><button data-stk="all" title="Every listing">All</button><button data-stk="in" title="Only listings with FBA stock">In stock</button><button data-stk="oos" title="Only listings with 0 FBA stock">Out of stock</button></span><label class="gf-l">Tier <select id="gfTier"><option value="">All</option><option>A</option><option>B</option><option>C</option><option>X</option><option>N</option></select></label><label class="gf-l">Brand <select id="gfBrand"><option value="">All</option><option>Barnyard Designs</option><option>Seedboy</option></select></label><input id="gfQ" type="search" placeholder="Search SKU, ASIN, product or family" autocomplete="off"><button id="gfClr" title="Clear Tier, Brand, Search, Stock and this module’s own filters. Keeps the sort, grouping and marketplace.">Clear filters</button><button id="hRefresh" title="Reload all data now. Reads the published files only: no scripts run, no Keepa tokens.">↻ Refresh</button><button id="hReset" title="Put this module’s filters, search, sort and grouping back to their defaults. Keeps the marketplace and all saved checks and marks.">Reset view</button><button id="fs" title="Fullscreen">Full screen</button></div></div>
+    <div id="mSelWrap"><label for="mSel">Module</label><select id="mSel"><optgroup label="Today"><option value="catalogBtn">Catalog</option><option value="tkBtn">My tasks</option></optgroup><optgroup label="Price and Buy Box"><option value="cptBtn">CPT tracker</option><option value="bbBtn">Buy Box</option><option value="lpBtn">List Price</option><option value="stBtn">Strike-through</option></optgroup><optgroup label="Listing health"><option value="lcBtn">Listing Copy</option><option value="quickCat">Category</option><option value="vrBtn">Variation</option><option value="msBtn">Measurements</option><option value="rvBtn">Listing Review</option></optgroup><optgroup label="Performance"><option value="bsBtn">BSR</option></optgroup><optgroup label="Reference"><option value="prBtn">Master SKU</option></optgroup></select></div>
+    <div class="ng ng-tools"><div class="ng-l">View</div><div class="ng-b"><button id="toggle" aria-expanded="true">Filters</button><span id="hStock" role="group" aria-label="Stock"><span class="stk-l">Stock</span><button data-stk="all" title="Every listing">All</button><button data-stk="in" title="Only listings with FBA stock">In stock</button><button data-stk="oos" title="Only listings with 0 FBA stock">Out of stock</button></span><span class="gf-l" id="gfTierWrap">Tier <button id="gfTierBtn" type="button" aria-haspopup="true" aria-expanded="false" title="Pick one or more tiers">All ▾</button><span id="gfTierPop" hidden><label><input type="checkbox" value="A"> Tier A</label><label><input type="checkbox" value="B"> Tier B</label><label><input type="checkbox" value="C"> Tier C</label><label><input type="checkbox" value="X"> Tier X</label><label><input type="checkbox" value="N"> Tier N</label><button type="button" id="gfTierAll">All tiers</button></span></span><span class="gf-l" id="gfSupWrap">Supplier <button id="gfSupBtn" type="button" aria-haspopup="true" aria-expanded="false" title="Pick one or more suppliers">All ▾</button><span id="gfSupPop" hidden><span id="gfSupList"></span><button type="button" id="gfSupAll">All suppliers</button></span></span><label class="gf-l">Brand <select id="gfBrand"><option value="">All</option><option>Barnyard Designs</option><option>Seedboy</option></select></label><input id="gfQ" type="search" placeholder="Search SKU, ASIN, product or family" autocomplete="off"><button id="gfClr" title="Clear Tier, Brand, Search, Stock and this module’s own filters. Keeps the sort, grouping and marketplace.">Clear filters</button><button id="hRefresh" title="Reload all data now. Reads the published files only: no scripts run, no Keepa tokens.">↻ Refresh</button><button id="hReset" title="Put this module’s filters, search, sort and grouping back to their defaults. Keeps the marketplace and all saved checks and marks.">Reset view</button><button id="fs" title="Fullscreen">Full screen</button></div></div>
   </nav>
 </header>
 <section id="ov" hidden></section>
@@ -1079,6 +1095,7 @@ const GL_SRC = 'https://raw.githubusercontent.com/mjbaguhin/cpc-tracker/main/gl.
 const SIG_SRC = 'https://raw.githubusercontent.com/mjbaguhin/cpc-tracker/main/signals.json';
 const MS_SRC = 'https://raw.githubusercontent.com/mjbaguhin/cpc-tracker/main/measurements.json';
 const RV_SRC = 'https://raw.githubusercontent.com/mjbaguhin/cpc-tracker/main/review.json';
+const TK_SRC = 'https://raw.githubusercontent.com/mjbaguhin/cpc-tracker/main/tasks.json';
 
 // Amazon's case creation entry point
 const CASE_URL = 'https://sellercentral.amazon.com/help/center?redirectSource=HelpHub';
@@ -1195,6 +1212,7 @@ async function load(fresh){
   grab(MS_SRC, 'json', fresh)
     .then(j => { buildMs(j); if(S.view === 'ms') render(); else chrome(); })
     .catch(e => { MS_ERR = e.message; if(S.view === 'ms') render(); });
+  grab(TK_SRC, 'json', fresh).then(j=>{ TK = j || {}; tkPaint(); if(S.view === 'tk') render(); }).catch(()=>{ TK = TK || {}; });
   grab(RV_SRC, 'json', fresh)
     .then(j => { buildRv(j); if(S.view === 'rv' || S.view === 'st') render(); else chrome(); })
     .catch(e => { RV_ERR = e.message; if(S.view === 'rv' || S.view === 'st') render(); });
@@ -5311,7 +5329,7 @@ function pcBadge(r){
 /* GL from the FBA Inventory report (gl.json, uploaded by MJ, Oct 25) until a
    live source exists. The report's raw GL (gl_lawn_and_garden) is matched to
    the Master SKU name (Lawn & Patio) with the GL crosswalk (KB, Sep 9 2026).
-   US only: the report has no CA rows. */
+   US and CA since Oct 30: Manual_GL.gs builds it from the reports MJ drops for each. */
 let GLX = null;
 /* Category signals (signals.json, Category Signals script, Oct 26): the page's real
    breadcrumb (Cowork reads it in Chrome) and the categories the listing ranks in
@@ -5336,14 +5354,15 @@ function glKeyOf(name){
     /drug|health/.test(t) ? 'drug' : /biss|industrial/.test(t) ? 'biss' : /furniture/.test(t) ? 'furniture' : /office/.test(t) ? 'office' : /sport/.test(t) ? 'sports' : t;
 }
 // The report is a stand-in until Haris has live GL values: always say so, with its age
-function glAge(){ return GLX && GLX.snapshot ? Math.max(0, Math.floor((Date.now() - new Date(GLX.snapshot + 'T12:00:00').getTime()) / 86400000)) : null; }
+const glSnap = mk=> GLX ? ((GLX.snapshots && GLX.snapshots[mk]) || (mk === 'US' ? GLX.snapshot : '')) : '';
+function glAge(mk){ const d = glSnap(mk || 'US'); return d ? Math.max(0, Math.floor((Date.now() - new Date(d + 'T12:00:00').getTime()) / 86400000)) : null; }
 function glFromReport(r){
   const raw = GLX && GLX.gl && GLX.gl[r.mk] && GLX.gl[r.mk][r.asin];
   if(!raw || !r.c || !r.c.gl) return null;
   const e = r.c.gl.e || '';
-  if(!e) return {s:'blank', a: GL_NAME[raw] || raw, note:`Temporary: from the FBA Inventory report, ${GLX.snapshot}`};
+  if(!e) return {s:'blank', a: GL_NAME[raw] || raw, note:`Temporary: from the ${r.mk} FBA Inventory report, ${glSnap(r.mk)}`};
   return {s: glKeyOf(e) === (GL_KEY[raw] || raw) ? 'match' : 'wrong', e, a: GL_NAME[raw] || raw,
-          note:`Temporary: from the FBA Inventory report, ${GLX.snapshot} (${glAge()} days old), until live GL values are ready. Raw value ${raw}`};
+          note:`Temporary: from the ${r.mk} FBA Inventory report, ${glSnap(r.mk)} (${glAge(r.mk)} days old), until live GL values are ready. Raw value ${raw}`};
 }
 function cgRows(mk){
   return CG.filter(r=> r.mk === (mk || CG_F.mk)).map(r=>{
@@ -7097,6 +7116,15 @@ document.addEventListener('click', e=>{
   else if(id === 'msBtn') MS_F.mk = mk; else if(id === 'bsBtn') BS_F.mk = mk;
   else if(id === 'rvBtn'){ RV_F.mk = mk; rvKeep(); } else if(id === 'stBtn'){ ST_F.mk = mk; stKeep(); }
 }, true);
+// The Catalog score (MJ, Nov 3): the average of every module's US and CA score in the
+// menu. The Catalog button, the phone's Module dropdown and the Catalog page's
+// "Overall catalog health" all use this, so they always show the same number.
+function catalogScores(){
+  const out = [];
+  NAV_MODS.forEach(([id, name])=>{ ['US','CA'].forEach(mk=>{ const v = modPct(id, mk); if(v !== null) out.push({title: name + ' ' + mk, v}); }); });
+  return out;
+}
+function catalogScore(){ const a = catalogScores(); return a.length ? Math.round(a.reduce((t, x)=> t + x.v, 0) / a.length * 10) / 10 : null; }
 function navPercents(){
   const all = [];
   NAV_MODS.forEach(([id, name])=>{
@@ -7117,7 +7145,7 @@ function navPercents(){
   });
   // Catalog: the average of every module's US and CA %
   const cb = document.getElementById('catalogBtn');
-  if(cb){ const v = all.length ? Math.round(all.reduce((t, x)=> t + x, 0) / all.length * 10) / 10 : null;
+  if(cb){ const v = catalogScore();
     const html = 'Catalog' + (v === null ? '' : `<span class="badge pc ${PCT_CLS(v)}">${v}%</span>`); if(cb.innerHTML !== html) cb.innerHTML = html; cb.title = 'Average of every module, US and CA';
     const mo = document.querySelector('#mSel option[value="catalogBtn"]'); if(mo) mo.textContent = 'Catalog' + (v === null ? '' : ' \u00b7 ' + v + '%'); }
   // Master SKU keeps a gray count of Plytix checks
@@ -7572,7 +7600,7 @@ function renderOverview(){
       (inCase ? `<br>Already raised with Amazon (case on file): <b>${inCase}</b>` : ''),
       ovCount(live, r=> r.bad, k=> (CG_COLS.find(c=> c[0] === k) || [k, k])[1] + ' wrong')
         .concat(RB && live.filter(r=> (r.rb || []).some(h=> h.sev === 'amazon')).length ? [['Break an Amazon category rule', live.filter(r=> (r.rb || []).some(h=> h.sev === 'amazon')).length]] : []), 'quickCat',
-      mk === 'US' ? (GLX && GLX.snapshot ? `<div class="ov-note">GL is temporary: FBA Inventory report, ${esc(GLX.snapshot)} (${glAge()} days old), until live GL values are ready.</div>` : '<div class="ov-note">GL: no report loaded yet.</div>') : '<div class="ov-note">GL can\u2019t be checked for CA yet.</div>', ovPct(good.length, live.length)));
+      glSnap(mk) ? `<div class="ov-note">GL is temporary: ${esc(mk)} FBA Inventory report, ${esc(glSnap(mk))} (${glAge(mk)} days old), until live GL values are ready.</div>` : `<div class="ov-note">GL: no ${esc(mk)} FBA Inventory report uploaded yet.</div>`, ovPct(good.length, live.length)));
   });
   withMk2('US', ()=>{
   // CPT tracker
@@ -7700,12 +7728,18 @@ function renderOverview(){
     cards.push(ovCard(`Measurements ${mk}`, chkN ? ovPct(okN, chkN) : null, `${okN} of ${chkN} measurement checks match${oosNote(all.filter(r=> r.checked), mk)}<br>Listings fully correct: <b>${ovPct(good.length, live.length)}%</b>`,
       ovCount(live, r=> r.bad, k=> MS_CHK[k] + ' differs'), 'msBtn', '', ovPct(good.length, live.length)).replace(/data-go="msBtn"/, `data-go="msBtn" data-msmk="${mk}"`));
   });
+  // Listing Review and Strike-through (Nov 3), with the same scores as their menu buttons
+  [['rvBtn', 'Listing Review', 'Listings with no problem from the page checks and the daily Keepa checks'],
+   ['stBtn', 'Strike-through', 'Product pages showing a strike-through price']].forEach(([id, name, what])=>{
+    ['US','CA'].forEach(mk=>{ const v = modPct(id, mk); if(v === null) return;
+      cards.push(ovCard(`${name} ${mk}`, v, what, [], id).replace(new RegExp('data-go="' + id + '"'), `data-go="${id}" data-mk2go="${mk}"`)); });
+  });
   const avg = k=> OV_SCORES.length ? Math.round(OV_SCORES.reduce((t,x)=> t + x[k], 0) / OV_SCORES.length * 10) / 10 : null;
-  const hMain = avg('main'), hStrict = avg('strict');
+  const CS = catalogScores(), hMain = catalogScore(), hStrict = avg('strict');
   const hCls = hMain === null ? '' : hMain >= 95 ? 'ok' : hMain >= 80 ? 'mid' : 'bad';
   const health = hMain === null ? '' :
     `<div class="ov-health"><div><div class="ov-hl">Overall catalog health</div><div class="ov-pct ${hCls}" style="font-size:3rem;margin:0">${hMain}%</div></div>`+
-    `<div class="ov-sub" style="max-width:640px">The average of the ${OV_SCORES.length} module scores below (${OV_SCORES.map(x=> esc(x.title) + ' ' + x.main + '%').join(', ')}).`+
+    `<div class="ov-sub" style="max-width:640px">The average of every module score in the menu, US and CA, the same number as the Catalog button (${CS.map(x=> esc(x.title) + ' ' + x.v + '%').join(', ')}).`+
     `<br>Strict view, every listing fully correct and counting out of stock: <b>${hStrict}%</b>.` +
     (OV_UC.length ? `<br><span class="mut">Not counted yet: ${OV_UC.map(esc).join(', ')}.</span>` : '') + '</div></div>';
   v.innerHTML = stockAlert() +
@@ -7722,7 +7756,7 @@ function renderOverview(){
     })() +
     health + (RB ? `<div class="why"><b>Amazon rules:</b> checked daily. Rulebook ${esc(shortDate(RB.verified))}${rbStale() ? ', <b>due for a re-check</b>' : ''}. <button class="work" data-rbopen="1">Rulebook</button></div>` : rbBanner()) +
     `<div class="ov-grid">${cards.join('')}</div>`;
-  [...v.querySelectorAll('button[data-go]')].forEach(b=> b.onclick = ()=>{ MK2 = b.dataset.mk2go === 'CA' ? 'CA' : 'US'; mk2Apply(); if(b.dataset.bsmk) BS_F.mk = b.dataset.bsmk; if(b.dataset.msmk) MS_F.mk = b.dataset.msmk; document.getElementById(b.dataset.go).click(); });
+  [...v.querySelectorAll('button[data-go]')].forEach(b=> b.onclick = ()=>{ MK2 = b.dataset.mk2go === 'CA' ? 'CA' : 'US'; mk2Apply(); if(b.dataset.bsmk) BS_F.mk = b.dataset.bsmk; if(b.dataset.msmk) MS_F.mk = b.dataset.msmk; if(b.dataset.go === 'rvBtn'){ RV_F.mk = MK2; rvKeep(); } if(b.dataset.go === 'stBtn'){ ST_F.mk = MK2; stKeep(); } document.getElementById(b.dataset.go).click(); });
   [...v.querySelectorAll('[data-rbopen]')].forEach(b=> b.onclick = openRulebook);
 }
 
@@ -8211,6 +8245,69 @@ function renderStrike(){
   };
 }
 
+/* MY TASKS (MJ, Oct 30): her open ClickUp tasks, read every morning by a Cowork
+   task through the ClickUp connector (no token) into the "My Tasks" tab, then
+   published hourly as tasks.json. Each task linked to a module shows that
+   module's US and CA scores and opens it. Tasks are marked done in ClickUp. */
+let TK = null;
+const TK_F = {show:'all'};
+const tkToday = ()=> new Date().toLocaleString('en-CA', {timeZone:'America/New_York'}).slice(0, 10);
+function tkBucket(t){
+  const d = t.due, today = tkToday(); if(!d) return 'none';
+  if(d < today) return 'overdue'; if(d === today) return 'today';
+  const wk = new Date(today + 'T12:00:00'); wk.setDate(wk.getDate() + 7);
+  return d <= wk.toISOString().slice(0, 10) ? 'week' : 'later';
+}
+function tkCounts(){ const c = {overdue:0, today:0, week:0, later:0, none:0}; ((TK && TK.tasks) || []).forEach(t=> c[tkBucket(t)]++); return c; }
+function tkPaint(){
+  const c = tkCounts(), n = c.overdue;
+  const html = 'My tasks' + (n ? `<span class="badge pc pc-r" title="${n} overdue in ClickUp">${n} overdue</span>` : (TK && TK.tasks ? `<span class="badge pc pc-g">${c.today} today</span>` : ''));
+  if(tkBtn && tkBtn.innerHTML !== html) tkBtn.innerHTML = html;
+  const mo = document.querySelector('#mSel option[value="tkBtn"]'); if(mo) mo.textContent = 'My tasks' + (n ? ` \u00b7 ${n} overdue` : '');
+  try { if(window.railPaint) railPaint(); } catch(e){}
+}
+function renderTasks(){
+  document.getElementById('msg').hidden = true;
+  document.getElementById('bar').innerHTML = '';
+  const v = document.getElementById('cptView'), all = ((TK && TK.tasks) || []).slice(), c = tkCounts();
+  const fmt = d=> d ? new Date(d + 'T12:00:00').toLocaleDateString('en-US', {weekday:'short', month:'short', day:'numeric'}) : '';
+  const tile = (k, val, cls, f)=> `<div class="cpt-tile bbtile${TK_F.show === f ? ' on' : ''}" role="button" tabindex="0" data-tks="${f}"><div class="k">${k}</div><div class="v ${cls || ''}">${val}</div><div class="n">&nbsp;</div></div>`;
+  let html = '<section class="cpt-top"><div class="cpt-head"><h2>My tasks</h2>'+
+    `<span class="sub">${all.length} open in ClickUp` + (TK && TK.readAt ? ` \u00b7 read ${esc(TK.readAt)} ET` : '') + '</span></div><div class="cpt-tiles">'+
+      tile('Overdue', c.overdue, c.overdue ? 'bad' : 'good', 'overdue') + tile('Due today', c.today, c.today ? 'warn' : '', 'today')+
+      tile('Next 7 days', c.week, '', 'week') + tile('Later', c.later, '', 'later') + tile('No due date', c.none, '', 'none')+
+    '</div></section>';
+  if(!TK) html += '<div class="cpt-empty"><b>Loading My tasks</b></div>';
+  else if(!all.length) html += '<div class="cpt-empty"><b>No tasks yet</b>The daily Cowork ClickUp task fills this page after its first run.</div>';
+  else {
+    const q = (typeof GF !== 'undefined' && GF.q) ? GF.q.toLowerCase().trim() : '';
+    const order = ['overdue','today','week','later','none'], label = {overdue:'Overdue', today:'Due today', week:'Next 7 days', later:'Later', none:'No due date'};
+    const colr = {overdue:'#a3261a', today:'#8a5a00', week:'var(--muted)', later:'var(--muted)', none:'var(--muted)'};
+    order.filter(b=> TK_F.show === 'all' || TK_F.show === b).forEach(b=>{
+      const rows = all.filter(t=> tkBucket(t) === b && (!q || (t.name + ' ' + t.list).toLowerCase().indexOf(q) !== -1)).sort((x, y)=> (x.due || '9').localeCompare(y.due || '9'));
+      if(!rows.length) return;
+      html += `<div class="rv-gh" style="color:${colr[b]}">${label[b]} <span class="mut" style="font-weight:400">${rows.length}</span></div>`+
+        '<div style="margin:0 1rem .6rem;background:#fff;border:1px solid var(--line);border-radius:8px">' + rows.map(t=>{
+          let mod = '';
+          if(t.mod){ const btn = document.getElementById(t.mod), name = btn ? (btn.firstChild && btn.firstChild.nodeType === 3 ? btn.firstChild.textContent : btn.textContent).trim() : t.mod;
+            const b2 = (mk)=>{ const p = modPct(t.mod, mk); return p === null ? '' : `<span class="badge pc ${PCT_CLS(p)}" style="margin-left:.3rem">${mk} ${p}%</span>`; };
+            mod = `<span style="font-size:.8rem">${esc(name)}${t.mk ? b2(t.mk) : b2('US') + (NAV_CA.indexOf(t.mod) !== -1 ? b2('CA') : '')}</span>`; }
+          return `<div style="display:grid;grid-template-columns:minmax(0,2.6fr) 7.5rem minmax(0,1.6fr) auto;gap:.6rem;align-items:center;padding:.45rem .7rem;border-top:1px solid var(--line)">`+
+            `<div style="min-width:0"><b style="display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis" title="${esc(t.name)}">${esc(t.name)}</b><span class="rv-id">${esc(t.list)}${t.status ? ' \u00b7 ' + esc(t.status) : ''}${t.priority && t.priority !== 'normal' ? ' \u00b7 ' + esc(t.priority) : ''}</span></div>`+
+            `<span style="font-size:.8rem;color:${colr[b]}">${t.due ? fmt(t.due) : '\u2014'}</span>`+
+            `<span>${mod || '<span class="mut" style="font-size:.78rem">No module</span>'}</span>`+
+            `<span style="display:flex;gap:.35rem;justify-content:flex-end">${t.mod ? `<button data-tkopen="${esc(t.mod)}" data-tkmk="${esc(t.mk || '')}">Open</button>` : ''}${t.url ? `<a href="${esc(t.url)}" target="_blank" rel="noopener"><button>ClickUp \u2197</button></a>` : ''}</span></div>`;
+        }).join('') + '</div>';
+    });
+  }
+  v.innerHTML = html;
+  [...v.querySelectorAll('[data-tks]')].forEach(t=> t.onclick = ()=>{ TK_F.show = TK_F.show === t.dataset.tks ? 'all' : t.dataset.tks; renderTasks(); });
+  [...v.querySelectorAll('[data-tkopen]')].forEach(b=> b.onclick = ()=>{
+    const id = b.dataset.tkopen, mk = b.dataset.tkmk, btn = document.getElementById(id); if(!btn) return;
+    if(mk){ if(['cptBtn','bbBtn','lpBtn','lcBtn'].indexOf(id) !== -1){ MK2 = mk; mk2Apply(); } else if(id === 'quickCat') CG_F.mk = mk; else if(id === 'vrBtn') VR_F.mk = mk;
+      else if(id === 'msBtn') MS_F.mk = mk; else if(id === 'bsBtn') BS_F.mk = mk; else if(id === 'rvBtn') RV_F.mk = mk; else if(id === 'stBtn') ST_F.mk = mk; }
+    btn.click(); });
+}
 function renderReview(){
   document.getElementById('msg').hidden = true;
   document.getElementById('bar').innerHTML = '';
@@ -8303,13 +8400,13 @@ function render(){
   TARGETS = null;      // re-read from today's data on every redraw
   renderView();
   chrome();
-  if(['cpt','bb','lc','lp','vr','bs','pr','ms','rv','st','category','catalog'].indexOf(S.view) !== -1) document.getElementById('ov').hidden = true;
+  if(['cpt','bb','lc','lp','vr','bs','pr','ms','rv','st','tk','category','catalog'].indexOf(S.view) !== -1) document.getElementById('ov').hidden = true;
   else bandHeaders();
 }
 
 function renderView(){
 
-  const isCpt = ['cpt','bb','lc','lp','vr','bs','pr','ms','rv','st','category','catalog'].indexOf(S.view) !== -1;
+  const isCpt = ['cpt','bb','lc','lp','vr','bs','pr','ms','rv','st','tk','category','catalog'].indexOf(S.view) !== -1;
   document.getElementById('cptView').hidden  = !isCpt;
   document.getElementById('mainWrap').hidden = isCpt;
   document.getElementById('bar').hidden      = isCpt;
@@ -8326,6 +8423,7 @@ function renderView(){
   if(S.view === 'ms'){ renderMeasurements(); return; }
   if(S.view === 'rv'){ renderReview(); return; }
   if(S.view === 'st'){ renderStrike(); return; }
+  if(S.view === 'tk'){ renderTasks(); return; }
   if(S.view === 'category'){ renderCategory(); return; }
   if(S.view === 'catalog'){ renderOverview(); return; }
 
@@ -8745,6 +8843,7 @@ document.addEventListener('fullscreenchange', ()=>{
 
 const homeBtn    = document.getElementById('homeBtn');
 const catalogBtn = document.getElementById('catalogBtn');
+const tkBtn = document.getElementById('tkBtn');
 
 const quickCat   = document.getElementById('quickCat');
 
@@ -8767,7 +8866,7 @@ function go(view){
   // The CPT view has its own controls, so the filter panel folds away while
   // it is open and comes back as it was when you leave.
   // The CPT and Buy Box views both own the screen
-  const own = x=> ['cpt','bb','lc','lp','vr','bs','pr','ms','rv','st','category','catalog'].indexOf(x) !== -1;
+  const own = x=> ['cpt','bb','lc','lp','vr','bs','pr','ms','rv','st','tk','category','catalog'].indexOf(x) !== -1;
   if(own(view) && !own(S.view)){
     PANEL_BEFORE_CPT = !document.getElementById('panel').hidden;
     setPanel(false);
@@ -8791,11 +8890,12 @@ function go(view){
   rvBtn.setAttribute('aria-pressed', view === 'rv');
   stBtn.setAttribute('aria-pressed', view === 'st');
   catalogBtn.setAttribute('aria-pressed', view === 'catalog');
+  tkBtn.setAttribute('aria-pressed', view === 'tk');
   const mSel = document.getElementById('mSel');
   if(mSel){ const id = MSEL_OF[view]; if(id && mSel.value !== id) mSel.value = id; }
   render();
 }
-const MSEL_OF = {catalog:'catalogBtn', cpt:'cptBtn', bb:'bbBtn', lp:'lpBtn', st:'stBtn', lc:'lcBtn', category:'quickCat',
+const MSEL_OF = {tk:'tkBtn', catalog:'catalogBtn', cpt:'cptBtn', bb:'bbBtn', lp:'lpBtn', st:'stBtn', lc:'lcBtn', category:'quickCat',
   vr:'vrBtn', ms:'msBtn', rv:'rvBtn', bs:'bsBtn', pr:'prBtn'};
 document.getElementById('mSel').onchange = e=>{ const b = document.getElementById(e.target.value); if(b) b.click(); };
 
@@ -8813,6 +8913,7 @@ stBtn.onclick    = ()=> go('st');
 
 homeBtn.onclick    = ()=> go('checklist');
 catalogBtn.onclick = ()=> go('catalog');
+tkBtn.onclick = ()=> go('tk');
 
 // Straight to the category checks, without going via the checklist
 quickCat.onclick = ()=>{
@@ -8839,7 +8940,7 @@ document.getElementById('bRefresh').onclick = ()=> load(true);
    it re-reads every published file with no cache. Reset view puts the open
    module's filter object back to how the console starts, keeping the marketplace
    (mk); saved page checks, Reviewed marks and flags are not filter state and stay. */
-const VIEW_F = {cpt:CPT_F, bb:BB_F, lc:LC_F, lp:LP_F, category:CG_F, vr:VR_F, bs:BS_F, pr:PR_F, ms:MS_F, rv:RV_F, st:ST_F};
+const VIEW_F = {tk:TK_F, cpt:CPT_F, bb:BB_F, lc:LC_F, lp:LP_F, category:CG_F, vr:VR_F, bs:BS_F, pr:PR_F, ms:MS_F, rv:RV_F, st:ST_F};
 const VIEW_F_DEF = {};
 Object.keys(VIEW_F).forEach(k=>{ VIEW_F_DEF[k] = JSON.parse(JSON.stringify(VIEW_F[k])); });
 VIEW_F_DEF.rv = JSON.parse(JSON.stringify(RV_F_DEF));   // these two load saved settings, so their start is the coded default
@@ -8876,17 +8977,21 @@ try { STOCK = localStorage.getItem('stock_view') || 'all'; } catch(e){}
    never the header scores. Tier and brand come from the row, or the Master SKU. */
 const GF = {tier:'', brand:'', q:''};
 try { Object.assign(GF, JSON.parse(localStorage.getItem('gf') || '{}')); } catch(e){}
+// Tier is a list since Nov 3 (pick several); an older saved single tier becomes a list of one
+if(!Array.isArray(GF.tier)) GF.tier = GF.tier ? [GF.tier] : [];
+if(!Array.isArray(GF.sup)) GF.sup = [];   // suppliers (Nov 3)
 const gfKeep = ()=>{ try { localStorage.setItem('gf', JSON.stringify(GF)); } catch(e){} };
 function gfInfo(r){
   const p = (typeof PR !== 'undefined' ? PR : []).find(x=> (r.sku && x.sku === r.sku) || (r.usSku && x.sku === r.usSku)) ||
             (typeof PR !== 'undefined' ? PR : []).find(x=> r.asin && x.asin === r.asin) || {};
-  return {tier: r.tier || p.tier || '', brand: r.brand || p.brand || '',
+  return {tier: r.tier || p.tier || '', brand: r.brand || p.brand || '', sup: r.supplier || p.supplier || '',
     text: [r.sku, r.usSku, r.asin, r.name, r.title, r.pname, r.parent, r.family, r.fam, r.psku, p.name, p.pname, p.psku].filter(Boolean).join(' ').toLowerCase()};
 }
 function gfMatch(r){
-  if(!GF.tier && !GF.brand && !GF.q) return true;
+  if(!GF.tier.length && !GF.sup.length && !GF.brand && !GF.q) return true;
   const g = gfInfo(r);
-  if(GF.tier && g.tier !== GF.tier) return false;
+  if(GF.tier.length && GF.tier.indexOf(g.tier) === -1) return false;
+  if(GF.sup.length && GF.sup.indexOf(g.sup) === -1) return false;
   if(GF.brand && g.brand !== GF.brand) return false;
   if(GF.q && g.text.indexOf(GF.q.toLowerCase().trim()) === -1) return false;
   return true;
@@ -8894,7 +8999,7 @@ function gfMatch(r){
 function stockKeep(rows, mk){
   if(!STOCK_ON || !Array.isArray(rows)) return rows;
   if(STOCK !== 'all') rows = rows.filter(r=>{ const v = stockOf(r, mk); return v === null ? false : STOCK === 'oos' ? v === 0 : v > 0; });
-  return (GF.tier || GF.brand || GF.q) ? rows.filter(gfMatch) : rows;
+  return (GF.tier.length || GF.sup.length || GF.brand || GF.q) ? rows.filter(gfMatch) : rows;
 }
 (function(){
   const g = window, mkOf = {
@@ -8916,11 +9021,16 @@ function stockKeep(rows, mk){
    Clear filters button keep it. */
 const CLR_KEEP = ['mk','sort','dir','group','mode','order','pos'];
 function gfPaint(){
-  const t = document.getElementById('gfTier'), b = document.getElementById('gfBrand'), q = document.getElementById('gfQ');
-  if(t) t.value = GF.tier; if(b) b.value = GF.brand; if(q && document.activeElement !== q) q.value = GF.q;
+  const t = document.getElementById('gfTierBtn'), b = document.getElementById('gfBrand'), q = document.getElementById('gfQ');
+  if(t) t.textContent = (GF.tier.length ? GF.tier.join(', ') : 'All') + ' \u25be';
+  const sb = document.getElementById('gfSupBtn');
+  if(sb){ sb.textContent = (GF.sup.length ? (GF.sup.length > 2 ? GF.sup.length + ' suppliers' : GF.sup.join(', ')) : 'All') + ' \u25be'; sb.title = GF.sup.length ? GF.sup.join(', ') : 'Pick one or more suppliers'; }
+  [...document.querySelectorAll('#gfSupList input')].forEach(x=> x.checked = GF.sup.indexOf(x.value) !== -1);
+  [...document.querySelectorAll('#gfTierPop input')].forEach(x=> x.checked = GF.tier.indexOf(x.value) !== -1);
+  if(b) b.value = GF.brand; if(q && document.activeElement !== q) q.value = GF.q;
 }
 function clearFilters(){
-  GF.tier = ''; GF.brand = ''; GF.q = ''; gfKeep(); gfPaint();
+  GF.tier = []; GF.sup = []; GF.brand = ''; GF.q = ''; gfKeep(); gfPaint();
   const F = VIEW_F[S.view], D = VIEW_F_DEF[S.view];
   if(F && D) Object.keys(D).forEach(k=>{ if(CLR_KEEP.indexOf(k) === -1) F[k] = JSON.parse(JSON.stringify(D[k])); });
   STOCK = 'all'; try { localStorage.setItem('stock_view', 'all'); } catch(e){}
@@ -8979,8 +9089,35 @@ function ensureClearBtn(){
     if(/^(all tiers|tier [abcxn])$/i.test(t) || /^clear filters$/i.test(t)) b.remove(); });
   [...bar.querySelectorAll('.seg')].forEach(sg=>{ if(!sg.children.length) sg.remove(); });
 }
-{ const t = document.getElementById('gfTier'), b = document.getElementById('gfBrand'), q = document.getElementById('gfQ'), c = document.getElementById('gfClr');
-  if(t) t.onchange = ()=>{ GF.tier = t.value; gfKeep(); render(); };
+{ const t = document.getElementById('gfTierBtn'), pop = document.getElementById('gfTierPop'), b = document.getElementById('gfBrand'), q = document.getElementById('gfQ'), c = document.getElementById('gfClr');
+  const order = ['A','B','C','X','N'];
+  if(t && pop){
+    t.onclick = e=>{ e.stopPropagation(); pop.hidden = !pop.hidden; t.setAttribute('aria-expanded', !pop.hidden); };
+    pop.addEventListener('click', e=> e.stopPropagation());
+    document.addEventListener('click', ()=>{ if(!pop.hidden){ pop.hidden = true; t.setAttribute('aria-expanded', false); } });
+    [...pop.querySelectorAll('input')].forEach(x=> x.onchange = ()=>{
+      GF.tier = [...pop.querySelectorAll('input:checked')].map(i=> i.value).sort((a, z)=> order.indexOf(a) - order.indexOf(z));
+      gfKeep(); gfPaint(); render(); });
+    document.getElementById('gfTierAll').onclick = ()=>{ GF.tier = []; gfKeep(); gfPaint(); render(); pop.hidden = true; };
+  }
+  // Supplier list: every supplier in the Master SKU data, with its active listings count
+  const sbtn = document.getElementById('gfSupBtn'), spop = document.getElementById('gfSupPop'), slist = document.getElementById('gfSupList');
+  if(sbtn && spop){
+    window.gfSupFill = ()=>{
+      const n = {}, act = {}; (typeof PR !== 'undefined' ? PR : []).forEach(r=>{ const k = (r.supplier || '').trim(); if(!k) return; n[k] = 1;
+        if(r.status === 'Active' && r.asin && ACT_BRANDS.indexOf(r.brand) !== -1) act[k] = (act[k] || 0) + 1; });
+      const names = Object.keys(n).sort((a, z)=> (act[z] || 0) - (act[a] || 0) || a.localeCompare(z));
+      const html = names.length ? names.map(k=> `<label><input type="checkbox" value="${esc(k)}"> ${esc(k)} <span class="mut">${act[k] ? act[k] + ' active' : 'no active'}</span></label>`).join('')
+        : '<span class="mut" style="font-size:.75rem">No supplier data yet. It arrives with the next Master SKU refresh.</span>';
+      if(slist.innerHTML !== html){ slist.innerHTML = html;
+        [...slist.querySelectorAll('input')].forEach(x=> x.onchange = ()=>{ GF.sup = [...slist.querySelectorAll('input:checked')].map(i=> i.value); gfKeep(); gfPaint(); render(); }); }
+      gfPaint();
+    };
+    sbtn.onclick = e=>{ e.stopPropagation(); gfSupFill(); spop.hidden = !spop.hidden; sbtn.setAttribute('aria-expanded', !spop.hidden); };
+    spop.addEventListener('click', e=> e.stopPropagation());
+    document.addEventListener('click', ()=>{ if(!spop.hidden){ spop.hidden = true; sbtn.setAttribute('aria-expanded', false); } });
+    document.getElementById('gfSupAll').onclick = ()=>{ GF.sup = []; gfKeep(); gfPaint(); render(); spop.hidden = true; };
+  }
   if(b) b.onchange = ()=>{ GF.brand = b.value; gfKeep(); render(); };
   if(q){ let tm = null; q.oninput = ()=>{ clearTimeout(tm); tm = setTimeout(()=>{ GF.q = q.value; gfKeep(); render(); }, 200); }; }
   if(c) c.onclick = ()=> clearFilters();
@@ -8991,7 +9128,7 @@ function stockPaint(){ [...document.querySelectorAll('#hStock button')].forEach(
   stockPaint(); render();
 });
 stockPaint();
-{ const r0 = hReset.onclick; hReset.onclick = ()=>{ STOCK = 'all'; try { localStorage.setItem('stock_view', 'all'); } catch(e){} GF.tier = ''; GF.brand = ''; GF.q = ''; gfKeep(); gfPaint(); stockPaint(); r0(); }; }
+{ const r0 = hReset.onclick; hReset.onclick = ()=>{ STOCK = 'all'; try { localStorage.setItem('stock_view', 'all'); } catch(e){} GF.tier = []; GF.sup = []; GF.brand = ''; GF.q = ''; gfKeep(); gfPaint(); stockPaint(); r0(); }; }
 
 /* The Filters panel belongs to the first version of the dashboard: its filters
    only drive the old checklist table, which no page shows any more (every page,
@@ -9037,7 +9174,8 @@ load();
   // One dot per module, colored by its lowest score (US or CA)
   const rank = {'pc-r':3, 'pc-a':2, 'pc-g':1, 'pc-n':0}, letter = {3:'r', 2:'a', 1:'g', 0:'n'};
   window.railPaint = ()=>{
-    const out = [];
+    const out = [], od = typeof tkCounts === 'function' ? tkCounts().overdue : 0;
+    if(od) out.push(`<span title="${od} overdue task${od === 1 ? '' : 's'} in ClickUp" style="background:#e24b4a;color:#fff;font-size:9px;font-weight:700;border-radius:7px;padding:0 3px;line-height:14px;margin:-50px 0 30px">${od}</span>`);
     [...side.querySelectorAll('.ng')].forEach((g, gi)=>{ if(gi) out.push('<span class="gap"></span>');
       [...g.querySelectorAll('.ng-b button')].forEach(b=>{
         const w = Math.max(0, ...[...b.querySelectorAll('.badge')].map(x=> rank[[...x.classList].find(c=> rank[c] !== undefined)] || 0));
