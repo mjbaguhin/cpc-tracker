@@ -5360,9 +5360,11 @@ function glFromReport(r){
   const raw = GLX && GLX.gl && GLX.gl[r.mk] && GLX.gl[r.mk][r.asin];
   if(!raw || !r.c || !r.c.gl) return null;
   const e = r.c.gl.e || '';
-  if(!e) return {s:'blank', a: GL_NAME[raw] || raw, note:`Temporary: from the ${r.mk} FBA Inventory report, ${glSnap(r.mk)}`};
+  // Nov 4: gl.json comes from BigQuery every morning (Haris's FBA Inventory table)
+  const live = GLX && /bigquery/i.test(GLX.source || ''), src = live ? `BigQuery, ${r.mk} FBA Inventory report` : `Temporary: from the ${r.mk} FBA Inventory report`;
+  if(!e) return {s:'blank', a: GL_NAME[raw] || raw, note:`${src}, ${glSnap(r.mk)}`};
   return {s: glKeyOf(e) === (GL_KEY[raw] || raw) ? 'match' : 'wrong', e, a: GL_NAME[raw] || raw,
-          note:`Temporary: from the ${r.mk} FBA Inventory report, ${glSnap(r.mk)} (${glAge(r.mk)} days old), until live GL values are ready. Raw value ${raw}`};
+          note:`${src}, ${glSnap(r.mk)} (${glAge(r.mk)} days old)${live ? '' : ', until live GL values are ready'}. Raw value ${raw}`};
 }
 function cgRows(mk){
   return CG.filter(r=> r.mk === (mk || CG_F.mk)).map(r=>{
@@ -7600,7 +7602,8 @@ function renderOverview(){
       (inCase ? `<br>Already raised with Amazon (case on file): <b>${inCase}</b>` : ''),
       ovCount(live, r=> r.bad, k=> (CG_COLS.find(c=> c[0] === k) || [k, k])[1] + ' wrong')
         .concat(RB && live.filter(r=> (r.rb || []).some(h=> h.sev === 'amazon')).length ? [['Break an Amazon category rule', live.filter(r=> (r.rb || []).some(h=> h.sev === 'amazon')).length]] : []), 'quickCat',
-      glSnap(mk) ? `<div class="ov-note">GL is temporary: ${esc(mk)} FBA Inventory report, ${esc(glSnap(mk))} (${glAge(mk)} days old), until live GL values are ready.</div>` : `<div class="ov-note">GL: no ${esc(mk)} FBA Inventory report uploaded yet.</div>`, ovPct(good.length, live.length)));
+      glSnap(mk) ? (GLX && /bigquery/i.test(GLX.source || '') ? `<div class="ov-note">GL from BigQuery (${esc(mk)} FBA Inventory report), ${esc(glSnap(mk))}, ${glAge(mk)} days old.</div>`
+        : `<div class="ov-note">GL is temporary: ${esc(mk)} FBA Inventory report, ${esc(glSnap(mk))} (${glAge(mk)} days old), until live GL values are ready.</div>`) : `<div class="ov-note">GL: no ${esc(mk)} FBA Inventory report uploaded yet.</div>`, ovPct(good.length, live.length)));
   });
   withMk2('US', ()=>{
   // CPT tracker
