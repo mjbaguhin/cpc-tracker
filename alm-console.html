@@ -7457,7 +7457,7 @@ function renderMeasurements(){
       t1('', 'size') + t1('', 'weight') + t1('', 'pkg') + t1('', 'tier') + t1('', 'copy') + t1('', 'plytix')+
       tile('No Amazon size yet', pick.nodata.length, pick.nodata.length ? 'warn' : 'good', pick.nodata.length ? 'Keepa sends it with the next daily read' : 'None', 'nodata')+
     '</div></section>'+
-    `<div class="why"><b>Size tier:</b> ${fm ? `Fee Preview report ${esc(fm.date)} (${esc(fm.file)})` : 'no Fee Preview report yet. Save it in the Drive folder "ALM Fee Preview Reports".'}</div>`+
+    `<div class="why"><b>Size tier:</b> ${fm ? `Fee Preview report ${esc(fm.date)} (${esc(fm.file)})` : 'no Fee Preview report yet.'} \u00b7 New reports go in <a href="https://drive.google.com/drive/folders/1-IWG9GZtQ6zDlQ3tFvQ5l1Kq3AAvuW6O" target="_blank" rel="noopener"><b>ALM Fee Preview Reports</b> (open the folder) \u2197</a></div>`+
     '<div class="cpt-tools"><div class="seg" id="msMk">' + ['US','CA'].map(m=> `<button data-mk="${m}" aria-pressed="${mk === m}">Amazon ${m}</button>`).join('') + '</div>'+
       `<input id="msQ" type="search" placeholder="Search SKU, ASIN or product" value="${esc(MS_F.q)}">`+
       `<button id="msGrp" aria-pressed="${MS_F.group}">Group by parent</button><button id="msDl">Download</button>`+
