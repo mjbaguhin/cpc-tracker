@@ -5062,6 +5062,7 @@ function renderLc(){
       '</tbody></table>';
   }
   v.innerHTML = html;
+  ccMount(v, 'lc', lcCc(all, MK2), all, MK2);
 
   wireSort(v, LC_F, renderLc);
   const af = document.getElementById('lcAmzF'); if(af) af.onclick = ()=> lcAmazonFile(rows);
@@ -5571,6 +5572,7 @@ function renderCategory(){
       '</tbody></table>';
   }
   v.innerHTML = html;
+  ccMount(v, 'cg', cgCc(all, CG_F.mk), all, CG_F.mk);
 
   wireSort(v, CG_F, renderCategory);
   const cfu = document.getElementById('cgCaseFu'); if(cfu) cfu.onclick = ()=>{ CG_F.show = 'casefu'; renderCategory(); };
@@ -6303,6 +6305,7 @@ function renderVariation(){
       '</tbody></table>';
   }
   v.innerHTML = stockAlert() + html;
+  ccMount(v, 'vr', vrCc(all, VR_F.mk), all, VR_F.mk);
 
   wireSort(v, VR_F, renderVariation);
   const vfu = document.getElementById('vrCaseFu'); if(vfu) vfu.onclick = ()=>{ VR_F.show = 'casefu'; renderVariation(); };
@@ -7101,8 +7104,8 @@ function modPct(id, mk){
     if(id === 'quickCat'){ if(!CG.length) return null; const r = inStock(cgRows(mk).filter(x=> !x.nolive), mk); return pct1(r.reduce((t, x)=> t + (x.ok || 0), 0), r.reduce((t, x)=> t + (x.checked || 0), 0)); }
     if(id === 'vrBtn'){ if(!VR.length) return null; const r = inStock(vrRows(mk).filter(x=> !x.nolive), mk); return pct1(r.reduce((t, x)=> t + (x.ok || 0), 0), r.reduce((t, x)=> t + (x.checked || 0), 0)); }
     if(id === 'msBtn'){ if(!MS.length) return null; const r = inStock(msRows(mk), mk).filter(x=> x.checked); return pct1(r.reduce((t, x)=> t + x.ok, 0), r.reduce((t, x)=> t + x.checked, 0)); }
-    if(id === 'stBtn'){ const st = (RV.strike || []).filter(x=> (x.mk || 'US') === mk); if(!st.length) return null; return pct1(st.filter(x=> x.shown).length, st.length); }
-    if(id === 'rvBtn'){ if(!RV.run || !rvAct(mk)) return null; const read = Math.max(0, rvAct(mk) - rvUnreadOf(mk).length); if(!read) return null; return pct1(Math.max(0, read - rvAll(mk).filter(r=> r.problems.length).length), read); }
+    if(id === 'stBtn'){ const sc = stScore(mk); return sc && sc.n ? sc.pct : null; }
+    if(id === 'rvBtn'){ const sc = rvScore(mk); return sc ? sc.pct : null; }
     if(id === 'bsBtn'){ if(!BS.length) return null; const r = inStock(bsRows(mk), mk).filter(x=> x.cur !== null); return pct1(r.filter(x=> x.cur >= 4).length, r.length); }
   } catch (e) { return null; }
   return null;
@@ -7489,6 +7492,7 @@ function renderMeasurements(){
     html += '</tbody></table><p class="mut" style="font-size:.78rem">Same within 0.5 in or 5% per side for sizes (1.3 cm on CA), 5% for weights. The copy allows rounding (30x17 for 30 x 16.75). Out of stock is not in the %.</p>';
   }
   v.innerHTML = html;
+  ccMount(v, 'ms', msCc(all, mk), all, mk);
   wireSort(v, MS_F, renderMeasurements);
   [...v.querySelectorAll('.bbtile[data-show]')].forEach(t=> t.onclick = ()=>{ MS_F.show = MS_F.show === t.dataset.show ? 'all' : t.dataset.show; renderMeasurements(); });
   [...v.querySelectorAll('#msMk button')].forEach(b=> b.onclick = ()=>{ MS_F.mk = b.dataset.mk; renderMeasurements(); });
@@ -7732,8 +7736,8 @@ function renderOverview(){
       ovCount(live, r=> r.bad, k=> MS_CHK[k] + ' differs'), 'msBtn', '', ovPct(good.length, live.length)).replace(/data-go="msBtn"/, `data-go="msBtn" data-msmk="${mk}"`));
   });
   // Listing Review and Strike-through (Nov 3), with the same scores as their menu buttons
-  [['rvBtn', 'Listing Review', 'Listings with no problem from the page checks and the daily Keepa checks'],
-   ['stBtn', 'Strike-through', 'Product pages showing a strike-through price']].forEach(([id, name, what])=>{
+  [['rvBtn', 'Listing Review', 'Listings with no problem from the page checks and the daily Keepa checks, out of stock not counted'],
+   ['stBtn', 'Strike-through', 'Product pages showing a strike-through price, Tier X and out of stock not counted']].forEach(([id, name, what])=>{
     ['US','CA'].forEach(mk=>{ const v = modPct(id, mk); if(v === null) return;
       cards.push(ovCard(`${name} ${mk}`, v, what, [], id).replace(new RegExp('data-go="' + id + '"'), `data-go="${id}" data-mk2go="${mk}"`)); });
   });
@@ -8074,6 +8078,28 @@ function rvResetRound(){
 // Listing Review and Strike-through cover Amazon US and Amazon CA (MJ, Oct 30)
 const rvAct = mk=> mk === 'CA' ? (RV.activeCa || 0) : (RV.active || 0);
 const rvUnreadOf = mk=> (RV.unread || []).filter(x=> (x.mk || 'US') === mk);
+/* Listing Review and Strike-through % (MJ, Nov 5): out of stock is left out of
+   both, and Tier X is also left out of Strike-through. The listings stay on the
+   pages; they just aren't counted. Active listings come from the Master SKU feed
+   (Status for US, CA Status for CA), the same counts as RV.active and RV.activeCa. */
+const rvActList = mk=> (PR || []).filter(p=> mk === 'CA' ? p.caStatus === 'Active' : p.status === 'Active');
+function rvScore(mk){
+  if(!RV.run || !rvAct(mk)) return null;
+  const un = rvUnreadOf(mk), probs = rvAll(mk).filter(r=> r.problems.length);
+  if(!PR.length){ const read = Math.max(0, rvAct(mk) - un.length);   // Master SKU feed not loaded yet: old count
+    return read ? {pct: pct1(Math.max(0, read - probs.length), read), read, good: Math.max(0, read - probs.length), oos: null} : null; }
+  const act = rvActList(mk), actIn = act.filter(p=> !isOos(p, mk));
+  const read = Math.max(0, actIn.length - un.filter(x=> !isOos(x, mk)).length), bad = probs.filter(r=> !isOos(r, mk)).length;
+  if(!read) return null;
+  return {pct: pct1(Math.max(0, read - bad), read), read, good: Math.max(0, read - bad), oos: act.length - actIn.length};
+}
+function stScore(mk){
+  const all = (RV.strike || []).filter(x=> (x.mk || 'US') === mk);
+  if(!all.length) return null;
+  const st = all.filter(x=> x.tier !== 'X' && !isOos(x, mk));
+  return {pct: pct1(st.filter(x=> x.shown).length, st.length), shown: st.filter(x=> x.shown).length, n: st.length,
+    tierX: all.filter(x=> x.tier === 'X').length, oos: all.filter(x=> x.tier !== 'X' && isOos(x, mk)).length};
+}
 const rvDom = mk=> mk === 'CA' ? 'https://www.amazon.ca/dp/' : 'https://www.amazon.com/dp/';
 function rvAll(mk){
   mk = mk || RV_F.mk || 'US';
@@ -8209,6 +8235,9 @@ function renderStrike(){
     '</div><div class="cpt-tiles">'+
       tile('With a strike-through', shown, shown ? 'good' : '', `${lp} List Price \u00b7 ${tp} Typical price` + (wp ? ` \u00b7 ${wp} Was` : ''), 'shown')+
       tile('No strike-through', none, none ? 'bad' : 'good', '', 'none')+
+      (()=>{ const sc = stScore(smk); if(!sc || !sc.n) return '';
+        const left = [sc.tierX ? sc.tierX + ' Tier X' : '', sc.oos ? sc.oos + ' out of stock' : ''].filter(Boolean).join(' and ');
+        return `<div class="cpt-tile"><div class="k">Score</div><div class="v ${sc.pct >= 90 ? 'good' : 'bad'}">${sc.pct}%</div><div class="n">${sc.shown} of ${sc.n} with a strike-through${left ? ' \u00b7 ' + left + ' not counted' : ''}</div></div>`; })()+
       (run ? (()=>{ const miss = sMiss.length, act = rvAct(smk);
         return tile('Coverage', miss ? `${act - miss}<span style="font-size:.95rem;color:var(--c-night-mut)"> of ${act}</span>` : `All ${act} \u2713`, miss ? 'bad' : 'good',
           miss ? `${miss} active listing${miss === 1 ? '' : 's'} not checked` : 'Every active listing checked', 'missing'); })() : '')+
@@ -8329,7 +8358,9 @@ function renderReview(){
           return tile('Covered by the last page check', un ? `${done}<span style="font-size:1rem;color:var(--c-night-mut)"> of ${act}</span>` : 'All ' + act + ' \u2713', un ? 'bad' : 'good',
             `Cowork, ${esc(shortDate(run.date.slice(0, 10)))}` + (un ? ` \u00b7 ${un} not checked` : ''), 'unchecked'); })()
            : tile('Last page check', '\u2014', '', 'Keepa checks run daily', ''))+
-      tile('All correct', read ? Math.max(0, read - probs.length) : '\u2014', 'good', read ? 'of ' + read + ' active' : '', '')+
+      (()=>{ const sc = rvScore(rmk);
+        return sc ? tile('All correct', `${sc.pct}%`, 'good', `${sc.good} of ${sc.read} active` + (sc.oos ? ` \u00b7 ${sc.oos} out of stock not counted` : ''), '')
+                  : tile('All correct', read ? Math.max(0, read - probs.length) : '\u2014', 'good', read ? 'of ' + read + ' active' : '', ''); })()+
       tile('Problems', probs.length, probs.length ? 'bad' : 'good', nNew ? nNew + ' new this week' : 'none new', 'all')+
       tile('New', nNew, nNew ? 'bad' : 'good', 'Changed since last check', 'new')+
       tile('Fixed since last check', nFixed, nFixed ? 'good' : '', RV.prevRun ? 'vs ' + esc(shortDate(RV.prevRun.date.slice(0, 10))) : 'Needs two checks', 'fixed')+
@@ -8373,6 +8404,7 @@ function renderReview(){
     });
   } else html += rows.map(rvCard).join('');
   v.innerHTML = html;
+  ccMount(v, 'rv', rvCc(all, rmk), all, rmk);
 
   const find = a=> rows.find(x=> x.asin === a) || all.find(x=> x.asin === a);
   const after = (r)=>{ if(RV_F.mode === 'one'){ const rs = rvRows(), i = rs.findIndex(x=> x.asin === r.asin); RV_F.pos = i === -1 ? RV_F.pos : rvNextOpen(rs, i); rvKeep(); } renderReview(); chrome(); };
@@ -8399,6 +8431,92 @@ function renderReview(){
     (navigator.clipboard ? navigator.clipboard.writeText(t) : Promise.reject()).then(()=>{ b.textContent = 'Copied, paste it in Go-live requests'; }).catch(()=> window.prompt('Copy:', t)); });
 }
 
+/* CAN'T CHECK box (MJ, Nov 5). Every value a module couldn't compare, grouped by
+   type with the reason, so nothing is hidden. These are not wrong and not in the %
+   (Listing Review's page problems excepted, see rvCc). Stock unknown is shown too:
+   it is still counted in the %, so a big number means the stock data has a problem. */
+const CC_OPEN = {};
+const CC_TAG = {expected:['lc-gray','Expected, nothing to fix'], new:['lc-small','New value, add to the list'],
+  plytix:['lc-small','Blank in Plytix'], check:['lc-bad','Counted as a problem, check the page'], wait:['lc-gray','Waiting for data']};
+const ccIt = (r, mk, type, why, note, tag)=> ({sku: r.sku, asin: r.asin, name: r.name || r.sku, tier: r.tier || '', mk, type, why, note: note || '', tag: tag || 'wait'});
+function cgCc(rows, mk){
+  const out = [];
+  rows.forEach(r=>{
+    if(r.nolive){ out.push(ccIt(r, mk, 'All checks', 'No live data from Amazon yet', '', 'wait')); return; }
+    if(r.partial) out.push(ccIt(r, mk, 'Keepa data', 'No Keepa data for this listing yet, so only the GL was checked', '', 'wait'));
+    CG_COLS.forEach(([k, label])=>{
+      const x = r.c && r.c[k]; if(!x || ['unknown','cantread'].indexOf(x.s) === -1) return;
+      const exp = k === 'itk' && mk === 'CA', noGl = k === 'gl' && /no live gl source/i.test(x.note || '');
+      const isNew = !noGl && (k === 'gl' || k === 'sd') && x.a;
+      out.push(ccIt(r, mk, label, exp ? 'Keepa never sends an ITK for Canada' : noGl ? 'No GL from BigQuery for this listing (not in Amazon\u2019s ' + mk + ' FBA Inventory report)' : isNew ? 'Amazon\u2019s value is not in our list yet' : (CG_S[x.s] || CG_S.unknown)[2],
+        exp ? '' : (x.note || (x.a ? 'Amazon value: ' + x.a : '')), exp ? 'expected' : isNew ? 'new' : 'wait'));
+    });
+  });
+  return out;
+}
+function lcCc(rows, mk){
+  const out = [];
+  rows.forEach(r=>{
+    if(r.nolive){ out.push(ccIt(r, mk, 'All fields', 'No live copy from Amazon yet', '', 'wait')); return; }
+    LC_COLS.forEach(([k, label])=>{ const x = r.f && r.f[k]; if(x && x.s === 'cantread') out.push(ccIt(r, mk, label, LC_S.cantread[2], '', 'wait')); });
+  });
+  return out;
+}
+function vrCc(rows, mk){
+  const out = [];
+  rows.forEach(r=>{
+    if(r.nolive){ out.push(ccIt(r, mk, 'All checks', 'No live data from Amazon yet', '', 'wait')); return; }
+    VR_COLS.forEach(([k, label])=>{ const x = r.c && r.c[k]; if(!x || x.s !== 'unknown') return;
+      const exp = k === 'rev' && mk === 'CA';
+      out.push(ccIt(r, mk, label, exp ? 'Keepa has no live review counts for Canada' : VR_S.unknown[2], exp ? '' : (x.note || ''), exp ? 'expected' : 'wait')); });
+  });
+  return out;
+}
+function msCc(rows, mk){
+  const out = [], has = a=> (a || []).some(Boolean);
+  rows.forEach(r=>{
+    const px = r.px || {}, st = r.st || {};
+    const side = (pOk, aOk, aName)=> !pOk ? ['Blank in Plytix', 'plytix'] : !aOk ? ['No value from ' + aName + ' yet', 'wait'] : ['No value to compare', 'wait'];
+    const why = {
+      size: side(has(r.pDims), has(r.aDims), 'Keepa'), weight: side(!!r.pWt, !!r.aWt, 'Keepa'), pkg: side(!!r.pPk, !!r.aPk, 'Keepa'),
+      tier: side(!!px.tier, !!(r.fee && r.fee.tier), 'the Fee Preview report'),
+      copy: ['No listing copy from Amazon yet', 'wait'], plytix: ['No sizes or weights in Plytix', 'plytix']};
+    Object.keys(MS_CHK).forEach(k=>{ if(st[k] === 'na'){ const w = why[k] || ['No value to compare', 'wait']; out.push(ccIt(r, mk, MS_CHK[k], w[0], '', w[1])); } });
+  });
+  return out;
+}
+// Listing Review: "Can't check" from the page check means the ASIN opened another
+// listing, which is a real problem, so it stays counted in the %.
+function rvCc(rows, mk){
+  const out = [];
+  rows.forEach(r=> (r.problems || []).forEach(p=>{ if(p.result === "Can't check") out.push(ccIt(r, mk, p.field || 'Page', 'The page check couldn\u2019t read this listing', p.page || p.note || '', 'check')); }));
+  return out;
+}
+function ccMount(v, key, items, rows, mk){
+  const tiles = v.querySelector('.cpt-tiles'); if(!tiles) return;
+  const unk = (rows || []).filter(r=> stockOf(r, mk) === null).length, open = !!CC_OPEN[key];
+  tiles.insertAdjacentHTML('beforeend',
+    `<div class="cpt-tile bbtile${open ? ' on' : ''}" role="button" tabindex="0" data-cc="${key}"><div class="k">Can\u2019t check</div><div class="v ${items.length ? 'bad' : 'good'}">${items.length}</div><div class="n">${items.length ? (key === 'rv' ? 'Counted as problems, click to see' : 'Not in the %, click to see') : 'Every value compared'}</div></div>`+
+    `<div class="cpt-tile"><div class="k">Stock unknown</div><div class="v">${unk}</div><div class="n">${unk ? 'No stock data. Still counted in the %' : 'Stock known for every listing'}</div></div>`);
+  if(!open) return;
+  const top = v.querySelector('.cpt-top') || tiles;
+  if(!items.length){ top.insertAdjacentHTML('afterend', '<div class="cpt-empty"><b>Nothing to show</b>Every value in this module was compared.</div>'); return; }
+  const groups = {};
+  items.forEach(x=>{ const g = groups[x.type + '|' + x.why] = groups[x.type + '|' + x.why] || {type: x.type, why: x.why, tag: x.tag, list: []}; g.list.push(x); });
+  const order = {check:0, new:1, plytix:2, wait:3, expected:4};
+  const html = Object.values(groups).sort((a, b)=> order[a.tag] - order[b.tag] || b.list.length - a.list.length).map(g=>{
+    const t = CC_TAG[g.tag] || CC_TAG.wait;
+    return `<details${g.tag === 'new' || g.tag === 'check' ? ' open' : ''} style="border-top:1px solid var(--line);padding:.5rem .7rem">`+
+      `<summary style="cursor:pointer"><b>${esc(g.type)}</b> \u00b7 ${g.list.length} \u00b7 <span class="mut">${esc(g.why)}</span> <span class="lcchip ${t[0]}">${t[1]}</span></summary>`+
+      '<table class="rv-t" style="margin-top:.4rem"><tr><td>Product</td><td>Tier</td><td>Details</td><td></td></tr>'+
+      g.list.map(x=> `<tr><td><b>${esc(x.name)}</b><div class="rv-id">${skuL(x.sku, x.mk)}</div></td><td>${esc(x.tier || '?')}</td><td class="mut" style="font-size:.78rem">${esc(x.note || '\u2014')}</td>`+
+        `<td><a href="${rvDom(x.mk)}${esc(x.asin)}" target="_blank" rel="noopener"><button>Open PDP \u2197</button></a></td></tr>`).join('')+'</table></details>';
+  }).join('');
+  top.insertAdjacentHTML('afterend', `<div style="margin:.4rem 1rem 1rem;background:#fff;border:1px solid var(--line);border-radius:8px;overflow-x:auto">`+
+    `<div style="padding:.6rem .7rem"><b>Can\u2019t check, by type</b> <span class="mut" style="font-size:.78rem">${key === 'rv' ? 'These stay counted as problems.' : 'Not wrong and not in the %.'} Tell Claude any value tagged \u201cNew value\u201d so it can be added to the list.</span></div>${html}</div>`);
+}
+document.addEventListener('click', e=>{ const t = e.target.closest && e.target.closest('[data-cc]'); if(!t) return; const k = t.getAttribute('data-cc'); CC_OPEN[k] = !CC_OPEN[k]; render(); });
+document.addEventListener('keydown', e=>{ if(e.key !== 'Enter' && e.key !== ' ') return; const t = e.target.closest && e.target.closest('[data-cc]'); if(!t) return; e.preventDefault(); const k = t.getAttribute('data-cc'); CC_OPEN[k] = !CC_OPEN[k]; render(); });
 function render(){
   TARGETS = null;      // re-read from today's data on every redraw
   renderView();
