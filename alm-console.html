@@ -1074,7 +1074,7 @@ const PUB_CASES = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vRJzdMWKepuIC
 const CPT_SRC = 'https://raw.githubusercontent.com/mjbaguhin/cpc-tracker/main/cpt.json';
 
 // Other brands' coir mats in our sizes: Amazon from Keepa (weekly), plus the
-// Outside Amazon tab (Walmart, Wayfair, Temu and so on, added by hand).
+// Outside Found tab (Walmart, Wayfair, Home Depot and so on, found by the Cowork CPT Reference Hunt, Nov 6).
 const SIM_SRC = 'https://raw.githubusercontent.com/mjbaguhin/cpc-tracker/main/similar.json';
 
 // Buy Box per ASIN, written nightly by Buy Box Watch in the CPC Keepa Fetcher project
@@ -2070,10 +2070,16 @@ function asinL(a, mk){
   const host = mkOf(mk) === 'CA' ? 'www.amazon.ca' : 'www.amazon.com';
   return `<a class="idl" href="https://${host}/dp/${encodeURIComponent(a)}" target="_blank" rel="noopener" title="Open the product page">${esc(a)}</a>`;
 }
+/* Nov 8: a North America account opens Seller Central on the marketplace it used
+   last, so a .ca link could land on the US. mons_sel_mkid picks the marketplace. */
+const SC_MKID = {US: 'ATVPDKIKX0DER', CA: 'A2EUQ1WTGCTBG2'};
+function scInvUrl(sku, mk){
+  const m = mkOf(mk);
+  return `https://${m === 'CA' ? 'sellercentral.amazon.ca' : 'sellercentral.amazon.com'}/myinventory/inventory?searchTerm=${encodeURIComponent(sku)}&mons_sel_mkid=${SC_MKID[m]}`;
+}
 function skuL(v, mk){
   v = String(v || '').trim(); if(!v) return '';
-  const host = mkOf(mk) === 'CA' ? 'sellercentral.amazon.ca' : 'sellercentral.amazon.com';
-  return `<a class="idl" href="https://${host}/myinventory/inventory?searchTerm=${encodeURIComponent(v)}" target="_blank" rel="noopener" title="Open in Manage Inventory">${esc(v)}</a>` +
+  return `<a class="idl" href="${scInvUrl(v, mk)}" target="_blank" rel="noopener" title="Open in Manage Inventory">${esc(v)}</a>` +
     (varFalse(v) ? ' <span class="lcchip lc-small" title="Amazon Variation is False in the Master SKU sheet: this child was detached from its parent">Variation: False</span>' : '');
 }
 /* A child under a Parent SKU whose Amazon Variation is False (MJ, Oct 30): when she
@@ -2149,6 +2155,10 @@ function cptRows(){
     r.held = r.target !== null
       ? !(r.gap > 0) && r.short > 0.005
       : !(r.gap > 0) && r.listGap !== null && r.listPct >= CASE_RULES.heldPct;
+    // Nov 6: "Held at CPT" uses the target, but the similar items above were only
+    // looked up when the sale price sat above the CPT. A price cut to the CPT (sale
+    // = CPT) left a held row with no similar item. Look them up for held rows too.
+    if(r.held && !r.sim.length){ r.sim = simForRow(c.asin, size); r.simLow = r.sim.length ? r.sim[0] : null; r.simMatch = simMatch(r); }
     r.verdict = caseVerdict(r);
     r.action = cptAction(r);
     r.rb = rbScreenRow('cpt', r);
@@ -3652,9 +3662,12 @@ function simCell(r){
   const name = `<span class="where">${esc(String(x.name || '').slice(0, 40))}</span>`;
   const price = x.link ? `<a href="${esc(x.link)}" target="_blank" rel="noopener" onclick="event.stopPropagation()">${usd(x.price)}</a>` : usd(x.price);
   const on = x.date ? ` <span class="mut">(${esc(shortDate(x.date))})</span>` : '';
-  if(m.exact) return `<span class="lo" style="color:#b42318" data-tip="Priced at our CPT on ${esc(x.date || '')}. Possibly the reference; Amazon doesn't say.">Matches CPT ${price}</span>${on}${where}${name}`;
+  // Nov 6: rows from the Cowork outside hunt carry a screenshot and an item type
+  const shot = x.shot ? ` <a class="where" href="${esc(x.shot)}" target="_blank" rel="noopener" onclick="event.stopPropagation()">Screenshot \u2197</a>` : '';
+  const kind = x.kind ? ` <span class="lcchip ${/same/i.test(x.kind) ? 'lc-bad' : 'lc-gray'}">${esc(x.kind)}</span>` : '';
+  if(m.exact) return `<span class="lo" style="color:#b42318" data-tip="Priced at our CPT on ${esc(x.date || '')}. Possibly the reference; Amazon doesn't say.">Matches CPT ${price}</span>${on}${kind}${where}${name}${shot}`;
   const note = (m.diff > 0 ? usd(m.diff) + ' above' : usd(-m.diff) + ' below') + ' the CPT' + (m.onAmazon ? ', on Amazon' : '');
-  return `<span class="mut" style="font-size:.78rem">Nothing at the CPT. Closest:</span> <span class="lo">${price}</span>${on}<span class="was">${note}</span>${where}${name}`;
+  return `<span class="mut" style="font-size:.78rem">Nothing at the CPT. Closest:</span> <span class="lo">${price}</span>${on}<span class="was">${note}</span>${kind}${where}${name}${shot}`;
 }
 
 function simBlock(r){
@@ -3662,7 +3675,7 @@ function simBlock(r){
   const all = r.sim || [];
   const amz = all.filter(x=> x.market === 'Amazon'), out = all.filter(x=> x.market !== 'Amazon');
   if(!all.length) return `<h2 style="margin-top:1.1rem">Similar ${r.size ? esc(r.size) + ' ' : ''}items</h2>`+
-    `<p class="mut" style="font-size:.84rem">None found yet. Amazon prices update every morning. Add Walmart, Wayfair or Temu prices in the Outside Amazon tab.</p>`;
+    `<p class="mut" style="font-size:.84rem">None found yet. Amazon prices update every morning. Prices outside Amazon come from the Cowork search (Outside Found tab) and show here within 2 hours.</p>`;
   // Amazon sellers never set the CPT, so only outside listings can be the match
   const near = r.cpt !== null ? out.filter(x=> Math.abs(x.price - r.cpt) <= 3) : [];
   return `<h2 style="margin-top:1.1rem">Similar ${r.size ? esc(r.size) + ' ' : ''}items</h2>`+
@@ -4367,7 +4380,7 @@ function openBb(r){
     '</tbody></table>'+
     '<div class="act-row">'+
       `<a class="work" href="https://www.amazon.${MK2 === 'CA' ? 'ca' : 'com'}/dp/${esc(r.asin)}?aod=1" target="_blank" rel="noopener">See all offers on Amazon</a>`+
-      `<a class="work" href="https://sellercentral.amazon.${MK2 === 'CA' ? 'ca' : 'com'}/myinventory/inventory?searchTerm=${encodeURIComponent(r.sku)}" target="_blank" rel="noopener">Open in Seller Central</a>`+
+      `<a class="work" href="${scInvUrl(r.sku, MK2)}" target="_blank" rel="noopener">Open in Seller Central</a>`+
     '</div>'+
     '<div class="why">Buy Box from Keepa\u2019s last check, usually a few hours old. Stock from the FBA inventory files.</div>';
   d.insertAdjacentHTML('beforeend', rbBlock(r.rb || []));
@@ -5157,7 +5170,7 @@ function openLc(r){
     LC_COLS.filter(c=> r.bad.indexOf(c[0]) === -1).map(block).join('')+
     '<div class="act-row">'+
       `<a class="work" href="https://www.amazon.${MK2 === 'CA' ? 'ca' : 'com'}/dp/${esc(r.asin)}" target="_blank" rel="noopener">Open on Amazon</a>`+
-      `<a class="work" href="https://sellercentral.amazon.${MK2 === 'CA' ? 'ca' : 'com'}/myinventory/inventory?searchTerm=${encodeURIComponent(r.sku)}" target="_blank" rel="noopener">Open in Seller Central</a>`+
+      `<a class="work" href="${scInvUrl(r.sku, MK2)}" target="_blank" rel="noopener">Open in Seller Central</a>`+
     '</div>'+
     '<div class="why">Live copy from Keepa\u2019s last check. Correct copy from Plytix. Generic keywords are backend only, so they are checked against Amazon\u2019s rules, not compared.</div>';
   const put = (b, t)=> (navigator.clipboard ? navigator.clipboard.writeText(t) : Promise.reject())
