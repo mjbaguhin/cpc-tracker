@@ -7355,7 +7355,13 @@ function selFilter(head, rows){
    Small gaps from rounding count as the same. Out of stock is not counted. */
 let MS = [], MS_META = {}, MS_ERR = '', MS_VIEW = [];
 const MS_F = {mk:'US', show:'all', q:'', group:true, sort:'', dir:1};
-const MS_CHK = {size:'Size', weight:'Weight', pkg:'Package weight', tier:'Size tier', copy:'Size in the copy', plytix:'Plytix in/cm, lb/kg'};
+const MS_CHK = {size:'Size', weight:'Weight', pkg:'Package weight', tier:'Size tier', copy:'Size in the copy', plytix:'Plytix in/cm, lb/kg', fill:'Plytix filled in'};
+/* Nov 9 (MJ): the % is the catalog manager's share only. Plytix is the source of truth
+   and is never changed to match Amazon. Counted: Plytix filled in and consistent, and
+   what customers see on Amazon (size, weight, sizes in the copy) matching Plytix.
+   Amazon's warehouse measurements (package weight) and the size tier Amazon assigns
+   are supply chain's (remeasurement cases): listed for them, not in the %. */
+const MS_CAT = ['size', 'weight', 'copy', 'plytix', 'fill'], MS_SC = ['pkg', 'tier'];
 function buildMs(j){ MS_ERR = ''; MS_META = {updated: j && j.updated || '', fee: (j && j.fee) || {}}; MS = (j && j.rows) || []; }
 const msR = (v, d)=> v === null || v === undefined ? null : Math.round(v * Math.pow(10, d)) / Math.pow(10, d);
 function msTriple(a){ return (a || []).filter(x=> x !== null && x !== undefined && x > 0).sort((x, y)=> y - x); }
@@ -7466,10 +7472,12 @@ function msRows(mk){
     const txtNums = String(ca ? px.dimsCm : px.dimsIn || '').match(/\d+(?:\.\d+)?/g);
     if(txtNums && txtNums.length === 3 && msTriple(pDims).length === 3){ const a = txtNums.map(Number).sort((x, y)=> y - x), b = msTriple(pDims); if(a.length === 3 && a.some((v, i)=> Math.abs(v - b[i]) > Math.max(0.06, b[i] * 0.01))) pxBad.push(`"${ca ? px.dimsCm : px.dimsIn}" doesn\u2019t match the length, width and height fields`); }
     st.plytix = pxBad.length ? 'diff' : (pDims.some(Boolean) || pWt ? 'ok' : 'na');
-    const keys = Object.keys(MS_CHK), checked = keys.filter(k=> st[k] !== 'na' && st[k] !== 'old').length, ok = keys.filter(k=> st[k] === 'ok').length;
-    const bad = keys.filter(k=> st[k] === 'diff');
+    const fillMiss = [msTriple(pDims).length < 2 ? 'size' : '', !pWt ? 'weight' : '', !pPk ? 'packaged weight' : ''].filter(Boolean);
+    st.fill = fillMiss.length ? 'diff' : 'ok';
+    const keys = MS_CAT, checked = keys.filter(k=> st[k] !== 'na' && st[k] !== 'old').length, ok = keys.filter(k=> st[k] === 'ok').length;
+    const bad = keys.filter(k=> st[k] === 'diff'), sc = MS_SC.filter(k=> st[k] === 'diff');
     const row = ROWS.find(x=> x.asin === r.asin);
-    return Object.assign({}, r, {name: (row && row.name) || r.name || r.asin, ca, unit, wUnit, pDims, pWt, pPk, aDims, aWt, aPk, st, bad, copyBad, pxBad,
+    return Object.assign({}, r, {name: (row && row.name) || r.name || r.asin, ca, unit, wUnit, pDims, pWt, pPk, aDims, aWt, aPk, st, bad, sc, fillMiss, copyBad, pxBad,
       checked, ok, pct: checked ? Math.round(ok / checked * 1000) / 10 : null, allOk: checked > 0 && !bad.length, nokp: !kp});
   });
 }
@@ -7486,6 +7494,7 @@ function renderMeasurements(){
   const by = k=> all.filter(r=> r.st[k] === 'diff');
   const pick = {good: all.filter(r=> r.allOk), wrong: all.filter(r=> r.bad.length), nodata: all.filter(r=> r.nokp)};
   Object.keys(MS_CHK).forEach(k=> pick[k] = by(k));
+  pick.sc = all.filter(r=> r.sc.length);
   let rows = pick[MS_F.show] || all;
   if(MS_F.q){ const q = MS_F.q.toLowerCase(); rows = rows.filter(r=> (r.sku + ' ' + r.asin + ' ' + r.name).toLowerCase().indexOf(q) !== -1); }
   rows = MS_F.sort && MS_SORT[MS_F.sort] ? sortBy(rows, MS_SORT[MS_F.sort], MS_F.dir) : sortBy(rows, r=> (r.pname || '~') + ' ' + r.sku, 1);
@@ -7498,15 +7507,16 @@ function renderMeasurements(){
     `<span class="sub">Amazon ${mk} vs the Master SKU sheet, ${all.length} active listings</span>`+
     (MS_META.updated ? `<span class="cpt-live"><i></i>Built ${esc(MS_META.updated)} ET</span>` : '')+
     '</div><div class="cpt-tiles">'+
-      tile('Measurements correct %', pct === null ? '\u2014' : pct + '%', pct === null ? '' : pct >= 98 ? 'good' : pct >= 90 ? 'warn' : 'bad', pct === null ? 'No Amazon data yet' : `${okN} of ${chk} checks match${oosNote(all.filter(r=> r.checked), mk)}`, 'all')+
+      tile('Catalog data correct %', pct === null ? '\u2014' : pct + '%', pct === null ? '' : pct >= 98 ? 'good' : pct >= 90 ? 'warn' : 'bad', pct === null ? 'No Amazon data yet' : `${okN} of ${chk} checks match${oosNote(all.filter(r=> r.checked), mk)}`, 'all')+
       tile('Listings fully correct', `${pick.good.length}<span style="font-size:1rem;color:var(--c-night-mut)"> of ${all.length}</span>`, '', '', 'good')+
-      t1('', 'size') + t1('', 'weight') + t1('', 'pkg') + t1('', 'tier') + t1('', 'copy') + t1('', 'plytix')+
+      tile('Blank in Plytix', pick.fill.length, pick.fill.length ? 'bad' : 'good', pick.fill.length ? list(pick.fill) : 'Size, weight and packaged weight all filled in', 'fill') + t1('', 'plytix') + t1('', 'size') + t1('', 'weight') + t1('', 'copy')+
+      tile('For supply chain', pick.sc.length, pick.sc.length ? 'warn' : 'good', pick.sc.length ? `Package weight ${pick.pkg.length} \u00b7 Size tier ${pick.tier.length} \u00b7 not in the %` : 'Nothing to send', 'sc')+
       tile('No Amazon size yet', pick.nodata.length, pick.nodata.length ? 'warn' : 'good', pick.nodata.length ? 'Keepa sends it with the next daily read' : 'None', 'nodata')+
     '</div></section>'+
     `<div class="why"><b>Size tier:</b> ${fm ? `Fee Preview report ${esc(fm.date)} (${esc(fm.file)})` : 'no Fee Preview report yet.'} \u00b7 New reports go in <a href="https://drive.google.com/drive/folders/1-IWG9GZtQ6zDlQ3tFvQ5l1Kq3AAvuW6O" target="_blank" rel="noopener"><b>ALM Fee Preview Reports</b> (open the folder) \u2197</a></div>`+
     '<div class="cpt-tools"><div class="seg" id="msMk">' + ['US','CA'].map(m=> `<button data-mk="${m}" aria-pressed="${mk === m}">Amazon ${m}</button>`).join('') + '</div>'+
       `<input id="msQ" type="search" placeholder="Search SKU, ASIN or product" value="${esc(MS_F.q)}">`+
-      `<button id="msGrp" aria-pressed="${MS_F.group}">Group by parent</button><button id="msDl">Download</button>`+
+      `<button id="msGrp" aria-pressed="${MS_F.group}">Group by parent</button><button id="msSc">Copy list for supply chain</button><button id="msDl">Download</button>`+
       `<span class="count">${rows.length} of ${all.length}</span></div>`;
   if(!MS.length) html += MS_ERR ? '<div class="cpt-empty"><b>Measurements feed not found yet</b>Run setupMeasurements in the CPC Keepa Fetcher project.</div>' : '<div class="cpt-empty"><b>Loading measurements</b></div>';
   else if(!rows.length) html += '<div class="cpt-empty"><b>Nothing here</b>Pick another tile or clear the search.</div>';
@@ -7532,7 +7542,7 @@ function renderMeasurements(){
         html += `<tr class="gh"><td colspan="8"><b>${esc(k === '~' ? 'No parent' : (rs[0].pname || k))}</b> <span class="mut">${k === '~' ? '' : esc(k) + ' \u00b7 '}${rs.length} listing${rs.length > 1 ? 's' : ''}${rs.some(r=> r.bad.length) ? ', ' + rs.filter(r=> r.bad.length).length + ' with a difference' : ''}</span></td></tr>` + rs.map(tr).join('');
       });
     } else html += rows.map(tr).join('');
-    html += '</tbody></table><p class="mut" style="font-size:.78rem">Same within 0.5 in or 5% per side for sizes (1.3 cm on CA), 5% for weights. The copy allows rounding (30x17 for 30 x 16.75). Out of stock is not in the %.</p>';
+    html += '</tbody></table><p class="mut" style="font-size:.78rem">Plytix is the source of truth and is never changed to match Amazon. The % counts the catalog share: Plytix filled in and consistent, and Amazon size, weight and the sizes in the copy matching Plytix. Package weight and size tier are Amazon\u2019s warehouse measurements, for supply chain, and not in the %. Same within 0.5 in or 5% per side for sizes (1.3 cm on CA), 5% for weights. The copy allows rounding (30x17 for 30 x 16.75). Out of stock is not in the %.</p>';
   }
   v.innerHTML = html;
   ccMount(v, 'ms', msCc(all, mk), all, mk);
@@ -7541,10 +7551,16 @@ function renderMeasurements(){
   [...v.querySelectorAll('#msMk button')].forEach(b=> b.onclick = ()=>{ MS_F.mk = b.dataset.mk; renderMeasurements(); });
   const q = document.getElementById('msQ'); if(q) q.oninput = ()=>{ MS_F.q = q.value; const p = q.selectionStart; renderMeasurements(); const q2 = document.getElementById('msQ'); q2.focus(); q2.setSelectionRange(p, p); };
   const gb = document.getElementById('msGrp'); if(gb) gb.onclick = ()=>{ MS_F.group = !MS_F.group; renderMeasurements(); };
+  const scb = document.getElementById('msSc'); if(scb) scb.onclick = ()=>{
+    const a = pick.sc; if(!a.length){ scb.textContent = 'Nothing to send'; return; }
+    const t = `Amazon ${mk} measurements that differ from Plytix (${a.length} listings), for remeasurement review:\n` + a.map(r=> `\u2022 ${r.sku} (${r.asin})` +
+      (r.st.pkg === 'diff' ? `: package weight Plytix ${msW(r.pPk, r.wUnit)}, Amazon ${msW(r.aPk, r.wUnit)}` : '') +
+      (r.st.tier === 'diff' ? `${r.st.pkg === 'diff' ? ';' : ':'} size tier Plytix ${r.px.tier || '?'}, Amazon ${r.fee && r.fee.tier ? msTierName(r.fee.tier, r.mk) : '?'}` : '')).join('\n');
+    (navigator.clipboard ? navigator.clipboard.writeText(t) : Promise.reject()).then(()=>{ scb.textContent = 'Copied'; }).catch(()=> window.prompt('Copy:', t)); };
   const dl = document.getElementById('msDl'); if(dl) dl.onclick = ()=> csvSave('measurements-' + mk.toLowerCase(),
-    ['SKU','ASIN','Tier','Plytix size (' + (mk === 'CA' ? 'cm' : 'in') + ')','Plytix weight','Amazon size (Keepa)','Amazon weight','Plytix packaged weight','Amazon package weight','Plytix size tier','Fee Preview size tier','Size','Weight','Package weight','Size tier','Copy','Copy notes','Plytix','Plytix notes'],
+    ['SKU','ASIN','Tier','Plytix size (' + (mk === 'CA' ? 'cm' : 'in') + ')','Plytix weight','Amazon size (Keepa)','Amazon weight','Plytix packaged weight','Amazon package weight','Plytix size tier','Fee Preview size tier','Size','Weight','Package weight (supply chain)','Size tier (supply chain)','Copy','Copy notes','Plytix','Plytix notes','Plytix filled in','Missing in Plytix'],
     rows.map(r=> [r.sku, r.asin, r.tier, msFmt(r.pDims, '', 2), msR(r.pWt, 2), msFmt(r.aDims, '', 2), msR(r.aWt, 2), msR(r.pPk, 2), msR(r.aPk, 2), r.px.tier || '', r.fee && r.fee.tier || '',
-      r.st.size, r.st.weight, r.st.pkg, r.st.tier, r.st.copy, r.copyBad.join('; '), r.st.plytix, r.pxBad.join('; ')]));
+      r.st.size, r.st.weight, r.st.pkg, r.st.tier, r.st.copy, r.copyBad.join('; '), r.st.plytix, r.pxBad.join('; '), r.st.fill, (r.fillMiss || []).join('; ')]));
   [...v.querySelectorAll('tr.row[data-ms]')].forEach(tr=>{ const open = ()=>{ const r = rows.find(x=> x.asin === tr.dataset.ms); if(r) openMs(r); }; tr.onclick = open; tr.onkeydown = e=>{ if(e.key === 'Enter') open(); }; });
 }
 function openMs(r){
