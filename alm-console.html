@@ -968,7 +968,7 @@ a.idl:hover{color:var(--accent);border-bottom-style:solid}
       <div class="ng-b" data-ng="perf"><button id="bsBtn">BSR</button></div></div>
     <div class="ng"><div class="ng-l">Reference</div><div class="ng-b"><button id="prBtn">Master SKU</button></div></div>
     <div id="mSelWrap"><label for="mSel">Module</label><select id="mSel"><optgroup label="Today"><option value="catalogBtn">Catalog</option><option value="tkBtn">My tasks</option></optgroup><optgroup label="Price and Buy Box"><option value="cptBtn">CPT tracker</option><option value="bbBtn">Buy Box</option><option value="lpBtn">List Price</option><option value="stBtn">Strike-through</option></optgroup><optgroup label="Listing health"><option value="lcBtn">Listing Copy</option><option value="quickCat">Category</option><option value="vrBtn">Variation</option><option value="msBtn">Measurements</option><option value="rvBtn">Listing Review</option></optgroup><optgroup label="Performance"><option value="bsBtn">BSR</option></optgroup><optgroup label="Reference"><option value="prBtn">Master SKU</option></optgroup></select></div>
-    <div class="ng ng-tools"><div class="ng-l">View</div><div class="ng-b"><button id="toggle" aria-expanded="true">Filters</button><span id="hStock" role="group" aria-label="Stock"><span class="stk-l">Stock</span><button data-stk="all" title="Every listing">All</button><button data-stk="in" title="Only listings with FBA stock">In stock</button><button data-stk="oos" title="Only listings with 0 FBA stock">Out of stock</button></span><span class="gf-l" id="gfTierWrap">Tier <button id="gfTierBtn" type="button" aria-haspopup="true" aria-expanded="false" title="Pick one or more tiers">All ▾</button><span id="gfTierPop" hidden><label><input type="checkbox" value="A"> Tier A</label><label><input type="checkbox" value="B"> Tier B</label><label><input type="checkbox" value="C"> Tier C</label><label><input type="checkbox" value="X"> Tier X</label><label><input type="checkbox" value="N"> Tier N</label><button type="button" id="gfTierAll">All tiers</button></span></span><span class="gf-l" id="gfSupWrap">Supplier <button id="gfSupBtn" type="button" aria-haspopup="true" aria-expanded="false" title="Pick one or more suppliers">All ▾</button><span id="gfSupPop" hidden><span id="gfSupList"></span><button type="button" id="gfSupAll">All suppliers</button></span></span><label class="gf-l">Brand <select id="gfBrand"><option value="">All</option><option>Barnyard Designs</option><option>Seedboy</option></select></label><input id="gfQ" type="search" placeholder="Search SKU, ASIN, product or family" autocomplete="off"><button id="gfClr" title="Clear Tier, Brand, Search, Stock and this module’s own filters. Keeps the sort, grouping and marketplace.">Clear filters</button><button id="hRefresh" title="Reload all data now. Reads the published files only: no scripts run, no Keepa tokens.">↻ Refresh</button><button id="hReset" title="Put this module’s filters, search, sort and grouping back to their defaults. Keeps the marketplace and all saved checks and marks.">Reset view</button><button id="fs" title="Fullscreen">Full screen</button></div></div>
+    <div class="ng ng-tools"><div class="ng-l">View</div><div class="ng-b"><button id="toggle" aria-expanded="true">Filters</button><span id="hStock" role="group" aria-label="Stock"><span class="stk-l">Stock</span><button data-stk="all" title="Every listing">All</button><button data-stk="in" title="Only listings with FBA stock">In stock</button><button data-stk="oos" title="Only listings with 0 FBA stock">Out of stock</button></span><span class="gf-l" id="gfTierWrap">Tier <button id="gfTierBtn" type="button" aria-haspopup="true" aria-expanded="false" title="Pick one or more tiers">All ▾</button><span id="gfTierPop" hidden><label><input type="checkbox" value="A"> Tier A</label><label><input type="checkbox" value="B"> Tier B</label><label><input type="checkbox" value="C"> Tier C</label><label><input type="checkbox" value="X"> Tier X</label><label><input type="checkbox" value="N"> Tier N</label><button type="button" id="gfTierAll">All tiers</button></span></span><span class="gf-l" id="gfSupWrap">Supplier <button id="gfSupBtn" type="button" aria-haspopup="true" aria-expanded="false" title="Pick one or more suppliers">All ▾</button><span id="gfSupPop" hidden><span id="gfSupList"></span><button type="button" id="gfSupAll">All suppliers</button></span></span><label class="gf-l">Brand <select id="gfBrand"><option value="">All</option><option>Barnyard Designs</option><option>Seedboy</option></select></label><input id="gfQ" type="search" placeholder="Search SKU, ASIN, product or family" autocomplete="off"><button id="gfClr" title="Clear Tier, Brand, Search, Stock and this module’s own filters. Keeps the sort, grouping and marketplace.">Clear filters</button><button id="hRefresh" title="Reload all data now. Reads the published files only: no scripts run, no Keepa tokens.">↻ Refresh</button><button id="hReset" title="Put this module’s filters, search, sort and grouping back to their defaults. Keeps the marketplace and all saved checks and marks.">Reset view</button><button id="fs" title="Fullscreen">Full screen</button><button id="scSet" title="Make SKU links open the right marketplace in Seller Central. Saved in this browser only, never published.">SC links</button></div></div>
   </nav>
 </header>
 <section id="ov" hidden></section>
@@ -2073,10 +2073,31 @@ function asinL(a, mk){
 /* Nov 8: a North America account opens Seller Central on the marketplace it used
    last, so a .ca link could land on the US. mons_sel_mkid picks the marketplace. */
 const SC_MKID = {US: 'ATVPDKIKX0DER', CA: 'A2EUQ1WTGCTBG2'};
+/* Nov 9: the marketplace ID alone doesn't switch Seller Central. Amazon's own links
+   also carry the account's merchant ID (mons_sel_dir_mcid) and partner account ID
+   (mons_sel_dir_paid). MJ pastes one Seller Central address per marketplace with the
+   SC links button; the IDs are kept in this browser only, never in the public file. */
+const scIds = ()=>{ try { return JSON.parse(localStorage.getItem('sc_ids') || '{}'); } catch(e){ return {}; } };
 function scInvUrl(sku, mk){
-  const m = mkOf(mk);
-  return `https://${m === 'CA' ? 'sellercentral.amazon.ca' : 'sellercentral.amazon.com'}/myinventory/inventory?searchTerm=${encodeURIComponent(sku)}&mons_sel_mkid=${SC_MKID[m]}`;
+  const m = mkOf(mk), id = scIds()[m];
+  let u = `https://${m === 'CA' ? 'sellercentral.amazon.ca' : 'sellercentral.amazon.com'}/myinventory/inventory?searchTerm=${encodeURIComponent(sku)}`;
+  if(id && id.mcid && id.paid) u += `&mons_sel_dir_mcid=${encodeURIComponent(id.mcid)}&mons_sel_mkid=${encodeURIComponent(id.mkid || SC_MKID[m])}&mons_sel_dir_paid=${encodeURIComponent(id.paid)}&ignore_selection_changed=true`;
+  else u += `&mons_sel_mkid=${SC_MKID[m]}`;
+  return u;
 }
+function scSetup(){
+  const have = scIds(), st = ['US','CA'].map(m=> m + ': ' + (have[m] ? 'set' : 'not set')).join(', ');
+  const t = window.prompt(`SC links (${st}).\n\nIn Seller Central, pick the marketplace (for example Canada) from the top menu, open any page, and copy the address. It must contain mons_sel_dir_mcid. Paste it here:`, '');
+  if(!t) return;
+  let q; try { q = new URL(t.trim()).searchParams; } catch(e){ alert('That is not a web address. Nothing saved.'); return; }
+  const mcid = q.get('mons_sel_dir_mcid'), paid = q.get('mons_sel_dir_paid'), mkid = q.get('mons_sel_mkid') || '';
+  const m = /A2EUQ1WTGCTBG2/.test(mkid) ? 'CA' : /ATVPDKIKX0DER/.test(mkid) ? 'US' : '';
+  if(!mcid || !paid || !m){ alert('That address does not have the marketplace, merchant and partner IDs. Pick the marketplace from the Seller Central menu first, then copy the address. Nothing saved.'); return; }
+  have[m] = {mcid, paid, mkid}; try { localStorage.setItem('sc_ids', JSON.stringify(have)); } catch(e){}
+  alert(`Saved for Amazon ${m}. SKU links now open Seller Central ${m}.` + (have.US && have.CA ? '' : ` Do the same for ${m === 'CA' ? 'US' : 'CA'}.`));
+  try { render(); } catch(e){}
+}
+document.addEventListener('click', e=>{ if(e.target && e.target.id === 'scSet') scSetup(); });
 function skuL(v, mk){
   v = String(v || '').trim(); if(!v) return '';
   return `<a class="idl" href="${scInvUrl(v, mk)}" target="_blank" rel="noopener" title="Open in Manage Inventory">${esc(v)}</a>` +
