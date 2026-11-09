@@ -8225,17 +8225,18 @@ function rvStrikeTable(rows, grouped){
   return '<div style="overflow-x:auto;margin:.4rem 1rem"><table class="rv-t" style="min-width:820px;background:#fff;border:1px solid var(--line);border-radius:8px">'+
     '<colgroup><col style="width:38%"><col style="width:20%"><col style="width:12%"><col style="width:15%"><col style="width:15%"></colgroup>'+
     '<tr><td style="padding-left:.6rem">Product</td><td>Strike-through</td><td>Our price</td><td>List Price (Master SKU)</td><td>Walmart</td></tr>'+
-    rows.map(x=> (x._head ? `<tr><td colspan="5" style="padding:.5rem .6rem;background:#f4f1fb;color:#4b3a8f;font-weight:700">${esc(x._head.fam === 'No family' ? 'Not in a variation' : x._head.fam)} <span class="mut" style="font-weight:400">\u00b7 ${x._head.n} listing${x._head.n === 1 ? '' : 's'}</span>${x._head.none ? ` <span class="lcchip lc-bad" style="margin-left:.3rem">${x._head.none} without a strike-through</span>` : ` <span class="lcchip lc-ok" style="margin-left:.3rem">All OK</span>`}</td></tr>` : '') +
-      `<tr><td style="padding-left:.6rem"><div style="font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis" title="${esc(x.name || x.sku)}">${esc(x.name || x.sku)}</div>`+
+    rows.map(x=> (x._head ? `<tr data-stfam="${esc(x._head.fam)}" style="cursor:pointer"><td colspan="5" style="padding:.5rem .6rem;background:#f4f1fb;color:#4b3a8f;font-weight:700"><span aria-hidden="true" style="display:inline-block;width:1.1rem">${ST_COLL.has(x._head.fam) ? '\u25b6' : '\u25bc'}</span>${esc(x._head.fam === 'No family' ? 'Not in a variation' : x._head.fam)} <span class="mut" style="font-weight:400">\u00b7 ${x._head.n} listing${x._head.n === 1 ? '' : 's'}</span>${x._head.none ? ` <span class="lcchip lc-bad" style="margin-left:.3rem">${x._head.none} without a strike-through</span>` : ` <span class="lcchip lc-ok" style="margin-left:.3rem">All OK</span>`}</td></tr>` : '') +
+      (grouped && ST_COLL.has(x.fam) ? '' : `<tr><td style="padding-left:.6rem"><div style="font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis" title="${esc(x.name || x.sku)}">${esc(x.name || x.sku)}</div>`+
       `<div class="rv-id" style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${skuL(x.sku, x.mk || 'US')} \u00b7 Tier ${esc(x.tier || '?')} \u00b7 ${esc(x.brand)}</div></td>`+
       `<td>${tag(x)}${two && x.change ? chg[x.change] + (x.was ? `<div class="mut" style="font-size:.72rem">was ${esc(x.was)}</div>` : '') : ''}</td>`+
-      `<td>${money(x.price)}</td><td>${money(x.list)}</td><td>${money(x.wm)}</td></tr>`).join('')+
+      `<td>${money(x.price)}</td><td>${money(x.list)}</td><td>${money(x.wm)}</td></tr>`)).join('')+
   '</table></div><div class="rv-note" style="margin:0 1rem 1rem">A List Price strike-through needs that price recently at another retailer, or sales on Amazon at that price (Amazon rule since Apr 23, 2026). A Typical price strike-through comes from Amazon\u2019s own 90-day price history. Pricing decisions stay with Haris and Sam.</div>';
 }
 /* STRIKE-THROUGH module (MJ, Oct 29): its own page in Price and Buy Box, fed by the
    strike-through the weekly Cowork PDP check reads on every product page. */
 const ST_F_DEF = {mk:'US', show:'none', tier:'', brand:'', family:'', q:'', group:true};   // group by parent on by default (MJ, Nov 9)
 const ST_F = Object.assign({}, ST_F_DEF);
+const ST_COLL = new Set();   // collapsed families on the Strike-through page
 try { Object.assign(ST_F, JSON.parse(localStorage.getItem('st_state') || '{}')); } catch(e){}
 const stKeep = ()=>{ try { localStorage.setItem('st_state', JSON.stringify(ST_F)); } catch(e){} };
 function renderStrike(){
@@ -8268,6 +8269,7 @@ function renderStrike(){
       sel('stTier', 'Tier', RV_TIERS, ST_F.tier) + sel('stBrand', 'Brand', brands, ST_F.brand)+
       `<input id="stQ" type="search" placeholder="Search product, SKU or family" value="${esc(ST_F.q)}" style="max-width:240px">`+
       `<button id="stGrp" aria-pressed="${ST_F.group !== false}"${ST_F.group !== false ? ' style="background:#1f3a5f;color:#fff"' : ''}>Group by parent</button>`+
+      (ST_F.group !== false ? `<button id="stColl">${ST_COLL.size ? 'Expand all' : 'Collapse all'}</button>` : '')+
       `<button id="stCopy">Copy list for Haris and Sam</button><button id="stClr">Clear filters</button>`+
       (ST_F.show !== 'all' ? `<span class="mut" style="font-size:.76rem">Click the highlighted box again to show all</span>` : '')+'</div>';
   if(!RV.rows && RV_ERR) html += '<div class="cpt-empty"><b>Strike-through feed not found yet</b>It comes with the Listing Review feed (review.json).</div>';
@@ -8286,6 +8288,10 @@ function renderStrike(){
   else html += rvStrikeTable(rows, ST_F.group !== false);
   v.innerHTML = html;
   const gb = document.getElementById('stGrp'); if(gb) gb.onclick = ()=>{ ST_F.group = ST_F.group === false; stKeep(); renderStrike(); };
+  [...v.querySelectorAll('[data-stfam]')].forEach(h=> h.onclick = ()=>{ const f = h.dataset.stfam; ST_COLL.has(f) ? ST_COLL.delete(f) : ST_COLL.add(f); renderStrike(); });
+  const ca = document.getElementById('stColl'); if(ca) ca.onclick = ()=>{
+    if(ST_COLL.size) ST_COLL.clear(); else rows.forEach(x=> ST_COLL.add(x.fam));
+    renderStrike(); };
   const set = (k, val)=>{ ST_F[k] = val; stKeep(); renderStrike(); chrome(); };
   [...v.querySelectorAll('[data-sts]')].forEach(t=> t.onclick = ()=> set('show', ST_F.show === t.dataset.sts ? 'all' : t.dataset.sts));
   [...v.querySelectorAll('#stMk button')].forEach(b=> b.onclick = ()=> set('mk', b.dataset.mk));
