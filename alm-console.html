@@ -4958,7 +4958,7 @@ function lcRows(){
 }
 /* Item Highlights (Oct 27): Keepa doesn't send them, so the daily Cowork page check
    reads the line under the title. Compared here like the other fields. */
-const ihNorm = t=> String(t || '').toLowerCase().replace(/[\u2018\u2019]/g, "'").replace(/[\u201c\u201d]/g, '"').replace(/[\u2010-\u2015]/g, '-').replace(/\s+/g, ' ').replace(/[.\s]+$/, '').trim();
+const ihNorm = t=> String(t || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().replace(/[\u2018\u2019]/g, "'").replace(/[\u201c\u201d]/g, '"').replace(/[\u2010-\u2015]/g, '-').replace(/\s+/g, ' ').replace(/[.\s]+$/, '').trim();
 function ihFromPage(c){
   const f = c.f || {}, x = f.ih;
   const pg = SIG && SIG.rows && SIG.rows[MK2 + '|' + c.asin] && SIG.rows[MK2 + '|' + c.asin].ih;
@@ -6630,6 +6630,15 @@ function bsFamilySync(rows){
   });
   return fam;
 }
+/* BSR score (MJ, Nov 9), the old ALM "BSR Synced?" check: of the in-stock listings in a
+   variation family that have a BSR, the share showing the same BSR as the rest of the
+   family. Standalone listings, out of stock and no BSR are left out. Reviews are the
+   Variation module's job ("Reviews shared"), so they don't count here. */
+function bsSyncScore(mk){
+  const r = inStock(bsRows(mk), mk).filter(x=> x.sync && x.sync.bsr && (x.sync.bsr.s === 'ok' || x.sync.bsr.s === 'off'));
+  const ok = r.filter(x=> x.sync.bsr.s === 'ok');
+  return {pct: r.length ? pct1(ok.length, r.length) : null, ok: ok.length, n: r.length, off: r.filter(x=> x.sync.bsr.s === 'off')};
+}
 function bsRows(mk){
   const out = bsRowsRaw(mk);
   bsFamilySync(out);
@@ -7140,7 +7149,7 @@ function modPct(id, mk){
     if(id === 'msBtn'){ if(!MS.length) return null; const r = inStock(msRows(mk), mk).filter(x=> x.checked); return pct1(r.reduce((t, x)=> t + x.ok, 0), r.reduce((t, x)=> t + x.checked, 0)); }
     if(id === 'stBtn'){ const sc = stScore(mk); return sc && sc.n ? sc.pct : null; }
     if(id === 'rvBtn'){ const sc = rvScore(mk); return sc ? sc.pct : null; }
-    if(id === 'bsBtn'){ if(!BS.length) return null; const r = inStock(bsRows(mk), mk).filter(x=> x.cur !== null); return pct1(r.filter(x=> x.cur >= 4).length, r.length); }
+    if(id === 'bsBtn'){ if(!BS.length) return null; return bsSyncScore(mk).pct; }
   } catch (e) { return null; }
   return null;
 }
@@ -7742,8 +7751,10 @@ function renderOverview(){
     const all = inStock(bsRows(mk), mk), rated = all.filter(r=> r.cur !== null), good = rated.filter(r=> r.cur >= 4), strict = all.filter(r=> r.ok);
     const avgR = rated.length ? (rated.reduce((t,r)=> t + r.cur, 0) / rated.length).toFixed(2) : '\u2014';
     if(!rated.length){ cards.push(ovCard(`BSR ${mk}`, null, '', [], 'bsBtn').replace(/data-go="bsBtn"/, `data-go="bsBtn" data-bsmk="${mk}"`)); return; }
-    cards.push(ovCard(`BSR ${mk}`, ovPct(good.length, rated.length),
-      `Rated 4.0 or higher: ${good.length} of ${rated.length}. Average rating <b>${avgR}</b>` +
+    const sc = bsSyncScore(mk);
+    cards.push(ovCard(`BSR ${mk}`, sc.n ? ovPct(sc.ok, sc.n) : null,
+      `BSR same as the rest of the family: ${sc.ok} of ${sc.n} (standalone and out of stock not counted)` + (sc.off.length ? `. Differs: ${sc.off.map(x=> esc(x.sku)).join(', ')}` : '') +
+      `<br>Rated 4.0 or higher: ${good.length} of ${rated.length}. Average rating <b>${avgR}</b>` +
       `<br>4.0+, not dropping and BSR showing: <b>${ovPct(strict.length, all.length)}%</b> (${strict.length} of ${all.length})`,
       ovCount(all.filter(r=> r.flags.length), r=> r.flags, k=> ({low:'Below 4.0 stars', drop:'Rating dropped in 30 days', nobsr:'No BSR on Amazon', slow:'BSR 25% worse than its 30-day average', sync:'Family value to check on the live page (Keepa often delayed, not counted)'})[k] || k)
         .concat(RB && all.filter(r=> (r.rb || []).length).length ? [['Below 3.0: not eligible for deals', all.filter(r=> (r.rb || []).length).length]] : []), 'bsBtn',
@@ -8127,8 +8138,12 @@ function rvScore(mk){
   if(!read) return null;
   return {pct: pct1(Math.max(0, read - bad), read), read, good: Math.max(0, read - bad), oos: act.length - actIn.length};
 }
+/* Nov 9: the strike-through feed is the weekly check's snapshot, so a listing set to
+   Inactive in the Master SKU after that check is left out until the next one. */
+function stActiveSet(mk){ if(!PR.length) return null; const s = new Set(); rvActList(mk).forEach(p=>{ s.add(p.sku); if(p.asin) s.add(p.asin); }); return s; }
 function stScore(mk){
-  const all = (RV.strike || []).filter(x=> (x.mk || 'US') === mk);
+  const act = stActiveSet(mk);
+  const all = (RV.strike || []).filter(x=> (x.mk || 'US') === mk && (!act || act.has(x.sku) || act.has(x.asin)));
   if(!all.length) return null;
   const st = all.filter(x=> x.tier !== 'X' && !isOos(x, mk));
   return {pct: pct1(st.filter(x=> x.shown).length, st.length), shown: st.filter(x=> x.shown).length, n: st.length,
@@ -8208,7 +8223,8 @@ function rvStrike(F){
   F = F || ST_F;
   const ti = x=> { const i = RV_TIERS.indexOf(x.tier); return i === -1 ? 9 : i; };
   const smk = F.mk || ST_F.mk || 'US';
-  let a = (RV.strike || []).filter(x=> (x.mk || 'US') === smk).map(x=>{
+  const act = stActiveSet(smk);
+  let a = (RV.strike || []).filter(x=> (x.mk || 'US') === smk && (!act || act.has(x.sku) || act.has(x.asin))).map(x=>{
     const row = (x.sku && ROWS.find(r=> r.sku === x.sku)) || ROWS.find(r=> r.asin === x.asin);
     const wasShown = x.was !== null && x.was !== undefined ? !/^none$/i.test(x.was) && x.was !== '' : null;
     const change = wasShown === null ? '' : wasShown && !x.shown ? 'lost' : !wasShown && x.shown ? 'new' : (x.was !== x.page ? 'changed' : '');
