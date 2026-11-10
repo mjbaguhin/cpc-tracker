@@ -4999,7 +4999,8 @@ function renderLc(){
   document.getElementById('msg').hidden = true;
   document.getElementById('bar').innerHTML = '';
   const v = document.getElementById('cptView');
-  const all = lcRows(), pctRows = inStock(all, MK2), oosTxt = oosNote(all, MK2);
+  // Nov 10 (MJ): copy is checked on every active listing, out of stock included
+  const all = lcRows(), pctRows = all, oosTxt = '';
   const checked = pctRows.reduce((t,r)=> t + (r.checked || 0), 0), ok = pctRows.reduce((t,r)=> t + (r.ok || 0), 0);
   const pct = checked ? Math.round(ok / checked * 1000) / 10 : 0;
   // Mismatch = Amazon text differs from Plytix. Rule issues are counted separately.
@@ -7143,7 +7144,7 @@ function modPct(id, mk){
     if(id === 'cptBtn'){ if(!CPT_US.length) return null; return withMk2(mk, ()=>{ if(mk === 'CA' && !(CPT_CA || []).some(r=> r.cpt !== null)) return null; const r = inStock(cptRows(), mk).filter(x=> x.action !== 'oos'); return pct1(r.length - r.filter(x=> x.action === 'open').length, r.length); }); }
     if(id === 'bbBtn'){ if(!BB_US.length) return null; return withMk2(mk, ()=>{ if(mk === 'CA' && !(BB_CA || []).some(r=> stockOf(r, 'CA') !== null)) return null; const r = bbRows(), st = r.filter(x=> !isOos(x, mk)); return pct1(st.filter(x=> x.has).length, st.length); }); }
     if(id === 'lpBtn'){ if(!CPT_US.length) return null; return withMk2(mk, ()=>{ const r = inStock(lpRows(), mk); return pct1(r.filter(x=> x.set).length, r.length); }); }
-    if(id === 'lcBtn'){ if(!LC_US.length || (mk === 'CA' && LC_CA === null)) return null; return withMk2(mk, ()=>{ const r = inStock(lcRows().filter(x=> !x.nolive && x.pct !== null && x.pct !== undefined), mk); return r.length ? Math.round(r.reduce((t, x)=> t + x.pct, 0) / r.length * 10) / 10 : null; }); }
+    if(id === 'lcBtn'){ if(!LC_US.length || (mk === 'CA' && LC_CA === null)) return null; return withMk2(mk, ()=>{ const r = lcRows().filter(x=> !x.nolive && x.pct !== null && x.pct !== undefined); return r.length ? Math.round(r.reduce((t, x)=> t + x.pct, 0) / r.length * 10) / 10 : null; }); }
     if(id === 'quickCat'){ if(!CG.length) return null; const r = inStock(cgRows(mk).filter(x=> !x.nolive), mk); return pct1(r.reduce((t, x)=> t + (x.ok || 0), 0), r.reduce((t, x)=> t + (x.checked || 0), 0)); }
     if(id === 'vrBtn'){ if(!VR.length) return null; const r = inStock(vrRows(mk).filter(x=> !x.nolive), mk); return pct1(r.reduce((t, x)=> t + (x.ok || 0), 0), r.reduce((t, x)=> t + (x.checked || 0), 0)); }
     if(id === 'msBtn'){ if(!MS.length) return null; const r = inStock(msRows(mk), mk).filter(x=> x.checked); return pct1(r.reduce((t, x)=> t + x.ok, 0), r.reduce((t, x)=> t + x.checked, 0)); }
@@ -7650,14 +7651,14 @@ function ovCard(title, pct, sub, reasons, btnId, extra, strict){
 const ovPct = (a, b)=> b ? Math.round(a / b * 1000) / 10 : null;
 const ovCount = (list, keyFn, labelFn)=>{ const m = {}; list.forEach(r=> [].concat(keyFn(r)).forEach(k=>{ if(k) m[k] = (m[k] || 0) + 1; })); return Object.keys(m).sort((a,b)=> m[b] - m[a]).map(k=> [labelFn(k), m[k]]); };
 
-/* CATALOG (MJ, Nov 10): the report MJ sends Sam. Eight numbers, US and CA combined
+/* CATALOG (Nov 10): eight catalog health numbers, US and CA combined
    (counts added together, not an average of the two %). Each uses the same rules as
    its module: out of stock not counted where that module leaves it out. */
 const CAT_METRICS = [
-  ['rev',  'Listings reviewed',   'rvBtn',    'Active listings read by the last weekly product page check'],
+  ['rev',  'Listings reviewed',   'rvBtn',    'Listings with no problem on the last weekly check, plus the problem listings you marked Reviewed this round (out of stock not counted)'],
   ['cat',  'Correct categories',  'quickCat', 'Category checks correct (GL, product type, path and node, ITK, search department)'],
   ['var',  'Variation correct',   'vrBtn',    'Variation checks correct'],
-  ['copy', 'Correct copy',        'lcBtn',    'Average correct copy per listing (title, bullets, description, Item Highlights)'],
+  ['copy', 'Correct copy',        'lcBtn',    'Average correct copy per active listing, out of stock included (title, bullets, description, Item Highlights)'],
   ['lp',   'List price correct',  'lpBtn',    'Listings with a List Price set'],
   ['bb',   'Buy Box',             'bbBtn',    'In-stock listings where we hold the Buy Box'],
   ['only', 'Only seller',         'bbBtn',    'In-stock listings with no other seller on our listing'],
@@ -7665,11 +7666,14 @@ const CAT_METRICS = [
 function catCounts(k, mk){
   const sum = (a, f)=> a.reduce((t, x)=> t + (f(x) || 0), 0);
   try {
-    if(k === 'rev'){ if(!RV.run || !rvAct(mk)) return null; return [rvAct(mk) - rvUnreadOf(mk).length, rvAct(mk)]; }
+    // Nov 10 (MJ): "reviewed" means MJ's own review, not the automatic check reading the page
+    if(k === 'rev'){ const sc = rvScore(mk); if(!sc) return null;
+      const marked = rvAll(mk).filter(r=> r.problems.length && !isOos(r, mk)).filter(r=>{ const m = rvMarkOf(r); return m && m.act === 'Reviewed'; }).length;
+      return [Math.min(sc.read, sc.good + marked), sc.read]; }
     if(k === 'cat'){ if(!CG.length) return null; const r = inStock(cgRows(mk).filter(x=> !x.nolive), mk); return [sum(r, x=> x.ok), sum(r, x=> x.checked)]; }
     if(k === 'var'){ if(!VR.length) return null; const r = inStock(vrRows(mk).filter(x=> !x.nolive), mk); return [sum(r, x=> x.ok), sum(r, x=> x.checked)]; }
     if(k === 'copy'){ if(!LC_US.length || (mk === 'CA' && LC_CA === null)) return null;
-      return withMk2(mk, ()=>{ const r = inStock(lcRows().filter(x=> !x.nolive && x.pct !== null && x.pct !== undefined), mk); return [sum(r, x=> x.pct) / 100, r.length]; }); }
+      return withMk2(mk, ()=>{ const r = lcRows().filter(x=> !x.nolive && x.pct !== null && x.pct !== undefined); return [sum(r, x=> x.pct) / 100, r.length]; }); }
     if(k === 'lp'){ if(!CPT_US.length) return null; return withMk2(mk, ()=>{ const r = inStock(lpRows(), mk); return [r.filter(x=> x.set).length, r.length]; }); }
     if(k === 'bb' || k === 'only'){ if(!BB_US.length) return null;
       return withMk2(mk, ()=>{ if(mk === 'CA' && !(BB_CA || []).some(r=> stockOf(r, 'CA') !== null)) return null;
@@ -7692,8 +7696,8 @@ function renderOverview(){
   const P = c=> c && c[1] ? pct1(c[0], c[1]) + '%' : '\u2014';
   const C = c=> c && c[1] ? `${Math.round(c[0] * 10) / 10} of ${c[1]}` : 'no data';
   const cls = p=> p === null ? '' : p >= 98 ? 'good' : p >= 90 ? 'warn' : 'bad';
-  let html = '<section class="cpt-top"><div class="cpt-head"><h2>Catalog</h2><span class="sub">US and CA combined, for the report to Sam</span></div></section>'+
-    '<div class="cpt-tools"><button id="catCopy">Copy for Sam</button><span class="count">Counts added together across US and CA</span></div>'+
+  let html = '<section class="cpt-top"><div class="cpt-head"><h2>Catalog</h2><span class="sub">US and CA combined</span></div></section>'+
+    '<div class="cpt-tools"><button id="catCopy">Copy summary</button><span class="count">Counts added together across US and CA</span></div>'+
     '<table class="cpt-table lc-table"><thead><tr><th>Metric</th><th class="c">US + CA</th><th class="c">US</th><th class="c">CA</th><th>What it counts</th><th></th></tr></thead><tbody>'+
     rep.map(r=> `<tr><td><b>${esc(r.label)}</b></td>`+
       `<td class="c"><span class="lcchip ${r.pct === null ? 'lc-gray' : r.pct >= 98 ? 'lc-ok' : r.pct >= 90 ? 'lc-small' : 'lc-bad'}" style="font-size:1rem">${r.pct === null ? '\u2014' : r.pct + '%'}</span><div class="mut" style="font-size:.75rem">${r.den ? C([r.num, r.den]) : ''}</div></td>`+
@@ -7702,7 +7706,7 @@ function renderOverview(){
       `<td class="mut" style="font-size:.8rem">${esc(r.what)}</td>`+
       `<td><button class="work" data-catgo="${r.btn}">Open \u2192</button></td></tr>`).join('')+
     '</tbody></table>'+
-    '<p class="mut" style="font-size:.78rem">Each number follows the same rules as its module, so out of stock, Tier X and inactive listings are left out wherever that module leaves them out. Listings reviewed counts the last weekly product page check.</p>';
+    '<p class="mut" style="font-size:.78rem">Each number follows the same rules as its module, so out of stock, Tier X and inactive listings are left out wherever that module leaves them out. Listings reviewed rises as you mark problem listings Reviewed in Listing Review; the marks reset with each new weekly check.</p>';
   v.innerHTML = html;
   [...v.querySelectorAll('[data-catgo]')].forEach(b=> b.onclick = ()=>{ const t = document.getElementById(b.dataset.catgo); if(t) t.click(); });
   const cp = document.getElementById('catCopy'); if(cp) cp.onclick = ()=>{
