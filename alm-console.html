@@ -7172,7 +7172,8 @@ function catalogScores(){
   NAV_MODS.forEach(([id, name])=>{ ['US','CA'].forEach(mk=>{ const v = modPct(id, mk); if(v !== null) out.push({title: name + ' ' + mk, v}); }); });
   return out;
 }
-function catalogScore(){ const a = catalogScores(); return a.length ? Math.round(a.reduce((t, x)=> t + x.v, 0) / a.length * 10) / 10 : null; }
+// Nov 10: the Catalog % is the average of the eight report numbers (US and CA combined)
+function catalogScore(){ const a = catReport().filter(r=> r.pct !== null); return a.length ? Math.round(a.reduce((t, x)=> t + x.pct, 0) / a.length * 10) / 10 : null; }
 function navPercents(){
   const all = [];
   NAV_MODS.forEach(([id, name])=>{
@@ -7194,7 +7195,7 @@ function navPercents(){
   // Catalog: the average of every module's US and CA %
   const cb = document.getElementById('catalogBtn');
   if(cb){ const v = catalogScore();
-    const html = 'Catalog' + (v === null ? '' : `<span class="badge pc ${PCT_CLS(v)}">${v}%</span>`); if(cb.innerHTML !== html) cb.innerHTML = html; cb.title = 'Average of every module, US and CA';
+    const html = 'Catalog' + (v === null ? '' : `<span class="badge pc ${PCT_CLS(v)}">${v}%</span>`); if(cb.innerHTML !== html) cb.innerHTML = html; cb.title = 'Average of the eight report numbers, US and CA combined';
     const mo = document.querySelector('#mSel option[value="catalogBtn"]'); if(mo) mo.textContent = 'Catalog' + (v === null ? '' : ' \u00b7 ' + v + '%'); }
   // Master SKU keeps a gray count of Plytix checks
   const pb = document.getElementById('prBtn');
@@ -7649,183 +7650,64 @@ function ovCard(title, pct, sub, reasons, btnId, extra, strict){
 const ovPct = (a, b)=> b ? Math.round(a / b * 1000) / 10 : null;
 const ovCount = (list, keyFn, labelFn)=>{ const m = {}; list.forEach(r=> [].concat(keyFn(r)).forEach(k=>{ if(k) m[k] = (m[k] || 0) + 1; })); return Object.keys(m).sort((a,b)=> m[b] - m[a]).map(k=> [labelFn(k), m[k]]); };
 
+/* CATALOG (MJ, Nov 10): the report MJ sends Sam. Eight numbers, US and CA combined
+   (counts added together, not an average of the two %). Each uses the same rules as
+   its module: out of stock not counted where that module leaves it out. */
+const CAT_METRICS = [
+  ['rev',  'Listings reviewed',   'rvBtn',    'Active listings read by the last weekly product page check'],
+  ['cat',  'Correct categories',  'quickCat', 'Category checks correct (GL, product type, path and node, ITK, search department)'],
+  ['var',  'Variation correct',   'vrBtn',    'Variation checks correct'],
+  ['copy', 'Correct copy',        'lcBtn',    'Average correct copy per listing (title, bullets, description, Item Highlights)'],
+  ['lp',   'List price correct',  'lpBtn',    'Listings with a List Price set'],
+  ['bb',   'Buy Box',             'bbBtn',    'In-stock listings where we hold the Buy Box'],
+  ['only', 'Only seller',         'bbBtn',    'In-stock listings with no other seller on our listing'],
+  ['bsr',  'BSR exists',          'bsBtn',    'Family listings showing the same BSR as the rest of the family']];
+function catCounts(k, mk){
+  const sum = (a, f)=> a.reduce((t, x)=> t + (f(x) || 0), 0);
+  try {
+    if(k === 'rev'){ if(!RV.run || !rvAct(mk)) return null; return [rvAct(mk) - rvUnreadOf(mk).length, rvAct(mk)]; }
+    if(k === 'cat'){ if(!CG.length) return null; const r = inStock(cgRows(mk).filter(x=> !x.nolive), mk); return [sum(r, x=> x.ok), sum(r, x=> x.checked)]; }
+    if(k === 'var'){ if(!VR.length) return null; const r = inStock(vrRows(mk).filter(x=> !x.nolive), mk); return [sum(r, x=> x.ok), sum(r, x=> x.checked)]; }
+    if(k === 'copy'){ if(!LC_US.length || (mk === 'CA' && LC_CA === null)) return null;
+      return withMk2(mk, ()=>{ const r = inStock(lcRows().filter(x=> !x.nolive && x.pct !== null && x.pct !== undefined), mk); return [sum(r, x=> x.pct) / 100, r.length]; }); }
+    if(k === 'lp'){ if(!CPT_US.length) return null; return withMk2(mk, ()=>{ const r = inStock(lpRows(), mk); return [r.filter(x=> x.set).length, r.length]; }); }
+    if(k === 'bb' || k === 'only'){ if(!BB_US.length) return null;
+      return withMk2(mk, ()=>{ if(mk === 'CA' && !(BB_CA || []).some(r=> stockOf(r, 'CA') !== null)) return null;
+        const r = bbRows().filter(x=> !isOos(x, mk)); return k === 'bb' ? [r.filter(x=> x.has).length, r.length] : [r.filter(x=> !(x.others && x.others.length)).length, r.length]; }); }
+    if(k === 'bsr'){ if(!BS.length) return null; const b = bsSyncScore(mk); return [b.ok, b.n]; }
+  } catch(e){ return null; }
+  return null;
+}
+function catReport(){
+  return CAT_METRICS.map(([k, label, btn, what])=>{
+    const us = catCounts(k, 'US'), ca = catCounts(k, 'CA');
+    const n = (us ? us[0] : 0) + (ca ? ca[0] : 0), d = (us ? us[1] : 0) + (ca ? ca[1] : 0);
+    return {k, label, btn, what, us, ca, num: n, den: d, pct: d ? pct1(n, d) : null};
+  });
+}
 function renderOverview(){
   document.getElementById('msg').hidden = true;
   document.getElementById('bar').innerHTML = '';
-  const v = document.getElementById('cptView'), cards = [];
-  OV_SCORES = []; OV_UC = [];
-
-  // Category, US and CA
-  ['US','CA'].forEach(mk=>{
-    const all0 = CG.length ? cgRows(mk) : [], all = inStock(all0, mk), live = all.filter(r=> !r.nolive), good = live.filter(r=> r.allOk);
-    const okN = live.reduce((t,r)=> t + (r.ok || 0), 0), chkN = live.reduce((t,r)=> t + (r.checked || 0), 0);
-    const inCase = live.filter(r=> r.bad.length && cgCaseInfo(r)).length;
-    cards.push(ovCard(`Category ${mk}`, ovPct(okN, chkN),
-      `${okN} of ${chkN} category checks correct (path and node as one)${oosNote(all0, mk)}<br>Listings with every check correct: <b>${ovPct(good.length, live.length)}%</b> (${good.length} of ${live.length})` +
-      (inCase ? `<br>Already raised with Amazon (case on file): <b>${inCase}</b>` : ''),
-      ovCount(live, r=> r.bad, k=> (CG_COLS.find(c=> c[0] === k) || [k, k])[1] + ' wrong')
-        .concat(RB && live.filter(r=> (r.rb || []).some(h=> h.sev === 'amazon')).length ? [['Break an Amazon category rule', live.filter(r=> (r.rb || []).some(h=> h.sev === 'amazon')).length]] : []), 'quickCat',
-      glSnap(mk) ? (GLX && /bigquery/i.test(GLX.source || '') ? `<div class="ov-note">GL from BigQuery (${esc(mk)} FBA Inventory report), ${esc(glSnap(mk))}, ${glAge(mk)} days old.</div>`
-        : `<div class="ov-note">GL is temporary: ${esc(mk)} FBA Inventory report, ${esc(glSnap(mk))} (${glAge(mk)} days old), until live GL values are ready.</div>`) : `<div class="ov-note">GL: no ${esc(mk)} FBA Inventory report uploaded yet.</div>`, ovPct(good.length, live.length)));
-  });
-  withMk2('US', ()=>{
-  // CPT tracker
-  if(typeof CPT !== 'undefined' && CPT.length){
-    const rows0 = cptRows(), rows = inStock(rows0, MK2).filter(r=> r.action !== 'oos'), fine = rows.filter(r=> r.action === 'none'), open = rows.filter(r=> r.action === 'open');
-    const follow = rows.filter(r=> r.action === 'follow').length;
-    cards.push(ovCard('CPT tracker US', ovPct(rows.length - open.length, rows.length),
-      `${rows.length - open.length} of ${rows.length} listings need no new case` +
-      `<br>No action at all: <b>${ovPct(fine.length, rows.length)}%</b> (${fine.length} of ${rows.length})` +
-      (follow ? `<br>Cases already open with Amazon, being followed up: <b>${follow}</b>` : ''),
-      ovCount(rows.filter(r=> r.action !== 'none'), r=> r.action, k=> (ACTIONS[k] || {}).group || k)
-        .concat(RB && rows.filter(r=> (r.rb || []).some(h=> h.sev === 'amazon')).length ? [['Break an Amazon pricing rule', rows.filter(r=> (r.rb || []).some(h=> h.sev === 'amazon')).length]] : []), 'cptBtn', '', ovPct(fine.length, rows.length)));
-  } else cards.push(ovCard('CPT tracker US', null, 'CPT feed not loaded', [], 'cptBtn'));
-  // Buy Box
-  if(typeof BB !== 'undefined' && BB.length){
-    // Out of stock is a restock matter, not a listing problem, so the main
-    // number counts in-stock listings; the all-listings number stays visible
-    const rows = bbRows(), has = rows.filter(r=> r.has), oos = rows.filter(r=> !r.has && r.why === 'oos');
-    const inStock = rows.length - oos.length;
-    cards.push(ovCard('Buy Box US', ovPct(has.length, inStock),
-      `${has.length} of ${inStock} in-stock listings have the Buy Box<br>All listings, counting out of stock: <b>${ovPct(has.length, rows.length)}%</b> (${has.length} of ${rows.length})`,
-      ovCount(rows.filter(r=> !r.has), r=> r.why || 'unknown', k=> k === 'oos' ? 'Out of stock (restock, not a listing problem)' : (BB_WHY[k] || {t:k}).t)
-        .concat(RB && rows.filter(r=> (r.rb || []).some(h=> h.sev === 'amazon')).length ? [['Break an Amazon pricing rule', rows.filter(r=> (r.rb || []).some(h=> h.sev === 'amazon')).length]] : []), 'bbBtn', '', ovPct(has.length, rows.length)));
-  } else cards.push(ovCard('Buy Box US', null, 'Buy Box feed not loaded', [], 'bbBtn'));
-  // Listing Copy
-  if(typeof LC !== 'undefined' && LC.length){
-    const rows = inStock(lcRows().filter(r=> !r.nolive), MK2), ok = rows.filter(r=> r.allOk);
-    const avg = rows.length ? Math.round(rows.reduce((t,r)=> t + (r.pct || 0), 0) / rows.length * 10) / 10 : null;
-    const rbA = rows.filter(r=> r.rbA.length), rbB = rows.filter(r=> r.rbB.length), strictOk = ok.filter(r=> !r.rbA.length);
-    cards.push(ovCard('Listing Copy US', avg, `Average correct copy across ${rows.length} in-stock listings (title, bullets, description)` +
-      `<br>Listings with every field correct and no Amazon rule broken: <b>${ovPct(strictOk.length, rows.length)}%</b> (${strictOk.length} of ${rows.length})`,
-      ovCount(rows, r=> r.bad.filter(k=> r.f && r.f[k] && ['small','wrong','missing'].indexOf(r.f[k].s) !== -1), k=> (LC_COLS.find(c=> c[0] === k) || [k, k])[1] + ' mismatch')
-        .concat(RB ? [['Break an Amazon rule (live or in Plytix)', rbA.length], ['Brand guide issues', rbB.length]].filter(x=> x[1]) : [])
-        .concat(rows.filter(r=> r.px && r.px.length).length ? [['Plytix looks off', rows.filter(r=> r.px && r.px.length).length]] : [])
-        .concat(rows.filter(r=> r.cause === 'amazon').length ? [['Changed on Amazon (not from Plytix)', rows.filter(r=> r.cause === 'amazon').length]] : []), 'lcBtn',
-      RB ? '' : '<div class="ov-note">Rules off: no rulebook.</div>', ovPct(strictOk.length, rows.length)));
-  } else cards.push(ovCard('Listing Copy US', null, 'Copy feed not loaded', [], 'lcBtn'));
-  // List Price
-  if(typeof lpRows === 'function'){
-    const rows = inStock(lpRows(), MK2), set = rows.filter(r=> r.set);
-    const lpRb = rows.filter(r=> (r.rb || []).length);
-    cards.push(ovCard('List Price US', ovPct(set.length, rows.length), `${set.length} of ${rows.length} in-stock listings have a List Price` + (RB ? `<br>List Prices to check against Amazon\u2019s Apr 2026 rule: <b>${lpRb.length}</b>` : ''),
-      (rows.length - set.length ? [['List Price empty', rows.length - set.length]] : []).concat(lpRb.length ? [['List Price above what we can show customers paid', lpRb.length]] : []), 'lpBtn'));
-  }
-  });
-  // Amazon CA for CPT, Buy Box, Listing Copy and List Price, same cards with the CA data
-  if(LC_CA !== null) withMk2('CA', ()=>{
-    const n0 = cards.length;
-  // CPT tracker
-  if(typeof CPT !== 'undefined' && CPT.length){
-    const rows0 = cptRows(), rows = inStock(rows0, MK2).filter(r=> r.action !== 'oos'), fine = rows.filter(r=> r.action === 'none'), open = rows.filter(r=> r.action === 'open');
-    const follow = rows.filter(r=> r.action === 'follow').length;
-    cards.push(ovCard('CPT tracker CA', ovPct(rows.length - open.length, rows.length),
-      `${rows.length - open.length} of ${rows.length} listings need no new case` +
-      `<br>No action at all: <b>${ovPct(fine.length, rows.length)}%</b> (${fine.length} of ${rows.length})` +
-      (follow ? `<br>Cases already open with Amazon, being followed up: <b>${follow}</b>` : ''),
-      ovCount(rows.filter(r=> r.action !== 'none'), r=> r.action, k=> (ACTIONS[k] || {}).group || k)
-        .concat(RB && rows.filter(r=> (r.rb || []).some(h=> h.sev === 'amazon')).length ? [['Break an Amazon pricing rule', rows.filter(r=> (r.rb || []).some(h=> h.sev === 'amazon')).length]] : []), 'cptBtn', '', ovPct(fine.length, rows.length)));
-  } else cards.push(ovCard('CPT tracker CA', null, 'CPT feed not loaded', [], 'cptBtn'));
-  // Buy Box
-  if(typeof BB !== 'undefined' && BB.length){
-    // Out of stock is a restock matter, not a listing problem, so the main
-    // number counts in-stock listings; the all-listings number stays visible
-    const rows = bbRows(), has = rows.filter(r=> r.has), oos = rows.filter(r=> !r.has && r.why === 'oos');
-    const inStock = rows.length - oos.length;
-    cards.push(ovCard('Buy Box CA', ovPct(has.length, inStock),
-      `${has.length} of ${inStock} in-stock listings have the Buy Box<br>All listings, counting out of stock: <b>${ovPct(has.length, rows.length)}%</b> (${has.length} of ${rows.length})`,
-      ovCount(rows.filter(r=> !r.has), r=> r.why || 'unknown', k=> k === 'oos' ? 'Out of stock (restock, not a listing problem)' : (BB_WHY[k] || {t:k}).t)
-        .concat(RB && rows.filter(r=> (r.rb || []).some(h=> h.sev === 'amazon')).length ? [['Break an Amazon pricing rule', rows.filter(r=> (r.rb || []).some(h=> h.sev === 'amazon')).length]] : []), 'bbBtn', '', ovPct(has.length, rows.length)));
-  } else cards.push(ovCard('Buy Box CA', null, 'Buy Box feed not loaded', [], 'bbBtn'));
-  // Listing Copy
-  if(typeof LC !== 'undefined' && LC.length){
-    const rows = inStock(lcRows().filter(r=> !r.nolive), MK2), ok = rows.filter(r=> r.allOk);
-    const avg = rows.length ? Math.round(rows.reduce((t,r)=> t + (r.pct || 0), 0) / rows.length * 10) / 10 : null;
-    const rbA = rows.filter(r=> r.rbA.length), rbB = rows.filter(r=> r.rbB.length), strictOk = ok.filter(r=> !r.rbA.length);
-    cards.push(ovCard('Listing Copy CA', avg, `Average correct copy across ${rows.length} in-stock listings (title, bullets, description)` +
-      `<br>Listings with every field correct and no Amazon rule broken: <b>${ovPct(strictOk.length, rows.length)}%</b> (${strictOk.length} of ${rows.length})`,
-      ovCount(rows, r=> r.bad.filter(k=> r.f && r.f[k] && ['small','wrong','missing'].indexOf(r.f[k].s) !== -1), k=> (LC_COLS.find(c=> c[0] === k) || [k, k])[1] + ' mismatch')
-        .concat(RB ? [['Break an Amazon rule (live or in Plytix)', rbA.length], ['Brand guide issues', rbB.length]].filter(x=> x[1]) : [])
-        .concat(rows.filter(r=> r.px && r.px.length).length ? [['Plytix looks off', rows.filter(r=> r.px && r.px.length).length]] : [])
-        .concat(rows.filter(r=> r.cause === 'amazon').length ? [['Changed on Amazon (not from Plytix)', rows.filter(r=> r.cause === 'amazon').length]] : []), 'lcBtn',
-      RB ? '' : '<div class="ov-note">Rules off: no rulebook.</div>', ovPct(strictOk.length, rows.length)));
-  } else cards.push(ovCard('Listing Copy CA', null, 'Copy feed not loaded', [], 'lcBtn'));
-  // List Price
-  if(typeof lpRows === 'function'){
-    const rows = inStock(lpRows(), MK2), set = rows.filter(r=> r.set);
-    const lpRb = rows.filter(r=> (r.rb || []).length);
-    cards.push(ovCard('List Price CA', ovPct(set.length, rows.length), `${set.length} of ${rows.length} in-stock listings have a List Price` + (RB ? `<br>List Prices to check against Amazon\u2019s Apr 2026 rule: <b>${lpRb.length}</b>` : ''),
-      (rows.length - set.length ? [['List Price empty', rows.length - set.length]] : []).concat(lpRb.length ? [['List Price above what we can show customers paid', lpRb.length]] : []), 'lpBtn'));
-  }
-    for(let k = n0; k < cards.length; k++) cards[k] = cards[k].replace(/data-go="(\w+)"/, 'data-go="$1" data-mk2go="CA"');
-  });
-  if(LC_CA === null) [['CPT tracker CA','cptBtn'], ['Buy Box CA','bbBtn'], ['Listing Copy CA','lcBtn'], ['List Price CA','lpBtn']]
-    .forEach(x=> cards.push(ovCard(x[0], null, '', [], x[1]).replace(/data-go="(\w+)"/, 'data-go="$1" data-mk2go="CA"')));
-  // BSR, US and CA: main % = rated 4.0+, strict = 4.0+, not dropping, BSR showing
-  ['US','CA'].forEach(mk=>{
-    if(!BS.length){ if(mk === 'US') cards.push(ovCard('BSR', null, 'BSR feed not loaded', [], 'bsBtn')); return; }
-    const all = inStock(bsRows(mk), mk), rated = all.filter(r=> r.cur !== null), good = rated.filter(r=> r.cur >= 4), strict = all.filter(r=> r.ok);
-    const avgR = rated.length ? (rated.reduce((t,r)=> t + r.cur, 0) / rated.length).toFixed(2) : '\u2014';
-    if(!rated.length){ cards.push(ovCard(`BSR ${mk}`, null, '', [], 'bsBtn').replace(/data-go="bsBtn"/, `data-go="bsBtn" data-bsmk="${mk}"`)); return; }
-    const sc = bsSyncScore(mk);
-    cards.push(ovCard(`BSR ${mk}`, sc.n ? ovPct(sc.ok, sc.n) : null,
-      `BSR same as the rest of the family: ${sc.ok} of ${sc.n} (standalone and out of stock not counted)` + (sc.off.length ? `. Differs: ${sc.off.map(x=> esc(x.sku)).join(', ')}` : '') +
-      `<br>Rated 4.0 or higher: ${good.length} of ${rated.length}. Average rating <b>${avgR}</b>` +
-      `<br>4.0+, not dropping and BSR showing: <b>${ovPct(strict.length, all.length)}%</b> (${strict.length} of ${all.length})`,
-      ovCount(all.filter(r=> r.flags.length), r=> r.flags, k=> ({low:'Below 4.0 stars', drop:'Rating dropped in 30 days', nobsr:'No BSR on Amazon', slow:'BSR 25% worse than its 30-day average', sync:'Family value to check on the live page (Keepa often delayed, not counted)'})[k] || k)
-        .concat(RB && all.filter(r=> (r.rb || []).length).length ? [['Below 3.0: not eligible for deals', all.filter(r=> (r.rb || []).length).length]] : []), 'bsBtn',
-      '', ovPct(strict.length, all.length)).replace(/data-go="bsBtn"/, `data-go="bsBtn" data-bsmk="${mk}"`));
-  });
-  // Variation, US and CA
-  ['US','CA'].forEach(mk=>{
-    if(!VR.length){ if(mk === 'US') cards.push(ovCard('Variation', null, 'Variation feed not loaded', [], 'vrBtn')); return; }
-    const live0 = vrRows(mk).filter(r=> !r.nolive), live = inStock(live0, mk), good = live.filter(r=> r.fullOk);
-    const okN = live.reduce((t,r)=> t + (r.ok || 0), 0), chkN = live.reduce((t,r)=> t + (r.checked || 0), 0);
-    const inCase = live.filter(r=> r.caseable.length && vrCaseInfo(r)).length;
-    cards.push(ovCard(`Variation ${mk}`, ovPct(okN, chkN),
-      `${okN} of ${chkN} ${VR_TV ? 'family, theme and value' : 'family'} checks correct${oosNote(live0, mk)}<br>Listings fully correct${mk === 'US' ? ', reviews shared included' : ''}: <b>${ovPct(good.length, live.length)}%</b> (${good.length} of ${live.length})` +
-      (inCase ? `<br>Already raised with Amazon (case on file): <b>${inCase}</b>` : ''),
-      ovCount(live, r=> r.bad, k=> ({fam:'Not in the right family', theme:'Theme wrong', value:'Value wrong', rev:'Reviews not shared'})[k] || k)
-        .concat(RB && live.filter(r=> r.rbA.length).length ? [['Break a variation rule (Master SKU sheet)', live.filter(r=> r.rbA.length).length]] : []), 'vrBtn',
-      mk === 'CA' ? '<div class="ov-note">Reviews shared can\u2019t be checked for Canada (no live review counts).</div>' : '', ovPct(good.length, live.length)));
-  });
-  ['US','CA'].forEach(mk=>{
-    if(!MS.length){ if(mk === 'US') cards.push(ovCard('Measurements US', null, 'Measurements feed not loaded', [], 'msBtn')); return; }
-    const all = msRows(mk), live = inStock(all, mk).filter(r=> r.checked);
-    const okN = live.reduce((t, r)=> t + r.ok, 0), chkN = live.reduce((t, r)=> t + r.checked, 0), good = live.filter(r=> r.allOk);
-    cards.push(ovCard(`Measurements ${mk}`, chkN ? ovPct(okN, chkN) : null, `${okN} of ${chkN} measurement checks match${oosNote(all.filter(r=> r.checked), mk)}<br>Listings fully correct: <b>${ovPct(good.length, live.length)}%</b>`,
-      ovCount(live, r=> r.bad, k=> MS_CHK[k] + ' differs'), 'msBtn', '', ovPct(good.length, live.length)).replace(/data-go="msBtn"/, `data-go="msBtn" data-msmk="${mk}"`));
-  });
-  // Listing Review and Strike-through (Nov 3), with the same scores as their menu buttons
-  [['rvBtn', 'Listing Review', 'Listings with no problem from the page checks and the daily Keepa checks, out of stock not counted'],
-   ['stBtn', 'Strike-through', 'Product pages showing a strike-through price, Tier X and out of stock not counted']].forEach(([id, name, what])=>{
-    ['US','CA'].forEach(mk=>{ const v = modPct(id, mk); if(v === null) return;
-      cards.push(ovCard(`${name} ${mk}`, v, what, [], id).replace(new RegExp('data-go="' + id + '"'), `data-go="${id}" data-mk2go="${mk}"`)); });
-  });
-  const avg = k=> OV_SCORES.length ? Math.round(OV_SCORES.reduce((t,x)=> t + x[k], 0) / OV_SCORES.length * 10) / 10 : null;
-  const CS = catalogScores(), hMain = catalogScore(), hStrict = avg('strict');
-  const hCls = hMain === null ? '' : hMain >= 95 ? 'ok' : hMain >= 80 ? 'mid' : 'bad';
-  const health = hMain === null ? '' :
-    `<div class="ov-health"><div><div class="ov-hl">Overall catalog health</div><div class="ov-pct ${hCls}" style="font-size:3rem;margin:0">${hMain}%</div></div>`+
-    `<div class="ov-sub" style="max-width:640px">The average of every module score in the menu, US and CA, the same number as the Catalog button (${CS.map(x=> esc(x.title) + ' ' + x.v + '%').join(', ')}).`+
-    `<br>Strict view, every listing fully correct and counting out of stock: <b>${hStrict}%</b>.` +
-    (OV_UC.length ? `<br><span class="mut">Not counted yet: ${OV_UC.map(esc).join(', ')}.</span>` : '') + '</div></div>';
-  v.innerHTML = stockAlert() +
-    '<section class="cpt-top"><div class="cpt-head"><h2>Catalog overview</h2>'+
-    `<span class="sub">Every module at a glance. Green is 95% or more, amber 80% to 95%, red below 80%.</span></div></section>`+
-    (()=>{ // Cases across modules: what to do today
-      const c = {follow:0, check:0, wait:0, done:0}, add = s=>{ if(s) c[s.g]++; };
-      if(CG.length) ['US','CA'].forEach(mk=> cgRows(mk).forEach(r=> add(r.cst)));
-      if(VR.length) ['US','CA'].forEach(mk=> vrRows(mk).forEach(r=> add(r.cst)));
-      let cptFu = 0, cptWait = 0;
-      if(typeof CPT !== 'undefined' && CPT_US.length) withMk2('US', ()=> cptRows().forEach(r=>{ const n = nextStep(r); if(n) n.due === 'now' ? cptFu++ : cptWait++; }));
-      const tot = c.follow + c.check + c.wait + c.done + cptFu + cptWait;
-      return tot ? `<div class="why"><b>Cases today:</b> <span style="color:var(--bad)">${c.follow + cptFu} follow up</span> \u00b7 ${c.check} check the page \u00b7 ${c.wait + cptWait} waiting \u00b7 <span style="color:var(--ok)">${c.done} fixed and live</span> <span class="mut">(Category, Variation, CPT)</span></div>` : '';
-    })() +
-    health + (RB ? `<div class="why"><b>Amazon rules:</b> checked daily. Rulebook ${esc(shortDate(RB.verified))}${rbStale() ? ', <b>due for a re-check</b>' : ''}. <button class="work" data-rbopen="1">Rulebook</button></div>` : rbBanner()) +
-    `<div class="ov-grid">${cards.join('')}</div>`;
-  [...v.querySelectorAll('button[data-go]')].forEach(b=> b.onclick = ()=>{ MK2 = b.dataset.mk2go === 'CA' ? 'CA' : 'US'; mk2Apply(); if(b.dataset.bsmk) BS_F.mk = b.dataset.bsmk; if(b.dataset.msmk) MS_F.mk = b.dataset.msmk; if(b.dataset.go === 'rvBtn'){ RV_F.mk = MK2; rvKeep(); } if(b.dataset.go === 'stBtn'){ ST_F.mk = MK2; stKeep(); } document.getElementById(b.dataset.go).click(); });
-  [...v.querySelectorAll('[data-rbopen]')].forEach(b=> b.onclick = openRulebook);
+  const v = document.getElementById('cptView'), rep = catReport();
+  const P = c=> c && c[1] ? pct1(c[0], c[1]) + '%' : '\u2014';
+  const C = c=> c && c[1] ? `${Math.round(c[0] * 10) / 10} of ${c[1]}` : 'no data';
+  const cls = p=> p === null ? '' : p >= 98 ? 'good' : p >= 90 ? 'warn' : 'bad';
+  let html = '<section class="cpt-top"><div class="cpt-head"><h2>Catalog</h2><span class="sub">US and CA combined, for the report to Sam</span></div></section>'+
+    '<div class="cpt-tools"><button id="catCopy">Copy for Sam</button><span class="count">Counts added together across US and CA</span></div>'+
+    '<table class="cpt-table lc-table"><thead><tr><th>Metric</th><th class="c">US + CA</th><th class="c">US</th><th class="c">CA</th><th>What it counts</th><th></th></tr></thead><tbody>'+
+    rep.map(r=> `<tr><td><b>${esc(r.label)}</b></td>`+
+      `<td class="c"><span class="lcchip ${r.pct === null ? 'lc-gray' : r.pct >= 98 ? 'lc-ok' : r.pct >= 90 ? 'lc-small' : 'lc-bad'}" style="font-size:1rem">${r.pct === null ? '\u2014' : r.pct + '%'}</span><div class="mut" style="font-size:.75rem">${r.den ? C([r.num, r.den]) : ''}</div></td>`+
+      `<td class="c">${P(r.us)}<div class="mut" style="font-size:.75rem">${C(r.us)}</div></td>`+
+      `<td class="c">${P(r.ca)}<div class="mut" style="font-size:.75rem">${C(r.ca)}</div></td>`+
+      `<td class="mut" style="font-size:.8rem">${esc(r.what)}</td>`+
+      `<td><button class="work" data-catgo="${r.btn}">Open \u2192</button></td></tr>`).join('')+
+    '</tbody></table>'+
+    '<p class="mut" style="font-size:.78rem">Each number follows the same rules as its module, so out of stock, Tier X and inactive listings are left out wherever that module leaves them out. Listings reviewed counts the last weekly product page check.</p>';
+  v.innerHTML = html;
+  [...v.querySelectorAll('[data-catgo]')].forEach(b=> b.onclick = ()=>{ const t = document.getElementById(b.dataset.catgo); if(t) t.click(); });
+  const cp = document.getElementById('catCopy'); if(cp) cp.onclick = ()=>{
+    const t = rep.map(r=> `* ${r.label}: ${r.pct === null ? '\u2014' : r.pct + '%'}`).join('\n');
+    (navigator.clipboard ? navigator.clipboard.writeText(t) : Promise.reject()).then(()=>{ cp.textContent = 'Copied'; }).catch(()=> window.prompt('Copy:', t)); };
 }
 
 function closeDetail(){ document.getElementById('veil').hidden = true; document.getElementById('detail').classList.remove('wide'); }
