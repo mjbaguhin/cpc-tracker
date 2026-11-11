@@ -7184,7 +7184,6 @@ function renderProducts(){
       `<td class="c">${chip(r.status || 'blank', stCls(r.status))}</td>`+
       `<td class="c">${r.caStatus ? chip(r.caStatus, stCls(r.caStatus)) : '<span class="mut">\u2014</span>'}</td>`+
       `<td class="c">${r.tier ? '<b>' + esc(r.tier) + '</b>' : '<span class="mut">\u2014</span>'}</td>`+
-      `<td class="mono nolink" style="white-space:nowrap">${r.upc ? esc(r.upc) + cpy(r.upc) : '<span class="mut">\u2014</span>'}</td>`+   // UPC (Nov 11)
       `<td style="font-size:.8rem">${r.fam ? esc(String(r.fam).slice(0, 34)) : '<span class="mut">Standalone</span>'}${r.v1 ? `<div class="mut">${esc([r.v1, r.v2].filter(Boolean).join(' / '))}</div>` : ''}</td>`+
       `<td class="num">${r.price ? usd(r.price) : '\u2014'}${r.list && PR_F.mk === 'US' ? `<div class="mut" style="font-size:.75rem">List ${usd(r.list)}</div>` : ''}</td>`+
       `<td class="num">${(PR_F.mk === 'CA' ? r.ca : r.us) === null || (PR_F.mk === 'CA' ? r.ca : r.us) === undefined ? '<span class="mut">\u2014</span>' : bsInt(PR_F.mk === 'CA' ? r.ca : r.us)}</td>`+
@@ -7195,7 +7194,7 @@ function renderProducts(){
         (r.star !== null ? chip(r.star.toFixed(1) + '\u2605', r.star >= 4 ? 'lc-ok' : 'lc-small') : '')+
       '</td></tr>';
     html += '<table class="cpt-table bb-table lc-table cg-table"><thead><tr>'+
-      H('product','Product') + H('brand','Brand') + H('status','SKU status','c') + H('ca','CA status','c') + H('tier','Tier','c') + H('upc','UPC') +
+      H('product','Product') + H('brand','Brand') + H('status','SKU status','c') + H('ca','CA status','c') + H('tier','Tier','c') +
       H('fam','Family / variation') + H('sale', PR_F.mk === 'CA' ? 'CA sale price' : 'Sale price','num') + H('us', PR_F.mk + ' stock','num') + H('copy','Health (US)','c') +
       '</tr></thead><tbody>';
     if(PR_F.group){
@@ -7204,7 +7203,7 @@ function renderProducts(){
         const rs = g[k], first = rs[0];
         const label = k === '~' ? (PR_F.group === 'pasin' ? 'No parent' : 'Blank') : PR_F.group === 'pasin' ? (first.pname || k) : k;
         const act = rs.filter(r=> r.status === 'Active').length;
-        html += `<tr class="gh"><td colspan="10"><b>${esc(label)}</b>${PR_F.group === 'pasin' && k !== '~' ? ` <span class="mut mono">${esc(k)}${PR_F.mk === 'CA' ? (first.psku ? ' \u00b7 ' + esc(first.psku) : '') : (first.pasin ? ' \u00b7 ' + esc(first.pasin) : '')}</span>` : ''}`+
+        html += `<tr class="gh"><td colspan="9"><b>${esc(label)}</b>${PR_F.group === 'pasin' && k !== '~' ? ` <span class="mut mono">${esc(k)}${PR_F.mk === 'CA' ? (first.psku ? ' \u00b7 ' + esc(first.psku) : '') : (first.pasin ? ' \u00b7 ' + esc(first.pasin) : '')}</span>` : ''}`+
           ` <span class="mut">\u00b7 ${rs.length} SKU${rs.length > 1 ? 's' : ''}, ${act} active</span>${rs.some(r=> r.chk.length) ? ' <span class="lcchip lc-small">Plytix check</span>' : ''}</td></tr>` + rs.map(tr).join('');
       });
     } else html += rows.map(tr).join('');
