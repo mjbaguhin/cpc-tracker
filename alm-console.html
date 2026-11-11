@@ -3249,7 +3249,7 @@ function renderCpt(){
     const H = (k, label, cls, d) =>
       `<th data-s="${k}" data-d="${d || 'asc'}" class="${cls || ''}">${label}${qi(TIP_BY_HEAD[label.toLowerCase()])}${sortArrow(CPT_F, k)}</th>`;
     html += '<table class="cpt-table"><thead><tr>'+
-      H('product', 'Product')+
+      H('product', 'Product') + TIER_TH +
       H('ours', 'Our price', 'b-ours c', 'desc')+
       H('sale', 'Sale price', 'b-ours c', 'desc')+
       H('cpt', 'CPT', 'b-cpt c', 'desc')+
@@ -3389,7 +3389,7 @@ function cptBody(rows){
           `<button class="work strong" data-gfresh="${a}">Draft one fresh case for these ${g.length}</button>`+
           `<button class="work strong" data-gmail="${a}">${g.some(hasJassy) ? 'Draft one Jassy follow-up for these ' : 'Draft one Jassy email for these '}${g.length}</button>`+
           `<button class="work" data-gfind="${a}">Find related emails</button></div>` : '';
-      return `<tr class="gh agh agh-${a}"><td colspan="9"><div class="agh-t">${esc(ACTIONS[a].group)} `+
+      return `<tr class="gh agh agh-${a}"><td colspan="10"><div class="agh-t">${esc(ACTIONS[a].group)} `+
              `<span class="agh-n">${g.length}</span></div><div class="agh-s">${sub}</div>${btns}</td></tr>` +
              g.map(cptRowHtml).join('');
     }).join('');
@@ -3410,7 +3410,7 @@ function cptBody(rows){
     // Same rule as the What to do column: a case to open or follow up
     const need = g.filter(r=> r.action === 'open' || r.action === 'follow').length;
     const lows = g.filter(r=> r.short > 0.005).map(r=> r.short).concat(g.filter(r=> r.gap > 0).map(r=> r.gap));
-    return parentHeader(k === SOLO ? g.map(r=> Object.assign({}, r, {parent:'', psku:'', pasin:''})) : g, 9, [
+    return parentHeader(k === SOLO ? g.map(r=> Object.assign({}, r, {parent:'', psku:'', pasin:''})) : g, 10, [
       need ? `<span class="pgh-tag bad">${need} need${need === 1 ? 's' : ''} a case</span>` : '<span class="pgh-tag ok">Nothing to do</span>',
       lows.length ? `<span><span class="k">CPT most too low by</span><b>${usd(Math.max(...lows))}</b></span>` : ''
     ].filter(Boolean)) + g.map(cptRowHtml).join('');
@@ -3425,7 +3425,8 @@ function stockTag(r){
   return `<span class="stk-tag ${low ? 'low' : ''}" data-tip="${esc(TIPS.avail)}">${Number(r.avail).toLocaleString('en-US')} in stock${inb ? ', ' + inb + ' on the way' : ''}</span>`;
 }
 
-function cptRowHtml(r){
+const cptRowHtml = r=> tierRow(cptRowHtml0(r), r);   // Tier column (Nov 11)
+function cptRowHtml0(r){
         const bad = r.gap !== null && r.gap > 0;
         const n = daysSince(r.moved);
         const hot = n !== null && n <= CPT_RECENT;
@@ -4282,7 +4283,7 @@ function renderBb(){
   } else {
     const H = (k, label, cls, tip, d)=> `<th data-s="${k}" data-d="${d || 'asc'}" class="${cls || ''}">${label}${tip ? `<span class="qi" tabindex="0" data-tip="${esc(tip)}">?</span>` : ''}${sortArrow(BB_F, k)}</th>`;
     html += '<table class="cpt-table bb-table"><thead><tr>'+
-      H('product', 'Product')+
+      H('product', 'Product') + TIER_TH +
       H('has', 'Buy Box?', 'b-cpt c', 'Do we have the Add to Cart button right now.')+
       H('why', 'Why not', 'b-move', 'The most likely reason we don\u2019t have it: stock first, then another seller, then price.')+
       H('us', 'US stock', 'b-ours c', 'Available in US FBA. Under it: units on the way.', 'desc')+
@@ -5083,7 +5084,7 @@ function renderLc(){
   } else {
     const H = (k, label, cls, tip, d)=> `<th data-s="${k}" data-d="${d || 'asc'}" class="${cls || ''}">${label}${tip ? `<span class="qi" tabindex="0" data-tip="${esc(tip)}">?</span>` : ''}${sortArrow(LC_F, k)}</th>`;
     html += '<table class="cpt-table bb-table lc-table"><thead><tr>'+
-      H('product', 'Product')+
+      H('product', 'Product') + TIER_TH +
       H('stock', 'US stock', 'num', 'Available units in FBA, from BigQuery. Sort to see empty first.')+
       H('pct', 'Correct %', 'b-cpt c', 'Fields on Amazon that match Plytix, out of the fields we can compare.')+
       H('rb', 'Rules', 'b-gap c', 'Screened every day against the rulebook (Amazon rules and our brand guide), live copy and Plytix. Sort to bring problems to the top.')+
@@ -5280,7 +5281,7 @@ function renderLp(){
   } else {
     const H = (k, label, cls, tip, d)=> `<th data-s="${k}" data-d="${d || 'asc'}" class="${cls || ''}">${label}${tip ? `<span class="qi" tabindex="0" data-tip="${esc(tip)}">?</span>` : ''}${sortArrow(LP_F, k)}</th>`;
     html += '<table class="cpt-table bb-table lp-table"><thead><tr>'+
-      H('product', 'Product')+
+      H('product', 'Product') + TIER_TH +
       H('stock', 'US stock', 'num', 'Available units in FBA, from BigQuery. Sort to see empty first.')+
       H('set', 'List Price set?', 'b-cpt c', 'Does the Amazon listing have a List Price.')+
       H('live', 'List Price on Amazon', 'b-ours c', 'The List Price as Keepa reads it from Amazon.', 'desc')+
@@ -5589,7 +5590,7 @@ function renderCategory(){
     const H = (k, label, cls, tip, d)=> `<th data-s="${k}" data-d="${d || 'asc'}" class="${cls || ''}">${label}${tip ? `<span class="qi" tabindex="0" data-tip="${esc(tip)}">?</span>` : ''}${sortArrow(CG_F, k)}</th>`;
     const mk = CG_F.mk;
     html += '<table class="cpt-table bb-table lc-table cg-table"><thead><tr>'+
-      H('product', 'Product')+
+      H('product', 'Product') + TIER_TH +
       H('stock', CG_F.mk === 'CA' ? 'CA stock' : 'US stock', 'num', 'Available units in FBA, from BigQuery. Sort to see empty first.')+
       H('pct', 'Correct %', 'b-cpt c', 'Checks on Amazon that match the Master SKU sheet, out of the ones we can compare.')+
       H('rb', 'Rules', 'b-gap c', 'Screened every day against Amazon\u2019s category rules in the rulebook. Click the chip for details.')+
@@ -5939,8 +5940,13 @@ function stockNoRec(r, mk){
   const row = (r.usSku && ROWS.find(x=> x.sku === r.usSku)) || ROWS.find(x=> x.sku === r.sku) || ROWS.find(x=> x.asin === r.asin);
   return row ? !!row[mk === 'CA' ? 'caNoRec' : 'usNoRec'] : stockLoaded(mk);
 }
+/* Nov 11 (MJ): a sortable Tier column right after Product in every module table */
+const tierTd = r=> `<td class="c tiercol"><b>${esc((r && r.tier) || '\u2014')}</b></td>`;
+const tierRow = (html, r)=> String(html).replace(/<\/td>/, '</td>' + tierTd(r));
+const TIER_TH = `<th data-s="tier" data-d="asc" class="c">Tier</th>`;
 function grpMap(F, rows, ncols, trFn, needFn, needLabel, mk, headBtn){
   mk = mk || curMk();   // Nov 11: family header links follow the module's marketplace
+  ncols = ncols + 1; const trFn0 = trFn; trFn = r=> tierRow(trFn0(r), r);
   if(!F.group) return rows.map(trFn).join('');
   const order = [], g = {};
   rows.forEach(r=>{ const p = parentOf(r), k = p.psku || '\u0000solo'; if(!g[k]){ g[k] = {p, rows:[]}; order.push(k); } g[k].rows.push(r); });
@@ -6337,7 +6343,7 @@ function renderVariation(){
     const H = (k, label, cls, tip, d)=> `<th data-s="${k}" data-d="${d || 'asc'}" class="${cls || ''}">${label}${tip ? `<span class="qi" tabindex="0" data-tip="${esc(tip)}">?</span>` : ''}${sortArrow(VR_F, k)}</th>`;
     const mk = VR_F.mk;
     html += '<table class="cpt-table bb-table lc-table cg-table"><thead><tr>'+
-      H('product', 'Product')+
+      H('product', 'Product') + TIER_TH +
       H('stock', isCA ? 'CA stock' : 'US stock', 'num', 'Available units in FBA, from BigQuery. Sort to see empty first.')+
       H('pct', 'Correct %', 'b-cpt c', (VR_TV ? 'Family, theme and value checks' : 'The family check') + ' against the Master SKU sheet. Reviews shared is not in this number.')+
       VR_COLS.map(c=> H('f_' + c[0], c[1], 'b-gap c', c[0] === 'rev' ? 'Same review count as most siblings, as Keepa sees it. US only.' : 'Sort to bring problems to the top.')).join('')+
@@ -6347,7 +6353,7 @@ function renderVariation(){
       H('since', 'Last changed on Amazon', 'b-move', 'The day the family, theme or value last changed on Amazon, as Keepa saw it.', 'desc')+
       H('cs', 'Case', 'b-case', 'A case is for a child out of its family or reviews not shared. Wrong theme or value: flat file.')+
       '</tr></thead><tbody>'+
-      grpMap(VR_F, rows, 13, r=> `<tr class="row" tabindex="0" data-vr="${esc(r.asin)}">`+
+      grpMap(VR_F, rows, 10, r=> `<tr class="row" tabindex="0" data-vr="${esc(r.asin)}">`+
         `<td class="prod"><div class="p-name"><span class="dot" style="background:${r.nolive ? '#94a3b8' : r.fullOk ? '#1f9d55' : '#d64545'}"></span>${esc(String(r.name).slice(0, 60))}</div>`+
           `<div class="p-id"><span>SKU</span>${skuL(r.sku, mk)}${cpy(r.sku)}</div><div class="p-id"><span>ASIN</span>${asinL(r.asin, mk)}${cpy(r.asin)}</div>`+
           `${r.tier ? `<span class="p-size">Tier ${esc(r.tier)}</span>` : ''}${r.risk ? `<span class="p-size" data-tip="${esc(r.risk)}" style="background:#fff4e0;color:#8a5a00">Theme may split reviews</span>` : ''}${r.rbA.length ? `<span class="p-size" data-tip="${esc(r.rbA.map(h=> h.rule.text + ' ' + h.corr).join(' \u2022 '))}" style="background:#fde8e8;color:#9b1c1c">Breaks a variation rule</span>` : ''}</td>`+
@@ -6790,7 +6796,7 @@ function renderBsr(){
   } else {
     const H = (k, label, cls, tip, d)=> `<th data-s="${k}" data-d="${d || 'asc'}" class="${cls || ''}">${label}${tip ? `<span class="qi" tabindex="0" data-tip="${esc(tip)}">?</span>` : ''}${sortArrow(BS_F, k)}</th>`;
     html += '<table class="cpt-table bb-table lc-table cg-table"><thead><tr>'+
-      H('product', 'Product')+
+      H('product', 'Product') + TIER_TH +
       // The three MJ watches, side by side (Oct 27)
       H('cur', 'Star rating', 'b-cpt c', 'The star rating Amazon shows, from Keepa. Amber = differs from the family.')+
       H('rev', 'Ratings', 'b-cpt c', 'Ratings count Amazon shows. Variation families share one count when reviews are pooled. Amber = differs from the family.', 'desc')+
@@ -6805,7 +6811,7 @@ function renderBsr(){
       H('rb', 'Rules', 'b-gap c', 'Screened every day against the rulebook.')+
       '<th class="b-case">Case</th>'+
       '</tr></thead><tbody>'+
-      grpMap(BS_F, rows, 14, r=> `<tr class="row" tabindex="0" data-bs="${esc(r.asin)}">`+
+      grpMap(BS_F, rows, 13, r=> `<tr class="row" tabindex="0" data-bs="${esc(r.asin)}">`+
         `<td class="prod"><div class="p-name"><span class="dot" style="background:${r.nolive ? '#94a3b8' : r.flags.some(f=> f !== 'sync') ? '#d64545' : r.flags.length ? '#d99a00' : '#1f9d55'}"></span>${esc(String(r.name).slice(0, 60))}</div>`+
           `<div class="p-id"><span>SKU</span>${skuL(r.sku, mk)}${cpy(r.sku)}</div><div class="p-id"><span>ASIN</span>${asinL(r.asin, mk)}${cpy(r.asin)}</div>`+
           `${r.tier ? `<span class="p-size">Tier ${esc(r.tier)}</span>` : ''}</td>`+
@@ -7548,6 +7554,7 @@ function renderMeasurements(){
   else {
     const chip = (s, tip)=> s === 'old' ? `<span class="lcchip lc-small" data-tip="${esc(MS_OLD_TIP)}">Old Plytix name</span>` : s === 'ok' ? '<span class="lcchip lc-ok">OK</span>' : s === 'diff' ? `<span class="lcchip lc-bad"${tip ? ` data-tip="${esc(tip)}"` : ''}>Differs</span>` : '<span class="lcchip lc-gray">\u2014</span>';
     const H = (k, label, cls)=> `<th data-s="${k}" data-d="asc" class="${cls || ''}">${label}${sortArrow(MS_F, k)}</th>`;
+    const trT = r=> tierRow(tr(r), r);   // Tier column (Nov 11)
     const tr = r=> `<tr class="row" tabindex="0" data-ms="${esc(r.asin)}">`+
       `<td class="prod"><div class="p-name">${esc(String(r.name).slice(0, 56))}</div><div class="p-id"><span>SKU</span>${skuL(r.sku, mk)}${cpy(r.sku)}</div><div class="p-id"><span>ASIN</span>${asinL(r.asin, mk)}${cpy(r.asin)}</div>`+
         (r.tier ? `<span class="p-size">Tier ${esc(r.tier)}</span>` : '') + '</td>'+ stockTd(r, mk) +
@@ -7558,15 +7565,15 @@ function renderMeasurements(){
       `<td class="c" style="font-size:.8rem">${esc(r.px.tier || '\u2014')}<div class="mut">${esc(r.fee && r.fee.tier ? msTierName(r.fee.tier, r.mk) : '\u2014')}</div>${chip(r.st.tier)}</td>`+
       `<td class="c">${chip(r.st.copy, r.copyBad.join(' \u2022 '))}</td>`+
       `<td class="c">${chip(r.st.plytix, r.pxBad.join(' \u2022 '))}</td></tr>`;
-    html += '<table class="cpt-table lc-table"><thead><tr>'+ H('product','Product') + `<th class="num">${mk} stock</th>` + '<th>Plytix size / weight</th><th>Amazon size / weight (Keepa)</th><th class="c">Size, weight</th>'+
+    html += '<table class="cpt-table lc-table"><thead><tr>'+ H('product','Product') + TIER_TH + `<th class="num">${mk} stock</th>` + '<th>Plytix size / weight</th><th>Amazon size / weight (Keepa)</th><th class="c">Size, weight</th>'+
       '<th class="c">Packaged weight Plytix / Amazon</th><th class="c">Size tier Plytix / Fee Preview</th>' + H('bad','Copy','c') + '<th class="c">Plytix</th></tr></thead><tbody>';
     if(MS_F.group){
       const g = {}; rows.forEach(r=> (g[r.psku || '~'] = g[r.psku || '~'] || []).push(r));   // by Parent SKU (Oct 30)
       Object.keys(g).sort((a, b)=> a === '~' ? 1 : b === '~' ? -1 : (g[a][0].pname || a).localeCompare(g[b][0].pname || b)).forEach(k=>{
         const rs = g[k];
-        html += `<tr class="gh"><td colspan="9"><b>${esc(k === '~' ? 'No parent' : (rs[0].pname || k))}</b> <span class="mut">${k === '~' ? '' : esc(k) + ' \u00b7 '}${rs.length} listing${rs.length > 1 ? 's' : ''}${rs.some(r=> r.bad.length) ? ', ' + rs.filter(r=> r.bad.length).length + ' with a difference' : ''}</span></td></tr>` + rs.map(tr).join('');
+        html += `<tr class="gh"><td colspan="10"><b>${esc(k === '~' ? 'No parent' : (rs[0].pname || k))}</b> <span class="mut">${k === '~' ? '' : esc(k) + ' \u00b7 '}${rs.length} listing${rs.length > 1 ? 's' : ''}${rs.some(r=> r.bad.length) ? ', ' + rs.filter(r=> r.bad.length).length + ' with a difference' : ''}</span></td></tr>` + rs.map(trT).join('');
       });
-    } else html += rows.map(tr).join('');
+    } else html += rows.map(trT).join('');
     html += '</tbody></table><p class="mut" style="font-size:.78rem">Plytix is the source of truth and is never changed to match Amazon. The % counts the catalog share: Plytix filled in and consistent, and Amazon size, weight and the sizes in the copy matching Plytix. Package weight and size tier are Amazon\u2019s warehouse measurements, for supply chain, and not in the %. Same within 0.5 in or 5% per side for sizes (1.3 cm on CA), 5% for weights. The copy allows rounding (30x17 for 30 x 16.75). Out of stock is not in the %.</p>';
   }
   v.innerHTML = html;
