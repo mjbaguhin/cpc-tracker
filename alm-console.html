@@ -63,7 +63,7 @@ header h1{
 #meta{font-size:.7rem;color:#93a0b0;letter-spacing:.02em}
 #meta b{color:#ccd6e2;font-weight:600}
 
-#toggle,#fs,#hRefresh,#hReset,#gfClr,#hStock button,#homeBtn,#quickCat,#casesBtn,#catalogBtn,#cptBtn,#bbBtn,#lcBtn,#lpBtn,#vrBtn,#bsBtn,#prBtn,#msBtn,#rvBtn,#stBtn{
+#toggle,#fs,#hRefresh,#hReset,#gfClr,#hStock button,#homeBtn,#quickCat,#casesBtn,#catalogBtn,#cptBtn,#bbBtn,#lcBtn,#lpBtn,#vrBtn,#bsBtn,#prBtn,#xcBtn,#msBtn,#rvBtn,#stBtn{
   font-size:.74rem;padding:.24rem .6rem;
   background:transparent;color:#fff;border:1px solid #3a4652;
 }
@@ -112,12 +112,12 @@ td.cgtdp{min-width:14rem;max-width:22rem}
 }
 #homeBtn[aria-pressed="true"],#quickCat[aria-pressed="true"],
 #casesBtn[aria-pressed="true"],
-#cptBtn[aria-pressed="true"],#bbBtn[aria-pressed="true"],#lcBtn[aria-pressed="true"],#lpBtn[aria-pressed="true"],#vrBtn[aria-pressed="true"],#bsBtn[aria-pressed="true"],#prBtn[aria-pressed="true"],#msBtn[aria-pressed="true"],#rvBtn[aria-pressed="true"],#stBtn[aria-pressed="true"],
+#cptBtn[aria-pressed="true"],#bbBtn[aria-pressed="true"],#lcBtn[aria-pressed="true"],#lpBtn[aria-pressed="true"],#vrBtn[aria-pressed="true"],#bsBtn[aria-pressed="true"],#prBtn[aria-pressed="true"],#xcBtn[aria-pressed="true"],#msBtn[aria-pressed="true"],#rvBtn[aria-pressed="true"],#stBtn[aria-pressed="true"],
 #catalogBtn[aria-pressed="true"]{
   background:#2f4a6d;border-color:#4a6fa5;
 }
-#toggle:hover,#fs:hover,#hRefresh:hover,#hReset:hover,#gfClr:hover,#hStock button:hover,#homeBtn:hover,#quickCat:hover,#casesBtn:hover,#catalogBtn:hover,#cptBtn:hover,#bbBtn:hover,#lcBtn:hover,#lpBtn:hover,#vrBtn:hover,#bsBtn:hover,#prBtn:hover,#msBtn:hover,#rvBtn:hover,#stBtn:hover{background:#1c232b}
-#toggle .badge,#homeBtn .badge,#quickCat .badge,#casesBtn .badge,#cptBtn .badge,#bbBtn .badge,#lcBtn .badge,#lpBtn .badge,#vrBtn .badge,#bsBtn .badge,#prBtn .badge,#msBtn .badge,#rvBtn .badge,#stBtn .badge{
+#toggle:hover,#fs:hover,#hRefresh:hover,#hReset:hover,#gfClr:hover,#hStock button:hover,#homeBtn:hover,#quickCat:hover,#casesBtn:hover,#catalogBtn:hover,#cptBtn:hover,#bbBtn:hover,#lcBtn:hover,#lpBtn:hover,#vrBtn:hover,#bsBtn:hover,#prBtn:hover,#xcBtn:hover,#msBtn:hover,#rvBtn:hover,#stBtn:hover{background:#1c232b}
+#toggle .badge,#homeBtn .badge,#quickCat .badge,#casesBtn .badge,#cptBtn .badge,#bbBtn .badge,#lcBtn .badge,#lpBtn .badge,#vrBtn .badge,#bsBtn .badge,#prBtn .badge,#xcBtn .badge,#msBtn .badge,#rvBtn .badge,#stBtn .badge{
   display:inline-block;margin-left:.35rem;padding:0 .32rem;
   background:#a83a26;border-radius:8px;font-size:.68rem;font-weight:700;
 }
@@ -653,10 +653,10 @@ header h1{font-size:.95rem;letter-spacing:.02em;text-transform:none;font-weight:
 header h1::after{content:"";display:inline-block;width:.42rem;height:.42rem;border-radius:50%;
   background:#3fbf7f;margin-left:.45rem;vertical-align:middle}
 #meta{font-family:ui-monospace,"SF Mono",Menlo,Consolas,monospace;font-size:.72rem}
-#toggle,#fs,#hRefresh,#hReset,#gfClr,#hStock button,#homeBtn,#quickCat,#casesBtn,#catalogBtn,#cptBtn,#bbBtn,#lcBtn,#lpBtn,#vrBtn,#bsBtn,#prBtn,#msBtn,#rvBtn,#stBtn{
+#toggle,#fs,#hRefresh,#hReset,#gfClr,#hStock button,#homeBtn,#quickCat,#casesBtn,#catalogBtn,#cptBtn,#bbBtn,#lcBtn,#lpBtn,#vrBtn,#bsBtn,#prBtn,#xcBtn,#msBtn,#rvBtn,#stBtn{
   font-size:.8rem;padding:.38rem .8rem;border-radius:7px;border-color:var(--night-line);color:#dfe5ee}
 #homeBtn[aria-pressed="true"],#quickCat[aria-pressed="true"],#casesBtn[aria-pressed="true"],
-#catalogBtn[aria-pressed="true"],#cptBtn[aria-pressed="true"],#bbBtn[aria-pressed="true"],#lcBtn[aria-pressed="true"],#lpBtn[aria-pressed="true"],#vrBtn[aria-pressed="true"],#bsBtn[aria-pressed="true"],#prBtn[aria-pressed="true"],#msBtn[aria-pressed="true"],#rvBtn[aria-pressed="true"],#stBtn[aria-pressed="true"]{background:#2c4f7c;border-color:#4a76b0;color:#fff}
+#catalogBtn[aria-pressed="true"],#cptBtn[aria-pressed="true"],#bbBtn[aria-pressed="true"],#lcBtn[aria-pressed="true"],#lpBtn[aria-pressed="true"],#vrBtn[aria-pressed="true"],#bsBtn[aria-pressed="true"],#prBtn[aria-pressed="true"],#xcBtn[aria-pressed="true"],#msBtn[aria-pressed="true"],#rvBtn[aria-pressed="true"],#stBtn[aria-pressed="true"]{background:#2c4f7c;border-color:#4a76b0;color:#fff}
 
 /* overview band */
 #ov{background:var(--night);color:#e8edf3;padding:1.05rem 1.25rem 1.15rem;flex:0 0 auto}
@@ -959,14 +959,14 @@ a.idl:hover{color:var(--accent);border-bottom-style:solid}
   <button id="casesBtn" hidden>Cases</button>
   <!-- Modules grouped by how MJ checks them each day (Oct 26) -->
   <nav id="navGroups" aria-label="Modules">
-    <div class="ng"><div class="ng-l">Today</div><div class="ng-b"><button id="catalogBtn">Catalog</button><button id="prBtn">Master SKU</button><button id="tkBtn">My tasks</button></div></div>
+    <div class="ng"><div class="ng-l">Today</div><div class="ng-b"><button id="catalogBtn">Catalog</button><button id="prBtn">Master SKU</button><button id="xcBtn">Cross Channel</button><button id="tkBtn">My tasks</button></div></div>
     <div class="ng"><div class="ng-l">Price and Buy Box <span class="ng-t" data-ngt="price"></span></div>
       <div class="ng-b" data-ng="price"><button id="cptBtn">CPT tracker</button><button id="bbBtn">Buy Box</button><button id="lpBtn">List Price</button><button id="stBtn">Strike-through</button></div></div>
     <div class="ng"><div class="ng-l">Listing health <span class="ng-t" data-ngt="listing"></span></div>
       <div class="ng-b" data-ng="listing"><button id="lcBtn">Listing Copy</button><button id="quickCat">Category</button><button id="vrBtn">Variation</button><button id="msBtn">Measurements</button><button id="rvBtn">Listing Review</button></div></div>
     <div class="ng"><div class="ng-l">Performance <span class="ng-t" data-ngt="perf"></span></div>
       <div class="ng-b" data-ng="perf"><button id="bsBtn">BSR</button></div></div>
-    <div id="mSelWrap"><label for="mSel">Module</label><select id="mSel"><optgroup label="Today"><option value="catalogBtn">Catalog</option><option value="prBtn">Master SKU</option><option value="tkBtn">My tasks</option></optgroup><optgroup label="Price and Buy Box"><option value="cptBtn">CPT tracker</option><option value="bbBtn">Buy Box</option><option value="lpBtn">List Price</option><option value="stBtn">Strike-through</option></optgroup><optgroup label="Listing health"><option value="lcBtn">Listing Copy</option><option value="quickCat">Category</option><option value="vrBtn">Variation</option><option value="msBtn">Measurements</option><option value="rvBtn">Listing Review</option></optgroup><optgroup label="Performance"><option value="bsBtn">BSR</option></optgroup></select></div>
+    <div id="mSelWrap"><label for="mSel">Module</label><select id="mSel"><optgroup label="Today"><option value="catalogBtn">Catalog</option><option value="prBtn">Master SKU</option><option value="xcBtn">Cross Channel</option><option value="tkBtn">My tasks</option></optgroup><optgroup label="Price and Buy Box"><option value="cptBtn">CPT tracker</option><option value="bbBtn">Buy Box</option><option value="lpBtn">List Price</option><option value="stBtn">Strike-through</option></optgroup><optgroup label="Listing health"><option value="lcBtn">Listing Copy</option><option value="quickCat">Category</option><option value="vrBtn">Variation</option><option value="msBtn">Measurements</option><option value="rvBtn">Listing Review</option></optgroup><optgroup label="Performance"><option value="bsBtn">BSR</option></optgroup></select></div>
     <div class="ng ng-tools"><div class="ng-l">View</div><div class="ng-b"><button id="toggle" aria-expanded="true">Filters</button><span id="hStock" role="group" aria-label="Stock"><span class="stk-l">Stock</span><button data-stk="all" title="Every listing">All</button><button data-stk="in" title="Only listings with FBA stock">In stock</button><button data-stk="oos" title="Only listings with 0 FBA stock">Out of stock</button></span><span class="gf-l" id="gfTierWrap">Tier <button id="gfTierBtn" type="button" aria-haspopup="true" aria-expanded="false" title="Pick one or more tiers">All ▾</button><span id="gfTierPop" hidden><label><input type="checkbox" value="A"> Tier A</label><label><input type="checkbox" value="B"> Tier B</label><label><input type="checkbox" value="C"> Tier C</label><label><input type="checkbox" value="X"> Tier X</label><label><input type="checkbox" value="N"> Tier N</label><button type="button" id="gfTierAll">All tiers</button></span></span><span class="gf-l" id="gfSupWrap">Supplier <button id="gfSupBtn" type="button" aria-haspopup="true" aria-expanded="false" title="Pick one or more suppliers">All ▾</button><span id="gfSupPop" hidden><span id="gfSupList"></span><button type="button" id="gfSupAll">All suppliers</button></span></span><label class="gf-l">Brand <select id="gfBrand"><option value="">All</option><option>Barnyard Designs</option><option>Seedboy</option></select></label><input id="gfQ" type="search" placeholder="Search SKU, ASIN, product or family" autocomplete="off"><button id="gfClr" title="Clear Tier, Brand, Search, Stock and this module’s own filters. Keeps the sort, grouping and marketplace.">Clear filters</button><button id="hRefresh" title="Reload all data now. Reads the published files only: no scripts run, no Keepa tokens.">↻ Refresh</button><button id="hReset" title="Put this module’s filters, search, sort and grouping back to their defaults. Keeps the marketplace and all saved checks and marks.">Reset view</button><button id="fs" title="Fullscreen">Full screen</button><button id="scSet" title="Make SKU links open the right marketplace in Seller Central. Saved in this browser only, never published.">SC links</button></div></div>
   </nav>
 </header>
@@ -1075,6 +1075,15 @@ const CPT_SRC = 'https://raw.githubusercontent.com/mjbaguhin/cpc-tracker/main/cp
 // Other brands' coir mats in our sizes: Amazon from Keepa (weekly), plus the
 // Outside Found tab (Walmart, Wayfair, Home Depot and so on, found by the Cowork CPT Reference Hunt, Nov 6).
 const SIM_SRC = 'https://raw.githubusercontent.com/mjbaguhin/cpc-tracker/main/similar.json';
+// Stranded FBA inventory from Amazon's FBA inventory report in BigQuery (Nov 11)
+const STR_SRC = 'https://raw.githubusercontent.com/mjbaguhin/cpc-tracker/main/stranded.json';
+let STR = {}, STR_META = null;
+function buildStr(j){ STR = {}; ((j && j.rows) || []).forEach(r=>{ if(r && r.sku) STR[(r.mk || 'US') + '|' + r.sku] = r; }); STR_META = {updated: (j && j.updated) || '', col: j ? j.column !== false : null}; }
+function strandedOf(sku, mk){ return !!STR[(mkOf(mk) === 'CA' ? 'CA' : 'US') + '|' + sku]; }
+// Shopify storefront products, both stores (Nov 11)
+const SH_SRC = 'https://raw.githubusercontent.com/mjbaguhin/cpc-tracker/main/shopify.json';
+let SH = {}, SH_META = null;
+function buildSh(j){ SH = {}; ((j && j.rows) || []).forEach(r=>{ if(r && r.sku) SH[r.sku] = r; }); SH_META = {updated: (j && j.updated) || '', stores: (j && j.stores) || []}; }
 // Walmart Seller Center items, read by the Cowork ALM Morning Run (Nov 11)
 const WM_SRC = 'https://raw.githubusercontent.com/mjbaguhin/cpc-tracker/main/walmart.json';
 let WM = {}, WM_META = null;
@@ -1219,8 +1228,10 @@ async function load(fresh){
   grab(RV_SRC, 'json', fresh)
     .then(j => { buildRv(j); if(S.view === 'rv' || S.view === 'st') render(); else chrome(); })
     .catch(e => { RV_ERR = e.message; if(S.view === 'rv' || S.view === 'st') render(); });
+  grab(STR_SRC, 'json', fresh).then(j=>{ buildStr(j); if(S.view === 'bb') render(); }).catch(()=>{ STR = {}; STR_META = null; });
+  grab(SH_SRC, 'json', fresh).then(j=>{ buildSh(j); if(S.view === 'xc') render(); }).catch(()=>{ SH = {}; SH_META = null; });
   grab(WM_SRC, 'json', fresh)
-    .then(j => { buildWm(j); if(S.view === 'st') render(); })
+    .then(j => { buildWm(j); if(S.view === 'st' || S.view === 'xc') render(); })
     .catch(()=> { WM = {}; WM_META = null; });
   grab(SIG_SRC, 'json', fresh)
     .then(j => { SIG = j || null; if(S.view === 'category' || S.view === 'catalog' || S.view === 'lc') render(); })
@@ -4123,6 +4134,8 @@ const BB_WHY = {
   amazon:  {t:'Another seller has it (Amazon.com)', c:'bad'},
   seller:  {t:'Another seller has it', c:'bad'},
   cpt:     {t:'Our price is above the CPT', c:'bad'},
+  stranded:{t:'Stranded in FBA', c:'bad'},
+  likely:  {t:'Likely stranded: stock but no offer', c:'bad'},
   nooffer: {t:'Our offer is not showing', c:'bad'},
   unknown: {t:'Reason not clear', c:'warn'}
 };
@@ -4157,12 +4170,16 @@ function bbRows(){
     r.has = h.cls === 'us' || ((h.cls === 'amazon' || h.cls === 'other') && samePrice && b.win && b.win.d7 >= 50);
     r.shared = r.has && h.cls !== 'us';
     // Why not, most likely cause first
+    // Nov 11: stranded first (Amazon's FBA report says so), then stock with no offer = likely stranded
+    const stk = MK2 === 'CA' ? r.ca : r.us;
+    r.stranded = strandedOf(r.sku, MK2);
     r.why = r.has ? '' :
+      r.stranded ? 'stranded' :
       ((MK2 === 'CA' ? r.ca : r.us) === 0 || (ours === null && (MK2 === 'CA' ? r.ca : r.us) !== null && (MK2 === 'CA' ? r.ca : r.us) <= 0)) ? 'oos' :
       h.cls === 'amazon' ? 'amazon' :
       h.cls === 'other' ? 'seller' :
       r.cptOver ? 'cpt' :
-      ours === null ? 'nooffer' : 'unknown';
+      ours === null ? (stk !== null && stk > 0 ? 'likely' : 'nooffer') : 'unknown';
     // Other New sellers on the listing, in plain words
     const others = [];
     if(r.amzOn) others.push(`Amazon.com ${usd(b.amazon.price)}${b.amazon.stock && b.amazon.stock !== 'in stock' ? ' (' + b.amazon.stock + ')' : ''}`);
@@ -4182,6 +4199,8 @@ function bbNext(r){
     amazon:  'Check who it is, then flag it to Jack.',
     seller:  'We have no resellers. Check who it is, then flag it to Jack.',
     cpt:     'Open it in the CPT tracker.',
+    stranded: 'Seller Central, Inventory, Fix stranded inventory. Until fixed, Amazon shows a sibling from the family instead.',
+    likely:  'Has stock but no offer: check Fix stranded inventory and the listing status in Seller Central.',
     nooffer: 'Check the listing status in Seller Central.',
     unknown: 'Check Featured Offer eligibility in Seller Central.'
   }[r.why] || '';
@@ -4221,6 +4240,7 @@ function renderBb(){
   if(BB_F.show === 'oos')    rows = by('oos');
   if(BB_F.show === 'seller') rows = no.filter(r=> r.why === 'amazon' || r.why === 'seller');
   if(BB_F.show === 'other')  rows = no.filter(r=> ['cpt','nooffer','unknown'].indexOf(r.why) !== -1);
+  if(BB_F.show === 'stranded') rows = no.filter(r=> r.why === 'stranded' || r.why === 'likely');
   if(BB_F.show === 'amz')    rows = amzOn;
   if(BB_F.show === 'rb')     rows = all.filter(r=> (r.rb || []).length);
   if(BB_F.tier) rows = rows.filter(r=> (r.tier || 'N') === BB_F.tier);
@@ -4229,7 +4249,7 @@ function renderBb(){
   rows = BB_F.sort && BB_SORT[BB_F.sort] ? sortBy(rows, BB_SORT[BB_F.sort], BB_F.dir)
        : sortBy(rows, r=> (r.has ? 1000 : Object.keys(BB_WHY).indexOf(r.why) * 10) + (TIER_RANK[r.tier] !== undefined ? TIER_RANK[r.tier] : 5), 1);
 
-  let tileShow = ['all', 'yes', 'no', 'oos', 'seller', 'other', 'amz'], tileN = 0;
+  let tileShow = ['all', 'yes', 'no', 'oos', 'stranded', 'seller', 'other', 'amz'], tileN = 0;
   const tile = (k, val, cls, note)=>{ const f = tileShow[tileN++] || 'all';
     return `<div class="cpt-tile bbtile${BB_F.show === f ? ' on' : ''}" role="button" tabindex="0" data-show="${f}" title="Show these in the table"><div class="k">${k}</div><div class="v ${cls || ''}">${val}</div><div class="n">${note || '&nbsp;'}</div></div>`; };
   const list = a=> esc(a.map(r=> r.sku).slice(0,3).join(', ')) + (a.length > 3 ? '\u2026' : '');
@@ -4251,6 +4271,8 @@ function renderBb(){
            all.length ? Math.round(yes.length / all.length * 100) + '% of listings' : '')+
       tile('We don\u2019t have it', no.length, no.length ? 'bad' : 'good', no.length ? 'Reasons in the next tiles' : 'All good')+
       tile('Because out of stock', by('oos').length, by('oos').length ? 'bad' : 'good', by('oos').length ? list(by('oos')) : 'None')+
+      (()=>{ const st = by('stranded').concat(by('likely'));
+             return tile('Stranded', st.length, st.length ? 'bad' : 'good', st.length ? list(st) + (by('likely').length ? ` \u00b7 ${by('likely').length} likely (stock, no offer)` : '') : (STR_META && STR_META.col === false ? 'Not in the FBA data; likely ones still show' : 'None')); })()+
       tile('Because another seller has it', by('amazon').length + by('seller').length, (by('amazon').length + by('seller').length) ? 'bad' : 'good',
            (by('amazon').length + by('seller').length) ? list(by('amazon').concat(by('seller'))) : 'None')+
       tile('Other reason', oth.length, oth.length ? 'warn' : 'good', oth.length ? list(oth) : 'None')+
@@ -4262,6 +4284,7 @@ function renderBb(){
     mk2Note('No CA stock yet')+
     '<div class="cpt-tools">' + mk2Seg() + '<div class="seg" id="bbSeg">'+
       [['all','All ' + all.length], ['no','No Buy Box ' + no.length], ['oos','Out of stock ' + by('oos').length],
+       ['stranded','Stranded ' + (by('stranded').length + by('likely').length)],
        ['seller','Another seller ' + (by('amazon').length + by('seller').length)], ['other','Other reason ' + oth.length],
        ['amz','Other sellers on listing ' + amzOn.length]]
         .map(b=> `<button data-show="${b[0]}" aria-pressed="${BB_F.show === b[0]}">${b[1]}</button>`).join('')+
@@ -4351,6 +4374,7 @@ function bbSlack(no){
     ['oos', 'Out of stock'],
     ['amazon', 'Another seller has it'], ['seller', 'Another seller has it'],
     ['cpt', 'CPT issue (our price is above Amazon\u2019s price limit)'],
+    ['stranded', 'Stranded in FBA'], ['likely', 'Likely stranded (stock but no offer)'],
     ['nooffer', 'Our offer is not showing'], ['unknown', 'No Buy Box, reason not clear']
   ];
   const lines = [], done = {};
@@ -7022,12 +7046,86 @@ function prRows(){
     });
   });
 }
-const PR_SORT = { product: r=> r.name, sku: r=> r.mkSku, brand: r=> r.brand || '', status: r=> r.st || '', ca: r=> r.caStatus || '', tier: r=> (TIER_RANK[r.tier] !== undefined ? TIER_RANK[r.tier] : 9),
+const PR_SORT = { upc: r=> r.upc || '', product: r=> r.name, sku: r=> r.mkSku, brand: r=> r.brand || '', status: r=> r.st || '', ca: r=> r.caStatus || '', tier: r=> (TIER_RANK[r.tier] !== undefined ? TIER_RANK[r.tier] : 9),
   fam: r=> r.fam || '', sale: r=> prNum(r.price), list: r=> prNum(r.list), us: r=> PR_F.mk === 'CA' ? r.ca : r.us, cast: r=> r.ca, copy: r=> r.copy, star: r=> r.star, chk: r=> -r.chk.length, active: r=> r.active || '' };
 function prOpts(all, k){ const m = {}; all.forEach(r=>{ String(r[k] || '').split(/\s*,\s*/).filter(Boolean).forEach(v=> m[v] = (m[v] || 0) + 1); }); return Object.keys(m).sort().map(v=> [v, m[v]]); }
 function prSel(id, label, opts, cur){
   return `<label class="mut" style="font-size:.75rem">${esc(label)} <select id="${id}" style="max-width:11rem"><option value="">All</option>` +
     opts.map(o=> `<option value="${esc(o[0])}"${cur === o[0] ? ' selected' : ''}>${esc(o[0])} (${o[1]})</option>`).join('') + '</select></label>';
+}
+/* CROSS CHANNEL (MJ, Nov 11): every active Amazon US listing, and whether it is live on
+   Walmart (Morning Run, daily) and Shopify (storefront, daily). Tier X shows but is not
+   counted in the %. Replaces the monthly side-by-side check. */
+const XC_F = {show:'all', tier:'', q:'', sort:'', dir:1};
+function xcWm(sku){
+  if(!wmFresh()) return {s:'na', t:'Walmart not read in 3 days'};
+  const w = WM[sku];
+  if(!w) return WM_META.count >= 50 ? {s:'miss', t:'Not on Walmart'} : {s:'na', t:'Not in the last read (partial)'};
+  if(w.status === 'Published') return {s:'ok', t:'Published', p:w.price};
+  if(w.status === 'Unpublished') return {s:'bad', t:'Unpublished' + (/pric/i.test(w.reason || '') ? ': Pricing Rule' : w.reason ? ': ' + w.reason.slice(0, 50) : ''), p:w.price};
+  return {s:'bad', t:w.status || 'Unknown', p:w.price};
+}
+function xcSh(sku, brand){
+  if(!SH_META) return {s:'na', t:'Shopify not read'};
+  const st = (SH_META.stores || []).find(x=> x.brand === brand);
+  if(!st || !st.ok) return {s:'na', t:`${brand} store not read`};
+  const r = SH[sku];
+  if(!r) return {s:'miss', t:'Not live on Shopify'};
+  return r.available === false ? {s:'warn', t:'Live, sold out', p:r.price} : {s:'ok', t:'Live', p:r.price};
+}
+function xcRows(){
+  return (PR || []).filter(p=> p.status === 'Active').map(p=>{
+    const w = xcWm(p.sku), h = xcSh(p.sku, p.brand);
+    const gap = w.s === 'miss' || w.s === 'bad' || h.s === 'miss';
+    return {sku:p.sku, asin:p.asin, name:p.name || p.sku, brand:p.brand, tier:p.tier || '', amz:p.sale || p.list || null, list:p.list || null, w, h,
+      full: w.s === 'ok' && (h.s === 'ok' || h.s === 'warn'), gap, unknown: w.s === 'na' || h.s === 'na'};
+  });
+}
+function xcScore(){ const c = xcRows().filter(r=> r.tier !== 'X' && !r.unknown); return c.length ? pct1(c.filter(r=> r.full).length, c.length) : null; }
+function renderXc(){
+  document.getElementById('msg').hidden = true;
+  document.getElementById('bar').innerHTML = '';
+  const v = document.getElementById('cptView'), all = xcRows();
+  const list = a=> esc(a.map(r=> r.sku).slice(0,3).join(', ')) + (a.length > 3 ? '\u2026' : '');
+  const nx = all.filter(r=> r.tier !== 'X');
+  const sc = xcScore();
+  const mW = r=> r.w.s === 'miss', bW = r=> r.w.s === 'bad', mS = r=> r.h.s === 'miss';
+  const pick = {all: ()=> true, wmiss: mW, wbad: bW, smiss: mS, full: r=> r.full};
+  let rows = all.filter(pick[XC_F.show] || pick.all);
+  if(XC_F.tier) rows = rows.filter(r=> r.tier === XC_F.tier);
+  if(XC_F.q){ const q = XC_F.q.toLowerCase(); rows = rows.filter(r=> (r.sku + ' ' + r.asin + ' ' + r.name).toLowerCase().indexOf(q) !== -1); }
+  const SORT = {tier: r=> (TIER_RANK[r.tier] !== undefined ? TIER_RANK[r.tier] : 9), product: r=> r.name, amz: r=> r.amz, wm: r=> ['miss','bad','na','ok'].indexOf(r.w.s), sh: r=> ['miss','na','warn','ok'].indexOf(r.h.s)};
+  rows = XC_F.sort && SORT[XC_F.sort] ? sortBy(rows, SORT[XC_F.sort], XC_F.dir) : sortBy(rows, r=> (r.gap ? 0 : 100) + (r.tier === 'X' ? 50 : 0) + (TIER_RANK[r.tier] !== undefined ? TIER_RANK[r.tier] : 9), 1);
+  const n = (f, list)=> (list || nx).filter(f).length, nX = f=> all.filter(r=> r.tier === 'X').filter(f).length;
+  const tile = (k, val, cls, note, show)=> `<div class="cpt-tile bbtile${XC_F.show === show ? ' on' : ''}" role="button" tabindex="0" data-xc="${show}"><div class="k">${k}</div><div class="v ${cls}">${val}</div><div class="n">${note}</div></div>`;
+  const chip = (o)=> `<span class="lcchip ${o.s === 'ok' ? 'lc-ok' : o.s === 'warn' ? 'lc-small' : o.s === 'na' ? 'lc-gray' : 'lc-bad'}" style="white-space:normal">${esc(o.t)}</span>` + (o.p ? ` <span class="mut">${usd(o.p)}</span>` : '');
+  const H = (k, label, cls)=> `<th data-s="${k}" data-d="asc" class="${cls || ''}">${label}${sortArrow(XC_F, k)}</th>`;
+  let html = '<section class="cpt-top"><div class="cpt-head"><h2>Cross Channel</h2><span class="sub">Active Amazon US listings on Walmart and Shopify</span>'+
+      (WM_META && WM_META.read ? `<span class="sub">Walmart read ${esc(WM_META.read)}</span>` : '<span class="sub">Walmart not read yet</span>')+
+      (SH_META && SH_META.updated ? `<span class="sub">Shopify read ${esc(SH_META.updated)} ET</span>` : '<span class="sub">Shopify not read yet</span>')+
+    '</div><div class="cpt-tiles">'+
+      tile('Listed on all channels', sc === null ? '\u2014' : sc + '%', sc === null ? '' : sc >= 98 ? 'good' : sc >= 90 ? 'warn' : 'bad', `${n(r=> r.full)} of ${nx.filter(r=> !r.unknown).length} \u00b7 Tier X not counted`, 'full')+
+      tile('Missing on Walmart', n(mW), n(mW) ? 'bad' : 'good', n(mW) ? list(nx.filter(mW)) + (nX(mW) ? ` \u00b7 +${nX(mW)} Tier X` : '') : (nX(mW) ? `None \u00b7 ${nX(mW)} Tier X` : 'None'), 'wmiss')+
+      tile('Unpublished or error on Walmart', n(bW, all), n(bW, all) ? 'bad' : 'good', n(bW, all) ? list(all.filter(bW)) : 'None', 'wbad')+
+      tile('Not live on Shopify', n(mS), n(mS) ? 'warn' : 'good', n(mS) ? list(nx.filter(mS)) + (nX(mS) ? ` \u00b7 +${nX(mS)} Tier X` : '') : (nX(mS) ? `None \u00b7 ${nX(mS)} Tier X` : 'None'), 'smiss')+
+    '</div></section>'+
+    '<div class="cpt-tools"><div class="seg" id="xcTier">'+ ['', 'A', 'B', 'N', 'C', 'X'].map(t=> `<button data-t="${t}" aria-pressed="${XC_F.tier === t}">${t ? 'Tier ' + t : 'All tiers'}</button>`).join('') + '</div>'+
+      `<input id="xcQ" type="search" placeholder="Search SKU, ASIN or product" value="${esc(XC_F.q)}" aria-label="Search Cross Channel">`+
+      '<button id="xcCopy">Copy the gaps</button>' + `<span class="count">${rows.length} of ${all.length}</span></div>`;
+  if(!all.length) html += '<div class="cpt-empty"><b>Loading the Master SKU sheet</b></div>';
+  else html += '<table class="cpt-table lc-table"><thead><tr>' + H('product', 'Product') + H('tier', 'Tier', 'c') + H('amz', 'Amazon', 'num') + H('wm', 'Walmart') + H('sh', 'Shopify') + '</tr></thead><tbody>'+
+    rows.map(r=> `<tr class="row"><td class="prod"><div class="p-name">${esc(String(r.name).slice(0, 60))}</div><div class="p-id"><span>SKU</span>${skuL(r.sku, 'US')}${cpy(r.sku)}</div>${r.asin ? `<div class="p-id"><span>ASIN</span>${asinL(r.asin, 'US')}${cpy(r.asin)}</div>` : ''}</td>`+
+      `<td class="c"><b>${esc(r.tier || '\u2014')}</b></td><td class="num">${r.amz ? usd(r.amz) : '\u2014'}</td><td>${chip(r.w)}</td><td>${chip(r.h)}</td></tr>`).join('') + '</tbody></table>'+
+    '<p class="mut" style="font-size:.78rem">Walmart from the Morning Run\u2019s daily Seller Center read. Shopify from each store\u2019s public storefront, daily: a product in draft or hidden from the online store shows as Not live. Tier X is listed but not counted in the %.</p>';
+  v.innerHTML = html;
+  wireSort(v, XC_F, renderXc);
+  [...v.querySelectorAll('[data-xc]')].forEach(t=> t.onclick = ()=>{ XC_F.show = XC_F.show === t.dataset.xc ? 'all' : t.dataset.xc; renderXc(); });
+  [...v.querySelectorAll('#xcTier button')].forEach(b=> b.onclick = ()=>{ XC_F.tier = b.dataset.t; renderXc(); });
+  const q = document.getElementById('xcQ'); if(q) q.oninput = ()=>{ XC_F.q = q.value; const p = q.selectionStart; renderXc(); const q2 = document.getElementById('xcQ'); q2.focus(); q2.setSelectionRange(p, p); };
+  const cp = document.getElementById('xcCopy'); if(cp) cp.onclick = ()=>{
+    const g = all.filter(r=> r.gap);
+    const t = `Cross Channel gaps (${g.length}):\n` + g.map(r=> `\u2022 ${r.sku} (Tier ${r.tier || '?'}): Walmart ${r.w.t}; Shopify ${r.h.t}`).join('\n');
+    (navigator.clipboard ? navigator.clipboard.writeText(t) : Promise.reject()).then(()=>{ cp.textContent = 'Copied'; }).catch(()=> window.prompt('Copy:', t)); };
 }
 function renderProducts(){
   document.getElementById('msg').hidden = true;
@@ -7086,6 +7184,7 @@ function renderProducts(){
       `<td class="c">${chip(r.status || 'blank', stCls(r.status))}</td>`+
       `<td class="c">${r.caStatus ? chip(r.caStatus, stCls(r.caStatus)) : '<span class="mut">\u2014</span>'}</td>`+
       `<td class="c">${r.tier ? '<b>' + esc(r.tier) + '</b>' : '<span class="mut">\u2014</span>'}</td>`+
+      `<td class="mono nolink" style="white-space:nowrap">${r.upc ? esc(r.upc) + cpy(r.upc) : '<span class="mut">\u2014</span>'}</td>`+   // UPC (Nov 11)
       `<td style="font-size:.8rem">${r.fam ? esc(String(r.fam).slice(0, 34)) : '<span class="mut">Standalone</span>'}${r.v1 ? `<div class="mut">${esc([r.v1, r.v2].filter(Boolean).join(' / '))}</div>` : ''}</td>`+
       `<td class="num">${r.price ? usd(r.price) : '\u2014'}${r.list && PR_F.mk === 'US' ? `<div class="mut" style="font-size:.75rem">List ${usd(r.list)}</div>` : ''}</td>`+
       `<td class="num">${(PR_F.mk === 'CA' ? r.ca : r.us) === null || (PR_F.mk === 'CA' ? r.ca : r.us) === undefined ? '<span class="mut">\u2014</span>' : bsInt(PR_F.mk === 'CA' ? r.ca : r.us)}</td>`+
@@ -7096,7 +7195,7 @@ function renderProducts(){
         (r.star !== null ? chip(r.star.toFixed(1) + '\u2605', r.star >= 4 ? 'lc-ok' : 'lc-small') : '')+
       '</td></tr>';
     html += '<table class="cpt-table bb-table lc-table cg-table"><thead><tr>'+
-      H('product','Product') + H('brand','Brand') + H('status','SKU status','c') + H('ca','CA status','c') + H('tier','Tier','c') +
+      H('product','Product') + H('brand','Brand') + H('status','SKU status','c') + H('ca','CA status','c') + H('tier','Tier','c') + H('upc','UPC') +
       H('fam','Family / variation') + H('sale', PR_F.mk === 'CA' ? 'CA sale price' : 'Sale price','num') + H('us', PR_F.mk + ' stock','num') + H('copy','Health (US)','c') +
       '</tr></thead><tbody>';
     if(PR_F.group){
@@ -7105,7 +7204,7 @@ function renderProducts(){
         const rs = g[k], first = rs[0];
         const label = k === '~' ? (PR_F.group === 'pasin' ? 'No parent' : 'Blank') : PR_F.group === 'pasin' ? (first.pname || k) : k;
         const act = rs.filter(r=> r.status === 'Active').length;
-        html += `<tr class="gh"><td colspan="9"><b>${esc(label)}</b>${PR_F.group === 'pasin' && k !== '~' ? ` <span class="mut mono">${esc(k)}${PR_F.mk === 'CA' ? (first.psku ? ' \u00b7 ' + esc(first.psku) : '') : (first.pasin ? ' \u00b7 ' + esc(first.pasin) : '')}</span>` : ''}`+
+        html += `<tr class="gh"><td colspan="10"><b>${esc(label)}</b>${PR_F.group === 'pasin' && k !== '~' ? ` <span class="mut mono">${esc(k)}${PR_F.mk === 'CA' ? (first.psku ? ' \u00b7 ' + esc(first.psku) : '') : (first.pasin ? ' \u00b7 ' + esc(first.pasin) : '')}</span>` : ''}`+
           ` <span class="mut">\u00b7 ${rs.length} SKU${rs.length > 1 ? 's' : ''}, ${act} active</span>${rs.some(r=> r.chk.length) ? ' <span class="lcchip lc-small">Plytix check</span>' : ''}</td></tr>` + rs.map(tr).join('');
       });
     } else html += rows.map(tr).join('');
@@ -7129,6 +7228,30 @@ function renderProducts(){
   });
   [...v.querySelectorAll('tr.row[data-pr]')].forEach(tr=>{ const open = ()=>{ const r = rows.find(x=> x.sku === tr.dataset.pr); if(r) openPr(r); }; tr.onclick = open; tr.onkeydown = e=>{ if(e.key === 'Enter') open(); }; });
 }
+/* Listing copy for the Master SKU panel (Nov 11): loaded on first open, from
+   productcopy.json. Generic Keywords stay in the private sheet: a link opens that row. */
+const PC_SRC = 'https://raw.githubusercontent.com/mjbaguhin/cpc-tracker/main/productcopy.json';
+let PC = null, PC_LOADING = null;
+function pcLoad(){ if(PC || PC_LOADING) return PC_LOADING || Promise.resolve(PC);
+  PC_LOADING = fetch(PC_SRC + '?t=' + Date.now()).then(r=> r.ok ? r.json() : Promise.reject(r.status)).then(j=>{ PC = j || {copy:{}}; return PC; })
+    .catch(()=>{ PC = {copy:{}, err:true}; return PC; }).finally(()=>{ PC_LOADING = null; });
+  return PC_LOADING; }
+function prCopyHtml(r){
+  if(!PC) return '<div class="mut" style="margin-top:.6rem">Loading listing copy\u2026</div>';
+  if(PC.err) return '<div class="mut" style="margin-top:.6rem">Listing copy file not found yet. Run pushProductsJson in the CPC Keepa Fetcher project.</div>';
+  const c = (PC.copy || {})[r.sku] || {}, ca = r.mk === 'CA' || (typeof PR_F !== 'undefined' && PR_F.mk === 'CA');
+  const k = f=> ca && c[f + 'Ca'] ? c[f + 'Ca'] : c[f];
+  const item = (label, v, max)=> `<div style="margin:.45rem 0"><div style="display:flex;justify-content:space-between;gap:.5rem"><b>${esc(label)}</b><span class="mut" style="font-size:.75rem">${v ? v.length + (max ? ' / ' + max : '') + ' chars' : ''}${v ? ' ' + cpy(v) : ''}</span></div>`+
+    `<div style="white-space:pre-wrap;font-size:.85rem">${v ? esc(v) : '<span class="mut">Empty in the Master SKU</span>'}</div></div>`;
+  const row = PC.rows && PC.rows[r.sku], link = PC.sheet && row ? `${PC.sheet}&range=${PC.kwCol ? colLetter(PC.kwCol) : 'A'}${row}` : '';
+  return `<h3 style="margin-top:1rem">Listing copy${ca ? ' (Amazon CA)' : ''}</h3>`+
+    item('Title', k('title'), 200) + item('Item Highlight', k('ih'), 125) +
+    [1,2,3,4,5].map(i=> item('Bullet ' + i, k('b' + i), 500)).join('')+
+    `<div style="margin:.45rem 0"><b>Generic keywords</b><div style="font-size:.85rem">${c.hasKw ? 'Set in the Master SKU. ' : '<span class="mut">Empty in the Master SKU.</span> '}`+
+    (link ? `<a href="${esc(link)}" target="_blank" rel="noopener">Open in the Master SKU sheet</a>` : '') +
+    `<div class="mut" style="font-size:.75rem">Kept in the private sheet: backend search terms aren\u2019t published to the console\u2019s public data.</div></div></div>`;
+}
+function colLetter(n){ let s = ''; while(n > 0){ const m = (n - 1) % 26; s = String.fromCharCode(65 + m) + s; n = Math.floor((n - 1) / 26); } return s; }
 function openPr(r){
   const d = document.getElementById('detail');
   const row = (k, v)=> v === undefined || v === null || v === '' ? '' : `<dt>${esc(k)}</dt><dd>${esc(String(v))}</dd>`;
@@ -7143,13 +7266,14 @@ function openPr(r){
       row('Material', r.material) + row('Color', r.color) + row('Shape', r.shape) + row('Size', r.dims) + row('Size tier', r.sizeTier) +
       row('Sale price', r.sale ? usd(r.sale) : '') + row('List price', r.list ? usd(r.list) : '') + row('CA sale price', r.caSale ? usd(r.caSale) : '') + row('Walmart price', r.walmart ? usd(r.walmart) : '') +
       row('US stock', r.us) + row('Active date', r.active) + row('Inactive date', r.inactive) + row('CA active date', r.caActive) + row('CA inactive date', r.caInactive) +
-      row('Liquidate', r.liquidate) + row('Probation', r.probation ? r.probation + (r.probReason ? ' (' + r.probReason + ')' : '') : '') + row('UPC', r.upc) + row('FNSKU', r.fnsku) +
-    '</dl><div class="why">From the Master SKU sheet (Plytix). Health chips: the Listing Copy, Category, Buy Box and BSR modules.</div>';
+      row('Liquidate', r.liquidate) + row('Probation', r.probation ? r.probation + (r.probReason ? ' (' + r.probReason + ')' : '') : '') + (r.upc ? `<dt>UPC</dt><dd class="mono">${esc(r.upc)}${cpy(r.upc)}</dd>` : '') + row('FNSKU', r.fnsku) +
+    '</dl><div id="prCopy">' + prCopyHtml(r) + '</div><div class="why">From the Master SKU sheet (Plytix). Health chips: the Listing Copy, Category, Buy Box and BSR modules.</div>';
   document.getElementById('detail').classList.remove('wide'); document.getElementById('veil').hidden = false;
+  if(!PC) pcLoad().then(()=>{ const el = document.getElementById('prCopy'); if(el && d.contains(el)) el.innerHTML = prCopyHtml(r); });
 }
 function dlPr(rows){
-  csvSave('master-sku', ['SKU','ASIN','Product','Brand','SKU status','CA status','CA SKU','Tier','Family','Parent ASIN','Parent SKU','Variation 1','Variation 2','Product type','Category','Room','Material','Sale price','List price','CA sale price','US stock','Copy %','Category OK','Buy Box','Star rating','Plytix checks','Active date','Inactive date'],
-    rows.map(r=> [r.sku, r.asin || '', r.name, r.brand || '', r.status || '', r.caStatus || '', r.caSku || '', r.tier || '', r.pname || '', r.pasin || '', r.psku || '',
+  csvSave('master-sku', ['SKU','ASIN','UPC','Product','Brand','SKU status','CA status','CA SKU','Tier','Family','Parent ASIN','Parent SKU','Variation 1','Variation 2','Product type','Category','Room','Material','Sale price','List price','CA sale price','US stock','Copy %','Category OK','Buy Box','Star rating','Plytix checks','Active date','Inactive date'],
+    rows.map(r=> [r.sku, r.asin || '', r.upc || '', r.name, r.brand || '', r.status || '', r.caStatus || '', r.caSku || '', r.tier || '', r.pname || '', r.pasin || '', r.psku || '',
       r.t1 ? r.t1 + ': ' + (r.v1 || '') : '', r.t2 ? r.t2 + ': ' + (r.v2 || '') : '', r.ptype || '', r.cats || '', r.room || '', r.material || '', r.sale || '', r.list || '', r.caSale || '',
       r.us === null || r.us === undefined ? '' : r.us, r.copy === null ? '' : r.copy, r.cat === null ? '' : (r.cat ? 'Yes' : 'No'), r.bb || '', r.star === null ? '' : r.star, r.chk.join('; '), r.active || '', r.inactive || '']));
 }
@@ -8598,13 +8722,13 @@ function render(){
   TARGETS = null;      // re-read from today's data on every redraw
   renderView();
   chrome();
-  if(['cpt','bb','lc','lp','vr','bs','pr','ms','rv','st','tk','category','catalog'].indexOf(S.view) !== -1) document.getElementById('ov').hidden = true;
+  if(['cpt','bb','lc','lp','vr','bs','pr','xc','ms','rv','st','tk','category','catalog'].indexOf(S.view) !== -1) document.getElementById('ov').hidden = true;
   else bandHeaders();
 }
 
 function renderView(){
 
-  const isCpt = ['cpt','bb','lc','lp','vr','bs','pr','ms','rv','st','tk','category','catalog'].indexOf(S.view) !== -1;
+  const isCpt = ['cpt','bb','lc','lp','vr','bs','pr','xc','ms','rv','st','tk','category','catalog'].indexOf(S.view) !== -1;
   document.getElementById('cptView').hidden  = !isCpt;
   document.getElementById('mainWrap').hidden = isCpt;
   document.getElementById('bar').hidden      = isCpt;
@@ -8618,6 +8742,7 @@ function renderView(){
   if(S.view === 'vr'){ renderVariation(); return; }
   if(S.view === 'bs'){ renderBsr(); return; }
   if(S.view === 'pr'){ renderProducts(); return; }
+  if(S.view === 'xc'){ renderXc(); return; }
   if(S.view === 'ms'){ renderMeasurements(); return; }
   if(S.view === 'rv'){ renderReview(); return; }
   if(S.view === 'st'){ renderStrike(); return; }
@@ -9053,6 +9178,7 @@ const lpBtn    = document.getElementById('lpBtn');
 const vrBtn    = document.getElementById('vrBtn');
 const bsBtn    = document.getElementById('bsBtn');
 const prBtn    = document.getElementById('prBtn');
+const xcBtn    = document.getElementById('xcBtn');
 const msBtn    = document.getElementById('msBtn');
 const rvBtn    = document.getElementById('rvBtn');
 const stBtn    = document.getElementById('stBtn');
@@ -9064,7 +9190,7 @@ function go(view){
   // The CPT view has its own controls, so the filter panel folds away while
   // it is open and comes back as it was when you leave.
   // The CPT and Buy Box views both own the screen
-  const own = x=> ['cpt','bb','lc','lp','vr','bs','pr','ms','rv','st','tk','category','catalog'].indexOf(x) !== -1;
+  const own = x=> ['cpt','bb','lc','lp','vr','bs','pr','xc','ms','rv','st','tk','category','catalog'].indexOf(x) !== -1;
   if(own(view) && !own(S.view)){
     PANEL_BEFORE_CPT = !document.getElementById('panel').hidden;
     setPanel(false);
@@ -9084,6 +9210,7 @@ function go(view){
   vrBtn.setAttribute('aria-pressed', view === 'vr');
   bsBtn.setAttribute('aria-pressed', view === 'bs');
   prBtn.setAttribute('aria-pressed', view === 'pr');
+  xcBtn.setAttribute('aria-pressed', view === 'xc');
   msBtn.setAttribute('aria-pressed', view === 'ms');
   rvBtn.setAttribute('aria-pressed', view === 'rv');
   stBtn.setAttribute('aria-pressed', view === 'st');
@@ -9094,7 +9221,7 @@ function go(view){
   render();
 }
 const MSEL_OF = {tk:'tkBtn', catalog:'catalogBtn', cpt:'cptBtn', bb:'bbBtn', lp:'lpBtn', st:'stBtn', lc:'lcBtn', category:'quickCat',
-  vr:'vrBtn', ms:'msBtn', rv:'rvBtn', bs:'bsBtn', pr:'prBtn'};
+  vr:'vrBtn', ms:'msBtn', rv:'rvBtn', bs:'bsBtn', pr:'prBtn', xc:'xcBtn'};
 document.getElementById('mSel').onchange = e=>{ const b = document.getElementById(e.target.value); if(b) b.click(); };
 
 casesBtn.onclick = ()=> go('cases');
@@ -9105,6 +9232,7 @@ lpBtn.onclick    = ()=> go('lp');
 vrBtn.onclick    = ()=> go('vr');
 bsBtn.onclick    = ()=> go('bs');
 prBtn.onclick    = ()=> go('pr');
+xcBtn.onclick    = ()=> go('xc');
 msBtn.onclick    = ()=> go('ms');
 rvBtn.onclick    = ()=> go('rv');
 stBtn.onclick    = ()=> go('st');
