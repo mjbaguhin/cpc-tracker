@@ -5940,6 +5940,7 @@ function stockNoRec(r, mk){
   return row ? !!row[mk === 'CA' ? 'caNoRec' : 'usNoRec'] : stockLoaded(mk);
 }
 function grpMap(F, rows, ncols, trFn, needFn, needLabel, mk, headBtn){
+  mk = mk || curMk();   // Nov 11: family header links follow the module's marketplace
   if(!F.group) return rows.map(trFn).join('');
   const order = [], g = {};
   rows.forEach(r=>{ const p = parentOf(r), k = p.psku || '\u0000solo'; if(!g[k]){ g[k] = {p, rows:[]}; order.push(k); } g[k].rows.push(r); });
@@ -8539,6 +8540,53 @@ function ccMount(v, key, items, rows, mk){
 }
 document.addEventListener('click', e=>{ const t = e.target.closest && e.target.closest('[data-cc]'); if(!t) return; const k = t.getAttribute('data-cc'); CC_OPEN[k] = !CC_OPEN[k]; render(); });
 document.addEventListener('keydown', e=>{ if(e.key !== 'Enter' && e.key !== ' ') return; const t = e.target.closest && e.target.closest('[data-cc]'); if(!t) return; e.preventDefault(); const k = t.getAttribute('data-cc'); CC_OPEN[k] = !CC_OPEN[k]; render(); });
+/* Nov 11 (MJ): every SKU on any page opens Manage Inventory and every ASIN opens the
+   product page, in the module's own marketplace, including SKUs written inside tiles,
+   notes and cards. A watcher links any SKU or ASIN text that isn't a link yet. */
+function curMk(){
+  const v = S.view;
+  const m = ['cpt','bb','lc','lp'].indexOf(v) !== -1 ? MK2 : v === 'category' ? CG_F.mk : v === 'vr' ? VR_F.mk : v === 'ms' ? MS_F.mk :
+    v === 'rv' ? RV_F.mk : v === 'st' ? ST_F.mk : v === 'bs' ? BS_F.mk : v === 'pr' ? PR_F.mk : 'US';
+  return mkOf(m) === 'CA' ? 'CA' : 'US';
+}
+let ALINK_SKUS = null, ALINK_N = -1, ALINK_BUSY = false;
+function alinkSkus(){
+  const n = (PR || []).length + (ROWS || []).length;
+  if(ALINK_SKUS && n === ALINK_N) return ALINK_SKUS;
+  const set = new Set();
+  (PR || []).forEach(p=>{ if(p.sku) set.add(p.sku); if(p.psku) set.add(p.psku); });
+  (ROWS || []).forEach(r=>{ if(r.sku) set.add(r.sku); if(r.psku) set.add(r.psku); });
+  ALINK_SKUS = set; ALINK_N = n; return set;
+}
+function autoLink(root){
+  if(!root || ALINK_BUSY || ['catalog','tk'].indexOf(S.view) !== -1) return;
+  const skus = alinkSkus(); if(!skus.size) return;
+  const mk = curMk(), SKIP = 'a,button,textarea,input,select,option,script,style,summary,.nolink,[contenteditable]';
+  const tok = /[A-Za-z0-9][A-Za-z0-9_-]*[A-Za-z0-9]/g, nodes = [];
+  const walker = document.createTreeWalker(root, 4); let n;
+  while((n = walker.nextNode())){ const t = n.nodeValue; if(!t || t.length < 4) continue; if(n.parentElement && n.parentElement.closest(SKIP)) continue; nodes.push(n); }
+  ALINK_BUSY = true;
+  try {
+    nodes.forEach(node=>{
+      const t = node.nodeValue; let m, last = 0, out = '', hit = false; tok.lastIndex = 0;
+      while((m = tok.exec(t))){
+        const w = m[0], isAsin = /^B0[A-Z0-9]{8}$/.test(w), isSku = !isAsin && skus.has(w);
+        if(!isAsin && !isSku) continue;
+        hit = true; out += esc(t.slice(last, m.index)) + (isAsin ? asinL(w, mk) : `<a class="idl" href="${scInvUrl(w, mk)}" target="_blank" rel="noopener" title="Open in Manage Inventory">${esc(w)}</a>`); last = m.index + w.length;
+      }
+      if(!hit) return;
+      out += esc(t.slice(last));
+      const span = document.createElement('span'); span.innerHTML = out;
+      span.querySelectorAll('a').forEach(a=> a.addEventListener('click', e=> e.stopPropagation()));
+      node.parentNode.replaceChild(span, node);
+    });
+  } finally { ALINK_BUSY = false; }
+}
+(function(){
+  const go = ()=>{ const v = document.getElementById('cptView'); if(!v) return;
+    let t = null; new MutationObserver(()=>{ if(ALINK_BUSY) return; clearTimeout(t); t = setTimeout(()=> autoLink(v), 30); }).observe(v, {childList: true, subtree: true}); };
+  if(document.readyState === 'loading') document.addEventListener('DOMContentLoaded', go); else go();
+})();
 function render(){
   TARGETS = null;      // re-read from today's data on every redraw
   renderView();
