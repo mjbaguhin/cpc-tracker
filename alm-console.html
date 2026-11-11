@@ -959,15 +959,14 @@ a.idl:hover{color:var(--accent);border-bottom-style:solid}
   <button id="casesBtn" hidden>Cases</button>
   <!-- Modules grouped by how MJ checks them each day (Oct 26) -->
   <nav id="navGroups" aria-label="Modules">
-    <div class="ng"><div class="ng-l">Today</div><div class="ng-b"><button id="catalogBtn">Catalog</button><button id="tkBtn">My tasks</button></div></div>
+    <div class="ng"><div class="ng-l">Today</div><div class="ng-b"><button id="catalogBtn">Catalog</button><button id="prBtn">Master SKU</button><button id="tkBtn">My tasks</button></div></div>
     <div class="ng"><div class="ng-l">Price and Buy Box <span class="ng-t" data-ngt="price"></span></div>
       <div class="ng-b" data-ng="price"><button id="cptBtn">CPT tracker</button><button id="bbBtn">Buy Box</button><button id="lpBtn">List Price</button><button id="stBtn">Strike-through</button></div></div>
     <div class="ng"><div class="ng-l">Listing health <span class="ng-t" data-ngt="listing"></span></div>
       <div class="ng-b" data-ng="listing"><button id="lcBtn">Listing Copy</button><button id="quickCat">Category</button><button id="vrBtn">Variation</button><button id="msBtn">Measurements</button><button id="rvBtn">Listing Review</button></div></div>
     <div class="ng"><div class="ng-l">Performance <span class="ng-t" data-ngt="perf"></span></div>
       <div class="ng-b" data-ng="perf"><button id="bsBtn">BSR</button></div></div>
-    <div class="ng"><div class="ng-l">Reference</div><div class="ng-b"><button id="prBtn">Master SKU</button></div></div>
-    <div id="mSelWrap"><label for="mSel">Module</label><select id="mSel"><optgroup label="Today"><option value="catalogBtn">Catalog</option><option value="tkBtn">My tasks</option></optgroup><optgroup label="Price and Buy Box"><option value="cptBtn">CPT tracker</option><option value="bbBtn">Buy Box</option><option value="lpBtn">List Price</option><option value="stBtn">Strike-through</option></optgroup><optgroup label="Listing health"><option value="lcBtn">Listing Copy</option><option value="quickCat">Category</option><option value="vrBtn">Variation</option><option value="msBtn">Measurements</option><option value="rvBtn">Listing Review</option></optgroup><optgroup label="Performance"><option value="bsBtn">BSR</option></optgroup><optgroup label="Reference"><option value="prBtn">Master SKU</option></optgroup></select></div>
+    <div id="mSelWrap"><label for="mSel">Module</label><select id="mSel"><optgroup label="Today"><option value="catalogBtn">Catalog</option><option value="prBtn">Master SKU</option><option value="tkBtn">My tasks</option></optgroup><optgroup label="Price and Buy Box"><option value="cptBtn">CPT tracker</option><option value="bbBtn">Buy Box</option><option value="lpBtn">List Price</option><option value="stBtn">Strike-through</option></optgroup><optgroup label="Listing health"><option value="lcBtn">Listing Copy</option><option value="quickCat">Category</option><option value="vrBtn">Variation</option><option value="msBtn">Measurements</option><option value="rvBtn">Listing Review</option></optgroup><optgroup label="Performance"><option value="bsBtn">BSR</option></optgroup></select></div>
     <div class="ng ng-tools"><div class="ng-l">View</div><div class="ng-b"><button id="toggle" aria-expanded="true">Filters</button><span id="hStock" role="group" aria-label="Stock"><span class="stk-l">Stock</span><button data-stk="all" title="Every listing">All</button><button data-stk="in" title="Only listings with FBA stock">In stock</button><button data-stk="oos" title="Only listings with 0 FBA stock">Out of stock</button></span><span class="gf-l" id="gfTierWrap">Tier <button id="gfTierBtn" type="button" aria-haspopup="true" aria-expanded="false" title="Pick one or more tiers">All ▾</button><span id="gfTierPop" hidden><label><input type="checkbox" value="A"> Tier A</label><label><input type="checkbox" value="B"> Tier B</label><label><input type="checkbox" value="C"> Tier C</label><label><input type="checkbox" value="X"> Tier X</label><label><input type="checkbox" value="N"> Tier N</label><button type="button" id="gfTierAll">All tiers</button></span></span><span class="gf-l" id="gfSupWrap">Supplier <button id="gfSupBtn" type="button" aria-haspopup="true" aria-expanded="false" title="Pick one or more suppliers">All ▾</button><span id="gfSupPop" hidden><span id="gfSupList"></span><button type="button" id="gfSupAll">All suppliers</button></span></span><label class="gf-l">Brand <select id="gfBrand"><option value="">All</option><option>Barnyard Designs</option><option>Seedboy</option></select></label><input id="gfQ" type="search" placeholder="Search SKU, ASIN, product or family" autocomplete="off"><button id="gfClr" title="Clear Tier, Brand, Search, Stock and this module’s own filters. Keeps the sort, grouping and marketplace.">Clear filters</button><button id="hRefresh" title="Reload all data now. Reads the published files only: no scripts run, no Keepa tokens.">↻ Refresh</button><button id="hReset" title="Put this module’s filters, search, sort and grouping back to their defaults. Keeps the marketplace and all saved checks and marks.">Reset view</button><button id="fs" title="Fullscreen">Full screen</button><button id="scSet" title="Make SKU links open the right marketplace in Seller Central. Saved in this browser only, never published.">SC links</button></div></div>
   </nav>
 </header>
@@ -1486,7 +1485,7 @@ function build(j, pub, warnNote){
       psku:ps, pasin:(r.ParentASIN || '').trim(), parent:r.ParentName || ''
     };
   });
-
+  stockNoRecordFill();
   applyMk();
 
   // Rebuild every chip row from what the data actually contains, so no
@@ -5899,10 +5898,22 @@ function parentOf(r){
   return {psku: row.psku || '', pasin: row.pasin || '', pname: row.parent || ''};
 }
 // Rows stay in their sorted order; each parent family gets a violet band on top
+/* Nov 10 (MJ): no record in the FBA stock data = out of stock. Only when that
+   marketplace's stock data loaded fine (not failed or old, and at least 10 SKUs
+   with a number); if the whole source is missing, stock stays unknown so a bad
+   load can't drop every listing out of the %. */
+function stockLoaded(mk){
+  const st = stockStatus(mk); if(st) return false;
+  return ROWS.filter(x=> typeof (mk === 'CA' ? x.caAvail : x.usAvail) === 'number').length >= 10;
+}
+function stockNoRecordFill(){
+  ['US', 'CA'].forEach(mk=>{ if(!stockLoaded(mk)) return; const k = mk === 'CA' ? 'caAvail' : 'usAvail';
+    ROWS.forEach(x=>{ if(x[k] === null || x[k] === undefined || x[k] === ''){ x[k] = 0; x[mk === 'CA' ? 'caNoRec' : 'usNoRec'] = true; } }); });
+}
 /* Stock for any module row: BigQuery numbers from the ALM Console Data sheet */
 function stockOf(r, mk){
   const row = (r.usSku && ROWS.find(x=> x.sku === r.usSku)) || ROWS.find(x=> x.sku === r.sku) || ROWS.find(x=> x.asin === r.asin);
-  if(!row) return null;
+  if(!row) return stockLoaded(mk) ? 0 : null;   // not in the stock data at all
   const v = mk === 'CA' ? row.caAvail : row.usAvail;
   return v === undefined || v === '' ? null : v;
 }
@@ -5915,7 +5926,11 @@ const oosNote = (rows, mk)=>{ const n = rows.filter(r=> isOos(r, mk)).length; re
 function stockTd(r, mk){
   const v = stockOf(r, mk), st = stockStatus(mk);
   if(v === null) return `<td class="num"><span class="mut" title="${st ? esc(st.text) : 'No stock data for this SKU'}">No data</span></td>`;
-  return `<td class="num">${v > 0 ? '<b>' + v.toLocaleString() + '</b>' : '<span class="bbno">Out of stock</span>'}</td>`;
+  return `<td class="num">${v > 0 ? '<b>' + v.toLocaleString() + '</b>' : '<span class="bbno">Out of stock</span>' + (stockNoRec(r, mk) ? '<div class="mut" style="font-size:.7rem">no FBA record</div>' : '')}</td>`;
+}
+function stockNoRec(r, mk){
+  const row = (r.usSku && ROWS.find(x=> x.sku === r.usSku)) || ROWS.find(x=> x.sku === r.sku) || ROWS.find(x=> x.asin === r.asin);
+  return row ? !!row[mk === 'CA' ? 'caNoRec' : 'usNoRec'] : stockLoaded(mk);
 }
 function grpMap(F, rows, ncols, trFn, needFn, needLabel, mk, headBtn){
   if(!F.group) return rows.map(trFn).join('');
@@ -7527,7 +7542,7 @@ function renderMeasurements(){
     const H = (k, label, cls)=> `<th data-s="${k}" data-d="asc" class="${cls || ''}">${label}${sortArrow(MS_F, k)}</th>`;
     const tr = r=> `<tr class="row" tabindex="0" data-ms="${esc(r.asin)}">`+
       `<td class="prod"><div class="p-name">${esc(String(r.name).slice(0, 56))}</div><div class="p-id"><span>SKU</span>${skuL(r.sku, mk)}${cpy(r.sku)}</div><div class="p-id"><span>ASIN</span>${asinL(r.asin, mk)}${cpy(r.asin)}</div>`+
-        (r.tier ? `<span class="p-size">Tier ${esc(r.tier)}</span>` : '') + '</td>'+
+        (r.tier ? `<span class="p-size">Tier ${esc(r.tier)}</span>` : '') + '</td>'+ stockTd(r, mk) +
       `<td style="font-size:.8rem">${msLWH(r.pDims, r.unit, 2)}<div class="mut">${msW(r.pWt, r.wUnit)}</div></td>`+
       `<td style="font-size:.8rem">${msLWH(r.aDims, r.unit, 2)}<div class="mut">${msW(r.aWt, r.wUnit)}</div></td>`+
       `<td class="c">${chip(r.st.size)} ${chip(r.st.weight)}</td>`+
@@ -7535,13 +7550,13 @@ function renderMeasurements(){
       `<td class="c" style="font-size:.8rem">${esc(r.px.tier || '\u2014')}<div class="mut">${esc(r.fee && r.fee.tier ? msTierName(r.fee.tier, r.mk) : '\u2014')}</div>${chip(r.st.tier)}</td>`+
       `<td class="c">${chip(r.st.copy, r.copyBad.join(' \u2022 '))}</td>`+
       `<td class="c">${chip(r.st.plytix, r.pxBad.join(' \u2022 '))}</td></tr>`;
-    html += '<table class="cpt-table lc-table"><thead><tr>'+ H('product','Product') + '<th>Plytix size / weight</th><th>Amazon size / weight (Keepa)</th><th class="c">Size, weight</th>'+
+    html += '<table class="cpt-table lc-table"><thead><tr>'+ H('product','Product') + `<th class="num">${mk} stock</th>` + '<th>Plytix size / weight</th><th>Amazon size / weight (Keepa)</th><th class="c">Size, weight</th>'+
       '<th class="c">Packaged weight Plytix / Amazon</th><th class="c">Size tier Plytix / Fee Preview</th>' + H('bad','Copy','c') + '<th class="c">Plytix</th></tr></thead><tbody>';
     if(MS_F.group){
       const g = {}; rows.forEach(r=> (g[r.psku || '~'] = g[r.psku || '~'] || []).push(r));   // by Parent SKU (Oct 30)
       Object.keys(g).sort((a, b)=> a === '~' ? 1 : b === '~' ? -1 : (g[a][0].pname || a).localeCompare(g[b][0].pname || b)).forEach(k=>{
         const rs = g[k];
-        html += `<tr class="gh"><td colspan="8"><b>${esc(k === '~' ? 'No parent' : (rs[0].pname || k))}</b> <span class="mut">${k === '~' ? '' : esc(k) + ' \u00b7 '}${rs.length} listing${rs.length > 1 ? 's' : ''}${rs.some(r=> r.bad.length) ? ', ' + rs.filter(r=> r.bad.length).length + ' with a difference' : ''}</span></td></tr>` + rs.map(tr).join('');
+        html += `<tr class="gh"><td colspan="9"><b>${esc(k === '~' ? 'No parent' : (rs[0].pname || k))}</b> <span class="mut">${k === '~' ? '' : esc(k) + ' \u00b7 '}${rs.length} listing${rs.length > 1 ? 's' : ''}${rs.some(r=> r.bad.length) ? ', ' + rs.filter(r=> r.bad.length).length + ' with a difference' : ''}</span></td></tr>` + rs.map(tr).join('');
       });
     } else html += rows.map(tr).join('');
     html += '</tbody></table><p class="mut" style="font-size:.78rem">Plytix is the source of truth and is never changed to match Amazon. The % counts the catalog share: Plytix filled in and consistent, and Amazon size, weight and the sizes in the copy matching Plytix. Package weight and size tier are Amazon\u2019s warehouse measurements, for supply chain, and not in the %. Same within 0.5 in or 5% per side for sizes (1.3 cm on CA), 5% for weights. The copy allows rounding (30x17 for 30 x 16.75). Out of stock is not in the %.</p>';
@@ -8094,6 +8109,10 @@ function rvNextOpen(rows, from){
   for(let i = from + 1; i < rows.length; i++) if(!rows[i].mk2) return i;
   return Math.min(from + 1, rows.length - 1);
 }
+function rvStockTxt(r){   // Nov 10: stock on every Listing Review card
+  const mk = r.mk || 'US', v = stockOf(r, mk);
+  return v === null ? '<span class="mut">Stock: no data</span>' : v > 0 ? `<b>${v.toLocaleString()}</b> in stock` : '<span class="bbno">Out of stock</span>';
+}
 function rvCard(r){
   const sb = r.brand === 'Seedboy', m = r.mk2;
   const tag = r.problems.length
@@ -8109,7 +8128,7 @@ function rvCard(r){
     `<button data-rvflag="${esc(r.asin)}">\u2691 Flag</button>` + (sb ? '' : `<button data-rvok="${esc(r.asin)}">\u2714 Reviewed</button>`);
   return `<div class="rvcard${m && m.act === 'Reviewed' ? ' done' : ''}" data-rv="${esc(r.asin)}"><div class="rv-h"><div>${tag}${mark}`+
     `<div class="rv-name">${esc(r.name || r.sku)}</div>`+
-    `<div class="rv-id">${skuL(r.sku, r.mk || 'US')}${cpy(r.sku)} \u00b7 ${asinL(r.asin, r.mk || 'US')}${cpy(r.asin)} \u00b7 Tier ${esc(r.tier || '?')} \u00b7 ${esc(r.brand)}${r.family ? ' \u00b7 ' + esc(r.family) : ''}</div></div>`+
+    `<div class="rv-id">${skuL(r.sku, r.mk || 'US')}${cpy(r.sku)} \u00b7 ${asinL(r.asin, r.mk || 'US')}${cpy(r.asin)} \u00b7 Tier ${esc(r.tier || '?')} \u00b7 ${esc(r.brand)}${r.family ? ' \u00b7 ' + esc(r.family) : ''} \u00b7 ${rvStockTxt(r)}</div></div>`+
     `<div class="rv-btns"><a href="${rvDom(r.mk || 'US')}${esc(r.asin)}" target="_blank" rel="noopener"><button>Open PDP \u2197</button></a>${goLive}${act}${sb && !m ? `<button data-rvok="${esc(r.asin)}">\u2714 Reviewed</button>` : ''}</div></div>`+
     `<div class="rv-body">${img ? `<img src="${esc(img)}" alt="Main image" loading="lazy">` : ''}`+
     `<table class="rv-t"><tr><td>Field</td><td>${r.problems.length ? 'On the page' : 'Was'}</td><td>Should be</td></tr>${lines}</table></div>`+
@@ -8162,11 +8181,11 @@ function rvStrikeTable(rows, grouped){
       return `<span class="lcchip lc-ok">List Price ${usd(a)}</span><div class="mut" style="font-size:.72rem;color:#8a5a00">differs from Master SKU</div>`; }
     return `<span class="lcchip lc-ok">${esc(x.page.replace(/^typical price/i, 'Typical price'))}</span>`; };
   return '<div style="overflow-x:auto;margin:.4rem 1rem"><table class="rv-t" style="min-width:820px;background:#fff;border:1px solid var(--line);border-radius:8px">'+
-    '<colgroup><col style="width:38%"><col style="width:20%"><col style="width:12%"><col style="width:15%"><col style="width:15%"></colgroup>'+
-    '<tr><td style="padding-left:.6rem">Product</td><td>Strike-through</td><td>Our price</td><td>List Price (Master SKU)</td><td>Walmart</td></tr>'+
-    rows.map(x=> (x._head ? `<tr data-stfam="${esc(x._head.fam)}" style="cursor:pointer"><td colspan="5" style="padding:.5rem .6rem;background:#f4f1fb;color:#4b3a8f;font-weight:700"><span aria-hidden="true" style="display:inline-block;width:1.1rem">${ST_COLL.has(x._head.fam) ? '\u25b6' : '\u25bc'}</span>${esc(x._head.fam === 'No family' ? 'Not in a variation' : x._head.fam)} <span class="mut" style="font-weight:400">\u00b7 ${x._head.n} listing${x._head.n === 1 ? '' : 's'}</span>${x._head.none ? ` <span class="lcchip lc-bad" style="margin-left:.3rem">${x._head.none} without a strike-through</span>` : ` <span class="lcchip lc-ok" style="margin-left:.3rem">All OK</span>`}</td></tr>` : '') +
+    '<colgroup><col style="width:33%"><col style="width:10%"><col style="width:18%"><col style="width:11%"><col style="width:14%"><col style="width:14%"></colgroup>'+
+    '<tr><td style="padding-left:.6rem">Product</td><td class="num">Stock</td><td>Strike-through</td><td>Our price</td><td>List Price (Master SKU)</td><td>Walmart</td></tr>'+
+    rows.map(x=> (x._head ? `<tr data-stfam="${esc(x._head.fam)}" style="cursor:pointer"><td colspan="6" style="padding:.5rem .6rem;background:#f4f1fb;color:#4b3a8f;font-weight:700"><span aria-hidden="true" style="display:inline-block;width:1.1rem">${ST_COLL.has(x._head.fam) ? '\u25b6' : '\u25bc'}</span>${esc(x._head.fam === 'No family' ? 'Not in a variation' : x._head.fam)} <span class="mut" style="font-weight:400">\u00b7 ${x._head.n} listing${x._head.n === 1 ? '' : 's'}</span>${x._head.none ? ` <span class="lcchip lc-bad" style="margin-left:.3rem">${x._head.none} without a strike-through</span>` : ` <span class="lcchip lc-ok" style="margin-left:.3rem">All OK</span>`}</td></tr>` : '') +
       (grouped && ST_COLL.has(x.fam) ? '' : `<tr><td style="padding-left:.6rem"><div style="font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis" title="${esc(x.name || x.sku)}">${esc(x.name || x.sku)}</div>`+
-      `<div class="rv-id" style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${skuL(x.sku, x.mk || 'US')} \u00b7 Tier ${esc(x.tier || '?')} \u00b7 ${esc(x.brand)}</div></td>`+
+      `<div class="rv-id" style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${skuL(x.sku, x.mk || 'US')} \u00b7 Tier ${esc(x.tier || '?')} \u00b7 ${esc(x.brand)}</div></td>`+ stockTd(x, x.mk || 'US') +
       `<td>${tag(x)}${two && x.change ? chg[x.change] + (x.was ? `<div class="mut" style="font-size:.72rem">was ${esc(x.was)}</div>` : '') : ''}</td>`+
       `<td>${money(x.price)}</td><td>${money(x.list)}</td><td>${money(x.wm)}</td></tr>`)).join('')+
   '</table></div><div class="rv-note" style="margin:0 1rem 1rem">A List Price strike-through needs that price recently at another retailer, or sales on Amazon at that price (Amazon rule since Apr 23, 2026). A Typical price strike-through comes from Amazon\u2019s own 90-day price history. Pricing decisions stay with Haris and Sam.</div>';
