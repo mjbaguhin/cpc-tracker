@@ -1075,6 +1075,10 @@ const CPT_SRC = 'https://raw.githubusercontent.com/mjbaguhin/cpc-tracker/main/cp
 // Other brands' coir mats in our sizes: Amazon from Keepa (weekly), plus the
 // Outside Found tab (Walmart, Wayfair, Home Depot and so on, found by the Cowork CPT Reference Hunt, Nov 6).
 const SIM_SRC = 'https://raw.githubusercontent.com/mjbaguhin/cpc-tracker/main/similar.json';
+// Walmart Seller Center items, read by the Cowork ALM Morning Run (Nov 11)
+const WM_SRC = 'https://raw.githubusercontent.com/mjbaguhin/cpc-tracker/main/walmart.json';
+let WM = {}, WM_META = null;
+function buildWm(j){ WM = {}; ((j && j.rows) || []).forEach(r=>{ if(r && r.sku) WM[r.sku] = r; }); WM_META = {updated: (j && j.updated) || '', read: (j && j.read) || '', count: (j && j.count) || 0}; }
 
 // Buy Box per ASIN, written nightly by Buy Box Watch in the CPC Keepa Fetcher project
 const BB_SRC = 'https://raw.githubusercontent.com/mjbaguhin/cpc-tracker/main/buybox.json';
@@ -1215,6 +1219,9 @@ async function load(fresh){
   grab(RV_SRC, 'json', fresh)
     .then(j => { buildRv(j); if(S.view === 'rv' || S.view === 'st') render(); else chrome(); })
     .catch(e => { RV_ERR = e.message; if(S.view === 'rv' || S.view === 'st') render(); });
+  grab(WM_SRC, 'json', fresh)
+    .then(j => { buildWm(j); if(S.view === 'st') render(); })
+    .catch(()=> { WM = {}; WM_META = null; });
   grab(SIG_SRC, 'json', fresh)
     .then(j => { SIG = j || null; if(S.view === 'category' || S.view === 'catalog' || S.view === 'lc') render(); })
     .catch(()=> { SIG = null; });
@@ -8140,6 +8147,31 @@ function rvCard(r){
    Since Apr 23 2026 Amazon shows a List Price strike-through only if that price was
    offered at another retailer recently or sold on Amazon at that price, so the
    Master SKU List Price and Walmart price are shown beside it for Haris and Sam. */
+/* Why a listing has no strike-through (Nov 11). Checked in order; the first that applies
+   is shown. Walmart comes from the daily Seller Center read (walmart.json). */
+function wmFresh(){ if(!WM_META || !WM_META.read) return false;
+  const today = new Date(new Date().toLocaleString('en-US', {timeZone: 'America/New_York'}));
+  return (today - new Date(WM_META.read + 'T12:00:00')) / 86400000 <= 3.5; }
+function stWhy(x, mk){
+  if(x.shown) return null;
+  const money = v=> '$' + Number(v).toFixed(2);
+  if(isOos(x, mk)) return {t: 'Out of stock', c: 'lc-gray'};
+  const k = ((mk === 'CA' ? CPT_CA : CPT_US) || []).find(r=> r.asin === x.asin) || {};
+  const list = (k.kList !== null && k.kList !== undefined) ? k.kList : x.list;
+  const m = String(x.price || '').match(/\$\s*([\d,]+(?:\.\d+)?)/), ours = m ? Number(m[1].replace(/,/g, '')) : (k.kOurs !== undefined ? k.kOurs : null);
+  if(list === null || list === undefined || !(list > 0)) return {t: 'No List Price on Amazon', c: 'lc-bad'};
+  if(ours !== null && ours >= list - 0.005) return {t: `Our price ${money(ours)} is not below the List Price ${money(list)}`, c: 'lc-small'};
+  if(mk === 'CA') return {t: 'Canada: no outside store is checked', c: 'lc-gray'};
+  if(!wmFresh()) return {t: 'Walmart not read in the last 3 days', c: 'lc-gray'};
+  const w = WM[x.sku];
+  if(!w) return WM_META.count >= 50 ? {t: 'Not on Walmart', c: 'lc-bad'} : {t: 'Not in the last Walmart read (it was partial)', c: 'lc-gray'};
+  if(w.status === 'Unpublished') return {t: 'Unpublished on Walmart' + (/pric/i.test(w.reason || '') ? ': Pricing Rule' : w.reason ? ': ' + w.reason.slice(0, 60) : ''), c: 'lc-bad'};
+  if(w.status !== 'Published') return {t: `Walmart status: ${w.status}`, c: 'lc-bad'};
+  if(w.price === null || w.price === undefined) return {t: 'Walmart price not read', c: 'lc-gray'};
+  if(Math.abs(w.price - list) < 0.01) return {t: `Walmart matches the List Price ${money(list)}; Amazon has not picked it up yet`, c: 'lc-small'};
+  if(w.price < list) return {t: `Walmart ${money(w.price)} is below the List Price ${money(list)}`, c: 'lc-bad'};
+  return {t: `Walmart ${money(w.price)} is above the List Price ${money(list)}`, c: 'lc-small'};
+}
 function rvStrike(F){
   F = F || ST_F;
   const ti = x=> { const i = RV_TIERS.indexOf(x.tier); return i === -1 ? 9 : i; };
@@ -8149,7 +8181,9 @@ function rvStrike(F){
     const row = (x.sku && ROWS.find(r=> r.sku === x.sku)) || ROWS.find(r=> r.asin === x.asin);
     const wasShown = x.was !== null && x.was !== undefined ? !/^none$/i.test(x.was) && x.was !== '' : null;
     const change = wasShown === null ? '' : wasShown && !x.shown ? 'lost' : !wasShown && x.shown ? 'new' : (x.was !== x.page ? 'changed' : '');
-    return Object.assign({}, x, {fam: x.family || 'No family', list: row ? (smk === 'CA' ? row.caList : row.usList) : null, wm: smk === 'CA' ? null : rbWalmart(x.asin), change});
+    const o = Object.assign({}, x, {fam: x.family || 'No family', list: row ? (smk === 'CA' ? row.caList : row.usList) : null, wm: smk === 'CA' ? null : (WM[x.sku] && WM[x.sku].price !== null && WM[x.sku].price !== undefined ? WM[x.sku].price : rbWalmart(x.asin)), change});
+    o.why = stWhy(o, smk);
+    return o;
   });
   if(F.tier) a = a.filter(x=> x.tier === F.tier);
   if(F.brand) a = a.filter(x=> x.brand === F.brand);
@@ -8170,7 +8204,7 @@ function rvStrikeTable(rows, grouped){
   }
   const money = v=>{ if(v === null || v === undefined || v === '') return '\u2014'; if(typeof v === 'number') return usd(v);
     return esc(String(v).replace(/^\s*our price\s*/i, '')); };
-  const two = !!RV.prevRun;
+  const two = true;   // Nov 11: a change shows whenever an earlier reading exists (weekly or daily)
   const chg = {lost:'<div class="mut" style="font-size:.74rem;color:#a3261a">Lost since last check</div>', new:'<div class="mut" style="font-size:.74rem;color:#17694a">New since last check</div>', changed:'<div class="mut" style="font-size:.74rem">Changed</div>'};
   const amt = t=>{ const m = String(t || '').match(/\$\s*([\d,]+(?:\.\d+)?)/); return m ? Number(m[1].replace(/,/g, '')) : null; };
   const tag = x=>{
@@ -8181,12 +8215,13 @@ function rvStrikeTable(rows, grouped){
       return `<span class="lcchip lc-ok">List Price ${usd(a)}</span><div class="mut" style="font-size:.72rem;color:#8a5a00">differs from Master SKU</div>`; }
     return `<span class="lcchip lc-ok">${esc(x.page.replace(/^typical price/i, 'Typical price'))}</span>`; };
   return '<div style="overflow-x:auto;margin:.4rem 1rem"><table class="rv-t" style="min-width:820px;background:#fff;border:1px solid var(--line);border-radius:8px">'+
-    '<colgroup><col style="width:33%"><col style="width:10%"><col style="width:18%"><col style="width:11%"><col style="width:14%"><col style="width:14%"></colgroup>'+
-    '<tr><td style="padding-left:.6rem">Product</td><td class="num">Stock</td><td>Strike-through</td><td>Our price</td><td>List Price (Master SKU)</td><td>Walmart</td></tr>'+
-    rows.map(x=> (x._head ? `<tr data-stfam="${esc(x._head.fam)}" style="cursor:pointer"><td colspan="6" style="padding:.5rem .6rem;background:#f4f1fb;color:#4b3a8f;font-weight:700"><span aria-hidden="true" style="display:inline-block;width:1.1rem">${ST_COLL.has(x._head.fam) ? '\u25b6' : '\u25bc'}</span>${esc(x._head.fam === 'No family' ? 'Not in a variation' : x._head.fam)} <span class="mut" style="font-weight:400">\u00b7 ${x._head.n} listing${x._head.n === 1 ? '' : 's'}</span>${x._head.none ? ` <span class="lcchip lc-bad" style="margin-left:.3rem">${x._head.none} without a strike-through</span>` : ` <span class="lcchip lc-ok" style="margin-left:.3rem">All OK</span>`}</td></tr>` : '') +
+    '<colgroup><col style="width:26%"><col style="width:8%"><col style="width:15%"><col style="width:21%"><col style="width:9%"><col style="width:11%"><col style="width:10%"></colgroup>'+
+    '<tr><td style="padding-left:.6rem">Product</td><td class="num">Stock</td><td>Strike-through</td><td>Why not</td><td>Our price</td><td>List Price (Master SKU)</td><td>Walmart</td></tr>'+
+    rows.map(x=> (x._head ? `<tr data-stfam="${esc(x._head.fam)}" style="cursor:pointer"><td colspan="7" style="padding:.5rem .6rem;background:#f4f1fb;color:#4b3a8f;font-weight:700"><span aria-hidden="true" style="display:inline-block;width:1.1rem">${ST_COLL.has(x._head.fam) ? '\u25b6' : '\u25bc'}</span>${esc(x._head.fam === 'No family' ? 'Not in a variation' : x._head.fam)} <span class="mut" style="font-weight:400">\u00b7 ${x._head.n} listing${x._head.n === 1 ? '' : 's'}</span>${x._head.none ? ` <span class="lcchip lc-bad" style="margin-left:.3rem">${x._head.none} without a strike-through</span>` : ` <span class="lcchip lc-ok" style="margin-left:.3rem">All OK</span>`}</td></tr>` : '') +
       (grouped && ST_COLL.has(x.fam) ? '' : `<tr><td style="padding-left:.6rem"><div style="font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis" title="${esc(x.name || x.sku)}">${esc(x.name || x.sku)}</div>`+
       `<div class="rv-id" style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${skuL(x.sku, x.mk || 'US')} \u00b7 Tier ${esc(x.tier || '?')} \u00b7 ${esc(x.brand)}</div></td>`+ stockTd(x, x.mk || 'US') +
-      `<td>${tag(x)}${two && x.change ? chg[x.change] + (x.was ? `<div class="mut" style="font-size:.72rem">was ${esc(x.was)}</div>` : '') : ''}</td>`+
+      `<td>${tag(x)}${two && x.change ? chg[x.change] + (x.was ? `<div class="mut" style="font-size:.72rem">was ${esc(x.was)}</div>` : '') : ''}${x.d ? `<div class="mut" style="font-size:.7rem">checked ${esc(shortDate(String(x.d).slice(0, 10)))}</div>` : ''}</td>`+
+      `<td style="font-size:.8rem">${x.why ? `<span class="lcchip ${x.why.c}" style="white-space:normal">${esc(x.why.t)}</span>` : ''}</td>`+
       `<td>${money(x.price)}</td><td>${money(x.list)}</td><td>${money(x.wm)}</td></tr>`)).join('')+
   '</table></div><div class="rv-note" style="margin:0 1rem 1rem">A List Price strike-through needs that price recently at another retailer, or sales on Amazon at that price (Amazon rule since Apr 23, 2026). A Typical price strike-through comes from Amazon\u2019s own 90-day price history. Pricing decisions stay with Haris and Sam.</div>';
 }
@@ -8259,7 +8294,7 @@ function renderStrike(){
   const cp = document.getElementById('stCopy'); if(cp) cp.onclick = ()=>{
     const m = x=> x === null || x === undefined || x === '' ? 'n/a' : (typeof x === 'number' ? usd(x) : String(x).replace(/^\s*our price\s*/i, ''));
     const t = `Strike-through check ${run ? run.date.slice(0, 10) : ''}: ${rows.length} listing${rows.length === 1 ? '' : 's'}\n` +
-      rows.map(x=> `• ${x.sku} (Tier ${x.tier || '?'}): ${x.shown ? x.page : 'none'}${x.change === 'lost' ? ' (lost, was ' + x.was + ')' : ''}. Our price ${m(x.price)}, List Price ${m(x.list)}, Walmart ${m(x.wm)}`).join('\n');
+      rows.map(x=> `• ${x.sku} (Tier ${x.tier || '?'}): ${x.shown ? x.page : 'none'}${x.change === 'lost' ? ' (lost, was ' + x.was + ')' : ''}. Our price ${m(x.price)}, List Price ${m(x.list)}, Walmart ${m(x.wm)}${x.why ? '. Why: ' + x.why.t : ''}`).join('\n');
     (navigator.clipboard ? navigator.clipboard.writeText(t) : Promise.reject()).then(()=>{ cp.textContent = 'Copied'; }).catch(()=> window.prompt('Copy:', t));
   };
 }
