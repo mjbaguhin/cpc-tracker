@@ -959,7 +959,7 @@ a.idl:hover{color:var(--accent);border-bottom-style:solid}
   <button id="casesBtn" hidden>Cases</button>
   <!-- Modules grouped by how MJ checks them each day (Oct 26) -->
   <nav id="navGroups" aria-label="Modules">
-    <div class="ng"><div class="ng-l">Today</div><div class="ng-b"><button id="catalogBtn">Catalog</button><button id="prBtn">Master SKU</button><button id="xcBtn">Cross Channel</button><button id="tkBtn" hidden>My tasks</button></div></div>
+    <div class="ng"><div class="ng-l">Today</div><div class="ng-b"><button id="catalogBtn">Catalog</button><button id="prBtn">Master SKU</button><button id="xcBtn">Cross Channel</button><button id="tkBtn" hidden style="display:none !important">My tasks</button></div></div>
     <div class="ng"><div class="ng-l">Price and Buy Box <span class="ng-t" data-ngt="price"></span></div>
       <div class="ng-b" data-ng="price"><button id="cptBtn">CPT tracker</button><button id="bbBtn">Buy Box</button><button id="lpBtn">List Price</button><button id="stBtn">Strike-through</button></div></div>
     <div class="ng"><div class="ng-l">Listing health <span class="ng-t" data-ngt="listing"></span></div>
@@ -5002,6 +5002,7 @@ const LC_SORT = { tier: r=> (TIER_RANK[r.tier] !== undefined ? TIER_RANK[r.tier]
 LC_COLS.forEach(c=> LC_SORT['f_' + c[0]] = r=> r.nolive ? 9 : stRank((r.f || {})[c[0]]));
 
 function renderLc(){
+  LC_F.q = ''; LC_F.tier = '';   // Nov 12: the top bar does search and tier
   document.getElementById('msg').hidden = true;
   document.getElementById('bar').innerHTML = '';
   const v = document.getElementById('cptView');
@@ -5040,9 +5041,8 @@ function renderLc(){
       tile('Correct copy %', pct + '%', pct >= 98 ? 'good' : pct >= 90 ? 'warn' : 'bad', `${ok} of ${checked} fields match Plytix${oosTxt}`)+
       tile('Listings 100% correct', `${good.length}<span style="font-size:1rem;color:var(--c-night-mut)"> of ${all.length}</span>`, good.length === all.length ? 'good' : 'warn', '')+
       tile('Listings with a mismatch', wrong.length, wrong.length ? 'bad' : 'good', wrong.length ? list(wrong) : 'None')+
-      (CH ? tile('Changed on Amazon', chA.length, chA.length ? 'bad' : 'good', chA.length ? list(chA) : 'None')+
-            tile('Not pushed yet', chP.length, chP.length ? 'warn' : 'good', chP.length ? list(chP) : 'None')+
-            tile('Old mismatch', chO.length, chO.length ? 'warn' : 'good', CH.started ? 'Before ' + esc(shortDate(CH.started)) : '')+
+      (CH ? tile('Amazon changed it', chA.length, chA.length ? 'bad' : 'good', chA.length ? list(chA) : '')+
+            tile('Waiting to push', chP.length, chP.length ? 'warn' : 'good', chP.length ? list(chP) : '')+
             tile('Explained in Slack', chS.length, chS.length ? 'good' : '', chS.length ? list(chS) : 'None')
           : (()=>{ const t = tile('Which side changed', '\u2014', '', CH_ERR ? 'No history yet' : 'Loading\u2026'); n += 3; return t; })())+
       tile('Title mismatch', has('title').length, has('title').length ? 'bad' : 'good', has('title').length ? list(has('title')) : 'None')+
@@ -5057,17 +5057,7 @@ function renderLc(){
     rbBanner()+
     mk2Note('Checked against the (cm) copy')+
     (CH && chAgeDays() > 2 ? `<div class="why"><b>History not updated</b> for ${chAgeDays()} days. Check Copy History in Apps Script.</div>` : '')+
-    '<div class="cpt-tools">' + mk2Seg() + '<div class="seg" id="lcSeg">'+
-      [['all','All ' + all.length], ['wrong','Mismatch ' + wrong.length], ['title','Title ' + has('title').length],
-       ['bullets','Bullets ' + bul.length], ['desc','Description ' + has('desc').length], ['gk','Keywords ' + gk.length],
-       ['cha','Changed on Amazon ' + all.filter(r=> r.cause === 'amazon').length], ['chp','Not pushed yet ' + all.filter(r=> r.cause === 'plytix').length],
-       ['blank','Blank in Plytix ' + blank.length], ['rba','Amazon rules ' + rbA.length], ['rbb','Brand guide ' + rbB.length], ['px','Plytix check ' + pxOff.length]]
-        .map(b=> `<button data-show="${b[0]}" aria-pressed="${LC_F.show === b[0]}">${b[1]}</button>`).join('')+
-    '</div><div class="seg" id="lcTier">'+
-      ['', 'A', 'B', 'C', 'X', 'N'].map(t=> `<button data-t="${t}" aria-pressed="${LC_F.tier === t}">${t ? 'Tier ' + t : 'All tiers'}</button>`).join('')+
-    '</div>'+
-    `<input id="lcQ" type="search" placeholder="Search SKU, ASIN or product" value="${esc(LC_F.q)}" aria-label="Search Listing Copy">`+
-    (LC_F.sort ? '<button id="lcUnsort">Clear sort</button>' : '')+
+    '<div class="cpt-tools">' + mk2Seg() +     (LC_F.sort ? '<button id="lcUnsort">Clear sort</button>' : '')+
     grpBtn(LC_F) + dlBtns() + '<button data-rbopen="1">Rulebook</button>' +
     (rows.some(r=> lcWrong(r).length) ? '<button id="lcAmzF" class="work strong">Amazon upload file</button><button id="lcPxF">Plytix file (Amazon text)</button>' : '') +
     (rows.some(r=> (r.px || []).some(x=> x.fix)) ? '<button id="lcPxClean">Plytix cleanup file</button>' : '') +
@@ -5084,7 +5074,6 @@ function renderLc(){
     const H = (k, label, cls, tip, d)=> `<th data-s="${k}" data-d="${d || 'asc'}" class="${cls || ''}">${label}${tip ? `<span class="qi" tabindex="0" data-tip="${esc(tip)}">?</span>` : ''}${sortArrow(LC_F, k)}</th>`;
     html += '<table class="cpt-table bb-table lc-table"><thead><tr>'+
       H('product', 'Product') + TIER_TH +
-      H('pct', 'Correct %', 'b-cpt c', 'Fields on Amazon that match Plytix, out of the fields we can compare.')+
       H('rb', 'Rules', 'b-gap c', 'Screened every day against the rulebook (Amazon rules and our brand guide), live copy and Plytix. Sort to bring problems to the top.')+
       LC_COLS.map(c=> H('f_' + c[0], c[1], (c[0] === 'gk' ? 'b-sim' : 'b-gap') + ' c', 'Sort to bring problems to the top.')).join('')+
       H('since', 'Copy last changed', 'b-move', 'The day the live Amazon copy last changed, as Keepa saw it.', 'desc')+
@@ -5093,7 +5082,6 @@ function renderLc(){
         `<td class="prod"><div class="p-name"><span class="dot" style="background:${r.nolive ? '#94a3b8' : r.allOk ? '#1f9d55' : '#d64545'}"></span>${esc(String(r.name).slice(0, 60))}</div>`+
           `<div class="p-id"><span>SKU</span>${skuL(r.sku, MK2)}${cpy(r.sku)}</div><div class="p-id"><span>ASIN</span>${asinL(r.asin, MK2)}${cpy(r.asin)}</div>`+
           `${r.tier ? `<span class="p-size">Tier ${esc(r.tier)}</span>` : ''}${pxChip(r)}${r.cause === 'slack' ? ' ' + chNoteChip(r.notes[0]) : r.cause && r.cause !== 'old' ? ' ' + chChip(Object.values(r.why).find(w=> w.s === r.cause)) : ''}</td>`+
-        `<td class="c">${r.nolive ? '<span class="mut">Not checked yet</span>' : r.pct === null ? '<span class="mut">\u2014</span>' : bbBar(r.pct)}</td>`+
         `<td class="c">${rbChip(r.rb)}</td>`+
         LC_COLS.map(c=> `<td class="c">${r.nolive ? '' : lcChip(r.f[c[0]])}</td>`).join('')+
         `<td>${r.since ? esc(shortDate(r.since)) : '<span class="mut">No change seen</span>'}${r.extra ? `<span class="was">${r.extra} extra bullet${r.extra > 1 ? 's' : ''} on Amazon</span>` : ''}</td>`+
@@ -5232,6 +5220,7 @@ function lpRows(){
 const LP_SORT = {tier: r=> (TIER_RANK[r.tier] !== undefined ? TIER_RANK[r.tier] : 9), product: r=> r.name, stock: r=> stockOf(r, MK2), set: r=> r.set ? 1 : 0, live: r=> r.live, ours: r=> r.ours, todo: r=> r.set ? 1 : 0, rb: r=> -((r.rb || []).length)};
 
 function renderLp(){
+  LP_F.q = ''; LP_F.tier = '';   // Nov 12: the top bar does search and tier
   document.getElementById('msg').hidden = true;
   document.getElementById('bar').innerHTML = '';
   const v = document.getElementById('cptView');
@@ -5259,14 +5248,7 @@ function renderLp(){
     '</div></section>'+
     rbBanner()+
     mk2Note('Compared with CA Sale Price')+
-    '<div class="cpt-tools">' + mk2Seg() + '<div class="seg" id="lpSeg">'+
-      [['all','All ' + all.length], ['empty','Empty ' + empty.length], ['set','Set ' + set.length]]
-        .map(b=> `<button data-show="${b[0]}" aria-pressed="${LP_F.show === b[0]}">${b[1]}</button>`).join('')+
-    '</div><div class="seg" id="lpTier">'+
-      ['', 'A', 'B', 'C', 'X', 'N'].map(t=> `<button data-t="${t}" aria-pressed="${LP_F.tier === t}">${t ? 'Tier ' + t : 'All tiers'}</button>`).join('')+
-    '</div>'+
-    `<input id="lpQ" type="search" placeholder="Search SKU, ASIN or product" value="${esc(LP_F.q)}" aria-label="Search List Price">`+
-    (LP_F.sort ? '<button id="lpUnsort">Clear sort</button>' : '')+
+    '<div class="cpt-tools">' + mk2Seg() +     (LP_F.sort ? '<button id="lpUnsort">Clear sort</button>' : '')+
     grpBtn(LP_F) + dlBtns() + '<button data-rbopen="1">Rulebook</button>' +
     `<span class="count">${rows.length} of ${all.length}</span></div>`;
 
@@ -5323,7 +5305,7 @@ function renderLp(){
    correct value is from the Master SKU sheet. */
 let CG = [], CG_META = {}, CG_ERR = '', CG_VIEW = [];
 const CG_F = {show:'all', q:'', sort:'', dir:1, tier:'', mk:'US', group:true};   // grouped by parent by default (MJ, Oct 22)
-const CG_COLS = [['gl','GL'], ['pt','Product Type'], ['sd','Search dept'], ['path','Full path'], ['itk','ITK'], ['node','Browse node']];
+const CG_COLS = [['gl','GL'], ['pt','Product Type'], ['sd','Search dept'], ['path','Browse path'], ['itk','ITK'], ['node','Browse node']];
 const CG_S = {
   match:    ['OK', 'lc-ok', 'Same as the Master SKU sheet'],
   leaf:     ['Last level OK', 'lc-small', 'The last level matches, the levels above it differ'],
@@ -5521,6 +5503,7 @@ function cgCell(x, k, nolive){
 }
 
 function renderCategory(){
+  CG_F.q = ''; CG_F.tier = '';   // Nov 12: the top bar does search and tier
   document.getElementById('msg').hidden = true;
   document.getElementById('bar').innerHTML = '';
   const v = document.getElementById('cptView');
@@ -5550,26 +5533,19 @@ function renderCategory(){
       `<span class="sub">Amazon ${CG_F.mk} vs the Master SKU sheet, ${all.length} active listings</span>`+
       (CG_META.updated ? `<span class="cpt-live"><i></i>Checked ${esc(CG_META.updated)} ET</span>` : '')+
     '</div><div class="cpt-tiles">'+
-      tile('Category correct %', pct + '%', pct >= 98 ? 'good' : pct >= 90 ? 'warn' : 'bad', `${ok} of ${checked} checks match (path and node count as one)${oosTxt}`)+
+      tile('Category correct %', pct + '%', pct >= 98 ? 'good' : pct >= 90 ? 'warn' : 'bad', `${ok} of ${checked} checks match`)+
       tile('Listings 100% correct', `${good.length}<span style="font-size:1rem;color:var(--c-night-mut)"> of ${all.length}</span>`, good.length === all.length ? 'good' : 'warn', '')+
       tile('Listings with a wrong category', wrong.length, wrong.length ? 'bad' : 'good', wrong.length ? list(wrong) : 'None')+
-      (()=>{ const t = t1('GL wrong', 'gl'); return CG_F.mk === 'US' && GLX && GLX.snapshot ? t.replace(/<div class="n">([\s\S]*?)<\/div><\/div>$/, (m, n)=> `<div class="n">${n} \u00b7 temporary report ${esc(GLX.snapshot)}</div></div>`) : t; })() + t1('Product Type wrong', 'pt') + t1('Search dept wrong', 'sd') + t1('Full path wrong', 'path') + t1('ITK wrong', 'itk') + t1('Browse node wrong', 'node')+
+      t1('GL wrong', 'gl') + t1('Product Type wrong', 'pt') + t1('Search dept wrong', 'sd') + t1('Browse path wrong', 'path') + t1('ITK wrong', 'itk') + t1('Browse node wrong', 'node')+
       tile('Blank in Master SKU', blank.length, blank.length ? 'warn' : 'good', blank.length ? 'Correct value missing' : 'None')+
-      tile('Page breadcrumb stops short', SIG ? crumbBad.length : '\u2014', !SIG ? '' : crumbBad.length ? 'warn' : 'good', !SIG ? 'No breadcrumb check yet' : crumbBad.length ? list(crumbBad) + ' \u00b7 not in the %' : 'All pages OK')+
-      tile('Ranks outside its category (Keepa BSR)', SIG ? rankBad.length : '\u2014', !SIG ? '' : rankBad.length ? 'warn' : 'good', !SIG ? 'No rank data yet' : rankBad.length ? list(rankBad) + ' \u00b7 not in the %' : 'None')+
+      tile('Breadcrumb incomplete on the page', SIG ? crumbBad.length : '\u2014', !SIG ? '' : crumbBad.length ? 'bad' : 'good', !SIG ? '' : crumbBad.length ? list(crumbBad) : '')+
+      tile('Ranked in a different category', SIG ? rankBad.length : '\u2014', !SIG ? '' : rankBad.length ? 'warn' : 'good', !SIG ? '' : rankBad.length ? list(rankBad) : '')+
       rbTile(all, 'Breaks an Amazon category rule')+
     '</div></section>'+
     rbBanner()+ caseSumLine(caseSum(all.map(r=> r.cst)), 'cgCaseFu')+
     '<div class="cpt-tools"><div class="seg" id="cgMk">'+
       ['US','CA'].map(m=> `<button data-mk="${m}" aria-pressed="${CG_F.mk === m}">${m === 'US' ? 'Amazon US' : 'Amazon CA'} ${cgRows(m).filter(r=> r.bad.length).length ? '<span class="badge" style="margin-left:.3rem">' + cgRows(m).filter(r=> r.bad.length).length + '</span>' : ''}</button>`).join('')+
-    '</div><div class="seg" id="cgSeg">'+
-      [['all','All ' + all.length], ['wrong','Wrong ' + wrong.length], ['blank','Blank in Master SKU ' + blank.length], ['crumb','Breadcrumb ' + crumbBad.length], ['rank','BSR category ' + rankBad.length]]
-        .map(b=> `<button data-show="${b[0]}" aria-pressed="${CG_F.show === b[0]}">${b[1]}</button>`).join('')+
-    '</div><div class="seg" id="cgTier">'+
-      ['', 'A', 'B', 'C', 'X', 'N'].map(t=> `<button data-t="${t}" aria-pressed="${CG_F.tier === t}">${t ? 'Tier ' + t : 'All tiers'}</button>`).join('')+
-    '</div>'+
-    `<input id="cgQ" type="search" placeholder="Search SKU, ASIN or product" value="${esc(CG_F.q)}" aria-label="Search Category">`+
-    (CG_F.sort ? '<button id="cgUnsort">Clear sort</button>' : '')+
+        '</div>' + (CG_F.sort ? '<button id="cgUnsort">Clear sort</button>' : '')+
     (rows.some(r=> r.bad.length) ? `<button id="cgAll" class="work strong">Draft one case for all ${rows.filter(r=> r.bad.length).length} wrong</button>` : '')+
     grpBtn(CG_F) + dlBtns('<button data-dlx="1">Download with listing copy</button>') + '<button id="cgTips">Why does this happen?</button><button data-rbopen="1">Rulebook</button>' + (rows.some(r=> r.bad.length) ? '<button id="cgFlatT">Download flat file values</button>' : '') +
     `<span class="count">${rows.length} of ${all.length}</span></div>`;
@@ -5586,7 +5562,6 @@ function renderCategory(){
     const mk = CG_F.mk;
     html += '<table class="cpt-table bb-table lc-table cg-table"><thead><tr>'+
       H('product', 'Product') + TIER_TH +
-      H('pct', 'Correct %', 'b-cpt c', 'Checks on Amazon that match the Master SKU sheet, out of the ones we can compare.')+
       H('rb', 'Rules', 'b-gap c', 'Screened every day against Amazon\u2019s category rules in the rulebook. Click the chip for details.')+
       CG_COLS.map(c=> H('f_' + c[0], c[1], 'b-gap c', 'Sort by value, A to Z.')).join('')+
       H('cgbsr', 'BSR', 'b-gap c', 'Main rank and sub-category rank, as on the product page (Keepa). Red = ranks in a category that is not the correct browse node. Sorts by the sub-category rank.')+
@@ -5597,7 +5572,6 @@ function renderCategory(){
         `<td class="prod"><div class="p-name"><span class="dot" style="background:${r.nolive ? '#94a3b8' : r.allOk ? '#1f9d55' : '#d64545'}"></span>${esc(String(r.name).slice(0, 60))}</div>`+
           `<div class="p-id"><span>SKU</span>${skuL(r.sku, mk)}${cpy(r.sku)}</div><div class="p-id"><span>ASIN</span>${asinL(r.asin, mk)}${cpy(r.asin)}</div>`+
           `${r.tier ? `<span class="p-size">Tier ${esc(r.tier)}</span>` : ''}</td>`+
-        `<td class="c">${r.nolive ? '<span class="mut">Not checked yet</span>' : r.pct === null ? '<span class="mut">\u2014</span>' : bbBar(r.pct)}</td>`+
         `<td class="c"><span data-rbrow="${esc(r.asin)}" style="cursor:pointer">${rbChip(r.rb || [])}</span></td>`+
         CG_COLS.map(c=> `<td class="cgtd${c[0] === 'path' ? ' cgtdp' : ''}">${c[0] === 'path' ? cgPathCell(r) + pcBadge(r) : cgCell((r.c || {})[c[0]], c[0], r.nolive)}</td>`).join('')+
         `<td class="cgtd">${cgBsrCell(r)}</td>`+
@@ -7304,7 +7278,7 @@ function dlPr(rows){
    that module (Download, upload files, flat files) has only the ticked
    listings. Nothing ticked: everything shown, as before. */
 const SEL = {};
-const SEL_ATTR = ['data-lc','data-cg','data-vr','data-bb','data-bs','data-pr','data-asin','data-lp','data-ms','data-xc'];
+const SEL_ATTR = ['data-lc','data-cg','data-vr','data-bb','data-bs','data-pr','data-asin','data-lp','data-ms','data-xc','data-st'];
 function selSet(){ const v = S.view || 'x'; return SEL[v] = SEL[v] || new Set(); }
 function selKey(tr){ for(const a of SEL_ATTR){ const k = tr.getAttribute(a); if(k) return k; } return ''; }
 /* Header shows each module's main % instead of an issue count (MJ, Oct 27).
@@ -7465,7 +7439,7 @@ function colResize(view){
 function selBar(view){
   const n = selSet().size, tools = view.querySelector('.cpt-tools');
   if(!tools) return;
-  if(S.view === 'st' || S.view === 'rv' || S.view === 'catalog' || !view.querySelector('tr.row')){ const old = tools.querySelector('.selbar'); if(old) old.remove(); return; }
+  if(S.view === 'rv' || S.view === 'catalog' || !view.querySelector('tr.row')){ const old = tools.querySelector('.selbar'); if(old) old.remove(); return; }
   tierBtn(tools);
   if(view.querySelector('tr.gh') && !tools.querySelector('.grpall')){
     const b = document.createElement('button'); b.className = 'grpall';
@@ -7483,6 +7457,7 @@ function selBar(view){
 }
 function selDecorate(force){
   const view = document.getElementById('cptView'); if(!view) return;
+  view.querySelectorAll('.cpt-tile .n').forEach(n=>{ if(/^(none|none yet|all good|all ok|all pages ok)\.?$/i.test(n.textContent.trim())) n.innerHTML = '&nbsp;'; });
   view.querySelectorAll('table').forEach(t=>{ const n = t.querySelectorAll('thead th').length; if(n) t.querySelectorAll('tr.gh > td[colspan]').forEach(td=>{ if(+td.colSpan !== n) td.colSpan = n; }); });
   const set = selSet();
   view.querySelectorAll('tr.row').forEach(tr=>{
@@ -8385,36 +8360,60 @@ function rvStrike(F){
   const rank = x=> x.change === 'lost' ? 0 : !x.shown ? 1 : x.change ? 2 : 3;
   return a.sort((x, y)=> rank(x) - rank(y) || ti(x) - ti(y) || x.fam.localeCompare(y.fam) || x.sku.localeCompare(y.sku));
 }
-function rvStrikeTable(rows, grouped){
-  // Nov 9: group by variation family (parent), standalone listings last
-  if(grouped){
-    const fams = {};
-    rows.forEach(x=> (fams[x.fam] = fams[x.fam] || []).push(x));
-    const keys = Object.keys(fams).sort((a, b)=> (a === 'No family') - (b === 'No family') || a.localeCompare(b));
-    rows = []; keys.forEach(k=>{ const g = fams[k]; g.forEach((x, i)=> rows.push(Object.assign({}, x, {_head: i === 0 ? {fam: k, n: g.length, none: g.filter(y=> !y.shown).length} : null}))); });
-  }
+function rvStrikeTable(rows){
+  // Nov 12 (MJ): the standard table: fixed header and first column, tick boxes, families collapsed
   const money = v=>{ if(v === null || v === undefined || v === '') return '\u2014'; if(typeof v === 'number') return usd(v);
     return esc(String(v).replace(/^\s*our price\s*/i, '')); };
-  const two = true;   // Nov 11: a change shows whenever an earlier reading exists (weekly or daily)
-  const chg = {lost:'<div class="mut" style="font-size:.74rem;color:#a3261a">Lost since last check</div>', new:'<div class="mut" style="font-size:.74rem;color:#17694a">New since last check</div>', changed:'<div class="mut" style="font-size:.74rem">Changed</div>'};
+  const chg = {lost:'<div class="mut" style="font-size:.72rem;color:#a3261a">Lost since last check</div>', new:'<div class="mut" style="font-size:.72rem;color:#17694a">New since last check</div>', changed:'<div class="mut" style="font-size:.72rem">Changed since last check</div>'};
   const amt = t=>{ const m = String(t || '').match(/\$\s*([\d,]+(?:\.\d+)?)/); return m ? Number(m[1].replace(/,/g, '')) : null; };
   const tag = x=>{
     if(!x.shown) return '<span class="lcchip lc-bad">None</span>';
-    if(/^list/i.test(x.page)){ const a = amt(x.page), same = a !== null && typeof x.list === 'number' && Math.abs(a - x.list) < 0.01;
-      if(same || a === null) return '<span class="lcchip lc-ok">List Price</span>';
-      if(typeof x.list !== 'number') return `<span class="lcchip lc-ok">List Price ${usd(a)}</span>`;   // nothing in the Master SKU to compare with
-      return `<span class="lcchip lc-ok">List Price ${usd(a)}</span><div class="mut" style="font-size:.72rem;color:#8a5a00">differs from Master SKU</div>`; }
+    if(/^list/i.test(x.page)){ const a = amt(x.page); return `<span class="lcchip lc-ok">List Price${a !== null ? ' ' + usd(a) : ''}</span>`; }
     return `<span class="lcchip lc-ok">${esc(x.page.replace(/^typical price/i, 'Typical price'))}</span>`; };
-  return '<div style="overflow-x:auto;margin:.4rem 1rem"><table class="rv-t" style="min-width:820px;background:#fff;border:1px solid var(--line);border-radius:8px">'+
-    '<colgroup><col style="width:26%"><col style="width:8%"><col style="width:15%"><col style="width:21%"><col style="width:9%"><col style="width:11%"><col style="width:10%"></colgroup>'+
-    '<tr><td style="padding-left:.6rem">Product</td><td class="num">Stock</td><td>Strike-through</td><td>Why not</td><td>Our price</td><td>List Price (Master SKU)</td><td>Walmart</td></tr>'+
-    rows.map(x=> (x._head ? `<tr data-stfam="${esc(x._head.fam)}" style="cursor:pointer"><td colspan="7" style="padding:.5rem .6rem;background:#f4f1fb;color:#4b3a8f;font-weight:700"><span aria-hidden="true" style="display:inline-block;width:1.1rem">${ST_COLL.has(x._head.fam) ? '\u25b6' : '\u25bc'}</span>${esc(x._head.fam === 'No family' ? 'Not in a variation' : x._head.fam)} <span class="mut" style="font-weight:400">\u00b7 ${x._head.n} listing${x._head.n === 1 ? '' : 's'}</span>${x._head.none ? ` <span class="lcchip lc-bad" style="margin-left:.3rem">${x._head.none} without a strike-through</span>` : ` <span class="lcchip lc-ok" style="margin-left:.3rem">All OK</span>`}</td></tr>` : '') +
-      (grouped && ST_COLL.has(x.fam) ? '' : `<tr><td style="padding-left:.6rem"><div style="font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis" title="${esc(x.name || x.sku)}">${esc(x.name || x.sku)}</div>`+
-      `<div class="rv-id" style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${skuL(x.sku, x.mk || 'US')} \u00b7 Tier ${esc(x.tier || '?')} \u00b7 ${esc(x.brand)}</div></td>`+ stockTd(x, x.mk || 'US') +
-      `<td>${tag(x)}${two && x.change ? chg[x.change] + (x.was ? `<div class="mut" style="font-size:.72rem">was ${esc(x.was)}</div>` : '') : ''}${x.d ? `<div class="mut" style="font-size:.7rem">checked ${esc(shortDate(String(x.d).slice(0, 10)))}</div>` : ''}</td>`+
+  const H = (k, label, cls)=> `<th data-s="${k}" data-d="asc" class="${cls || ''}">${label}${sortArrow(ST_F, k)}</th>`;
+  const tr = x=> `<tr class="row" data-st="${esc((x.mk || 'US') + '|' + x.asin)}"><td class="prod"><div class="p-name">${esc(String(x.name || x.sku).slice(0, 60))}</div>`+
+      `<div class="p-id"><span>SKU</span>${skuL(x.sku, x.mk || 'US')}${cpy(x.sku)}</div><div class="p-id"><span>ASIN</span>${asinL(x.asin, x.mk || 'US')}${cpy(x.asin)}</div></td>`+
+      tierTd(x)+
+      `<td>${tag(x)}${x.change && chg[x.change] ? chg[x.change] + (x.was ? `<div class="mut" style="font-size:.7rem">was ${esc(x.was)}</div>` : '') : ''}${x.d ? `<div class="mut" style="font-size:.7rem">checked ${esc(shortDate(String(x.d).slice(0, 10)))}</div>` : ''}</td>`+
       `<td style="font-size:.8rem">${x.why ? `<span class="lcchip ${x.why.c}" style="white-space:normal">${esc(x.why.t)}</span>` : ''}</td>`+
-      `<td>${money(x.price)}</td><td>${money(x.list)}</td><td>${money(x.wm)}</td></tr>`)).join('')+
-  '</table></div><div class="rv-note" style="margin:0 1rem 1rem">A List Price strike-through needs that price recently at another retailer, or sales on Amazon at that price (Amazon rule since Apr 23, 2026). A Typical price strike-through comes from Amazon\u2019s own 90-day price history. Pricing decisions stay with Haris and Sam.</div>';
+      `<td class="num">${money(x.price)}</td><td class="num">${money(x.list)}</td><td class="num">${money(x.wm)}</td></tr>`;
+  let body = '';
+  if(ST_F.sort) body = rows.map(tr).join('');
+  else {
+    const fams = {}; rows.forEach(x=> (fams[x.fam] = fams[x.fam] || []).push(x));
+    Object.keys(fams).sort((a, b)=> (a === 'No family') - (b === 'No family') || a.localeCompare(b)).forEach(k=>{
+      const g = fams[k], none = g.filter(y=> !y.shown).length;
+      body += `<tr class="gh"><td colspan="10"><b>${esc(k === 'No family' ? 'Not in a variation' : k)}</b> <span class="mut">\u00b7 ${g.length} listing${g.length === 1 ? '' : 's'}</span>${none ? ` <span class="lcchip lc-bad">${none} without a strike-through</span>` : ' <span class="lcchip lc-ok">All OK</span>'}</td></tr>` + g.map(tr).join('');
+    });
+  }
+  return '<table class="cpt-table lc-table"><thead><tr>' + H('product', 'Product') + TIER_TH + H('page', 'Strike-through') + H('why', 'Why not') +
+    H('price', 'Our price', 'num') + H('list', 'List Price', 'num') + H('wm', 'Walmart', 'num') + '</tr></thead><tbody>' + body + '</tbody></table>';
+}
+const ST_SORT = {product: x=> x.name || x.sku, tier: x=> (TIER_RANK[x.tier] !== undefined ? TIER_RANK[x.tier] : 9), page: x=> x.shown ? 1 : 0, why: x=> x.why ? x.why.t : '~',
+  price: x=>{ const m = String(x.price || '').match(/[\d.]+/); return m ? +m[0] : -1; }, list: x=> x.list || -1, wm: x=> x.wm || -1,
+  usstock: x=>{ const v = stockOf(x, 'US'); return v === null ? -1 : v; }, castock: x=>{ const v = stockOf(x, 'CA'); return v === null ? -1 : v; }};
+/* Strike-through history (Nov 12): every change seen on a product page, all time, from
+   the weekly check and the daily Tier A and B check (review.json strikeHist). */
+function stHistRows(mk){
+  const out = [];
+  (RV.strikeHist || []).filter(h=> (h.mk || 'US') === mk).forEach(h=>{
+    const ev = h.ev || [];
+    for(let i = 1; i < ev.length; i++){
+      const a = ev[i - 1][1], b = ev[i][1], sa = !!a && !/^none$/i.test(a), sb = !!b && !/^none$/i.test(b);
+      out.push({d: ev[i][0], h, from: a || 'None', to: b || 'None', kind: sa && !sb ? 'lost' : !sa && sb ? 'gained' : 'changed'});
+    }
+  });
+  return out.sort((x, y)=> x.d < y.d ? 1 : -1);
+}
+function stHistHtml(mk){
+  const L = stHistRows(mk), n = k=> L.filter(x=> x.kind === k).length;
+  const K = {lost:['Lost','lc-bad'], gained:['Gained','lc-ok'], changed:['Changed','lc-small']};
+  if(!RV.strikeHist) return '<div class="cpt-empty"><b>History starts with the next publish</b>Install the latest Review_Watch.gs and run pushReviewJson.</div>';
+  return `<div class="cpt-tools"><span class="count">${L.length} change${L.length === 1 ? '' : 's'} \u00b7 ${n('lost')} lost, ${n('gained')} gained</span></div>`+
+    (L.length ? '<table class="cpt-table lc-table"><thead><tr><th>Product</th><th>When</th><th class="c">Change</th><th>From</th><th>To</th></tr></thead><tbody>'+
+      L.map(x=> `<tr><td class="prod"><div class="p-name">${esc(String(x.h.name || x.h.sku).slice(0, 60))}</div><div class="p-id"><span>SKU</span>${skuL(x.h.sku, mk)}${cpy(x.h.sku)}</div><div class="p-id"><span>ASIN</span>${asinL(x.h.asin, mk)}${cpy(x.h.asin)}</div></td>`+
+        `<td>${esc(shortDate(String(x.d).slice(0, 10)))}</td><td class="c"><span class="lcchip ${K[x.kind][1]}">${K[x.kind][0]}</span></td><td>${esc(x.from)}</td><td>${esc(x.to)}</td></tr>`).join('') + '</tbody></table>'
+      : '<div class="cpt-empty"><b>No changes yet</b>Every reading so far shows the same strike-through.</div>');
 }
 /* STRIKE-THROUGH module (MJ, Oct 29): its own page in Price and Buy Box, fed by the
    strike-through the weekly Cowork PDP check reads on every product page. */
@@ -8424,68 +8423,48 @@ const ST_COLL = new Set();   // collapsed families on the Strike-through page
 try { Object.assign(ST_F, JSON.parse(localStorage.getItem('st_state') || '{}')); } catch(e){}
 const stKeep = ()=>{ try { localStorage.setItem('st_state', JSON.stringify(ST_F)); } catch(e){} };
 function renderStrike(){
-  ST_F.family = '';   // the Family dropdown was removed (Oct 30); search covers families
+  ST_F.family = ''; ST_F.tier = ''; ST_F.brand = ''; ST_F.q = '';   // the top bar does tier, brand and search (Nov 12)
   document.getElementById('msg').hidden = true;
   document.getElementById('bar').innerHTML = '';
-  const v = document.getElementById('cptView'), run = RV.run;
-  const all = rvStrike(Object.assign({}, ST_F_DEF, {show:'all', mk: ST_F.mk || 'US'})), rows = rvStrike(ST_F);
+  const v = document.getElementById('cptView'), run = RV.run, smk = ST_F.mk || 'US';
+  const all = rvStrike(Object.assign({}, ST_F_DEF, {show:'all', mk: smk}));
+  let rows = rvStrike(ST_F);
+  if(ST_F.sort && ST_SORT[ST_F.sort]) rows = sortBy(rows, ST_SORT[ST_F.sort], ST_F.dir || 1);
   const n = f=> all.filter(f).length, shown = n(x=> x.shown), none = n(x=> !x.shown);
-  const lp = n(x=> /^list/i.test(x.page)), tp = n(x=> /^typical/i.test(x.page)), wp = n(x=> x.shown && !/^(list|typical)/i.test(x.page));
-  const smk = ST_F.mk || 'US', sMiss = (RV.strikeMissing || []).filter(x=> (x.mk || 'US') === smk);
-  const lost = n(x=> x.change === 'lost'), gained = n(x=> x.change === 'new');
-  const fams = [...new Set(all.map(r=> r.fam))].sort(), brands = [...new Set(all.map(r=> r.brand).filter(Boolean))].sort();
-  const tile = (k, val, cls, note, f)=> `<div class="cpt-tile bbtile${ST_F.show === f ? ' on' : ''}" role="button" tabindex="0" data-sts="${f}"><div class="k">${k}</div><div class="v ${cls || ''}">${val}</div><div class="n">${note || '&nbsp;'}</div></div>`;
-  const sel = (id, label, opts, val)=> `<label class="mut" style="font-size:.78rem">${label} <select id="${id}"><option value="">All</option>${opts.map(o=> `<option value="${esc(o)}"${o === val ? ' selected' : ''}>${esc(o)}</option>`).join('')}</select></label>`;
+  const lp = n(x=> /^list/i.test(x.page)), tp = n(x=> /^typical/i.test(x.page));
+  const sMiss = (RV.strikeMissing || []).filter(x=> (x.mk || 'US') === smk), act = rvAct(smk);
+  const hist = stHistRows(smk), sc = stScore(smk);
+  const tile = (k, val, cls, note, f)=> `<div class="cpt-tile bbtile${(f === 'hist' ? ST_F.hist : !ST_F.hist && ST_F.show === f) ? ' on' : ''}" role="button" tabindex="0" data-sts="${f}"><div class="k">${k}</div><div class="v ${cls || ''}">${val}</div><div class="n">${note || '&nbsp;'}</div></div>`;
   let html = '<section class="cpt-top"><div class="cpt-head"><h2>Strike-through</h2>'+
-    `<span class="sub">${run ? `${all.length} product pages checked by Cowork on ${esc(shortDate(run.date.slice(0, 10)))}` : 'Read from each Amazon US product page by the weekly Cowork check'}</span>`+
+    (run ? `<span class="sub">Checked ${esc(shortDate(run.date.slice(0, 10)))}</span>` : '')+
+    (run ? `<span class="cpt-live"><i></i>${sMiss.length ? `${act - sMiss.length} of ${act} active covered` : `\u2713 All ${act} active covered`}</span>` : '')+
     '</div><div class="cpt-tiles">'+
-      tile('With a strike-through', shown, shown ? 'good' : '', `${lp} List Price \u00b7 ${tp} Typical price` + (wp ? ` \u00b7 ${wp} Was` : ''), 'shown')+
+      tile('Strike-through', sc && sc.n ? sc.pct + '%' : '\u2014', sc && sc.pct >= 90 ? 'good' : 'bad', '', 'all')+
+      tile('With a strike-through', shown, shown ? 'good' : '', `${lp} List Price \u00b7 ${tp} Typical price`, 'shown')+
       tile('No strike-through', none, none ? 'bad' : 'good', '', 'none')+
-      (()=>{ const sc = stScore(smk); if(!sc || !sc.n) return '';
-        const left = [sc.tierX ? sc.tierX + ' Tier X' : '', sc.oos ? sc.oos + ' out of stock' : ''].filter(Boolean).join(' and ');
-        return `<div class="cpt-tile"><div class="k">Score</div><div class="v ${sc.pct >= 90 ? 'good' : 'bad'}">${sc.pct}%</div><div class="n">${sc.shown} of ${sc.n} with a strike-through${left ? ' \u00b7 ' + left + ' not counted' : ''}</div></div>`; })()+
-      (run ? (()=>{ const miss = sMiss.length, act = rvAct(smk);
-        return tile('Coverage', miss ? `${act - miss}<span style="font-size:.95rem;color:var(--c-night-mut)"> of ${act}</span>` : `All ${act} \u2713`, miss ? 'bad' : 'good',
-          miss ? `${miss} active listing${miss === 1 ? '' : 's'} not checked` : 'Every active listing checked', 'missing'); })() : '')+
-      (RV.prevRun ? tile('Changes since last check', lost + gained, lost ? 'bad' : '', `${lost} lost \u00b7 ${gained} new, vs ${esc(shortDate(RV.prevRun.date.slice(0, 10)))}`, lost ? 'lost' : 'new') : '')+
+      tile('Strike-through history', hist.length, '', RV.strikeHist ? `${hist.filter(x=> x.kind === 'lost').length} lost \u00b7 ${hist.filter(x=> x.kind === 'gained').length} gained` : '', 'hist')+
     '</div></section>';
-  html += '<div class="cpt-tools rv-tools">'+ `<div class="seg" id="stMk">${['US','CA'].map(m=> `<button data-mk="${m}" aria-pressed="${(ST_F.mk || 'US') === m}">Amazon ${m}</button>`).join('')}</div>`+
-      sel('stTier', 'Tier', RV_TIERS, ST_F.tier) + sel('stBrand', 'Brand', brands, ST_F.brand)+
-      `<input id="stQ" type="search" placeholder="Search product, SKU or family" value="${esc(ST_F.q)}" style="max-width:240px">`+
-      `<button id="stGrp" aria-pressed="${ST_F.group !== false}"${ST_F.group !== false ? ' style="background:#1f3a5f;color:#fff"' : ''}>Group by parent</button>`+
-      (ST_F.group !== false ? `<button id="stColl">${ST_COLL.size ? 'Expand all' : 'Collapse all'}</button>` : '')+
-      `<button id="stCopy">Copy list for Haris and Sam</button><button id="stClr">Clear filters</button>`+
-      (ST_F.show !== 'all' ? `<span class="mut" style="font-size:.76rem">Click the highlighted box again to show all</span>` : '')+'</div>';
-  if(!RV.rows && RV_ERR) html += '<div class="cpt-empty"><b>Strike-through feed not found yet</b>It comes with the Listing Review feed (review.json).</div>';
+  html += '<div class="cpt-tools">'+ `<div class="seg" id="stMk">${['US','CA'].map(m=> `<button data-mk="${m}" aria-pressed="${smk === m}">Amazon ${m}</button>`).join('')}</div>`+
+      (ST_F.hist ? '' : '<button id="stCopy">Copy list for Haris</button><button id="stDl">Download</button>') + '</div>';
+  if(ST_F.hist) html += stHistHtml(smk);
+  else if(!RV.rows && RV_ERR) html += '<div class="cpt-empty"><b>Strike-through feed not found yet</b>It comes with the Listing Review feed (review.json).</div>';
   else if(!RV.rows) html += '<div class="cpt-empty"><b>Loading Strike-through</b></div>';
-  else if(!all.length) html += '<div class="cpt-empty"><b>No strike-through data yet</b>The weekly Cowork PDP check fills this page from its next run.</div>';
-  else if(ST_F.show === 'missing'){
-    const miss = sMiss;
-    html += !miss.length ? `<div class="cpt-empty"><b>Every active listing was checked \u2713</b>The check on ${run ? esc(shortDate(run.date.slice(0, 10))) : ''} has a strike-through result for all ${rvAct(smk)} active ${smk} listings.</div>`
-      : '<div style="overflow-x:auto;margin:.4rem 1rem"><table class="rv-t" style="min-width:640px;background:#fff;border:1px solid var(--line);border-radius:8px">'+
-        '<tr><td style="padding-left:.6rem">Active listings with no strike-through result</td><td>Tier</td><td></td></tr>'+
-        miss.map(x=> `<tr><td style="padding-left:.6rem"><b>${esc(x.name || x.sku)}</b><div class="rv-id">${skuL(x.sku, x.mk || 'US')} \u00b7 ${esc(x.brand)}</div></td><td>${esc(x.tier || '?')}</td>`+
-          `<td><a href="${rvDom(x.mk || 'US')}${esc(x.asin)}" target="_blank" rel="noopener"><button>Open PDP \u2197</button></a></td></tr>`).join('')+
-        '</table></div><div class="rv-note" style="margin:0 1rem 1rem">The next weekly check picks these up, or run the Cowork task again the same day to finish this one.</div>';
-  }
-  else if(!rows.length) html += '<div class="cpt-empty"><b>Nothing matches these filters</b>Try Clear filters.</div>';
-  else html += rvStrikeTable(rows, ST_F.group !== false);
+  else if(!all.length) html += '<div class="cpt-empty"><b>No strike-through data yet</b>The weekly Cowork check fills this page.</div>';
+  else if(!rows.length) html += '<div class="cpt-empty"><b>Nothing here</b>Click the highlighted tile again to show all.</div>';
+  else html += rvStrikeTable(rows);
   v.innerHTML = html;
-  const gb = document.getElementById('stGrp'); if(gb) gb.onclick = ()=>{ ST_F.group = ST_F.group === false; stKeep(); renderStrike(); };
-  [...v.querySelectorAll('[data-stfam]')].forEach(h=> h.onclick = ()=>{ const f = h.dataset.stfam; ST_COLL.has(f) ? ST_COLL.delete(f) : ST_COLL.add(f); renderStrike(); });
-  const ca = document.getElementById('stColl'); if(ca) ca.onclick = ()=>{
-    if(ST_COLL.size) ST_COLL.clear(); else rows.forEach(x=> ST_COLL.add(x.fam));
-    renderStrike(); };
+  wireSort(v, ST_F, ()=>{ stKeep(); renderStrike(); });
   const set = (k, val)=>{ ST_F[k] = val; stKeep(); renderStrike(); chrome(); };
-  [...v.querySelectorAll('[data-sts]')].forEach(t=> t.onclick = ()=> set('show', ST_F.show === t.dataset.sts ? 'all' : t.dataset.sts));
+  [...v.querySelectorAll('[data-sts]')].forEach(t=> t.onclick = ()=>{ if(t.dataset.sts === 'hist'){ ST_F.hist = !ST_F.hist; stKeep(); renderStrike(); return; } ST_F.hist = false; set('show', ST_F.show === t.dataset.sts ? 'all' : t.dataset.sts); });
   [...v.querySelectorAll('#stMk button')].forEach(b=> b.onclick = ()=> set('mk', b.dataset.mk));
-  [['stTier','tier'],['stBrand','brand'],['stFam','family']].forEach(([id, k])=>{ const el = document.getElementById(id); if(el) el.onchange = ()=> set(k, el.value); });
-  const q = document.getElementById('stQ'); if(q) q.oninput = ()=>{ ST_F.q = q.value; stKeep(); const p = q.selectionStart; renderStrike(); const q2 = document.getElementById('stQ'); q2.focus(); q2.setSelectionRange(p, p); };
-  const cl = document.getElementById('stClr'); if(cl) cl.onclick = ()=>{ Object.assign(ST_F, ST_F_DEF); stKeep(); renderStrike(); };
+  const dl = document.getElementById('stDl'); if(dl) dl.onclick = ()=>{
+    const sel = selSet(), use = sel.size ? rows.filter(x=> sel.has((x.mk || 'US') + '|' + x.asin)) : rows;
+    csvSave('strike-through', ['SKU','ASIN','Product','Tier','Strike-through','Why not','Our price','List Price','Walmart','Checked'],
+      use.map(x=> [x.sku, x.asin, x.name || '', x.tier || '', x.shown ? x.page : 'None', x.why ? x.why.t : '', String(x.price || '').replace(/^\s*our price\s*/i, ''), x.list || '', x.wm || '', String(x.d || '').slice(0, 10)])); };
   const cp = document.getElementById('stCopy'); if(cp) cp.onclick = ()=>{
     const m = x=> x === null || x === undefined || x === '' ? 'n/a' : (typeof x === 'number' ? usd(x) : String(x).replace(/^\s*our price\s*/i, ''));
     const t = `Strike-through check ${run ? run.date.slice(0, 10) : ''}: ${rows.length} listing${rows.length === 1 ? '' : 's'}\n` +
-      rows.map(x=> `• ${x.sku} (Tier ${x.tier || '?'}): ${x.shown ? x.page : 'none'}${x.change === 'lost' ? ' (lost, was ' + x.was + ')' : ''}. Our price ${m(x.price)}, List Price ${m(x.list)}, Walmart ${m(x.wm)}${x.why ? '. Why: ' + x.why.t : ''}`).join('\n');
+      rows.map(x=> `\u2022 ${x.sku} (Tier ${x.tier || '?'}): ${x.shown ? x.page : 'none'}${x.change === 'lost' ? ' (lost, was ' + x.was + ')' : ''}. Our price ${m(x.price)}, List Price ${m(x.list)}, Walmart ${m(x.wm)}${x.why ? '. Why: ' + x.why.t : ''}`).join('\n');
     (navigator.clipboard ? navigator.clipboard.writeText(t) : Promise.reject()).then(()=>{ cp.textContent = 'Copied'; }).catch(()=> window.prompt('Copy:', t));
   };
 }
@@ -8710,7 +8689,7 @@ function ccMount(v, key, items, rows, mk){
   const unk = (rows || []).filter(r=> stockOf(r, mk) === null).length, open = !!CC_OPEN[key];
   tiles.insertAdjacentHTML('beforeend',
     `<div class="cpt-tile bbtile${open ? ' on' : ''}" role="button" tabindex="0" data-cc="${key}"><div class="k">Can\u2019t check</div><div class="v ${items.length ? 'bad' : 'good'}">${items.length}</div><div class="n">${items.length ? (key === 'rv' ? 'Counted as problems, click to see' : 'Not in the %, click to see') : 'Every value compared'}</div></div>`+
-    `<div class="cpt-tile"><div class="k">Stock unknown</div><div class="v">${unk}</div><div class="n">${unk ? 'No stock data. Still counted in the %' : 'Stock known for every listing'}</div></div>`);
+    `<div class="cpt-tile" hidden><div class="k">Stock unknown</div><div class="v">${unk}</div><div class="n">${unk ? 'No stock data. Still counted in the %' : 'Stock known for every listing'}</div></div>`);
   if(!open) return;
   const top = v.querySelector('.cpt-top') || tiles;
   if(!items.length){ top.insertAdjacentHTML('afterend', '<div class="cpt-empty"><b>Nothing to show</b>Every value in this module was compared.</div>'); return; }
