@@ -7233,24 +7233,57 @@ function renderProducts(){
 const PC_SRC = 'https://raw.githubusercontent.com/mjbaguhin/cpc-tracker/main/productcopy.json';
 let PC = null, PC_LOADING = null;
 function pcLoad(){ if(PC || PC_LOADING) return PC_LOADING || Promise.resolve(PC);
-  PC_LOADING = fetch(PC_SRC + '?t=' + Date.now()).then(r=> r.ok ? r.json() : Promise.reject(r.status)).then(j=>{ PC = j || {copy:{}}; return PC; })
+  const get = u=> fetch(u + '?t=' + Date.now()).then(r=> r.ok ? r.json() : Promise.reject(r.status));
+  PC_LOADING = get(PC_SRC).then(j=>{ PC = j || {copy:{}};
+      const pre = PC.imgPrefix || '';   // image links are stored short ("~...") to keep the file small
+      Object.values(PC.copy || {}).forEach(o=> ['img','imgs','life'].forEach(k=>{ if(o[k]) o[k] = o[k].split('~').join(pre); }));
+      return get(PC_SRC.replace('productcopy.json', 'productcopy-ca.json')).then(ca=>{ Object.entries((ca && ca.copy) || {}).forEach(([sku, o])=> Object.assign(PC.copy[sku] = PC.copy[sku] || {}, o)); }).catch(()=>{}).then(()=> PC); })
     .catch(()=>{ PC = {copy:{}, err:true}; return PC; }).finally(()=>{ PC_LOADING = null; });
   return PC_LOADING; }
 function prCopyHtml(r){
-  if(!PC) return '<div class="mut" style="margin-top:.6rem">Loading listing copy\u2026</div>';
+  if(!PC) return '<div class="mut" style="margin-top:.6rem">Loading the listing build data\u2026</div>';
   if(PC.err) return '<div class="mut" style="margin-top:.6rem">Listing copy file not found yet. Run pushProductsJson in the CPC Keepa Fetcher project.</div>';
-  const c = (PC.copy || {})[r.sku] || {}, ca = r.mk === 'CA' || (typeof PR_F !== 'undefined' && PR_F.mk === 'CA');
+  const c = (PC.copy || {})[r.sku] || null, ca = r.mk === 'CA' || (typeof PR_F !== 'undefined' && PR_F.mk === 'CA');
+  if(!c) return '<div class="mut" style="margin-top:.6rem">Listing build data is kept for active listings only (US or CA).</div>';
   const k = f=> ca && c[f + 'Ca'] ? c[f + 'Ca'] : c[f];
-  const item = (label, v, max)=> `<div style="margin:.45rem 0"><div style="display:flex;justify-content:space-between;gap:.5rem"><b>${esc(label)}</b><span class="mut" style="font-size:.75rem">${v ? v.length + (max ? ' / ' + max : '') + ' chars' : ''}${v ? ' ' + cpy(v) : ''}</span></div>`+
-    `<div style="white-space:pre-wrap;font-size:.85rem">${v ? esc(v) : '<span class="mut">Empty in the Master SKU</span>'}</div></div>`;
+  const money = v=> v ? Number(v).toFixed(2) : '';
+  const dims = (a, b, d)=> a && b && d ? `${a} x ${b} x ${d}` : '';
+  const urls = t=> String(t || '').split(/[\s,;]+/).filter(u=> /^https?:\/\//.test(u));
+  // [section, label, value, max chars]
+  const F = [
+    ['Identity', 'SKU', r.sku], ['Identity', 'UPC', r.upc], ['Identity', 'ASIN', r.asin], ['Identity', 'Brand', r.brand],
+    ['Copy', 'Title', k('title') || r.title, 200], ['Copy', 'Item Highlight', k('ih'), 125],
+    ['Copy', 'Bullet 1', k('b1'), 500], ['Copy', 'Bullet 2', k('b2'), 500], ['Copy', 'Bullet 3', k('b3'), 500], ['Copy', 'Bullet 4', k('b4'), 500], ['Copy', 'Bullet 5', k('b5'), 500],
+    ['Copy', 'Description', k('desc'), 2000],
+    ['Attributes', 'Product type', r.ptype], ['Attributes', 'Item type keyword', r.itk], ['Attributes', 'Category', r.cats],
+    ['Attributes', 'Color', c.colorExact || r.color], ['Attributes', 'Material', r.material], ['Attributes', 'Shape', r.shape], ['Attributes', 'Room', r.room],
+    ['Attributes', 'Package quantity', r.pack], ['Attributes', 'Country of origin', c.origin],
+    ['Size and weight', 'Product size, L x W x H (in)', dims(c.len, c.wid, c.hei) || r.dims], ['Size and weight', 'Product weight (lb)', c.wt],
+    ['Size and weight', 'Package size, L x W x H (in)', dims(c.pkL, c.pkM, c.pkS)], ['Size and weight', 'Package weight (lb)', c.pkWt],
+    ['Price', 'Sale price', money(ca ? r.caSale : r.sale)], ['Price', 'List price', money(r.list)], ['Price', 'Walmart price (Master SKU)', money(r.walmart)],
+    ['Images', 'Main image', c.img], ['Images', 'Other images', urls(c.imgs).join('\n')], ['Images', 'Lifestyle images', urls(c.life).join('\n')]
+  ];
+  let html = `<h3 style="margin-top:1rem;display:flex;justify-content:space-between;align-items:center;gap:.5rem">Listing build${ca ? ' (Amazon CA copy)' : ''} <button type="button" id="prCopyAll" class="work">Copy all</button></h3>`+
+    '<div class="mut" style="font-size:.78rem">Everything from the Master SKU you need to build this listing on Walmart or Shopify. Each value has its own copy button.</div>';
+  let sec = '';
+  F.forEach(([sct, label, v, max])=>{
+    if(sct !== sec){ sec = sct; html += `<div style="margin-top:.7rem;font-size:.72rem;letter-spacing:.06em;text-transform:uppercase;color:var(--muted,#6b7280)">${esc(sct)}</div>`; }
+    v = v === undefined || v === null ? '' : String(v);
+    const img = sct === 'Images' && v ? v.split('\n').map(u=> `<a href="${esc(u)}" target="_blank" rel="noopener" class="nolink">${esc(u.length > 60 ? u.slice(0, 57) + '\u2026' : u)}</a>`).join('<br>') : '';
+    html += `<div style="margin:.35rem 0;padding:.35rem .5rem;border:1px solid var(--line,#e5e7eb);border-radius:6px">`+
+      `<div style="display:flex;justify-content:space-between;gap:.5rem;align-items:center"><b style="font-size:.82rem">${esc(label)}</b>`+
+      `<span class="mut" style="font-size:.72rem;white-space:nowrap">${v && max ? v.length + ' / ' + max + ' chars ' : ''}${v ? cpy(v) : ''}</span></div>`+
+      `<div class="nolink" style="white-space:pre-wrap;font-size:.84rem;margin-top:.15rem">${img || (v ? esc(v) : '<span class="mut">Empty in the Master SKU</span>')}</div></div>`;
+  });
   const row = PC.rows && PC.rows[r.sku], link = PC.sheet && row ? `${PC.sheet}&range=${PC.kwCol ? colLetter(PC.kwCol) : 'A'}${row}` : '';
-  return `<h3 style="margin-top:1rem">Listing copy${ca ? ' (Amazon CA)' : ''}</h3>`+
-    item('Title', k('title'), 200) + item('Item Highlight', k('ih'), 125) +
-    [1,2,3,4,5].map(i=> item('Bullet ' + i, k('b' + i), 500)).join('')+
-    `<div style="margin:.45rem 0"><b>Generic keywords</b><div style="font-size:.85rem">${c.hasKw ? 'Set in the Master SKU. ' : '<span class="mut">Empty in the Master SKU.</span> '}`+
+  html += `<div style="margin:.35rem 0;padding:.35rem .5rem;border:1px dashed var(--line,#e5e7eb);border-radius:6px"><b style="font-size:.82rem">Generic keywords</b>`+
+    `<div style="font-size:.84rem">${c.hasKw ? 'Set in the Master SKU. ' : '<span class="mut">Empty in the Master SKU.</span> '}`+
     (link ? `<a href="${esc(link)}" target="_blank" rel="noopener">Open in the Master SKU sheet</a>` : '') +
-    `<div class="mut" style="font-size:.75rem">Kept in the private sheet: backend search terms aren\u2019t published to the console\u2019s public data.</div></div></div>`;
+    `<div class="mut" style="font-size:.72rem">Kept in the private sheet: backend search terms aren\u2019t published to the console\u2019s public data.</div></div></div>`;
+  prCopyAllText = F.filter(x=> x[2] !== undefined && x[2] !== null && String(x[2]) !== '').map(x=> `${x[1]}: ${x[2]}`).join('\n');
+  return html;
 }
+let prCopyAllText = '';
 function colLetter(n){ let s = ''; while(n > 0){ const m = (n - 1) % 26; s = String.fromCharCode(65 + m) + s; n = Math.floor((n - 1) / 26); } return s; }
 function openPr(r){
   const d = document.getElementById('detail');
@@ -7269,7 +7302,9 @@ function openPr(r){
       row('Liquidate', r.liquidate) + row('Probation', r.probation ? r.probation + (r.probReason ? ' (' + r.probReason + ')' : '') : '') + (r.upc ? `<dt>UPC</dt><dd class="mono">${esc(r.upc)}${cpy(r.upc)}</dd>` : '') + row('FNSKU', r.fnsku) +
     '</dl><div id="prCopy">' + prCopyHtml(r) + '</div><div class="why">From the Master SKU sheet (Plytix). Health chips: the Listing Copy, Category, Buy Box and BSR modules.</div>';
   document.getElementById('detail').classList.remove('wide'); document.getElementById('veil').hidden = false;
-  if(!PC) pcLoad().then(()=>{ const el = document.getElementById('prCopy'); if(el && d.contains(el)) el.innerHTML = prCopyHtml(r); });
+  const wireAll = ()=>{ const b = document.getElementById('prCopyAll'); if(b) b.onclick = ()=>{ (navigator.clipboard ? navigator.clipboard.writeText(prCopyAllText) : Promise.reject()).then(()=>{ b.textContent = 'Copied'; }).catch(()=> window.prompt('Copy:', prCopyAllText)); }; };
+  wireAll();
+  if(!PC) pcLoad().then(()=>{ const el = document.getElementById('prCopy'); if(el && d.contains(el)){ el.innerHTML = prCopyHtml(r); wireAll(); } });
 }
 function dlPr(rows){
   csvSave('master-sku', ['SKU','ASIN','UPC','Product','Brand','SKU status','CA status','CA SKU','Tier','Family','Parent ASIN','Parent SKU','Variation 1','Variation 2','Product type','Category','Room','Material','Sale price','List price','CA sale price','US stock','Copy %','Category OK','Buy Box','Star rating','Plytix checks','Active date','Inactive date'],
