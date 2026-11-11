@@ -3144,6 +3144,7 @@ function cptTitle(r){
 }
 
 function renderCpt(){
+  CPT_F.q = '';   // Nov 12: the top bar does search now
 
   // This view owns the screen: the shared table, bar and message step aside
   document.getElementById('msg').hidden = true;
@@ -3195,9 +3196,9 @@ function renderCpt(){
 
   // Click a tile to show those listings (Oct 23)
   let tileN = 0;
-  const TILE_SHOW = ['gapbad', 'over', 'held', 'moved'];
+  const TILE_SHOW = ['gapbad', 'over', 'held', 'hist'];
   const tile = (k, val, cls, note) =>{ const f = TILE_SHOW[tileN++] || 'all';
-    return `<div class="cpt-tile bbtile${CPT_F.show === f && !CPT_F.hist ? ' on' : ''}" role="button" tabindex="0" data-tshow="${f}" title="Show these in the table"><div class="k">${k}</div><div class="v ${cls || ''}">${val}</div>`+
+    return `<div class="cpt-tile bbtile${(f === 'hist' ? CPT_F.hist : CPT_F.show === f && !CPT_F.hist) ? ' on' : ''}" role="button" tabindex="0" data-tshow="${f}" title="${f === 'hist' ? 'Every CPT move and price change' : 'Show these in the table'}"><div class="k">${k}</div><div class="v ${cls || ''}">${val}</div>`+
     `<div class="n">${note || '&nbsp;'}</div></div>`; };
 
   let html = stockAlert() +
@@ -3213,11 +3214,11 @@ function renderCpt(){
              gapBad.length ? [c ? c + ' need a case' : '', o ? o + ' over the CPT' : '', s ? s + ' no stock' : ''].filter(Boolean).join(', ') : 'Every gap is fine'); })()+
         // Needs a case and Do today tiles removed (MJ, Oct 23): the filter buttons still have them
         tile('Priced above the CPT ' + qi('buybox'), over.length, over.length ? 'bad' : '',
-             over.length ? 'Featured Offer at risk on these' : 'None, every price is at or under')+
+             '')+
         tile('Held at the CPT', all.filter(r=> r.held).length, all.some(r=> r.held) ? 'warn' : '',
-             'Price cut to the CPT, under our regular price')+
-        tile('CPT moved, last 7 days', recent.length, recent.length ? 'warn' : '',
-             recent.length ? recent.map(r=> esc(r.sku)).slice(0,3).join(', ') + (recent.length > 3 ? '\u2026' : '') : 'No changes this week')+
+             '')+
+        (()=>{ const d0 = CPT_H.days; CPT_H.days = 0; const allMoves = cptHistory(); CPT_H.days = d0;   // Nov 12: all time
+               return tile('CPT history', allMoves.length, '', `${new Set(allMoves.map(x=> x.r.asin)).size} listings \u00b7 ${recent.length} this week`); })()+
       '</div>'+
     '</section>'+
     rbBanner()+
@@ -3225,21 +3226,11 @@ function renderCpt(){
     (RB ? (()=>{ const n = all.filter(r=> (r.rb || []).some(h=> h.sev === 'amazon')); return `<div class="why"><b>Amazon rules:</b> ${n.length ? `${n.length} failed (${esc(n.map(r=> r.sku).slice(0,4).join(', '))}${n.length > 4 ? '\u2026' : ''})` : '<span style="color:var(--ok)">Passed</span>'} <button class="work" data-rbopen="1">Rulebook</button></div>`; })() : '')+
     mk2Note('Drafts say amazon.com: edit before sending for CA')+
     '<div class="cpt-tools">' + mk2Seg() +
-      '<div class="seg" id="cptSeg">'+
-        [['all','All ' + all.length],
-         ['gapbad','Gap needs work ' + gapBad.length],
-         ['need','Needs a case ' + all.filter(r=> r.action === 'open' || r.action === 'follow').length],
-         ['over','Over CPT ' + over.length], ['moved','Moved 7 days ' + recent.length],
-         ['held','Held at CPT ' + all.filter(r=> r.held).length],
-         ['due','Follow-up due ' + all.filter(r=> { const n = nextStep(r); return n && n.due === 'now'; }).length]]
-          .map(b=> `<button data-show="${b[0]}" aria-pressed="${CPT_F.show === b[0]}">${b[1]}</button>`).join('')+
-      '</div>'+
+
       `<button id="cptGrpPar" aria-pressed="${CPT_F.group === 'pasin'}" title="Off: grouped by what to do">Group by parent</button>`+
-      `<input id="cptQ" type="search" placeholder="Search SKU, ASIN or product" value="${esc(CPT_F.q)}" aria-label="Search CPT tracker">`+
+
       (CPT_F.sort ? '<button id="cptUnsort" title="Back to the default order">Clear sort</button>' : '')+
-      (rows.some(r=> r.action === 'open' || r.action === 'follow') ? `<button id="cptCaseAll" class="work">Copy one case for the ${rows.filter(r=> r.action === 'open' || r.action === 'follow').length} shown</button>` : '')+
-      `<button id="cptHist" class="work${CPT_F.hist ? ' strong' : ''}" aria-pressed="${!!CPT_F.hist}">CPT history</button>`+
-      '<button id="cptLog">Price change log</button>'+
+
       `<button id="cptGuide" aria-pressed="${!!CPT_F.guide}">What do these prices mean?</button>`+
       `<button id="cptMore" aria-pressed="${CPT_F.more}">Column filters${activeCptFilters() ? ' <span class="fbadge">' + activeCptFilters() + '</span>' : ''}</button>`+
       dlBtns() +
@@ -3486,7 +3477,7 @@ function wireCpt(v, all){
   { const cdl = v.querySelector('button[data-dl]'); if(cdl) cdl.onclick = ()=> dlCpt(CPT_SHOWN); }
 
   [...v.querySelectorAll('#cptSeg button')].forEach(b=> b.onclick = ()=>{ CPT_F.show = b.dataset.show; CPT_F.hist = false; renderCpt(); });
-  [...v.querySelectorAll('.bbtile[data-tshow]')].forEach(t=>{ const go = ()=>{ CPT_F.show = t.dataset.tshow; CPT_F.hist = false; renderCpt();
+  [...v.querySelectorAll('.bbtile[data-tshow]')].forEach(t=>{ const go = ()=>{ if(t.dataset.tshow === 'hist'){ CPT_F.hist = !CPT_F.hist; renderCpt(); return; } CPT_F.show = t.dataset.tshow; CPT_F.hist = false; renderCpt();
       const tb = document.querySelector('#cptView table, #cptView .cpt-empty'); if(tb && tb.scrollIntoView) tb.scrollIntoView({behavior:'smooth', block:'start'}); };
     t.onclick = go; t.onkeydown = e=>{ if(e.key === 'Enter') go(); }; });
   const hb = document.getElementById('cptHist'); if(hb) hb.onclick = ()=>{ CPT_F.hist = !CPT_F.hist; renderCpt(); };
@@ -3784,9 +3775,9 @@ function changeLog(days){
    points from cpt.json; the last 7 days also carry the time of day (4 reads a
    day), so a move shows when it happened. Listings whose CPT is gone today
    are included too. */
-const CPT_H = {days: 30, dir: '', q: '', bySku: true};
+const CPT_H = {days: 0, dir: '', q: '', bySku: true};   // 0 = all time (Nov 12)
 function cptHistory(){
-  const out = [], since = new Date(Date.now() - CPT_H.days * 86400000).toISOString().slice(0,10);
+  const out = [], since = CPT_H.days ? new Date(Date.now() - CPT_H.days * 86400000).toISOString().slice(0,10) : '0000';
   (CPT || []).forEach(r=>{
     const h = (r.h || []).filter(x=> x && x[0]).slice().sort((a,b)=> a[0] < b[0] ? -1 : 1);
     const intra = {}; (r.moves || []).forEach(m=> (intra[m[0].slice(0,10)] = intra[m[0].slice(0,10)] || []).push(m));
@@ -3818,15 +3809,14 @@ function cptHistHtml(){
     `<td class="c"><span class="lcchip ${KIND[x.kind][1]}">${KIND[x.kind][0]}</span></td><td class="num">${x.from === null ? '\u2014' : usd(x.from)}</td><td class="num"><b>${x.to === null ? '\u2014' : usd(x.to)}</b></td><td class="num">${chg(x)}</td>`+
     `<td class="num">${x.ours === null || x.ours === undefined ? '' : usd(x.ours)}</td><td class="num">${x.r.cpt === null || x.r.cpt === undefined ? '<span class="mut">none</span>' : usd(x.r.cpt)}</td></tr>`;
   let html = '<section style="margin-top:.6rem"><div class="cpt-tiles">'+
-    tile(`Moves, last ${CPT_H.days} days`, all.length, all.length ? 'warn' : 'good', `${skus} listings affected`, '')+
+    tile(CPT_H.days ? `Moves, last ${CPT_H.days} days` : 'Moves, all time', all.length, all.length ? 'warn' : 'good', `${skus} listings`, '')+
     tile('Down', n('down'), n('down') ? 'bad' : 'good', drop ? `Biggest: ${esc(drop.r.sku)} ${usd(drop.from)} \u2192 ${usd(drop.to)}` : '', 'down')+
     tile('Up', n('up'), n('up') ? 'good' : '', '', 'up')+
     tile('New CPT', n('new'), '', 'A CPT appeared', 'new')+
     tile('CPT gone', n('gone'), '', 'No CPT anymore', 'gone')+
     '</div><div class="cpt-tools">'+
-      '<div class="seg" id="hDays">' + [7, 30, 60, 120].map(dd=> `<button data-days="${dd}" aria-pressed="${CPT_H.days === dd}">${dd} days</button>`).join('') + '</div>'+
-      `<input id="hQ" type="search" placeholder="Search SKU, ASIN or product" value="${esc(CPT_H.q)}">`+
-      `<button id="hBySku" aria-pressed="${CPT_H.bySku}">Group by listing</button><button id="hDl">Download</button>`+
+      '<div class="seg" id="hDays">' + [[0, 'All time'], [7, '7 days'], [30, '30 days'], [90, '90 days']].map(dd=> `<button data-days="${dd[0]}" aria-pressed="${CPT_H.days === dd[0]}">${dd[1]}</button>`).join('') + '</div>'+
+      `<button id="hBySku" aria-pressed="${CPT_H.bySku}">Group by listing</button><button id="cptLog">Our price changes</button><button id="hDl">Download</button>`+
       `<span class="count">${L.length} moves</span></div>`;
   if(!L.length) html += `<div class="cpt-empty"><b>No CPT moves</b>${all.length ? 'Pick another filter.' : 'Nothing moved in this period.'}</div>`;
   else {
@@ -4225,6 +4215,7 @@ function bbStock(n, inbound){
 }
 
 function renderBb(){
+  BB_F.q = ''; BB_F.tier = '';   // Nov 12: the top bar does search and tier now
   document.getElementById('msg').hidden = true;
   document.getElementById('bar').innerHTML = '';
   const v = document.getElementById('cptView');
@@ -4265,33 +4256,23 @@ function renderBb(){
              const inStock = all.filter(r=> r.why !== 'oos');
              const p = avg(all, 'd30'), q = avg(inStock, 'd30');
              const oos = all.length - inStock.length;
-             return tile('Buy Box %, 30 days', p + '%', p >= 95 ? 'good' : p >= 85 ? 'warn' : 'bad',
-                         oos ? `Not counting the ${oos} out of stock: <b style="color:#e8edf3">today ${inStock.length ? Math.round(inStock.filter(r=> r.has).length / inStock.length * 100) : 0}%</b>, 30 days ${q}%` : 'All listings in stock'); })()+
-      tile('We have the Buy Box', `${yes.length}<span style="font-size:1rem;color:var(--c-night-mut)"> of ${all.length}</span>`, no.length ? 'warn' : 'good',
-           all.length ? Math.round(yes.length / all.length * 100) + '% of listings' : '')+
-      tile('We don\u2019t have it', no.length, no.length ? 'bad' : 'good', no.length ? 'Reasons in the next tiles' : 'All good')+
-      tile('Because out of stock', by('oos').length, by('oos').length ? 'bad' : 'good', by('oos').length ? list(by('oos')) : 'None')+
+             const t0 = modPct('bbBtn', MK2), t = t0 === null || t0 === undefined ? (inStock.length ? Math.round(inStock.filter(r=> r.has).length / inStock.length * 1000) / 10 : 0) : t0;   // Nov 12: same number as the side menu
+             return tile('Buy Box', t + '%', t >= 98 ? 'good' : t >= 90 ? 'warn' : 'bad', ''); })()+
+      tile('We have the Buy Box', `${yes.length}<span style="font-size:1rem;color:var(--c-night-mut)"> of ${all.length}</span>`, no.length ? 'warn' : 'good', '')+
+      tile('We don\u2019t have it', no.length, no.length ? 'bad' : 'good', '')+
+      tile('Because out of stock', by('oos').length, by('oos').length ? 'bad' : 'good', by('oos').length ? list(by('oos')) : '')+
       (()=>{ const st = by('stranded').concat(by('likely'));
-             return tile('Stranded', st.length, st.length ? 'bad' : 'good', st.length ? list(st) + (by('likely').length ? ` \u00b7 ${by('likely').length} likely (stock, no offer)` : '') : (STR_META && STR_META.col === false ? 'Not in the FBA data; likely ones still show' : 'None')); })()+
+             return tile('Stranded', st.length, st.length ? 'bad' : 'good', st.length ? list(st) : ''); })()+
       tile('Because another seller has it', by('amazon').length + by('seller').length, (by('amazon').length + by('seller').length) ? 'bad' : 'good',
-           (by('amazon').length + by('seller').length) ? list(by('amazon').concat(by('seller'))) : 'None')+
-      tile('Other reason', oth.length, oth.length ? 'warn' : 'good', oth.length ? list(oth) : 'None')+
+           (by('amazon').length + by('seller').length) ? list(by('amazon').concat(by('seller'))) : '')+
+      tile('Other reason', oth.length, oth.length ? 'warn' : 'good', oth.length ? list(oth) : '')+
       tile('Other sellers on our listing', amzOn.length, amzOn.length ? 'warn' : 'good',
-           amzOn.length ? `We still have the Buy Box on ${amzOn.filter(r=> r.has).length}` : 'None')+
+           amzOn.length ? `We still have the Buy Box on ${amzOn.filter(r=> r.has).length}` : '')+
       rbTile(all, 'Breaks an Amazon pricing rule')+
     '</div></section>'+
     rbBanner()+
     mk2Note('No CA stock yet')+
-    '<div class="cpt-tools">' + mk2Seg() + '<div class="seg" id="bbSeg">'+
-      [['all','All ' + all.length], ['no','No Buy Box ' + no.length], ['oos','Out of stock ' + by('oos').length],
-       ['stranded','Stranded ' + (by('stranded').length + by('likely').length)],
-       ['seller','Another seller ' + (by('amazon').length + by('seller').length)], ['other','Other reason ' + oth.length],
-       ['amz','Other sellers on listing ' + amzOn.length]]
-        .map(b=> `<button data-show="${b[0]}" aria-pressed="${BB_F.show === b[0]}">${b[1]}</button>`).join('')+
-    '</div><div class="seg" id="bbTier">'+
-      ['', 'A', 'B', 'C', 'X', 'N'].map(t=> `<button data-t="${t}" aria-pressed="${BB_F.tier === t}">${t ? 'Tier ' + t : 'All tiers'}</button>`).join('')+
-    '</div>'+
-    `<input id="bbQ" type="search" placeholder="Search SKU, ASIN or product" value="${esc(BB_F.q)}" aria-label="Search Buy Box">`+
+    '<div class="cpt-tools">' + mk2Seg() +
     (BB_F.sort ? '<button id="bbUnsort">Clear sort</button>' : '')+
     (no.length ? '<button id="bbSlack" class="work strong">Draft Slack to Haris</button>' : '')+
     grpBtn(BB_F) + dlBtns() + '<button data-rbopen="1">Rulebook</button>' +
@@ -4309,12 +4290,9 @@ function renderBb(){
       H('product', 'Product') + TIER_TH +
       H('has', 'Buy Box?', 'b-cpt c', 'Do we have the Add to Cart button right now.')+
       H('why', 'Why not', 'b-move', 'The most likely reason we don\u2019t have it: stock first, then another seller, then price.')+
-      H('us', 'US stock', 'b-ours c', 'Available in US FBA. Under it: units on the way.', 'desc')+
-      H('ca', 'CA stock', 'b-ours c', 'Available in Canada FBA. Under it: units on the way.', 'desc')+
       H('ours', 'Our price', 'b-gap c', 'Our live price on Amazon US.', 'desc')+
       H('bb', 'Buy Box price', 'b-gap c', 'The price on the Add to Cart button.', 'desc')+
       H('others', 'Other sellers', 'b-sim', 'Other New offers on our listing.', 'desc')+
-      H('w30', 'Buy Box %', 'b-sim c', 'Share of time we had the Buy Box: 30 days, and 7 days under it.')+
       H('rb', 'Rules', 'b-gap c', 'Screened every day against Amazon\u2019s pricing rules in the rulebook. Click the chip for details.')+
       '</tr></thead><tbody>'+ grpMap(BB_F, rows, 10, bbTr, r=> !r.has, 'without the Buy Box') +'</tbody></table>';
   }
@@ -4356,12 +4334,9 @@ function bbTr(r){
     `<td>${r.has ? (r.shared ? `<span class="was" style="white-space:normal;max-width:15rem">Same price as ${esc(r.holder.name || 'another seller')}, we share it</span>` : '') :
       `<span class="bbdo ${w ? w.c : 'warn'}">${esc(whyTxt)}</span>`}`+
       `${r.next ? `<span class="was" style="white-space:normal;max-width:16rem">${esc(r.next)}</span>` : ''}</td>`+
-    `<td class="c">${bbStock(r.us, r.usIn)}</td>`+
-    `<td class="c">${bbStock(r.ca, r.caIn)}</td>`+
     `<td class="c">${r.ours !== null ? usd(r.ours) : '<span class="mut">not showing</span>'}</td>`+
     `<td class="c">${r.bb !== null ? usd(r.bb) : '<span class="mut">none</span>'}</td>`+
     `<td style="white-space:normal;max-width:14rem">${r.others.length ? r.others.map(x=> `<div>${esc(x)}</div>`).join('') : '<span class="mut">None</span>'}</td>`+
-    `<td class="c">${bbBar(r.win && r.win.d30)}<span class="was">7 days ${Math.round(r.win ? r.win.d7 : 0)}%</span></td>`+
     `<td class="c"><span data-rbrow="${esc(r.asin)}" style="cursor:pointer">${rbChip(r.rb || [])}</span></td>`+
   '</tr>';
 }
@@ -5109,7 +5084,6 @@ function renderLc(){
     const H = (k, label, cls, tip, d)=> `<th data-s="${k}" data-d="${d || 'asc'}" class="${cls || ''}">${label}${tip ? `<span class="qi" tabindex="0" data-tip="${esc(tip)}">?</span>` : ''}${sortArrow(LC_F, k)}</th>`;
     html += '<table class="cpt-table bb-table lc-table"><thead><tr>'+
       H('product', 'Product') + TIER_TH +
-      H('stock', 'US stock', 'num', 'Available units in FBA, from BigQuery. Sort to see empty first.')+
       H('pct', 'Correct %', 'b-cpt c', 'Fields on Amazon that match Plytix, out of the fields we can compare.')+
       H('rb', 'Rules', 'b-gap c', 'Screened every day against the rulebook (Amazon rules and our brand guide), live copy and Plytix. Sort to bring problems to the top.')+
       LC_COLS.map(c=> H('f_' + c[0], c[1], (c[0] === 'gk' ? 'b-sim' : 'b-gap') + ' c', 'Sort to bring problems to the top.')).join('')+
@@ -5119,7 +5093,6 @@ function renderLc(){
         `<td class="prod"><div class="p-name"><span class="dot" style="background:${r.nolive ? '#94a3b8' : r.allOk ? '#1f9d55' : '#d64545'}"></span>${esc(String(r.name).slice(0, 60))}</div>`+
           `<div class="p-id"><span>SKU</span>${skuL(r.sku, MK2)}${cpy(r.sku)}</div><div class="p-id"><span>ASIN</span>${asinL(r.asin, MK2)}${cpy(r.asin)}</div>`+
           `${r.tier ? `<span class="p-size">Tier ${esc(r.tier)}</span>` : ''}${pxChip(r)}${r.cause === 'slack' ? ' ' + chNoteChip(r.notes[0]) : r.cause && r.cause !== 'old' ? ' ' + chChip(Object.values(r.why).find(w=> w.s === r.cause)) : ''}</td>`+
-        stockTd(r, MK2)+
         `<td class="c">${r.nolive ? '<span class="mut">Not checked yet</span>' : r.pct === null ? '<span class="mut">\u2014</span>' : bbBar(r.pct)}</td>`+
         `<td class="c">${rbChip(r.rb)}</td>`+
         LC_COLS.map(c=> `<td class="c">${r.nolive ? '' : lcChip(r.f[c[0]])}</td>`).join('')+
@@ -5306,7 +5279,6 @@ function renderLp(){
     const H = (k, label, cls, tip, d)=> `<th data-s="${k}" data-d="${d || 'asc'}" class="${cls || ''}">${label}${tip ? `<span class="qi" tabindex="0" data-tip="${esc(tip)}">?</span>` : ''}${sortArrow(LP_F, k)}</th>`;
     html += '<table class="cpt-table bb-table lp-table"><thead><tr>'+
       H('product', 'Product') + TIER_TH +
-      H('stock', 'US stock', 'num', 'Available units in FBA, from BigQuery. Sort to see empty first.')+
       H('set', 'List Price set?', 'b-cpt c', 'Does the Amazon listing have a List Price.')+
       H('live', 'List Price on Amazon', 'b-ours c', 'The List Price as Keepa reads it from Amazon.', 'desc')+
       H('ours', 'Our price now', 'b-gap c', 'What a shopper pays today, sale included.', 'desc')+
@@ -5316,7 +5288,6 @@ function renderLp(){
       grpMap(LP_F, rows, 7, r=> `<tr class="row" data-lp="${esc(r.asin)}">`+
         `<td class="prod"><div class="p-name"><span class="dot" style="background:${r.set ? '#1f9d55' : '#d64545'}"></span>${esc(String(r.name).slice(0, 60))}</div>`+
           `<div class="p-id"><span>SKU</span>${skuL(r.sku, MK2)}${cpy(r.sku)}</div><div class="p-id"><span>ASIN</span>${asinL(r.asin, MK2)}${cpy(r.asin)}</div>${r.tier ? `<span class="p-size">Tier ${esc(r.tier)}</span>` : ''}</td>`+
-        stockTd(r, MK2)+
         `<td class="c">${r.set ? '<span class="bbyes">Yes</span>' : '<span class="bbno">Empty</span>'}</td>`+
         `<td class="c">${r.set ? '<b>' + usd(r.live) + '</b>' : '<span class="mut">none</span>'}</td>`+
         `<td class="c">${usd(r.ours)}</td>`+
@@ -5615,7 +5586,6 @@ function renderCategory(){
     const mk = CG_F.mk;
     html += '<table class="cpt-table bb-table lc-table cg-table"><thead><tr>'+
       H('product', 'Product') + TIER_TH +
-      H('stock', CG_F.mk === 'CA' ? 'CA stock' : 'US stock', 'num', 'Available units in FBA, from BigQuery. Sort to see empty first.')+
       H('pct', 'Correct %', 'b-cpt c', 'Checks on Amazon that match the Master SKU sheet, out of the ones we can compare.')+
       H('rb', 'Rules', 'b-gap c', 'Screened every day against Amazon\u2019s category rules in the rulebook. Click the chip for details.')+
       CG_COLS.map(c=> H('f_' + c[0], c[1], 'b-gap c', 'Sort by value, A to Z.')).join('')+
@@ -5627,7 +5597,6 @@ function renderCategory(){
         `<td class="prod"><div class="p-name"><span class="dot" style="background:${r.nolive ? '#94a3b8' : r.allOk ? '#1f9d55' : '#d64545'}"></span>${esc(String(r.name).slice(0, 60))}</div>`+
           `<div class="p-id"><span>SKU</span>${skuL(r.sku, mk)}${cpy(r.sku)}</div><div class="p-id"><span>ASIN</span>${asinL(r.asin, mk)}${cpy(r.asin)}</div>`+
           `${r.tier ? `<span class="p-size">Tier ${esc(r.tier)}</span>` : ''}</td>`+
-        stockTd(r, mk)+
         `<td class="c">${r.nolive ? '<span class="mut">Not checked yet</span>' : r.pct === null ? '<span class="mut">\u2014</span>' : bbBar(r.pct)}</td>`+
         `<td class="c"><span data-rbrow="${esc(r.asin)}" style="cursor:pointer">${rbChip(r.rb || [])}</span></td>`+
         CG_COLS.map(c=> `<td class="cgtd${c[0] === 'path' ? ' cgtdp' : ''}">${c[0] === 'path' ? cgPathCell(r) + pcBadge(r) : cgCell((r.c || {})[c[0]], c[0], r.nolive)}</td>`).join('')+
@@ -5958,16 +5927,18 @@ const oosNote = (rows, mk)=>{ const n = rows.filter(r=> isOos(r, mk)).length; re
 function stockTd(r, mk){
   const v = stockOf(r, mk), st = stockStatus(mk);
   if(v === null) return `<td class="num"><span class="mut" title="${st ? esc(st.text) : 'No stock data for this SKU'}">No data</span></td>`;
-  return `<td class="num">${v > 0 ? '<b>' + v.toLocaleString() + '</b>' : '<span class="bbno">Out of stock</span>' + (stockNoRec(r, mk) ? '<div class="mut" style="font-size:.7rem">no FBA record</div>' : '')}</td>`;
+  const row = (r.usSku && ROWS.find(x=> x.sku === r.usSku)) || ROWS.find(x=> x.sku === r.sku) || ROWS.find(x=> x.asin === r.asin) || {};
+  const inb = mk === 'CA' ? row.caInbound : row.usInbound;
+  return `<td class="num">${v > 0 ? '<b>' + v.toLocaleString() + '</b>' : '<span class="bbno">Out of stock</span>' + (stockNoRec(r, mk) ? '<div class="mut" style="font-size:.7rem">no FBA record</div>' : '')}${inb > 0 ? `<div class="mut" style="font-size:.7rem">+${inb} on the way</div>` : ''}</td>`;
 }
 function stockNoRec(r, mk){
   const row = (r.usSku && ROWS.find(x=> x.sku === r.usSku)) || ROWS.find(x=> x.sku === r.sku) || ROWS.find(x=> x.asin === r.asin);
   return row ? !!row[mk === 'CA' ? 'caNoRec' : 'usNoRec'] : stockLoaded(mk);
 }
 /* Nov 11 (MJ): a sortable Tier column right after Product in every module table */
-const tierTd = r=> `<td class="c tiercol"><b>${esc((r && r.tier) || '\u2014')}</b></td>`;
+const tierTd = r=> `<td class="c tiercol"><b>${esc((r && r.tier) || '\u2014')}</b></td>` + stockTd(r, 'US') + stockTd(r, 'CA');   // Nov 12: stock next to tier
 const tierRow = (html, r)=> String(html).replace(/<\/td>/, '</td>' + tierTd(r));
-const TIER_TH = `<th data-s="tier" data-d="asc" class="c">Tier</th>`;
+const TIER_TH = `<th data-s="tier" data-d="asc" class="c">Tier</th><th data-s="usstock" data-d="desc" class="num">US stock</th><th data-s="castock" data-d="desc" class="num">CA stock</th>`;
 function grpMap(F, rows, ncols, trFn, needFn, needLabel, mk, headBtn){
   mk = mk || curMk();   // Nov 11: family header links follow the module's marketplace
   ncols = ncols + 1; const trFn0 = trFn; trFn = r=> tierRow(trFn0(r), r);
@@ -6368,7 +6339,6 @@ function renderVariation(){
     const mk = VR_F.mk;
     html += '<table class="cpt-table bb-table lc-table cg-table"><thead><tr>'+
       H('product', 'Product') + TIER_TH +
-      H('stock', isCA ? 'CA stock' : 'US stock', 'num', 'Available units in FBA, from BigQuery. Sort to see empty first.')+
       H('pct', 'Correct %', 'b-cpt c', (VR_TV ? 'Family, theme and value checks' : 'The family check') + ' against the Master SKU sheet. Reviews shared is not in this number.')+
       VR_COLS.map(c=> H('f_' + c[0], c[1], 'b-gap c', c[0] === 'rev' ? 'Same review count as most siblings, as Keepa sees it. US only.' : 'Sort to bring problems to the top.')).join('')+
       H('star', 'Star rating', 'num', 'From the BSR feed (Keepa). Amber = differs from the family.')+
@@ -6381,7 +6351,6 @@ function renderVariation(){
         `<td class="prod"><div class="p-name"><span class="dot" style="background:${r.nolive ? '#94a3b8' : r.fullOk ? '#1f9d55' : '#d64545'}"></span>${esc(String(r.name).slice(0, 60))}</div>`+
           `<div class="p-id"><span>SKU</span>${skuL(r.sku, mk)}${cpy(r.sku)}</div><div class="p-id"><span>ASIN</span>${asinL(r.asin, mk)}${cpy(r.asin)}</div>`+
           `${r.tier ? `<span class="p-size">Tier ${esc(r.tier)}</span>` : ''}${r.risk ? `<span class="p-size" data-tip="${esc(r.risk)}" style="background:#fff4e0;color:#8a5a00">Theme may split reviews</span>` : ''}${r.rbA.length ? `<span class="p-size" data-tip="${esc(r.rbA.map(h=> h.rule.text + ' ' + h.corr).join(' \u2022 '))}" style="background:#fde8e8;color:#9b1c1c">Breaks a variation rule</span>` : ''}</td>`+
-        stockTd(r, mk)+
         `<td class="c">${r.nolive ? '<span class="mut">Not checked yet</span>' : r.pct === null ? '<span class="mut">\u2014</span>' : bbBar(r.pct)}</td>`+
         VR_COLS.map(c=> `<td class="c">${vrChip((r.c || {})[c[0]], r.nolive)}</td>`).join('')+
         vrBsTd(r, 'cur') + vrBsTd(r, 'rev') + vrBsTd(r, 'bsr')+
@@ -6825,7 +6794,6 @@ function renderBsr(){
       H('cur', 'Star rating', 'b-cpt c', 'The star rating Amazon shows, from Keepa. Amber = differs from the family.')+
       H('rev', 'Ratings', 'b-cpt c', 'Ratings count Amazon shows. Variation families share one count when reviews are pooled. Amber = differs from the family.', 'desc')+
       H('bsr', 'BSR', 'b-cpt c', 'Best Sellers Rank in the main category. Lower is better. Amber = far from the family.')+
-      H('stock', mk + ' stock', 'num', 'Available units in FBA, from BigQuery.')+
       H('d30', '30-day change', 'b-gap c', 'Star rating now minus 30 days ago.')+
       H('rev30', 'New (30 days)', 'b-gap c', 'Ratings added in the last 30 days.', 'desc')+
       H('avg30', '30-day average', 'b-sim c', 'Average daily BSR over the last 30 days we have.')+
@@ -6842,7 +6810,6 @@ function renderBsr(){
         `<td class="c" style="font-size:1rem;font-weight:700${bsOff(r, 'cur')}">${bsStars(r.cur)}</td>`+
         `<td class="c" style="font-size:1rem;font-weight:700${bsOff(r, 'rev')}">${bsInt(r.rev)}</td>`+
         `<td class="c" style="font-size:1rem;font-weight:700${bsOff(r, 'bsr')}">${r.bsr ? '#' + bsInt(r.bsr) : '<span class="lcchip lc-bad">No BSR</span>'}${bsSpark((r.rk || {}).spark)}</td>`+
-        stockTd(r, mk)+
         `<td class="c">${bsDelta(r.d30)}</td>`+
         `<td class="c">${r.rev30 === null ? '<span class="mut">\u2014</span>' : r.rev30 ? '+' + bsInt(r.rev30) : '<span class="mut">0</span>'}</td>`+
         `<td class="c">${r.avg30 ? '#' + bsInt(r.avg30) : '<span class="mut">\u2014</span>'}</td>`+
@@ -7194,10 +7161,10 @@ function renderProducts(){
         (r.asin ? `<div class="p-id"><span>ASIN</span>${asinL(r.asin, PR_F.mk)}${cpy(r.asin)}</div>` : '')+
         (r.chk.length ? `<span class="p-size" style="background:#fff4e0;color:#8a5a00" data-tip="${esc(r.chk.join(' \u2022 '))}">Plytix check</span>` : '')+'</td>'+
       `<td class="c">${r.tier ? '<b>' + esc(r.tier) + '</b>' : '<span class="mut">\u2014</span>'}</td>`+
-      `<td class="c">${chip(r.status || 'blank', stCls(r.status))}</td>`+
-      `<td class="c">${r.caStatus ? chip(r.caStatus, stCls(r.caStatus)) : '<span class="mut">\u2014</span>'}</td>`+
       `<td class="num">${r.us === null || r.us === undefined ? '<span class="mut">\u2014</span>' : bsInt(r.us)}</td>`+
       `<td class="num">${r.ca === null || r.ca === undefined ? '<span class="mut">\u2014</span>' : bsInt(r.ca)}</td>`+
+      `<td class="c">${chip(r.status || 'blank', stCls(r.status))}</td>`+
+      `<td class="c">${r.caStatus ? chip(r.caStatus, stCls(r.caStatus)) : '<span class="mut">\u2014</span>'}</td>`+
       `<td style="font-size:.8rem">${r.fam ? esc(String(r.fam).slice(0, 34)) : '<span class="mut">Standalone</span>'}${r.v1 ? `<div class="mut">${esc([r.v1, r.v2].filter(Boolean).join(' / '))}</div>` : ''}</td>`+
       `<td class="num">${r.price ? usd(r.price) : '\u2014'}${r.list && PR_F.mk === 'US' ? `<div class="mut" style="font-size:.75rem">List ${usd(r.list)}</div>` : ''}</td>`+
       `<td class="c" style="font-size:.78rem;white-space:nowrap">`+
@@ -7208,7 +7175,7 @@ function renderProducts(){
       `<td class="num">${r.star !== null ? `<b>${r.star.toFixed(1)}</b>\u2605` : '<span class="mut">\u2014</span>'}</td>`+
       `<td class="num">${r.revs !== null && r.revs !== undefined ? bsInt(r.revs) : '<span class="mut">\u2014</span>'}</td></tr>`;
     html += '<table class="cpt-table bb-table lc-table cg-table"><thead><tr>'+
-      H('product','Product') + H('tier','Tier','c') + H('usst','US status','c') + H('cast2','CA status','c') + H('usstock','US stock','num') + H('castock','CA stock','num') +
+      H('product','Product') + H('tier','Tier','c') + H('usstock','US stock','num') + H('castock','CA stock','num') + H('usst','US status','c') + H('cast2','CA status','c') +
       H('fam','Variation') + H('sale', PR_F.mk === 'CA' ? 'CA price' : 'Price','num') + H('copy','Health','c') + H('star','Rating','num') + H('revs','Ratings','num') +
       '</tr></thead><tbody>';
     if(PR_F.group){
@@ -7516,6 +7483,7 @@ function selBar(view){
 }
 function selDecorate(force){
   const view = document.getElementById('cptView'); if(!view) return;
+  view.querySelectorAll('table').forEach(t=>{ const n = t.querySelectorAll('thead th').length; if(n) t.querySelectorAll('tr.gh > td[colspan]').forEach(td=>{ if(+td.colSpan !== n) td.colSpan = n; }); });
   const set = selSet();
   view.querySelectorAll('tr.row').forEach(tr=>{
     const k = selKey(tr), td = tr.querySelector('td'); if(!k || !td) return;
@@ -7741,7 +7709,7 @@ function renderMeasurements(){
     const trT = r=> tierRow(tr(r), r);   // Tier column (Nov 11)
     const tr = r=> `<tr class="row" tabindex="0" data-ms="${esc(r.asin)}">`+
       `<td class="prod"><div class="p-name">${esc(String(r.name).slice(0, 56))}</div><div class="p-id"><span>SKU</span>${skuL(r.sku, mk)}${cpy(r.sku)}</div><div class="p-id"><span>ASIN</span>${asinL(r.asin, mk)}${cpy(r.asin)}</div>`+
-        (r.tier ? `<span class="p-size">Tier ${esc(r.tier)}</span>` : '') + '</td>'+ stockTd(r, mk) +
+        (r.tier ? `<span class="p-size">Tier ${esc(r.tier)}</span>` : '') + '</td>'+
       `<td style="font-size:.8rem">${msLWH(r.pDims, r.unit, 2)}<div class="mut">${msW(r.pWt, r.wUnit)}</div></td>`+
       `<td style="font-size:.8rem">${msLWH(r.aDims, r.unit, 2)}<div class="mut">${msW(r.aWt, r.wUnit)}</div></td>`+
       `<td class="c">${chip(r.st.size)} ${chip(r.st.weight)}</td>`+
@@ -7749,7 +7717,7 @@ function renderMeasurements(){
       `<td class="c" style="font-size:.8rem">${esc(r.px.tier || '\u2014')}<div class="mut">${esc(r.fee && r.fee.tier ? msTierName(r.fee.tier, r.mk) : '\u2014')}</div>${chip(r.st.tier)}</td>`+
       `<td class="c">${chip(r.st.copy, r.copyBad.join(' \u2022 '))}</td>`+
       `<td class="c">${chip(r.st.plytix, r.pxBad.join(' \u2022 '))}</td></tr>`;
-    html += '<table class="cpt-table lc-table"><thead><tr>'+ H('product','Product') + TIER_TH + `<th class="num">${mk} stock</th>` + '<th>Plytix size / weight</th><th>Amazon size / weight (Keepa)</th><th class="c">Size, weight</th>'+
+    html += '<table class="cpt-table lc-table"><thead><tr>'+ H('product','Product') + TIER_TH + '<th>Plytix size / weight</th><th>Amazon size / weight (Keepa)</th><th class="c">Size, weight</th>'+
       '<th class="c">Packaged weight Plytix / Amazon</th><th class="c">Size tier Plytix / Fee Preview</th>' + H('bad','Copy','c') + '<th class="c">Plytix</th></tr></thead><tbody>';
     if(MS_F.group){
       const g = {}; rows.forEach(r=> (g[r.psku || '~'] = g[r.psku || '~'] || []).push(r));   // by Parent SKU (Oct 30)
@@ -8809,6 +8777,10 @@ function autoLink(root){
     let t = null; new MutationObserver(()=>{ if(ALINK_BUSY) return; clearTimeout(t); t = setTimeout(()=> autoLink(v), 30); }).observe(v, {childList: true, subtree: true}); };
   if(document.readyState === 'loading') document.addEventListener('DOMContentLoaded', go); else go();
 })();
+// Nov 12: the US stock and CA stock columns sort in every module
+[CPT_SORT, BB_SORT, LC_SORT, LP_SORT, CG_SORT, VR_SORT, BS_SORT, MS_SORT].forEach(m=>{ if(!m) return;
+  m.usstock = r=>{ const v = stockOf(r, 'US'); return v === null ? -1 : v; };
+  m.castock = r=>{ const v = stockOf(r, 'CA'); return v === null ? -1 : v; }; });
 function render(){
   TARGETS = null;      // re-read from today's data on every redraw
   renderView();
@@ -9426,7 +9398,7 @@ function stockKeep(rows, mk){
   Object.keys(mkOf).forEach(n=>{ const f = g[n]; if(typeof f !== 'function') return;
     g[n] = function(){ return stockKeep(f.apply(this, arguments), mkOf[n](arguments)); }; });
   ['renderCpt','renderBb','renderLc','renderLp','renderVariation','renderBsr','renderProducts','renderMeasurements',
-   'renderReview','renderStrike','renderCategory'].forEach(n=>{ const f = g[n]; if(typeof f !== 'function') return;
+   'renderReview','renderStrike','renderCategory','renderXc'].forEach(n=>{   /* renderXc added Nov 12: top bar filters on Cross Channel */ const f = g[n]; if(typeof f !== 'function') return;
     g[n] = function(){ const was = STOCK_ON; STOCK_ON = true; try { gfModuleBlank(); } catch(e){}
       try { return f.apply(this, arguments); } finally { STOCK_ON = was; try { ensureClearBtn(); } catch(e){} try { ensureCoverage(); } catch(e){} } }; });
   ['navPercents','modPct'].forEach(n=>{ const f = g[n]; if(typeof f !== 'function') return;
