@@ -7078,11 +7078,15 @@ function xcRows(){
   return (PR || []).filter(p=> p.status === 'Active').map(p=>{
     const w = xcWm(p.sku), h = xcSh(p.sku, p.brand);
     const gap = w.s === 'miss' || w.s === 'bad' || h.s === 'miss';
-    return {sku:p.sku, asin:p.asin, name:p.name || p.sku, brand:p.brand, tier:p.tier || '', fam:p.pname || '', amz:p.sale || p.list || null, list:p.list || null, w, h,
+    return {sku:p.sku, asin:p.asin, upc:p.upc || '', name:p.name || p.sku, brand:p.brand, tier:p.tier || '', fam:p.pname || '', amz:p.sale || p.list || null, list:p.list || null, w, h,
       full: w.s === 'ok' && (h.s === 'ok' || h.s === 'warn'), gap, unknown: w.s === 'na' || h.s === 'na'};
   });
 }
 function xcScore(){ const c = xcRows().filter(r=> r.tier !== 'X' && !r.unknown); return c.length ? pct1(c.filter(r=> r.full).length, c.length) : null; }
+/* Nov 11 (MJ): open the item in Walmart Seller Center, filtered to the SKU (the same
+   address Seller Center uses when you search a SKU), or Add Items when it's not on Walmart. */
+function wmItemUrl(sku){ return 'https://seller.walmart.com/catalog/list-items?sortField=modifiedDtm&sortOrder=desc&filters=' + encodeURIComponent(encodeURIComponent(JSON.stringify({productOfferId: sku}))); }
+const WM_ADD_URL = 'https://seller.walmart.com/catalog/add-items';
 function renderXc(){
   document.getElementById('msg').hidden = true;
   document.getElementById('bar').innerHTML = '';
@@ -7114,7 +7118,10 @@ function renderXc(){
   if(!all.length) html += '<div class="cpt-empty"><b>Loading the Master SKU sheet</b></div>';
   else {
     const tr = r=> `<tr class="row" tabindex="0" data-xc="${esc(r.sku)}"><td class="prod"><div class="p-name">${esc(String(r.name).slice(0, 60))}</div><div class="p-id"><span>SKU</span>${skuL(r.sku, 'US')}${cpy(r.sku)}</div>${r.asin ? `<div class="p-id"><span>ASIN</span>${asinL(r.asin, 'US')}${cpy(r.asin)}</div>` : ''}</td>`+
-      `<td class="c"><b>${esc(r.tier || '\u2014')}</b></td><td class="num">${r.amz ? usd(r.amz) : '\u2014'}</td><td>${chip(r.w)}</td><td>${chip(r.h)}</td></tr>`;
+      `<td class="c"><b>${esc(r.tier || '\u2014')}</b></td><td class="num">${r.amz ? usd(r.amz) : '\u2014'}</td>`+
+      `<td>${chip(r.w)}<div style="margin-top:.2rem;font-size:.78rem">${r.w.s === 'miss'
+        ? `<a class="xcwm" href="${WM_ADD_URL}" target="_blank" rel="noopener">Add on Walmart \u2197</a>${r.upc ? ` <span class="mut">UPC ${esc(r.upc)}</span>${cpy(r.upc)}` : ''}`
+        : `<a class="xcwm" href="${wmItemUrl(r.sku)}" target="_blank" rel="noopener">Open in Walmart \u2197</a>`}</div></td><td>${chip(r.h)}</td></tr>`;
     html += '<table class="cpt-table lc-table"><thead><tr>' + H('product', 'Product') + H('tier', 'Tier', 'c') + H('amz', 'Amazon', 'num') + H('wm', 'Walmart') + H('sh', 'Shopify') + '</tr></thead><tbody>';
     if(XC_F.sort) html += rows.map(tr).join('');
     else {
@@ -7129,6 +7136,7 @@ function renderXc(){
   v.innerHTML = html;
   wireSort(v, XC_F, renderXc);
   [...v.querySelectorAll('.cpt-tile[data-xc]')].forEach(t=> t.onclick = ()=>{ XC_F.show = XC_F.show === t.dataset.xc ? 'all' : t.dataset.xc; renderXc(); });
+  [...v.querySelectorAll('a.xcwm')].forEach(a=> a.addEventListener('click', e=> e.stopPropagation()));
   [...v.querySelectorAll('tr.row[data-xc]')].forEach(t=>{ const open = ()=>{ const p = prRows().find(x=> x.sku === t.dataset.xc); if(p) openPr(p); }; t.onclick = open; t.onkeydown = e=>{ if(e.key === 'Enter') open(); }; });
   const dl = document.getElementById('xcDl'); if(dl) dl.onclick = ()=>{
     const set = selSet(), use = set.size ? rows.filter(r=> set.has(r.sku)) : rows;
