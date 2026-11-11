@@ -959,15 +959,15 @@ a.idl:hover{color:var(--accent);border-bottom-style:solid}
   <button id="casesBtn" hidden>Cases</button>
   <!-- Modules grouped by how MJ checks them each day (Oct 26) -->
   <nav id="navGroups" aria-label="Modules">
-    <div class="ng"><div class="ng-l">Today</div><div class="ng-b"><button id="catalogBtn">Catalog</button><button id="prBtn">Master SKU</button><button id="xcBtn">Cross Channel</button><button id="tkBtn">My tasks</button></div></div>
+    <div class="ng"><div class="ng-l">Today</div><div class="ng-b"><button id="catalogBtn">Catalog</button><button id="prBtn">Master SKU</button><button id="xcBtn">Cross Channel</button><button id="tkBtn" hidden>My tasks</button></div></div>
     <div class="ng"><div class="ng-l">Price and Buy Box <span class="ng-t" data-ngt="price"></span></div>
       <div class="ng-b" data-ng="price"><button id="cptBtn">CPT tracker</button><button id="bbBtn">Buy Box</button><button id="lpBtn">List Price</button><button id="stBtn">Strike-through</button></div></div>
     <div class="ng"><div class="ng-l">Listing health <span class="ng-t" data-ngt="listing"></span></div>
       <div class="ng-b" data-ng="listing"><button id="lcBtn">Listing Copy</button><button id="quickCat">Category</button><button id="vrBtn">Variation</button><button id="msBtn">Measurements</button><button id="rvBtn">Listing Review</button></div></div>
     <div class="ng"><div class="ng-l">Performance <span class="ng-t" data-ngt="perf"></span></div>
       <div class="ng-b" data-ng="perf"><button id="bsBtn">BSR</button></div></div>
-    <div id="mSelWrap"><label for="mSel">Module</label><select id="mSel"><optgroup label="Today"><option value="catalogBtn">Catalog</option><option value="prBtn">Master SKU</option><option value="xcBtn">Cross Channel</option><option value="tkBtn">My tasks</option></optgroup><optgroup label="Price and Buy Box"><option value="cptBtn">CPT tracker</option><option value="bbBtn">Buy Box</option><option value="lpBtn">List Price</option><option value="stBtn">Strike-through</option></optgroup><optgroup label="Listing health"><option value="lcBtn">Listing Copy</option><option value="quickCat">Category</option><option value="vrBtn">Variation</option><option value="msBtn">Measurements</option><option value="rvBtn">Listing Review</option></optgroup><optgroup label="Performance"><option value="bsBtn">BSR</option></optgroup></select></div>
-    <div class="ng ng-tools"><div class="ng-l">View</div><div class="ng-b"><button id="toggle" aria-expanded="true">Filters</button><span id="hStock" role="group" aria-label="Stock"><span class="stk-l">Stock</span><button data-stk="all" title="Every listing">All</button><button data-stk="in" title="Only listings with FBA stock">In stock</button><button data-stk="oos" title="Only listings with 0 FBA stock">Out of stock</button></span><span class="gf-l" id="gfTierWrap">Tier <button id="gfTierBtn" type="button" aria-haspopup="true" aria-expanded="false" title="Pick one or more tiers">All ▾</button><span id="gfTierPop" hidden><label><input type="checkbox" value="A"> Tier A</label><label><input type="checkbox" value="B"> Tier B</label><label><input type="checkbox" value="C"> Tier C</label><label><input type="checkbox" value="X"> Tier X</label><label><input type="checkbox" value="N"> Tier N</label><button type="button" id="gfTierAll">All tiers</button></span></span><span class="gf-l" id="gfSupWrap">Supplier <button id="gfSupBtn" type="button" aria-haspopup="true" aria-expanded="false" title="Pick one or more suppliers">All ▾</button><span id="gfSupPop" hidden><span id="gfSupList"></span><button type="button" id="gfSupAll">All suppliers</button></span></span><label class="gf-l">Brand <select id="gfBrand"><option value="">All</option><option>Barnyard Designs</option><option>Seedboy</option></select></label><input id="gfQ" type="search" placeholder="Search SKU, ASIN, product or family" autocomplete="off"><button id="gfClr" title="Clear Tier, Brand, Search, Stock and this module’s own filters. Keeps the sort, grouping and marketplace.">Clear filters</button><button id="hRefresh" title="Reload all data now. Reads the published files only: no scripts run, no Keepa tokens.">↻ Refresh</button><button id="hReset" title="Put this module’s filters, search, sort and grouping back to their defaults. Keeps the marketplace and all saved checks and marks.">Reset view</button><button id="fs" title="Fullscreen">Full screen</button><button id="scSet" title="Make SKU links open the right marketplace in Seller Central. Saved in this browser only, never published.">SC links</button></div></div>
+    <div id="mSelWrap"><label for="mSel">Module</label><select id="mSel"><optgroup label="Today"><option value="catalogBtn">Catalog</option><option value="prBtn">Master SKU</option><option value="xcBtn">Cross Channel</option></optgroup><optgroup label="Price and Buy Box"><option value="cptBtn">CPT tracker</option><option value="bbBtn">Buy Box</option><option value="lpBtn">List Price</option><option value="stBtn">Strike-through</option></optgroup><optgroup label="Listing health"><option value="lcBtn">Listing Copy</option><option value="quickCat">Category</option><option value="vrBtn">Variation</option><option value="msBtn">Measurements</option><option value="rvBtn">Listing Review</option></optgroup><optgroup label="Performance"><option value="bsBtn">BSR</option></optgroup></select></div>
+    <div class="ng ng-tools"><div class="ng-l">View</div><div class="ng-b"><button id="toggle" aria-expanded="true">Filters</button><span id="hStock" role="group" aria-label="Stock"><span class="stk-l">Stock</span><button data-stk="all" title="Every listing">All</button><button data-stk="in" title="Only listings with FBA stock">In stock</button><button data-stk="oos" title="Only listings with 0 FBA stock">Out of stock</button></span><span class="gf-l" id="gfTierWrap">Tier <button id="gfTierBtn" type="button" aria-haspopup="true" aria-expanded="false" title="Pick one or more tiers">All ▾</button><span id="gfTierPop" hidden><label><input type="checkbox" value="A"> Tier A</label><label><input type="checkbox" value="B"> Tier B</label><label><input type="checkbox" value="C"> Tier C</label><label><input type="checkbox" value="X"> Tier X</label><label><input type="checkbox" value="N"> Tier N</label><button type="button" id="gfTierAll">All tiers</button></span></span><span class="gf-l" id="gfSupWrap">Supplier <button id="gfSupBtn" type="button" aria-haspopup="true" aria-expanded="false" title="Pick one or more suppliers">All ▾</button><span id="gfSupPop" hidden><span id="gfSupList"></span><button type="button" id="gfSupAll">All suppliers</button></span></span><label class="gf-l">Brand <select id="gfBrand"><option value="">All</option><option>Barnyard Designs</option><option>Seedboy</option></select></label><input id="gfQ" type="search" placeholder="Search SKU, ASIN, product or family" autocomplete="off"><button id="gfClr" title="Clear Tier, Brand, Search, Stock and this module’s own filters. Keeps the sort, grouping and marketplace.">Clear filters</button><button id="hRefresh" title="Reload all data now. Reads the published files only: no scripts run, no Keepa tokens.">↻ Refresh</button><button id="hReset" title="Put this module’s filters, search, sort and grouping back to their defaults. Keeps the marketplace and all saved checks and marks.">Reset view</button><button id="fs" title="Fullscreen">Full screen</button><button id="scSet" aria-label="Settings: Canada Seller Central links" title="Settings: make CA SKU links open Seller Central Canada">&#9881;</button></div></div>
   </nav>
 </header>
 <section id="ov" hidden></section>
@@ -2104,7 +2104,7 @@ function scInvUrl(sku, mk){
 }
 function scSetup(){
   const have = scIds(), st = ['US','CA'].map(m=> m + ': ' + (have[m] ? 'set' : 'not set')).join(', ');
-  const t = window.prompt(`SC links (${st}).\n\nIn Seller Central, pick the marketplace (for example Canada) from the top menu, open any page, and copy the address. It must contain mons_sel_dir_mcid. Paste it here:`, '');
+  const t = window.prompt(`Canada links (${st}).\n\nOne-time setup so CA SKU links open Seller Central Canada:\n1. In Seller Central, switch to Canada (top menu).\n2. Copy the page address from the address bar.\n3. Paste it here.`, '');
   if(!t) return;
   let q; try { q = new URL(t.trim()).searchParams; } catch(e){ alert('That is not a web address. Nothing saved.'); return; }
   const mcid = q.get('mons_sel_dir_mcid'), paid = q.get('mons_sel_dir_paid'), mkid = q.get('mons_sel_mkid') || '';
@@ -7042,12 +7042,13 @@ function prRows(){
       cat: cg ? (cg.nolive ? null : !(cg.bad || []).length) : null,
       bb: bb ? (bb.holder ? bb.holder.cls : null) : null,
       star: bs && bs.rt && bs.rt.cur !== undefined ? bs.rt.cur : null,
+      revs: bs && bs.rt && bs.rt.rev !== undefined ? bs.rt.rev : null,
       chk: prChecks(p)
     });
   });
 }
 const PR_SORT = { upc: r=> r.upc || '', product: r=> r.name, sku: r=> r.mkSku, brand: r=> r.brand || '', status: r=> r.st || '', ca: r=> r.caStatus || '', tier: r=> (TIER_RANK[r.tier] !== undefined ? TIER_RANK[r.tier] : 9),
-  fam: r=> r.fam || '', sale: r=> prNum(r.price), list: r=> prNum(r.list), us: r=> PR_F.mk === 'CA' ? r.ca : r.us, cast: r=> r.ca, copy: r=> r.copy, star: r=> r.star, chk: r=> -r.chk.length, active: r=> r.active || '' };
+  fam: r=> r.fam || '', sale: r=> prNum(r.price), list: r=> prNum(r.list), us: r=> PR_F.mk === 'CA' ? r.ca : r.us, cast: r=> r.ca, copy: r=> r.copy, star: r=> r.star, revs: r=> r.revs, usst: r=> r.status || '', cast2: r=> r.caStatus || '', usstock: r=> r.us, castock: r=> r.ca, chk: r=> -r.chk.length, active: r=> r.active || '' };
 function prOpts(all, k){ const m = {}; all.forEach(r=>{ String(r[k] || '').split(/\s*,\s*/).filter(Boolean).forEach(v=> m[v] = (m[v] || 0) + 1); }); return Object.keys(m).sort().map(v=> [v, m[v]]); }
 function prSel(id, label, opts, cur){
   return `<label class="mut" style="font-size:.75rem">${esc(label)} <select id="${id}" style="max-width:11rem"><option value="">All</option>` +
@@ -7056,7 +7057,7 @@ function prSel(id, label, opts, cur){
 /* CROSS CHANNEL (MJ, Nov 11): every active Amazon US listing, and whether it is live on
    Walmart (Morning Run, daily) and Shopify (storefront, daily). Tier X shows but is not
    counted in the %. Replaces the monthly side-by-side check. */
-const XC_F = {show:'all', tier:'', q:'', sort:'', dir:1};
+const XC_F = {show:'all', sort:'', dir:1};
 function xcWm(sku){
   if(!wmFresh()) return {s:'na', t:'Walmart not read in 3 days'};
   const w = WM[sku];
@@ -7077,7 +7078,7 @@ function xcRows(){
   return (PR || []).filter(p=> p.status === 'Active').map(p=>{
     const w = xcWm(p.sku), h = xcSh(p.sku, p.brand);
     const gap = w.s === 'miss' || w.s === 'bad' || h.s === 'miss';
-    return {sku:p.sku, asin:p.asin, name:p.name || p.sku, brand:p.brand, tier:p.tier || '', amz:p.sale || p.list || null, list:p.list || null, w, h,
+    return {sku:p.sku, asin:p.asin, name:p.name || p.sku, brand:p.brand, tier:p.tier || '', fam:p.pname || '', amz:p.sale || p.list || null, list:p.list || null, w, h,
       full: w.s === 'ok' && (h.s === 'ok' || h.s === 'warn'), gap, unknown: w.s === 'na' || h.s === 'na'};
   });
 }
@@ -7087,46 +7088,55 @@ function renderXc(){
   document.getElementById('bar').innerHTML = '';
   const v = document.getElementById('cptView'), all = xcRows();
   const list = a=> esc(a.map(r=> r.sku).slice(0,3).join(', ')) + (a.length > 3 ? '\u2026' : '');
-  const nx = all.filter(r=> r.tier !== 'X');
-  const sc = xcScore();
+  const nx = all.filter(r=> r.tier !== 'X'), sc = xcScore();
   const mW = r=> r.w.s === 'miss', bW = r=> r.w.s === 'bad', mS = r=> r.h.s === 'miss';
   const pick = {all: ()=> true, wmiss: mW, wbad: bW, smiss: mS, full: r=> r.full};
-  let rows = all.filter(pick[XC_F.show] || pick.all);
-  if(XC_F.tier) rows = rows.filter(r=> r.tier === XC_F.tier);
-  if(XC_F.q){ const q = XC_F.q.toLowerCase(); rows = rows.filter(r=> (r.sku + ' ' + r.asin + ' ' + r.name).toLowerCase().indexOf(q) !== -1); }
+  let rows = stockKeep(all.filter(pick[XC_F.show] || pick.all), 'US');
   const SORT = {tier: r=> (TIER_RANK[r.tier] !== undefined ? TIER_RANK[r.tier] : 9), product: r=> r.name, amz: r=> r.amz, wm: r=> ['miss','bad','na','ok'].indexOf(r.w.s), sh: r=> ['miss','na','warn','ok'].indexOf(r.h.s)};
-  rows = XC_F.sort && SORT[XC_F.sort] ? sortBy(rows, SORT[XC_F.sort], XC_F.dir) : sortBy(rows, r=> (r.gap ? 0 : 100) + (r.tier === 'X' ? 50 : 0) + (TIER_RANK[r.tier] !== undefined ? TIER_RANK[r.tier] : 9), 1);
-  const n = (f, list)=> (list || nx).filter(f).length, nX = f=> all.filter(r=> r.tier === 'X').filter(f).length;
+  rows = XC_F.sort && SORT[XC_F.sort] ? sortBy(rows, SORT[XC_F.sort], XC_F.dir) : sortBy(rows, r=> (r.fam || '~') + ' ' + r.sku, 1);
+  XC_VIEW = rows;
+  const n = (f, l)=> (l || nx).filter(f).length, nX = f=> all.filter(r=> r.tier === 'X').filter(f).length;
   const tile = (k, val, cls, note, show)=> `<div class="cpt-tile bbtile${XC_F.show === show ? ' on' : ''}" role="button" tabindex="0" data-xc="${show}"><div class="k">${k}</div><div class="v ${cls}">${val}</div><div class="n">${note}</div></div>`;
-  const chip = (o)=> `<span class="lcchip ${o.s === 'ok' ? 'lc-ok' : o.s === 'warn' ? 'lc-small' : o.s === 'na' ? 'lc-gray' : 'lc-bad'}" style="white-space:normal">${esc(o.t)}</span>` + (o.p ? ` <span class="mut">${usd(o.p)}</span>` : '');
+  const chip = o=> `<span class="lcchip ${o.s === 'ok' ? 'lc-ok' : o.s === 'warn' ? 'lc-small' : o.s === 'na' ? 'lc-gray' : 'lc-bad'}" style="white-space:normal">${esc(o.t)}</span>` + (o.p ? ` <span class="mut">${usd(o.p)}</span>` : '');
   const H = (k, label, cls)=> `<th data-s="${k}" data-d="asc" class="${cls || ''}">${label}${sortArrow(XC_F, k)}</th>`;
-  let html = '<section class="cpt-top"><div class="cpt-head"><h2>Cross Channel</h2><span class="sub">Active Amazon US listings on Walmart and Shopify</span>'+
-      (WM_META && WM_META.read ? `<span class="sub">Walmart read ${esc(WM_META.read)}</span>` : '<span class="sub">Walmart not read yet</span>')+
-      (SH_META && SH_META.updated ? `<span class="sub">Shopify read ${esc(SH_META.updated)} ET</span>` : '<span class="sub">Shopify not read yet</span>')+
+  const xTip = f=> nX(f) ? ` \u00b7 +${nX(f)} Tier X` : '';
+  let html = '<section class="cpt-top"><div class="cpt-head"><h2>Cross Channel</h2><span class="sub">Amazon US vs Walmart and Shopify</span>'+
+      `<span class="cpt-live"><i></i>\u2713 All ${all.length} active covered</span>`+
+      (WM_META && WM_META.read ? `<span class="sub">Walmart ${esc(WM_META.read)}</span>` : '<span class="sub">Walmart not read</span>')+
+      (SH_META && SH_META.updated ? `<span class="sub">Shopify ${esc(SH_META.updated.slice(0, 10))}</span>` : '<span class="sub">Shopify not read</span>')+
     '</div><div class="cpt-tiles">'+
-      tile('Listed on all channels', sc === null ? '\u2014' : sc + '%', sc === null ? '' : sc >= 98 ? 'good' : sc >= 90 ? 'warn' : 'bad', `${n(r=> r.full)} of ${nx.filter(r=> !r.unknown).length} \u00b7 Tier X not counted`, 'full')+
-      tile('Missing on Walmart', n(mW), n(mW) ? 'bad' : 'good', n(mW) ? list(nx.filter(mW)) + (nX(mW) ? ` \u00b7 +${nX(mW)} Tier X` : '') : (nX(mW) ? `None \u00b7 ${nX(mW)} Tier X` : 'None'), 'wmiss')+
-      tile('Unpublished or error on Walmart', n(bW, all), n(bW, all) ? 'bad' : 'good', n(bW, all) ? list(all.filter(bW)) : 'None', 'wbad')+
-      tile('Not live on Shopify', n(mS), n(mS) ? 'warn' : 'good', n(mS) ? list(nx.filter(mS)) + (nX(mS) ? ` \u00b7 +${nX(mS)} Tier X` : '') : (nX(mS) ? `None \u00b7 ${nX(mS)} Tier X` : 'None'), 'smiss')+
+      tile('On every channel', sc === null ? '\u2014' : sc + '%', sc === null ? '' : sc >= 98 ? 'good' : sc >= 90 ? 'warn' : 'bad', `${n(r=> r.full)} of ${nx.filter(r=> !r.unknown).length} \u00b7 Tier X not counted`, 'full')+
+      tile('Not on Walmart', n(mW), n(mW) ? 'bad' : 'good', (n(mW) ? list(nx.filter(mW)) : 'None') + xTip(mW), 'wmiss')+
+      tile('Blocked on Walmart', n(bW, all), n(bW, all) ? 'bad' : 'good', n(bW, all) ? 'unpublished or error' : 'None', 'wbad')+
+      tile('Not on Shopify', n(mS), n(mS) ? 'warn' : 'good', (n(mS) ? list(nx.filter(mS)) : 'None') + xTip(mS), 'smiss')+
     '</div></section>'+
-    '<div class="cpt-tools"><div class="seg" id="xcTier">'+ ['', 'A', 'B', 'N', 'C', 'X'].map(t=> `<button data-t="${t}" aria-pressed="${XC_F.tier === t}">${t ? 'Tier ' + t : 'All tiers'}</button>`).join('') + '</div>'+
-      `<input id="xcQ" type="search" placeholder="Search SKU, ASIN or product" value="${esc(XC_F.q)}" aria-label="Search Cross Channel">`+
-      '<button id="xcCopy">Copy the gaps</button>' + `<span class="count">${rows.length} of ${all.length}</span></div>`;
+    '<div class="cpt-tools"><button id="xcDl">Download</button>' + `<span class="count">${rows.length} of ${all.length}</span></div>`;
   if(!all.length) html += '<div class="cpt-empty"><b>Loading the Master SKU sheet</b></div>';
-  else html += '<table class="cpt-table lc-table"><thead><tr>' + H('product', 'Product') + H('tier', 'Tier', 'c') + H('amz', 'Amazon', 'num') + H('wm', 'Walmart') + H('sh', 'Shopify') + '</tr></thead><tbody>'+
-    rows.map(r=> `<tr class="row"><td class="prod"><div class="p-name">${esc(String(r.name).slice(0, 60))}</div><div class="p-id"><span>SKU</span>${skuL(r.sku, 'US')}${cpy(r.sku)}</div>${r.asin ? `<div class="p-id"><span>ASIN</span>${asinL(r.asin, 'US')}${cpy(r.asin)}</div>` : ''}</td>`+
-      `<td class="c"><b>${esc(r.tier || '\u2014')}</b></td><td class="num">${r.amz ? usd(r.amz) : '\u2014'}</td><td>${chip(r.w)}</td><td>${chip(r.h)}</td></tr>`).join('') + '</tbody></table>'+
-    '<p class="mut" style="font-size:.78rem">Walmart from the Morning Run\u2019s daily Seller Center read. Shopify from each store\u2019s public storefront, daily: a product in draft or hidden from the online store shows as Not live. Tier X is listed but not counted in the %.</p>';
+  else {
+    const tr = r=> `<tr class="row" tabindex="0" data-xc="${esc(r.sku)}"><td class="prod"><div class="p-name">${esc(String(r.name).slice(0, 60))}</div><div class="p-id"><span>SKU</span>${skuL(r.sku, 'US')}${cpy(r.sku)}</div>${r.asin ? `<div class="p-id"><span>ASIN</span>${asinL(r.asin, 'US')}${cpy(r.asin)}</div>` : ''}</td>`+
+      `<td class="c"><b>${esc(r.tier || '\u2014')}</b></td><td class="num">${r.amz ? usd(r.amz) : '\u2014'}</td><td>${chip(r.w)}</td><td>${chip(r.h)}</td></tr>`;
+    html += '<table class="cpt-table lc-table"><thead><tr>' + H('product', 'Product') + H('tier', 'Tier', 'c') + H('amz', 'Amazon', 'num') + H('wm', 'Walmart') + H('sh', 'Shopify') + '</tr></thead><tbody>';
+    if(XC_F.sort) html += rows.map(tr).join('');
+    else {
+      const g = {}; rows.forEach(r=> (g[r.fam || '~'] = g[r.fam || '~'] || []).push(r));
+      Object.keys(g).sort((a, b)=> a === '~' ? 1 : b === '~' ? -1 : a.localeCompare(b)).forEach(k=>{
+        const rs = g[k], gaps = rs.filter(r=> r.gap).length;
+        html += `<tr class="gh"><td colspan="5"><b>${esc(k === '~' ? 'Not in a family' : k)}</b> <span class="mut">\u00b7 ${rs.length} listing${rs.length > 1 ? 's' : ''}</span>${gaps ? ` <span class="lcchip lc-bad">${gaps} to build or fix</span>` : ' <span class="lcchip lc-ok">All listed</span>'}</td></tr>` + rs.map(tr).join('');
+      });
+    }
+    html += '</tbody></table>';
+  }
   v.innerHTML = html;
   wireSort(v, XC_F, renderXc);
-  [...v.querySelectorAll('[data-xc]')].forEach(t=> t.onclick = ()=>{ XC_F.show = XC_F.show === t.dataset.xc ? 'all' : t.dataset.xc; renderXc(); });
-  [...v.querySelectorAll('#xcTier button')].forEach(b=> b.onclick = ()=>{ XC_F.tier = b.dataset.t; renderXc(); });
-  const q = document.getElementById('xcQ'); if(q) q.oninput = ()=>{ XC_F.q = q.value; const p = q.selectionStart; renderXc(); const q2 = document.getElementById('xcQ'); q2.focus(); q2.setSelectionRange(p, p); };
-  const cp = document.getElementById('xcCopy'); if(cp) cp.onclick = ()=>{
-    const g = all.filter(r=> r.gap);
-    const t = `Cross Channel gaps (${g.length}):\n` + g.map(r=> `\u2022 ${r.sku} (Tier ${r.tier || '?'}): Walmart ${r.w.t}; Shopify ${r.h.t}`).join('\n');
-    (navigator.clipboard ? navigator.clipboard.writeText(t) : Promise.reject()).then(()=>{ cp.textContent = 'Copied'; }).catch(()=> window.prompt('Copy:', t)); };
+  [...v.querySelectorAll('.cpt-tile[data-xc]')].forEach(t=> t.onclick = ()=>{ XC_F.show = XC_F.show === t.dataset.xc ? 'all' : t.dataset.xc; renderXc(); });
+  [...v.querySelectorAll('tr.row[data-xc]')].forEach(t=>{ const open = ()=>{ const p = prRows().find(x=> x.sku === t.dataset.xc); if(p) openPr(p); }; t.onclick = open; t.onkeydown = e=>{ if(e.key === 'Enter') open(); }; });
+  const dl = document.getElementById('xcDl'); if(dl) dl.onclick = ()=>{
+    const set = selSet(), use = set.size ? rows.filter(r=> set.has(r.sku)) : rows;
+    csvSave('cross-channel', ['SKU','ASIN','Product','Tier','Family','Amazon price','Walmart','Walmart price','Shopify','Shopify price'],
+      use.map(r=> [r.sku, r.asin || '', r.name, r.tier || '', r.fam || '', r.amz || '', r.w.t, r.w.p || '', r.h.t, r.h.p || '']));
+  };
 }
+let XC_VIEW = [];
 function renderProducts(){
   document.getElementById('msg').hidden = true;
   document.getElementById('bar').innerHTML = '';
@@ -7144,28 +7154,23 @@ function renderProducts(){
   const fams = new Set(all.filter(r=> r.st === 'Active' && (PR_F.mk === 'CA' ? r.caPasin : r.pasin)).map(r=> PR_F.mk === 'CA' ? r.caPasin : r.pasin)).size;
   const chkN = all.filter(r=> r.chk.length).length;
   let html = '<section class="cpt-top"><div class="cpt-head"><h2>Master SKU</h2>'+
-    `<span class="sub">Every product in the Master SKU sheet, ${all.length} SKUs \u00b7 Amazon ${PR_F.mk}</span>`+
+    `<span class="sub">${all.length} SKUs \u00b7 Amazon ${PR_F.mk}</span>`+
     (PR_META.updated ? `<span class="cpt-live"><i></i>Built ${esc(PR_META.updated)} ET</span>` : '')+
     '</div><div class="cpt-tiles">'+
-      tile(`Active on Amazon ${PR_F.mk}`, cnt('status','Active'), 'good', `${fams} variation families`, 'status=Active')+
+      tile('Active', cnt('status','Active'), 'good', `${fams} families`, 'status=Active')+
       tile('Inactive', cnt('status','Inactive'), '', '', 'status=Inactive')+
       tile('In development', cnt('status','In Development'), '', '', 'status=In Development')+
-      ['A','B','C','X','N'].map(t=> tile('Tier ' + t, all.filter(r=> r.tier === t && r.st === 'Active').length, '', 'Active only', 'tier=' + t + '&status=Active')).join('')+
-      tile('Plytix checks', chkN, chkN ? 'warn' : 'good', chkN ? 'Status slips to look at' : 'None', 'chk=1&status=')+
+      ['A','B','C','X','N'].map(t=> tile('Tier ' + t, all.filter(r=> r.tier === t && r.st === 'Active').length, '', 'active', 'tier=' + t + '&status=Active')).join('')+
+      tile('Data to fix', chkN, chkN ? 'warn' : 'good', chkN ? 'status vs dates' : 'none', 'chk=1&status=')+
     '</div></section>'+
     '<div class="cpt-tools" style="flex-wrap:wrap;gap:.4rem">'+
       '<div class="seg" id="prMk">' + ['US','CA'].map(m=> `<button data-mk="${m}" aria-pressed="${PR_F.mk === m}">Amazon ${m}</button>`).join('') + '</div>'+
-      `<input id="prQ" type="search" placeholder="Search SKU, ASIN, UPC, name, parent, material" value="${esc(PR_F.q)}" aria-label="Search the Master SKU" style="min-width:18rem">`+
-      prSel('prBrand', 'Brand', prOpts(all, 'brand'), PR_F.brand)+
       prSel('prStatus', PR_F.mk === 'CA' ? 'CA status' : 'SKU status', prOpts(all, 'st'), PR_F.status)+
-      prSel('prTier', 'Tier', prOpts(all, 'tier'), PR_F.tier)+
-      prSel('prFam', 'Family', prOpts(all, 'fam'), PR_F.fam)+
-      prSel('prCat', 'Category', prOpts(all, 'cats'), PR_F.cat)+
-      prSel('prPtype', 'Product type', prOpts(all, 'ptype'), PR_F.ptype)+
-      prSel('prRoom', 'Room', prOpts(all, 'room'), PR_F.room)+
       `<label class="mut" style="font-size:.75rem">Group by <select id="prGroup">${PR_GROUPS.map(g=> `<option value="${g[0]}"${PR_F.group === g[0] ? ' selected' : ''}>${g[1]}</option>`).join('')}</select></label>`+
-      `<button id="prChk" aria-pressed="${!!PR_F.chk}">Plytix checks only</button>`+
-      '<button id="prReset">Clear filters</button><button id="prDl">Download</button>'+
+      `<button id="prMore" aria-expanded="${!!PR_F.more}">More filters</button>`+
+      (PR_F.more ? prSel('prFam', 'Family', prOpts(all, 'fam'), PR_F.fam) + prSel('prCat', 'Category', prOpts(all, 'cats'), PR_F.cat) +
+        prSel('prPtype', 'Product type', prOpts(all, 'ptype'), PR_F.ptype) + prSel('prRoom', 'Room', prOpts(all, 'room'), PR_F.room) : '')+
+      '<button id="prDl">Download</button>'+
       `<span class="count">${rows.length} of ${all.length}</span>`+
     '</div>';
   if(!PR.length){
@@ -7180,22 +7185,23 @@ function renderProducts(){
       `<td class="prod"><div class="p-name">${esc(String(r.name).slice(0, 60))}</div><div class="p-id"><span>SKU</span>${r.asin ? skuL(r.mkSku, PR_F.mk) : esc(r.mkSku)}${cpy(r.mkSku)}</div>`+
         (r.asin ? `<div class="p-id"><span>ASIN</span>${asinL(r.asin, PR_F.mk)}${cpy(r.asin)}</div>` : '')+
         (r.chk.length ? `<span class="p-size" style="background:#fff4e0;color:#8a5a00" data-tip="${esc(r.chk.join(' \u2022 '))}">Plytix check</span>` : '')+'</td>'+
-      `<td>${esc(r.brand || '')}</td>`+
+      `<td class="c">${r.tier ? '<b>' + esc(r.tier) + '</b>' : '<span class="mut">\u2014</span>'}</td>`+
       `<td class="c">${chip(r.status || 'blank', stCls(r.status))}</td>`+
       `<td class="c">${r.caStatus ? chip(r.caStatus, stCls(r.caStatus)) : '<span class="mut">\u2014</span>'}</td>`+
-      `<td class="c">${r.tier ? '<b>' + esc(r.tier) + '</b>' : '<span class="mut">\u2014</span>'}</td>`+
+      `<td class="num">${r.us === null || r.us === undefined ? '<span class="mut">\u2014</span>' : bsInt(r.us)}</td>`+
+      `<td class="num">${r.ca === null || r.ca === undefined ? '<span class="mut">\u2014</span>' : bsInt(r.ca)}</td>`+
       `<td style="font-size:.8rem">${r.fam ? esc(String(r.fam).slice(0, 34)) : '<span class="mut">Standalone</span>'}${r.v1 ? `<div class="mut">${esc([r.v1, r.v2].filter(Boolean).join(' / '))}</div>` : ''}</td>`+
       `<td class="num">${r.price ? usd(r.price) : '\u2014'}${r.list && PR_F.mk === 'US' ? `<div class="mut" style="font-size:.75rem">List ${usd(r.list)}</div>` : ''}</td>`+
-      `<td class="num">${(PR_F.mk === 'CA' ? r.ca : r.us) === null || (PR_F.mk === 'CA' ? r.ca : r.us) === undefined ? '<span class="mut">\u2014</span>' : bsInt(PR_F.mk === 'CA' ? r.ca : r.us)}</td>`+
       `<td class="c" style="font-size:.78rem;white-space:nowrap">`+
         (r.copy !== null ? chip('Copy ' + Math.round(r.copy) + '%', r.copy >= 100 ? 'lc-ok' : 'lc-small') + ' ' : '')+
         (r.cat !== null ? chip(r.cat ? 'Cat OK' : 'Cat wrong', r.cat ? 'lc-ok' : 'lc-bad') + ' ' : '')+
         (r.bb ? chip(r.bb === 'us' ? 'Buy Box' : r.bb === 'none' ? 'No Buy Box' : 'Buy Box lost', r.bb === 'us' ? 'lc-ok' : 'lc-bad') + ' ' : '')+
-        (r.star !== null ? chip(r.star.toFixed(1) + '\u2605', r.star >= 4 ? 'lc-ok' : 'lc-small') : '')+
-      '</td></tr>';
+      '</td>'+
+      `<td class="num">${r.star !== null ? `<b>${r.star.toFixed(1)}</b>\u2605` : '<span class="mut">\u2014</span>'}</td>`+
+      `<td class="num">${r.revs !== null && r.revs !== undefined ? bsInt(r.revs) : '<span class="mut">\u2014</span>'}</td></tr>`;
     html += '<table class="cpt-table bb-table lc-table cg-table"><thead><tr>'+
-      H('product','Product') + H('brand','Brand') + H('status','SKU status','c') + H('ca','CA status','c') + H('tier','Tier','c') +
-      H('fam','Family / variation') + H('sale', PR_F.mk === 'CA' ? 'CA sale price' : 'Sale price','num') + H('us', PR_F.mk + ' stock','num') + H('copy','Health (US)','c') +
+      H('product','Product') + H('tier','Tier','c') + H('usst','US status','c') + H('cast2','CA status','c') + H('usstock','US stock','num') + H('castock','CA stock','num') +
+      H('fam','Variation') + H('sale', PR_F.mk === 'CA' ? 'CA price' : 'Price','num') + H('copy','Health','c') + H('star','Rating','num') + H('revs','Ratings','num') +
       '</tr></thead><tbody>';
     if(PR_F.group){
       const g = {}; rows.forEach(r=>{ const pa = PR_F.mk === 'CA' ? (r.caPasin || '') : (r.psku || ''); const k = PR_F.group === 'pasin' ? (pa ? pa : '~') : (String(r[PR_F.group] || '').split(/\s*,\s*/)[0] || '~'); (g[k] = g[k] || []).push(r); });
@@ -7203,7 +7209,7 @@ function renderProducts(){
         const rs = g[k], first = rs[0];
         const label = k === '~' ? (PR_F.group === 'pasin' ? 'No parent' : 'Blank') : PR_F.group === 'pasin' ? (first.pname || k) : k;
         const act = rs.filter(r=> r.status === 'Active').length;
-        html += `<tr class="gh"><td colspan="9"><b>${esc(label)}</b>${PR_F.group === 'pasin' && k !== '~' ? ` <span class="mut mono">${esc(k)}${PR_F.mk === 'CA' ? (first.psku ? ' \u00b7 ' + esc(first.psku) : '') : (first.pasin ? ' \u00b7 ' + esc(first.pasin) : '')}</span>` : ''}`+
+        html += `<tr class="gh"><td colspan="11"><b>${esc(label)}</b>${PR_F.group === 'pasin' && k !== '~' ? ` <span class="mut mono">${esc(k)}${PR_F.mk === 'CA' ? (first.psku ? ' \u00b7 ' + esc(first.psku) : '') : (first.pasin ? ' \u00b7 ' + esc(first.pasin) : '')}</span>` : ''}`+
           ` <span class="mut">\u00b7 ${rs.length} SKU${rs.length > 1 ? 's' : ''}, ${act} active</span>${rs.some(r=> r.chk.length) ? ' <span class="lcchip lc-small">Plytix check</span>' : ''}</td></tr>` + rs.map(tr).join('');
       });
     } else html += rows.map(tr).join('');
@@ -7217,7 +7223,7 @@ function renderProducts(){
     .forEach(x=>{ const el = document.getElementById(x[0]); if(el) el.onchange = ()=> set(x[1], el.value); });
   const q = document.getElementById('prQ');
   if(q) q.oninput = ()=>{ PR_F.q = q.value; const pos = q.selectionStart; renderProducts(); const q2 = document.getElementById('prQ'); q2.focus(); q2.setSelectionRange(pos, pos); };
-  const ck = document.getElementById('prChk'); if(ck) ck.onclick = ()=> set('chk', PR_F.chk ? '' : '1');
+  const mf = document.getElementById('prMore'); if(mf) mf.onclick = ()=>{ PR_F.more = !PR_F.more; if(!PR_F.more) Object.assign(PR_F, {fam:'', cat:'', ptype:'', room:''}); renderProducts(); };
   const rs = document.getElementById('prReset'); if(rs) rs.onclick = ()=>{ Object.assign(PR_F, {q:'', brand:'', status:'', ca:'', tier:'', fam:'', cat:'', ptype:'', room:'', chk:''}); renderProducts(); };
   const dl = document.getElementById('prDl'); if(dl) dl.onclick = ()=> dlPr(rows);
   [...v.querySelectorAll('.bbtile[data-set]')].forEach(t=> t.onclick = ()=>{
@@ -7263,9 +7269,10 @@ function prCopyHtml(r){
     ['Images', 'Main image', c.img], ['Images', 'Other images', urls(c.imgs).join('\n')], ['Images', 'Lifestyle images', urls(c.life).join('\n')]
   ];
   let html = `<h3 style="margin-top:1rem;display:flex;justify-content:space-between;align-items:center;gap:.5rem">Listing build${ca ? ' (Amazon CA copy)' : ''} <button type="button" id="prCopyAll" class="work">Copy all</button></h3>`+
-    '<div class="mut" style="font-size:.78rem">Everything from the Master SKU you need to build this listing on Walmart or Shopify. Each value has its own copy button.</div>';
+    '<div class="mut" style="font-size:.78rem">Copy all includes the identity and prices above.</div>';
   let sec = '';
   F.forEach(([sct, label, v, max])=>{
+    if(sct === 'Identity' || sct === 'Price') return;   // shown in the sections above; still in Copy all
     if(sct !== sec){ sec = sct; html += `<div style="margin-top:.7rem;font-size:.72rem;letter-spacing:.06em;text-transform:uppercase;color:var(--muted,#6b7280)">${esc(sct)}</div>`; }
     v = v === undefined || v === null ? '' : String(v);
     const img = sct === 'Images' && v ? v.split('\n').map(u=> `<a href="${esc(u)}" target="_blank" rel="noopener" class="nolink">${esc(u.length > 60 ? u.slice(0, 57) + '\u2026' : u)}</a>`).join('<br>') : '';
@@ -7286,20 +7293,24 @@ let prCopyAllText = '';
 function colLetter(n){ let s = ''; while(n > 0){ const m = (n - 1) % 26; s = String.fromCharCode(65 + m) + s; n = Math.floor((n - 1) / 26); } return s; }
 function openPr(r){
   const d = document.getElementById('detail');
-  const row = (k, v)=> v === undefined || v === null || v === '' ? '' : `<dt>${esc(k)}</dt><dd>${esc(String(v))}</dd>`;
+  // Nov 11 (MJ): grouped into sections, every value copyable
+  const row = (k, v, mono)=> v === undefined || v === null || v === '' ? '' : `<dt>${esc(k)}</dt><dd${mono ? ' class="mono"' : ''}>${esc(String(v))}${cpy(String(v))}</dd>`;
+  const sec = (title, inner)=> inner ? `<div style="margin:.7rem 0;border:1px solid var(--line,#e5e7eb);border-radius:8px;overflow:hidden"><div style="background:#eef2f8;padding:.35rem .6rem;font-weight:700;font-size:.78rem;letter-spacing:.04em;text-transform:uppercase;color:#1f3a5f">${esc(title)}</div><dl style="margin:.3rem .6rem .5rem">${inner}</dl></div>` : '';
+  const mkL = r.mk || (typeof PR_F !== 'undefined' ? PR_F.mk : 'US') || 'US';
   d.innerHTML = `<h2>Master SKU</h2><h3>${esc(r.name)}</h3>`+
-    (r.chk.length ? `<div class="why" style="border-left:3px solid var(--warn)"><b>Plytix checks:</b> ${esc(r.chk.join(' \u00b7 '))}</div>` : '')+
-    '<dl>'+ `<dt>SKU</dt><dd class="mono">${r.asin ? skuL(r.sku, r.mk || 'US') : esc(r.sku)}${cpy(r.sku)}</dd>` +
-      (r.asin ? `<dt>ASIN</dt><dd class="mono">${asinL(r.asin, r.mk || 'US')}${cpy(r.asin)}</dd>` : '') +
-      row('Brand', r.brand) + row('SKU status', r.status) + row('CA status', r.caStatus) + row('CA SKU', r.caSku) + row('Tier', r.tier) +
-      row('Family', r.pname) + row('Parent ASIN', r.pasin) + row('Parent SKU', r.psku) +
-      row('Variation', [r.t1 && r.v1 ? r.t1 + ': ' + r.v1 : '', r.t2 && r.v2 ? r.t2 + ': ' + r.v2 : ''].filter(Boolean).join(' / ')) +
-      row('Title', r.title) + row('Product type', r.ptype) + row('Item type keyword', r.itk) + row('Category', r.cats) + row('Room', r.room) +
-      row('Material', r.material) + row('Color', r.color) + row('Shape', r.shape) + row('Size', r.dims) + row('Size tier', r.sizeTier) +
-      row('Sale price', r.sale ? usd(r.sale) : '') + row('List price', r.list ? usd(r.list) : '') + row('CA sale price', r.caSale ? usd(r.caSale) : '') + row('Walmart price', r.walmart ? usd(r.walmart) : '') +
-      row('US stock', r.us) + row('Active date', r.active) + row('Inactive date', r.inactive) + row('CA active date', r.caActive) + row('CA inactive date', r.caInactive) +
-      row('Liquidate', r.liquidate) + row('Probation', r.probation ? r.probation + (r.probReason ? ' (' + r.probReason + ')' : '') : '') + (r.upc ? `<dt>UPC</dt><dd class="mono">${esc(r.upc)}${cpy(r.upc)}</dd>` : '') + row('FNSKU', r.fnsku) +
-    '</dl><div id="prCopy">' + prCopyHtml(r) + '</div><div class="why">From the Master SKU sheet (Plytix). Health chips: the Listing Copy, Category, Buy Box and BSR modules.</div>';
+    (r.chk.length ? `<div class="why" style="border-left:3px solid var(--warn)"><b>Data to fix:</b> ${esc(r.chk.join(' \u00b7 '))}</div>` : '')+
+    sec('Identity',
+      `<dt>SKU</dt><dd class="mono">${r.asin ? skuL(r.sku, mkL) : esc(r.sku)}${cpy(r.sku)}</dd>` +
+      (r.asin ? `<dt>ASIN</dt><dd class="mono">${asinL(r.asin, mkL)}${cpy(r.asin)}</dd>` : '') +
+      row('UPC', r.upc, 1) + row('FNSKU', r.fnsku, 1) + row('CA SKU', r.caSku, 1) + row('Brand', r.brand))+
+    sec('Status', row('Tier', r.tier) + row('US status', r.status) + row('CA status', r.caStatus) + row('Active date', r.active) + row('Inactive date', r.inactive) +
+      row('CA active date', r.caActive) + row('CA inactive date', r.caInactive) + row('Liquidate', r.liquidate) + row('Probation', r.probation ? r.probation + (r.probReason ? ' (' + r.probReason + ')' : '') : ''))+
+    sec('Variation', row('Family', r.pname) + row('Parent ASIN', r.pasin, 1) + row('Parent SKU', r.psku, 1) +
+      row('Variation', [r.t1 && r.v1 ? r.t1 + ': ' + r.v1 : '', r.t2 && r.v2 ? r.t2 + ': ' + r.v2 : ''].filter(Boolean).join(' / ')))+
+    sec('Category', row('Product type', r.ptype) + row('Item type keyword', r.itk) + row('Category', r.cats) + row('Room', r.room) + row('Size tier', r.sizeTier))+
+    sec('Stock and price', row('US stock', r.us) + row('CA stock', r.ca) + row('Sale price', r.sale ? usd(r.sale) : '') + row('List price', r.list ? usd(r.list) : '') +
+      row('CA sale price', r.caSale ? usd(r.caSale) : '') + row('Walmart price', r.walmart ? usd(r.walmart) : ''))+
+    '<div id="prCopy">' + prCopyHtml(r) + '</div>';
   document.getElementById('detail').classList.remove('wide'); document.getElementById('veil').hidden = false;
   const wireAll = ()=>{ const b = document.getElementById('prCopyAll'); if(b) b.onclick = ()=>{ (navigator.clipboard ? navigator.clipboard.writeText(prCopyAllText) : Promise.reject()).then(()=>{ b.textContent = 'Copied'; }).catch(()=> window.prompt('Copy:', prCopyAllText)); }; };
   wireAll();
@@ -7318,7 +7329,7 @@ function dlPr(rows){
    that module (Download, upload files, flat files) has only the ticked
    listings. Nothing ticked: everything shown, as before. */
 const SEL = {};
-const SEL_ATTR = ['data-lc','data-cg','data-vr','data-bb','data-bs','data-pr','data-asin','data-lp','data-ms'];
+const SEL_ATTR = ['data-lc','data-cg','data-vr','data-bb','data-bs','data-pr','data-asin','data-lp','data-ms','data-xc'];
 function selSet(){ const v = S.view || 'x'; return SEL[v] = SEL[v] || new Set(); }
 function selKey(tr){ for(const a of SEL_ATTR){ const k = tr.getAttribute(a); if(k) return k; } return ''; }
 /* Header shows each module's main % instead of an issue count (MJ, Oct 27).
@@ -7409,6 +7420,7 @@ function ngTotals(){
 const TIER_MODS = {ms:['MS_F','renderMeasurements'], lc:['LC_F','renderLc'], lp:['LP_F','renderLp'], bb:['BB_F','renderBb'], category:['CG_F','renderCategory'],
   vr:['VR_F','renderVariation'], bs:['BS_F','renderBsr'], cpt:['CPT_F','renderCpt'], pr:['PR_F','renderProducts']};
 function tierBtn(tools){
+  return;   // Nov 11 (MJ): removed, the Tier column header sorts
   const m = TIER_MODS[S.view]; if(!m || tools.querySelector('.tierbtn')) return;
   const F = window.eval(m[0]), on = F.sort === 'tier';
   const b = document.createElement('button'); b.className = 'tierbtn'; b.setAttribute('aria-pressed', on);
@@ -7420,9 +7432,15 @@ function tierBtn(tools){
    the state is kept per module while you filter, sort or switch modules. */
 const GRP_CLOSED = {};
 function grpKey(gh){ const n = gh.querySelector('.pgh-name, b'); return (S.view || 'x') + '|' + (n ? n.textContent.replace(/^[\u25bc\u25b6\u25a0]\s*/, '').trim() : ''); }
+function grpClosed(gh, view){
+  const k = grpKey(gh); if(GRP_CLOSED[k] !== undefined) return !!GRP_CLOSED[k];
+  const q = (document.getElementById('gfQ') || {}).value || '';
+  return !(q.trim() || view.querySelectorAll('tr.row').length <= 15);
+}
 function grpApply(view){
+  // Nov 11 (MJ): families start collapsed; open when searching or when only a few rows show
   view.querySelectorAll('tr.gh').forEach(gh=>{
-    const closed = !!GRP_CLOSED[grpKey(gh)];
+    const closed = grpClosed(gh, view);
     let n = gh.nextElementSibling;
     while(n && !n.classList.contains('gh')){ n.style.display = closed ? 'none' : ''; n = n.nextElementSibling; }
     const nm = gh.querySelector('.pgh-name');
@@ -7433,7 +7451,7 @@ function grpApply(view){
 document.addEventListener('click', e=>{
   const gh = e.target.closest && e.target.closest('#cptView tr.gh');
   if(!gh || e.target.closest('button, a, input, select, label')) return;
-  const k = grpKey(gh); GRP_CLOSED[k] = !GRP_CLOSED[k]; grpApply(document.getElementById('cptView'));
+  const k = grpKey(gh), vw = document.getElementById('cptView'); GRP_CLOSED[k] = !grpClosed(gh, vw); grpApply(vw);
 });
 /* Resize columns (Oct 27): drag the right edge of any column header. Widths are
    kept per module while the console is open, and come back after a redraw. */
@@ -7472,11 +7490,11 @@ function colResize(view){
 function selBar(view){
   const n = selSet().size, tools = view.querySelector('.cpt-tools');
   if(!tools) return;
-  if(S.view === 'st' || S.view === 'rv'){ const old = tools.querySelector('.selbar'); if(old) old.remove(); return; }
+  if(S.view === 'st' || S.view === 'rv' || S.view === 'catalog' || !view.querySelector('tr.row')){ const old = tools.querySelector('.selbar'); if(old) old.remove(); return; }
   tierBtn(tools);
   if(view.querySelector('tr.gh') && !tools.querySelector('.grpall')){
     const b = document.createElement('button'); b.className = 'grpall';
-    const allClosed = [...view.querySelectorAll('tr.gh')].every(gh=> GRP_CLOSED[grpKey(gh)]);
+    const allClosed = [...view.querySelectorAll('tr.gh')].every(gh=> grpClosed(gh, view));
     b.textContent = allClosed ? 'Expand all' : 'Collapse all';
     b.onclick = ()=>{ const close = b.textContent === 'Collapse all'; view.querySelectorAll('tr.gh').forEach(gh=> GRP_CLOSED[grpKey(gh)] = close); grpApply(view); b.textContent = close ? 'Expand all' : 'Collapse all'; };
     tools.insertBefore(b, tools.querySelector('.count') || null);
@@ -7851,6 +7869,36 @@ const CAT_METRICS = [
   ['bb',   'Buy Box',             'bbBtn',    'In-stock listings where we hold the Buy Box'],
   ['only', 'Only seller',         'bbBtn',    'In-stock listings with no other seller on our listing'],
   ['bsr',  'BSR exists',          'bsBtn',    'Family listings showing the same BSR as the rest of the family']];
+/* Where each Catalog number comes from (Nov 11): shown when you click Source */
+const CAT_SRC = {
+  rev:  {from:'The weekly product page check (Cowork ALM Morning Run) reads every active Amazon US and CA page in Chrome: images, gallery, variations, product information. Plus the listings you mark Reviewed in Listing Review.',
+         when:'Weekly, the first run of each week. Your Reviewed marks count right away.', store:'PDP Review tab (CPC Keepa Fetcher sheet), published as review.json.'},
+  cat:  {from:'Keepa (Amazon\u2019s catalog data): product type, browse node and path, item type keyword. GL from Amazon\u2019s FBA inventory report in BigQuery. Breadcrumbs from the weekly page check.',
+         when:'Daily: Keepa 2 AM ET, published 6:45 AM ET.', store:'category.json and gl.json.'},
+  var:  {from:'Keepa: which family each listing sits in on Amazon, and whether reviews are shared.',
+         when:'Daily: Keepa 5:30 AM ET, published 7:45 AM ET.', store:'variation.json.'},
+  copy: {from:'Keepa: the live title, bullets and description. Item Highlights from the weekly page check.',
+         when:'Daily: Keepa 2 AM ET, published 6:45 AM ET.', store:'copy.json.'},
+  lp:   {from:'Keepa: the List Price Amazon holds for each listing.',
+         when:'US 4 times a day; CA daily 4 AM ET.', store:'cpt.json (US) and ca.json (CA).'},
+  bb:   {from:'Keepa: who holds the Buy Box, and every offer on the listing. Stock from Amazon\u2019s FBA inventory report in BigQuery, so out of stock listings are left out.',
+         when:'Daily: US 2 AM ET, CA 4 AM ET. Stock daily.', store:'buybox.json and ca.json.'},
+  only: {from:'Keepa: every offer on our listings. A listing counts when no other seller offers on it.',
+         when:'Daily, with the Buy Box read.', store:'buybox.json and ca.json.'},
+  bsr:  {from:'Keepa: each listing\u2019s Best Sellers Rank, compared with the rest of its variation family.',
+         when:'Daily: Keepa 7 AM ET, published 7:45 AM ET.', store:'bsr.json.'}
+};
+function openCatSrc(k){
+  const m = CAT_METRICS.find(x=> x[0] === k), c = CAT_SRC[k]; if(!m || !c) return;
+  const d = document.getElementById('detail');
+  const sec = (t, v)=> `<div style="margin:.55rem 0"><div style="font-size:.72rem;font-weight:700;letter-spacing:.05em;text-transform:uppercase;color:#1f3a5f">${t}</div><div style="font-size:.88rem">${v}</div></div>`;
+  d.innerHTML = `<h2>Source</h2><h3>${esc(m[1])}</h3>`+
+    sec('What it counts', esc(m[3])) + sec('Where the data comes from', esc(c.from)) + sec('How often it updates', esc(c.when)) +
+    sec('Where it is stored', esc(c.store) + ' Every file is published to GitHub (mjbaguhin/cpc-tracker) by the CPC Keepa Fetcher scripts; the console reads them, nothing is typed in by hand.')+
+    sec('How it stays accurate', 'Compared with the Master SKU sheet (Plytix), our source of truth. A daily self-check email flags any file that is late or can\u2019t be read. Each module shows the date its data was read.')+
+    sec('Alerts', 'A daily email at 7:45 AM ET lists every new issue, with links to Manage Inventory and the product page.');
+  d.classList.remove('wide'); document.getElementById('veil').hidden = false;
+}
 function catCounts(k, mk){
   const sum = (a, f)=> a.reduce((t, x)=> t + (f(x) || 0), 0);
   try {
@@ -7885,18 +7933,19 @@ function renderOverview(){
   const C = c=> c && c[1] ? `${Math.round(c[0] * 10) / 10} of ${c[1]}` : 'no data';
   const cls = p=> p === null ? '' : p >= 98 ? 'good' : p >= 90 ? 'warn' : 'bad';
   let html = '<section class="cpt-top"><div class="cpt-head"><h2>Catalog</h2><span class="sub">US and CA combined</span></div></section>'+
-    '<div class="cpt-tools"><button id="catCopy">Copy summary</button><span class="count">Counts added together across US and CA</span></div>'+
-    '<table class="cpt-table lc-table"><thead><tr><th>Metric</th><th class="c">US + CA</th><th class="c">US</th><th class="c">CA</th><th>What it counts</th><th></th></tr></thead><tbody>'+
+    '<div class="cpt-tools"><button id="catCopy">Copy summary</button></div>'+
+    '<table class="cpt-table lc-table"><thead><tr><th>Metric</th><th class="c">US + CA</th><th class="c">US</th><th class="c">CA</th><th class="c">Source</th><th></th></tr></thead><tbody>'+
     rep.map(r=> `<tr><td><b>${esc(r.label)}</b></td>`+
       `<td class="c"><span class="lcchip ${r.pct === null ? 'lc-gray' : r.pct >= 98 ? 'lc-ok' : r.pct >= 90 ? 'lc-small' : 'lc-bad'}" style="font-size:1rem">${r.pct === null ? '\u2014' : r.pct + '%'}</span><div class="mut" style="font-size:.75rem">${r.den ? C([r.num, r.den]) : ''}</div></td>`+
       `<td class="c">${P(r.us)}<div class="mut" style="font-size:.75rem">${C(r.us)}</div></td>`+
       `<td class="c">${P(r.ca)}<div class="mut" style="font-size:.75rem">${C(r.ca)}</div></td>`+
-      `<td class="mut" style="font-size:.8rem">${esc(r.what)}</td>`+
+      `<td class="c"><button class="work" data-catsrc="${r.k}">Source</button></td>`+
       `<td><button class="work" data-catgo="${r.btn}">Open \u2192</button></td></tr>`).join('')+
     '</tbody></table>'+
-    '<p class="mut" style="font-size:.78rem">Each number follows the same rules as its module, so out of stock, Tier X and inactive listings are left out wherever that module leaves them out. Listings reviewed rises as you mark problem listings Reviewed in Listing Review; the marks reset with each new weekly check.</p>';
+'';
   v.innerHTML = html;
   [...v.querySelectorAll('[data-catgo]')].forEach(b=> b.onclick = ()=>{ const t = document.getElementById(b.dataset.catgo); if(t) t.click(); });
+  [...v.querySelectorAll('[data-catsrc]')].forEach(b=> b.onclick = ()=> openCatSrc(b.dataset.catsrc));
   const cp = document.getElementById('catCopy'); if(cp) cp.onclick = ()=>{
     const t = rep.map(r=> `* ${r.label}: ${r.pct === null ? '\u2014' : r.pct + '%'}`).join('\n');
     (navigator.clipboard ? navigator.clipboard.writeText(t) : Promise.reject()).then(()=>{ cp.textContent = 'Copied'; }).catch(()=> window.prompt('Copy:', t)); };
@@ -8483,7 +8532,7 @@ function tkPaint(){
   const c = tkCounts(), n = c.overdue;
   const html = 'My tasks' + (n ? `<span class="badge pc pc-r" title="${n} overdue in ClickUp">${n} overdue</span>` : (TK && TK.tasks ? `<span class="badge pc pc-g">${c.today} today</span>` : ''));
   if(tkBtn && tkBtn.innerHTML !== html) tkBtn.innerHTML = html;
-  const mo = document.querySelector('#mSel option[value="tkBtn"]'); if(mo) mo.textContent = 'My tasks' + (n ? ` \u00b7 ${n} overdue` : '');
+  const mo = document.querySelector('#mSel option[value="tkBtn"]'); if(mo && 0) mo.textContent = 'My tasks' + (n ? ` \u00b7 ${n} overdue` : '');
   try { if(window.railPaint) railPaint(); } catch(e){}
 }
 function renderTasks(){
