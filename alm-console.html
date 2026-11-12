@@ -1087,6 +1087,14 @@ function buildSh(j){ SH = {}; ((j && j.rows) || []).forEach(r=>{ if(r && r.sku) 
 // Walmart Seller Center items, read by the Cowork ALM Morning Run (Nov 11)
 const WM_SRC = 'https://raw.githubusercontent.com/mjbaguhin/cpc-tracker/main/walmart.json';
 let WM = {}, WM_META = null;
+/* Walmart links (Nov 12): check the live price on walmart.com (search by UPC), open the
+   item in Seller Center (filtered to the SKU), or start building it there. */
+function wmLinks(sku){
+  const p = (PR || []).find(x=> x.sku === sku) || {}, w = WM[sku], q = encodeURIComponent(p.upc || p.name || sku);
+  const a = (href, t, tip)=> `<a class="nolink" href="${href}" target="_blank" rel="noopener" title="${tip}" style="font-size:.74rem;margin-right:.5rem;white-space:nowrap">${t} \u2197</a>`;
+  if(w) return `<div style="margin-top:.2rem">${a(`https://www.walmart.com/search?q=${q}`, 'walmart.com', 'Check the live Walmart price (searches the UPC)')}${a(wmItemUrl(sku), 'Seller Center', 'Open this item in Walmart Seller Center')}</div>`;
+  return `<div style="margin-top:.2rem">${a(WM_ADD_URL, 'Build on Walmart', 'Add the item in Seller Center (search the UPC there)')}${p.upc ? `<span class="mut" style="font-size:.72rem">UPC ${esc(p.upc)}</span>${cpy(p.upc)}` : ''}</div>`;
+}
 function buildWm(j){ WM = {}; ((j && j.rows) || []).forEach(r=>{ if(r && r.sku) WM[r.sku] = r; }); WM_META = {updated: (j && j.updated) || '', read: (j && j.read) || '', count: (j && j.count) || 0}; }
 
 // Buy Box per ASIN, written nightly by Buy Box Watch in the CPC Keepa Fetcher project
@@ -8376,7 +8384,7 @@ function rvStrikeTable(rows){
       tierTd(x)+
       `<td>${tag(x)}${x.change && chg[x.change] ? chg[x.change] + (x.was ? `<div class="mut" style="font-size:.7rem">was ${esc(x.was)}</div>` : '') : ''}${x.d ? `<div class="mut" style="font-size:.7rem">checked ${esc(shortDate(String(x.d).slice(0, 10)))}</div>` : ''}</td>`+
       `<td style="font-size:.8rem">${x.why ? `<span class="lcchip ${x.why.c}" style="white-space:normal">${esc(x.why.t)}</span>` : ''}</td>`+
-      `<td class="num">${money(x.price)}</td><td class="num">${money(x.list)}</td><td class="num">${money(x.wm)}</td></tr>`;
+      `<td class="num">${money(x.price)}</td><td class="num">${money(x.list)}</td><td class="num">${money(x.wm)}${(x.mk || 'US') === 'US' && WM_META ? wmLinks(x.sku) : ''}</td></tr>`;
   let body = '';
   if(ST_F.sort) body = rows.map(tr).join('');
   else {
@@ -8454,6 +8462,9 @@ function renderStrike(){
   else html += rvStrikeTable(rows);
   v.innerHTML = html;
   wireSort(v, ST_F, ()=>{ stKeep(); renderStrike(); });
+  [...v.querySelectorAll('tr.row[data-st]')].forEach(t=>{ t.style.cursor = 'pointer'; t.title = 'Open the listing data (Master SKU)';
+    t.onclick = e=>{ if(e.target.closest('a,button,input')) return; const h = (t.querySelector('a[href*="searchTerm="]') || {}).href; const m = h && decodeURIComponent(h.match(/searchTerm=([^&]+)/)[1]);
+      const p = m && prRows().find(x=> x.sku === m); if(p) openPr(p); }; });
   const set = (k, val)=>{ ST_F[k] = val; stKeep(); renderStrike(); chrome(); };
   [...v.querySelectorAll('[data-sts]')].forEach(t=> t.onclick = ()=>{ if(t.dataset.sts === 'hist'){ ST_F.hist = !ST_F.hist; stKeep(); renderStrike(); return; } ST_F.hist = false; set('show', ST_F.show === t.dataset.sts ? 'all' : t.dataset.sts); });
   [...v.querySelectorAll('#stMk button')].forEach(b=> b.onclick = ()=> set('mk', b.dataset.mk));
