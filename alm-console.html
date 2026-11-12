@@ -3156,7 +3156,9 @@ function cptTitle(r){
   return n.replace(/^Barnyard Designs\s*/i, '').replace(/^Seedboy\s*/i, '').split(/[|,]/)[0].trim() || r.sku;
 }
 
-function renderCpt(){
+// Nov 12 (MJ): CPT is US only (Amazon gives no CPT for Canada)
+function renderCpt(){ return withMk2('US', renderCpt0); }
+function renderCpt0(){
   CPT_F.q = '';   // Nov 12: the top bar does search now
 
   // This view owns the screen: the shared table, bar and message step aside
@@ -3238,7 +3240,7 @@ function renderCpt(){
     (SIM_META.stale ? `<div class="why"><b>Similar items are old</b> (${esc(SIM_META.updated || 'none')}). Not used in the table or the drafts. Run runSimilarMats.</div>` : '')+
     (RB ? (()=>{ const n = all.filter(r=> (r.rb || []).some(h=> h.sev === 'amazon')); return `<div class="why"><b>Amazon rules:</b> ${n.length ? `${n.length} failed (${esc(n.map(r=> r.sku).slice(0,4).join(', '))}${n.length > 4 ? '\u2026' : ''})` : '<span style="color:var(--ok)">Passed</span>'} <button class="work" data-rbopen="1">Rulebook</button></div>`; })() : '')+
     mk2Note('Drafts say amazon.com: edit before sending for CA')+
-    '<div class="cpt-tools">' + mk2Seg() +
+    '<div class="cpt-tools">' +
 
       `<button id="cptGrpPar" aria-pressed="${CPT_F.group === 'pasin'}" title="Off: grouped by what to do">Group by parent</button>`+
 
@@ -4218,7 +4220,7 @@ const BB_SORT = {
 
 function bbBar(p){
   const v = Math.max(0, Math.min(100, Math.round(p || 0)));
-  const c = v >= 95 ? 'g' : v >= 80 ? 'y' : 'r';
+  const c = v >= 100 ? 'g' : v >= 95 ? 'y' : 'r';
   return `<span class="bbbar"><i class="${c}" style="width:${v}%"></i></span><b class="bbpct ${c}">${v}%</b>`;
 }
 function bbStock(n, inbound){
@@ -4244,7 +4246,7 @@ function renderBb(){
   if(BB_F.show === 'oos')    rows = by('oos');
   if(BB_F.show === 'seller') rows = no.filter(r=> r.why === 'amazon' || r.why === 'seller');
   if(BB_F.show === 'other')  rows = no.filter(r=> ['cpt','nooffer','unknown'].indexOf(r.why) !== -1);
-  if(BB_F.show === 'stranded') rows = no.filter(r=> r.why === 'stranded' || r.why === 'likely');
+  if(BB_F.show === 'stranded') rows = all.filter(r=> r.stranded || r.why === 'likely');   // Nov 12: stranded even when we hold the Buy Box
   if(BB_F.show === 'amz')    rows = amzOn;
   if(BB_F.show === 'rb')     rows = all.filter(r=> (r.rb || []).length);
   if(BB_F.tier) rows = rows.filter(r=> (r.tier || 'N') === BB_F.tier);
@@ -4270,12 +4272,15 @@ function renderBb(){
              const p = avg(all, 'd30'), q = avg(inStock, 'd30');
              const oos = all.length - inStock.length;
              const t0 = modPct('bbBtn', MK2), t = t0 === null || t0 === undefined ? (inStock.length ? Math.round(inStock.filter(r=> r.has).length / inStock.length * 1000) / 10 : 0) : t0;   // Nov 12: same number as the side menu
-             return tile('Buy Box', t + '%', t >= 98 ? 'good' : t >= 90 ? 'warn' : 'bad', ''); })()+
+             return tile('Buy Box', t + '%', pcls(t), ''); })()+
       tile('We have the Buy Box', `${yes.length}<span style="font-size:1rem;color:var(--c-night-mut)"> of ${all.length}</span>`, no.length ? 'warn' : 'good', '')+
       tile('We don\u2019t have it', no.length, no.length ? 'bad' : 'good', '')+
       tile('Because out of stock', by('oos').length, by('oos').length ? 'bad' : 'good', by('oos').length ? list(by('oos')) : '')+
-      (()=>{ const st = by('stranded').concat(by('likely'));
-             return tile('Stranded', st.length, st.length ? 'bad' : 'good', st.length ? list(st) : ''); })()+
+      (()=>{ const st = all.filter(r=> r.stranded || r.why === 'likely');
+             // stranded stock on SKUs that aren't active listings (Amazon's FBA report), so it can't be missed
+             const off = Object.values(STR || {}).filter(x=> (x.mk || 'US') === MK2 && !all.some(r=> r.sku === x.sku)).map(x=> x.sku);
+             return tile('Stranded', st.length + off.length, (st.length + off.length) ? 'bad' : 'good',
+               [st.length ? list(st) : '', off.length ? esc(off.join(', ')) + ' (not active)' : ''].filter(Boolean).join(' \u00b7 ')); })()+
       tile('Because another seller has it', by('amazon').length + by('seller').length, (by('amazon').length + by('seller').length) ? 'bad' : 'good',
            (by('amazon').length + by('seller').length) ? list(by('amazon').concat(by('seller'))) : '')+
       tile('Other reason', oth.length, oth.length ? 'warn' : 'good', oth.length ? list(oth) : '')+
@@ -4344,7 +4349,7 @@ function bbTr(r){
       `<div class="p-id"><span>SKU</span>${skuL(r.sku, MK2)}${cpy(r.sku)}</div><div class="p-id"><span>ASIN</span>${asinL(r.asin, MK2)}${cpy(r.asin)}</div>`+
       `${r.tier ? `<span class="p-size">Tier ${esc(r.tier)}</span>` : ''}</td>`+
     `<td class="c">${r.has ? '<span class="bbyes">Yes</span>' : '<span class="bbno">No</span>'}</td>`+
-    `<td>${r.has ? (r.shared ? `<span class="was" style="white-space:normal;max-width:15rem">Same price as ${esc(r.holder.name || 'another seller')}, we share it</span>` : '') :
+    `<td>${r.has && r.stranded ? '<span class="bbdo bad">Stranded stock in FBA</span> ' : ''}${r.has ? (r.shared ? `<span class="was" style="white-space:normal;max-width:15rem">Same price as ${esc(r.holder.name || 'another seller')}, we share it</span>` : '') :
       `<span class="bbdo ${w ? w.c : 'warn'}">${esc(whyTxt)}</span>`}`+
       `${r.next ? `<span class="was" style="white-space:normal;max-width:16rem">${esc(r.next)}</span>` : ''}</td>`+
     `<td class="c">${r.ours !== null ? usd(r.ours) : '<span class="mut">not showing</span>'}</td>`+
@@ -5051,7 +5056,7 @@ function renderLc(){
       `<span class="sub">Amazon ${MK2} vs Plytix, ${all.length} active ASINs</span>`+
       (LC_META.updated ? `<span class="cpt-live${fresh ? '' : ' stale'}"><i></i>Checked ${esc(LC_META.updated)} ET</span>` : '')+
     '</div><div class="cpt-tiles">'+
-      tile('Correct copy %', pct + '%', pct >= 98 ? 'good' : pct >= 90 ? 'warn' : 'bad', `${ok} of ${checked} fields match Plytix${oosTxt}`)+
+      tile('Correct copy %', pct + '%', pcls(pct), `${ok} of ${checked} fields match Plytix${oosTxt}`)+
       tile('Listings 100% correct', `${good.length}<span style="font-size:1rem;color:var(--c-night-mut)"> of ${all.length}</span>`, good.length === all.length ? 'good' : 'warn', '')+
       tile('Listings with a mismatch', wrong.length, wrong.length ? 'bad' : 'good', wrong.length ? list(wrong) : 'None')+
       (CH ? tile('Amazon changed it', chA.length, chA.length ? 'bad' : 'good', chA.length ? list(chA) : '')+
@@ -5254,7 +5259,7 @@ function renderLp(){
       `<span class="sub">Is a List Price set on Amazon ${MK2}, ${all.length} active ASINs</span>`+
       (CPT_META.updated ? `<span class="cpt-live"><i></i>Checked ${esc(CPT_META.updated)} ET</span>` : '')+
     '</div><div class="cpt-tiles">'+
-      tile('List Price set %', pct + '%', pct >= 100 ? 'good' : pct >= 95 ? 'warn' : 'bad', `${set.length} of ${all.length} listings`)+
+      (()=>{ const ins = inStock(all, MK2); return tile('List Price set %', pct + '%', pcls(pct), `${ins.filter(r=> r.set).length} of ${ins.length} in stock`); })()+
       tile('List Price set', set.length, 'good', '')+
       tile('List Price empty', empty.length, empty.length ? 'bad' : 'good', empty.length ? list(empty) : 'None')+
       rbTile(all, 'Breaks a List Price rule')+
@@ -5437,6 +5442,8 @@ function cgRows(mk){
     }
     o.rb = rbScreenRow('cg', o);
     o.sig = cgSig(o);
+    // Nov 12 (MJ): an incomplete breadcrumb on the page is a category problem, so it counts in the %
+    if(!r.nolive && (o.sig.crumb || o.sig.crumbOk)){ o.checked = (o.checked || 0) + 1; if(o.sig.crumbOk) o.ok = (o.ok || 0) + 1; o.pct = o.checked ? Math.round(o.ok / o.checked * 1000) / 10 : null; }
     o.cst = caseNext(r.kase, !r.nolive && !bad.length);
     return o;
   });
@@ -5546,7 +5553,7 @@ function renderCategory(){
       `<span class="sub">Amazon ${CG_F.mk} vs the Master SKU sheet, ${all.length} active listings</span>`+
       (CG_META.updated ? `<span class="cpt-live"><i></i>Checked ${esc(CG_META.updated)} ET</span>` : '')+
     '</div><div class="cpt-tiles">'+
-      tile('Category correct %', pct + '%', pct >= 98 ? 'good' : pct >= 90 ? 'warn' : 'bad', `${ok} of ${checked} checks match`)+
+      tile('Category correct %', pct + '%', pcls(pct), `${ok} of ${checked} checks match`)+
       tile('Listings 100% correct', `${good.length}<span style="font-size:1rem;color:var(--c-night-mut)"> of ${all.length}</span>`, good.length === all.length ? 'good' : 'warn', '')+
       tile('Listings with a wrong category', wrong.length, wrong.length ? 'bad' : 'good', wrong.length ? list(wrong) : 'None')+
       t1('GL wrong', 'gl') + t1('Product Type wrong', 'pt') + t1('Search dept wrong', 'sd') + t1('Browse path wrong', 'path') + t1('ITK wrong', 'itk') + t1('Browse node wrong', 'node')+
@@ -6285,7 +6292,7 @@ function renderVariation(){
       `<span class="sub">Amazon ${VR_F.mk} vs the Master SKU sheet, ${all.length} active listings in ${fams.length} families</span>`+
       (VR_META.updated ? `<span class="cpt-live"><i></i>Checked ${esc(VR_META.updated)} ET</span>` : '')+
     '</div><div class="cpt-tiles">'+
-      tile('Variation correct %', pct + '%', pct >= 98 ? 'good' : pct >= 90 ? 'warn' : 'bad', `${ok} of ${checked} checks match (${VR_TV ? 'family, theme, value' : 'family'})${oosTxt}`, 'all')+
+      tile('Variation correct %', pct + '%', pcls(pct), `${ok} of ${checked} checks match (${VR_TV ? 'family, theme, value' : 'family'})${oosTxt}`, 'all')+
       tile('Listings 100% correct', `${good.length}<span style="font-size:1rem;color:var(--c-night-mut)"> of ${all.length}</span>`, good.length === all.length ? 'good' : 'warn', 'Reviews shared included', 'good')+
       t1('Split off from family', split, 'split') + t1('In the wrong family', other, 'other') +
       (VR_TV ? t1('Theme wrong', has('theme'), 'theme') + t1('Value wrong', has('value'), 'value') : '') +
@@ -6638,9 +6645,11 @@ function bsFamilySync(rows){
    family. Standalone listings, out of stock and no BSR are left out. Reviews are the
    Variation module's job ("Reviews shared"), so they don't count here. */
 function bsSyncScore(mk){
-  const r = inStock(bsRows(mk), mk).filter(x=> x.sync && x.sync.bsr && (x.sync.bsr.s === 'ok' || x.sync.bsr.s === 'off'));
-  const ok = r.filter(x=> x.sync.bsr.s === 'ok');
-  return {pct: r.length ? pct1(ok.length, r.length) : null, ok: ok.length, n: r.length, off: r.filter(x=> x.sync.bsr.s === 'off')};
+  // Nov 12 (MJ): an in-stock active listing with no BSR is a problem too (needs a case)
+  const all = inStock(bsRows(mk), mk).filter(x=> !x.nolive);
+  const fam = all.filter(x=> x.bsr && x.sync && x.sync.bsr && (x.sync.bsr.s === 'ok' || x.sync.bsr.s === 'off'));
+  const nob = all.filter(x=> !x.bsr), ok = fam.filter(x=> x.sync.bsr.s === 'ok'), n = fam.length + nob.length;
+  return {pct: n ? pct1(ok.length, n) : null, ok: ok.length, n, off: fam.filter(x=> x.sync.bsr.s === 'off').concat(nob), nob};
 }
 function bsRows(mk){
   const out = bsRowsRaw(mk);
@@ -7052,7 +7061,7 @@ function renderXc(){
       (WM_META && WM_META.read ? `<span class="sub">Walmart ${esc(WM_META.read)}</span>` : '<span class="sub">Walmart not read</span>')+
       (SH_META && SH_META.updated ? `<span class="sub">Shopify ${esc(SH_META.updated.slice(0, 10))}</span>` : '<span class="sub">Shopify not read</span>')+
     '</div><div class="cpt-tiles">'+
-      tile('On every channel', sc === null ? '\u2014' : sc + '%', sc === null ? '' : sc >= 98 ? 'good' : sc >= 90 ? 'warn' : 'bad', `${n(r=> r.full)} of ${nx.filter(r=> !r.unknown).length} \u00b7 Tier X not counted`, 'full')+
+      tile('On every channel', sc === null ? '\u2014' : sc + '%', sc === null ? '' : pcls(sc), `${n(r=> r.full)} of ${nx.filter(r=> !r.unknown).length} \u00b7 Tier X not counted`, 'full')+
       tile('Not on Walmart', n(mW), n(mW) ? 'bad' : 'good', (n(mW) ? list(nx.filter(mW)) : 'None') + xTip(mW), 'wmiss')+
       tile('Blocked on Walmart', n(bW, all), n(bW, all) ? 'bad' : 'good', n(bW, all) ? 'unpublished or error' : 'None', 'wbad')+
       tile('Not on Shopify', n(mS), n(mS) ? 'warn' : 'good', (n(mS) ? list(nx.filter(mS)) : 'None') + xTip(mS), 'smiss')+
@@ -7285,25 +7294,27 @@ function selKey(tr){ for(const a of SEL_ATTR){ const k = tr.getAttribute(a); if(
 /* Header shows each module's main % instead of an issue count (MJ, Oct 27).
    US on the button, CA in the hover tip. Same numbers as each module's first tile:
    out of stock left out. Green 98%+, amber 90 to 98%, red under 90%. */
-const PCT_CLS = v=> v === null || v === undefined ? 'pc-n' : v >= 98 ? 'pc-g' : v >= 90 ? 'pc-a' : 'pc-r';
-const pct1 = (a, b)=> b ? Math.round(a / b * 1000) / 10 : null;
+const PCT_CLS = v=> v === null || v === undefined ? 'pc-n' : v >= 100 ? 'pc-g' : v >= 95 ? 'pc-a' : 'pc-r';
+const pct1 = (a, b)=> b ? (a < b ? Math.min(99.9, Math.round(a / b * 1000) / 10) : 100) : null;   // Nov 12: 100% only with zero problems
+// One color rule everywhere (MJ, Nov 12): 100% green, 95 to 99.9% amber, under 95% red
+const pcls = v=> v === null || v === undefined || v === '' ? '' : +v >= 100 ? 'good' : +v >= 95 ? 'warn' : 'bad';
 function modPct(id, mk){
   try {
-    if(id === 'cptBtn'){ if(!CPT_US.length) return null; return withMk2(mk, ()=>{ if(mk === 'CA' && !(CPT_CA || []).some(r=> r.cpt !== null)) return null; const r = inStock(cptRows(), mk).filter(x=> x.action !== 'oos'); return pct1(r.filter(x=> x.action === 'none').length, r.length); }); }   /* Nov 12 (MJ): any listing with a CPT issue counts against the %, case open or not */
+    if(id === 'cptBtn'){ if(!CPT_US.length || mk === 'CA') return null; return withMk2(mk, ()=>{ if(mk === 'CA' && !(CPT_CA || []).some(r=> r.cpt !== null)) return null; const r = inStock(cptRows(), mk).filter(x=> x.action !== 'oos'); return pct1(r.filter(x=> x.action === 'none').length, r.length); }); }   /* Nov 12 (MJ): any listing with a CPT issue counts against the %, case open or not */
     if(id === 'bbBtn'){ if(!BB_US.length) return null; return withMk2(mk, ()=>{ if(mk === 'CA' && !(BB_CA || []).some(r=> stockOf(r, 'CA') !== null)) return null; const r = bbRows(), st = r.filter(x=> !isOos(x, mk)); return pct1(st.filter(x=> x.has).length, st.length); }); }
     if(id === 'lpBtn'){ if(!CPT_US.length) return null; return withMk2(mk, ()=>{ const r = inStock(lpRows(), mk); return pct1(r.filter(x=> x.set).length, r.length); }); }
-    if(id === 'lcBtn'){ if(!LC_US.length || (mk === 'CA' && LC_CA === null)) return null; return withMk2(mk, ()=>{ const r = lcRows().filter(x=> !x.nolive && x.pct !== null && x.pct !== undefined); return r.length ? Math.round(r.reduce((t, x)=> t + x.pct, 0) / r.length * 10) / 10 : null; }); }
+    if(id === 'lcBtn'){ if(!LC_US.length || (mk === 'CA' && LC_CA === null)) return null; return withMk2(mk, ()=>{ const r = lcRows().filter(x=> !x.nolive && x.pct !== null && x.pct !== undefined); return r.length ? pct1(r.reduce((t, x)=> t + x.ok, 0), r.reduce((t, x)=> t + x.checked, 0)) : null; }); }   /* Nov 12: share of fields correct, same as the page */
     if(id === 'quickCat'){ if(!CG.length) return null; const r = inStock(cgRows(mk).filter(x=> !x.nolive), mk); return pct1(r.reduce((t, x)=> t + (x.ok || 0), 0), r.reduce((t, x)=> t + (x.checked || 0), 0)); }
     if(id === 'vrBtn'){ if(!VR.length) return null; const r = inStock(vrRows(mk).filter(x=> !x.nolive), mk); return pct1(r.reduce((t, x)=> t + (x.ok || 0), 0), r.reduce((t, x)=> t + (x.checked || 0), 0)); }
     if(id === 'msBtn'){ if(!MS.length) return null; const r = inStock(msRows(mk), mk).filter(x=> x.checked); return pct1(r.reduce((t, x)=> t + x.ok, 0), r.reduce((t, x)=> t + x.checked, 0)); }
-    if(id === 'stBtn'){ const sc = stScore(mk); return sc && sc.n ? sc.pct : null; }
+    if(id === 'stBtn'){ if(mk === 'CA') return null; const sc = stScore(mk); return sc && sc.n ? sc.pct : null; }
     if(id === 'rvBtn'){ const sc = rvScore(mk); return sc ? sc.pct : null; }
     if(id === 'bsBtn'){ if(!BS.length) return null; return bsSyncScore(mk).pct; }
   } catch (e) { return null; }
   return null;
 }
 const NAV_MODS = [['cptBtn','CPT tracker'], ['bbBtn','Buy Box'], ['lpBtn','List Price'], ['stBtn','Strike-through'], ['lcBtn','Listing Copy'], ['quickCat','Category'], ['vrBtn','Variation'], ['msBtn','Measurements'], ['rvBtn','Listing Review'], ['bsBtn','BSR']];
-const NAV_CA = ['cptBtn','bbBtn','lpBtn','stBtn','lcBtn','quickCat','vrBtn','msBtn','rvBtn','bsBtn'];
+const NAV_CA = ['bbBtn','lpBtn','lcBtn','quickCat','vrBtn','msBtn','rvBtn','bsBtn'];   // Nov 12: Strike-through and CPT are US only
 // A click on a US or CA badge switches that module's marketplace before it opens
 document.addEventListener('click', e=>{
   const k = e.target.closest && e.target.closest('#navGroups .mkb[data-mk], #sideNav .mkb[data-mk]'); if(!k) return;
@@ -7520,7 +7531,7 @@ const MS_CHK = {size:'Size', weight:'Weight', pkg:'Package weight', tier:'Size t
    what customers see on Amazon (size, weight, sizes in the copy) matching Plytix.
    Amazon's warehouse measurements (package weight) and the size tier Amazon assigns
    are supply chain's (remeasurement cases): listed for them, not in the %. */
-const MS_CAT = ['size', 'weight', 'copy', 'plytix', 'fill'], MS_SC = ['pkg', 'tier'];
+const MS_CAT = ['size', 'weight', 'copy', 'plytix', 'fill'], MS_SC = ['tier'];   // Nov 12: package weight removed, Amazon reweighs on receipt
 function buildMs(j){ MS_ERR = ''; MS_META = {updated: j && j.updated || '', fee: (j && j.fee) || {}}; MS = (j && j.rows) || []; }
 const msR = (v, d)=> v === null || v === undefined ? null : Math.round(v * Math.pow(10, d)) / Math.pow(10, d);
 function msTriple(a){ return (a || []).filter(x=> x !== null && x !== undefined && x > 0).sort((x, y)=> y - x); }
@@ -7666,10 +7677,10 @@ function renderMeasurements(){
     `<span class="sub">Amazon ${mk} vs the Master SKU sheet, ${all.length} active listings</span>`+
     (MS_META.updated ? `<span class="cpt-live"><i></i>Built ${esc(MS_META.updated)} ET</span>` : '')+
     '</div><div class="cpt-tiles">'+
-      tile('Catalog data correct %', pct === null ? '\u2014' : pct + '%', pct === null ? '' : pct >= 98 ? 'good' : pct >= 90 ? 'warn' : 'bad', pct === null ? 'No Amazon data yet' : `${okN} of ${chk} checks match${oosNote(all.filter(r=> r.checked), mk)}`, 'all')+
+      tile('Catalog data correct %', pct === null ? '\u2014' : pct + '%', pct === null ? '' : pcls(pct), pct === null ? 'No Amazon data yet' : `${okN} of ${chk} checks match${oosNote(all.filter(r=> r.checked), mk)}`, 'all')+
       tile('Listings fully correct', `${pick.good.length}<span style="font-size:1rem;color:var(--c-night-mut)"> of ${all.length}</span>`, '', '', 'good')+
       tile('Blank in Plytix', pick.fill.length, pick.fill.length ? 'bad' : 'good', pick.fill.length ? list(pick.fill) : 'Size, weight and packaged weight all filled in', 'fill') + t1('', 'plytix') + t1('', 'size') + t1('', 'weight') + t1('', 'copy')+
-      tile('For supply chain', pick.sc.length, pick.sc.length ? 'warn' : 'good', pick.sc.length ? `Package weight ${pick.pkg.length} \u00b7 Size tier ${pick.tier.length} \u00b7 not in the %` : 'Nothing to send', 'sc')+
+      tile('For supply chain', pick.sc.length, pick.sc.length ? 'warn' : 'good', pick.sc.length ? `Size tier ${pick.tier.length} \u00b7 not in the %` : 'Nothing to send', 'sc')+
       tile('No Amazon size yet', pick.nodata.length, pick.nodata.length ? 'warn' : 'good', pick.nodata.length ? 'Keepa sends it with the next daily read' : 'None', 'nodata')+
     '</div></section>'+
     `<div class="why"><b>Size tier:</b> ${fm ? `Fee Preview report ${esc(fm.date)} (${esc(fm.file)})` : 'no Fee Preview report yet.'} \u00b7 New reports go in <a href="https://drive.google.com/drive/folders/1-IWG9GZtQ6zDlQ3tFvQ5l1Kq3AAvuW6O" target="_blank" rel="noopener"><b>ALM Fee Preview Reports</b> (open the folder) \u2197</a></div>`+
@@ -7689,12 +7700,11 @@ function renderMeasurements(){
       `<td style="font-size:.8rem">${msLWH(r.pDims, r.unit, 2)}<div class="mut">${msW(r.pWt, r.wUnit)}</div></td>`+
       `<td style="font-size:.8rem">${msLWH(r.aDims, r.unit, 2)}<div class="mut">${msW(r.aWt, r.wUnit)}</div></td>`+
       `<td class="c">${chip(r.st.size)} ${chip(r.st.weight)}</td>`+
-      `<td class="c" style="font-size:.8rem">${msW(r.pPk, r.wUnit)} / ${msW(r.aPk, r.wUnit)}<div>${chip(r.st.pkg)}</div></td>`+
       `<td class="c" style="font-size:.8rem">${esc(r.px.tier || '\u2014')}<div class="mut">${esc(r.fee && r.fee.tier ? msTierName(r.fee.tier, r.mk) : '\u2014')}</div>${chip(r.st.tier)}</td>`+
       `<td class="c">${chip(r.st.copy, r.copyBad.join(' \u2022 '))}</td>`+
       `<td class="c">${chip(r.st.plytix, r.pxBad.join(' \u2022 '))}</td></tr>`;
     html += '<table class="cpt-table lc-table"><thead><tr>'+ H('product','Product') + TIER_TH + '<th>Plytix size / weight</th><th>Amazon size / weight (Keepa)</th><th class="c">Size, weight</th>'+
-      '<th class="c">Packaged weight Plytix / Amazon</th><th class="c">Size tier Plytix / Fee Preview</th>' + H('bad','Copy','c') + '<th class="c">Plytix</th></tr></thead><tbody>';
+      '<th class="c">Size tier Plytix / Fee Preview</th>' + H('bad','Copy','c') + '<th class="c">Plytix</th></tr></thead><tbody>';
     if(MS_F.group){
       const g = {}; rows.forEach(r=> (g[r.psku || '~'] = g[r.psku || '~'] || []).push(r));   // by Parent SKU (Oct 30)
       Object.keys(g).sort((a, b)=> a === '~' ? 1 : b === '~' ? -1 : (g[a][0].pname || a).localeCompare(g[b][0].pname || b)).forEach(k=>{
@@ -7714,8 +7724,7 @@ function renderMeasurements(){
   const scb = document.getElementById('msSc'); if(scb) scb.onclick = ()=>{
     const a = pick.sc; if(!a.length){ scb.textContent = 'Nothing to send'; return; }
     const t = `Amazon ${mk} measurements that differ from Plytix (${a.length} listings), for remeasurement review:\n` + a.map(r=> `\u2022 ${r.sku} (${r.asin})` +
-      (r.st.pkg === 'diff' ? `: package weight Plytix ${msW(r.pPk, r.wUnit)}, Amazon ${msW(r.aPk, r.wUnit)}` : '') +
-      (r.st.tier === 'diff' ? `${r.st.pkg === 'diff' ? ';' : ':'} size tier Plytix ${r.px.tier || '?'}, Amazon ${r.fee && r.fee.tier ? msTierName(r.fee.tier, r.mk) : '?'}` : '')).join('\n');
+      (r.st.tier === 'diff' ? `: size tier Plytix ${r.px.tier || '?'}, Amazon ${r.fee && r.fee.tier ? msTierName(r.fee.tier, r.mk) : '?'}` : '')).join('\n');
     (navigator.clipboard ? navigator.clipboard.writeText(t) : Promise.reject()).then(()=>{ scb.textContent = 'Copied'; }).catch(()=> window.prompt('Copy:', t)); };
   const dl = document.getElementById('msDl'); if(dl) dl.onclick = ()=> csvSave('measurements-' + mk.toLowerCase(),
     ['SKU','ASIN','Tier','Plytix size (' + (mk === 'CA' ? 'cm' : 'in') + ')','Plytix weight','Amazon size (Keepa)','Amazon weight','Plytix packaged weight','Amazon package weight','Plytix size tier','Fee Preview size tier','Size','Weight','Package weight (supply chain)','Size tier (supply chain)','Copy','Copy notes','Plytix','Plytix notes','Plytix filled in','Missing in Plytix'],
@@ -7731,7 +7740,6 @@ function openMs(r){
     row('Size', `${st('size')} Plytix ${msLWH(r.pDims, r.unit, 2)} \u00b7 Amazon ${msLWH(r.aDims, r.unit, 2)}` +
       (r.st.size === 'diff' && r.pDims.some(Boolean) ? `<div class="mut" style="margin-top:.3rem">To match Plytix on Amazon: Item Length ${msR(r.pDims[0], 2) ?? '\u2014'}, Item Width ${msR(r.pDims[1], 2) ?? '\u2014'}, Item Height ${msR(r.pDims[2], 2) ?? '\u2014'} ${esc(r.unit)}. Check the field names on the Seller Central edit page first; the check counts a swap of sides as the same size.</div>` : ''))+
     row('Weight', `${st('weight')} Plytix ${msW(r.pWt, r.wUnit)} \u00b7 Amazon ${msW(r.aWt, r.wUnit)}`)+
-    row('Packaged weight', `${st('pkg')} Plytix ${msW(r.pPk, r.wUnit)} \u00b7 Amazon ${msW(r.aPk, r.wUnit)}`)+
     row('Size tier', `${st('tier')} Plytix ${esc(r.px.tier || '\u2014')} \u00b7 Fee Preview ${esc(r.fee && r.fee.tier ? msTierName(r.fee.tier, r.mk) : '\u2014')}` + (r.st.tier === 'old' ? ` <span class="mut">(Plytix tier is from before Amazon\u2019s 2024 or 2026 tier changes; Amazon\u2019s current tier is ${esc(msTierName(r.fee.tier, r.mk))}.)</span>` : '') +
       (r.fee && r.fee.longest ? ` <span class="mut">(Amazon measured ${[r.fee.longest, r.fee.median, r.fee.shortest].filter(Boolean).join(' \u00d7 ')} ${esc(r.fee.dimUnit || '')}, ${r.fee.weight || '\u2014'} ${esc(r.fee.weightUnit || '')})</span>` : ''))+
     row('Copy', `${st('copy')} ${r.copyBad.length ? esc(r.copyBad.join(' \u2022 ')) : ''}`)+
@@ -7800,7 +7808,7 @@ function ovCard(title, pct, sub, reasons, btnId, extra, strict){
       `<div class="ov-sub">${esc(why)}</div><div class="ov-sub mut" style="margin-top:.4rem">Not counted.</div></div>`;
   }
   OV_SCORES.push({title, main: pct, strict: strict === undefined ? pct : strict});
-  const cls = pct === null ? '' : pct >= 95 ? 'ok' : pct >= 80 ? 'mid' : 'bad';
+  const cls = pct === null ? '' : pct >= 100 ? 'ok' : pct >= 95 ? 'mid' : 'bad';
   return `<div class="ov-card"><div class="ov-h"><h3>${esc(title)}</h3><button class="work strong" data-go="${btnId}">Open ${esc(title)} \u2192</button></div>`+
     `<div class="ov-pct ${cls}">${pct === null ? '<span class="mut">No data</span>' : pct + '%'}</div><div class="ov-sub">${sub}</div>`+
     (reasons.length ? `<ul class="ov-r">${reasons.map(r=> `<li><b>${r[1]}</b> ${esc(r[0])}</li>`).join('')}</ul>` : '<div class="ov-sub" style="color:var(--ok)">Nothing to fix.</div>')+
@@ -7817,7 +7825,7 @@ const CAT_METRICS = [
   ['cat',  'Correct categories',  'quickCat', 'Category checks correct (GL, product type, path and node, ITK, search department)'],
   ['var',  'Variation correct',   'vrBtn',    'Variation checks correct'],
   ['copy', 'Correct copy',        'lcBtn',    'Average correct copy per active listing, out of stock included (title, bullets, description, Item Highlights)'],
-  ['lp',   'List price correct',  'lpBtn',    'Listings with a List Price set'],
+  ['lp',   'List Price set',      'lpBtn',    'Listings with a List Price set (Haris owns the value)'],
   ['bb',   'Buy Box',             'bbBtn',    'In-stock listings where we hold the Buy Box'],
   ['only', 'Only seller',         'bbBtn',    'In-stock listings with no other seller on our listing'],
   ['bsr',  'BSR exists',          'bsBtn',    'Family listings showing the same BSR as the rest of the family']];
@@ -7831,7 +7839,7 @@ const CAT_SRC = {
          when:'Daily: Keepa 5:30 AM ET, published 7:45 AM ET.', store:'variation.json.'},
   copy: {from:'Keepa: the live title, bullets and description. Item Highlights from the weekly page check.',
          when:'Daily: Keepa 2 AM ET, published 6:45 AM ET.', store:'copy.json.'},
-  lp:   {from:'Keepa: the List Price Amazon holds for each listing.',
+  lp:   {from:'Keepa: whether Amazon has a List Price for each listing. The value itself is Haris\u2019s; an empty one is flagged to him.',
          when:'US 4 times a day; CA daily 4 AM ET.', store:'cpt.json (US) and ca.json (CA).'},
   bb:   {from:'Keepa: who holds the Buy Box, and every offer on the listing. Stock from Amazon\u2019s FBA inventory report in BigQuery, so out of stock listings are left out.',
          when:'Daily: US 2 AM ET, CA 4 AM ET. Stock daily.', store:'buybox.json and ca.json.'},
@@ -7883,12 +7891,12 @@ function renderOverview(){
   const v = document.getElementById('cptView'), rep = catReport();
   const P = c=> c && c[1] ? pct1(c[0], c[1]) + '%' : '\u2014';
   const C = c=> c && c[1] ? `${Math.round(c[0] * 10) / 10} of ${c[1]}` : 'no data';
-  const cls = p=> p === null ? '' : p >= 98 ? 'good' : p >= 90 ? 'warn' : 'bad';
+  const cls = p=> p === null ? '' : pcls(p);
   let html = '<section class="cpt-top"><div class="cpt-head"><h2>Catalog</h2><span class="sub">US and CA combined</span></div></section>'+
     '<div class="cpt-tools"><button id="catCopy">Copy summary</button></div>'+
     '<table class="cpt-table lc-table"><thead><tr><th>Metric</th><th class="c">US + CA</th><th class="c">US</th><th class="c">CA</th><th class="c">Source</th><th></th></tr></thead><tbody>'+
     rep.map(r=> `<tr><td><b>${esc(r.label)}</b></td>`+
-      `<td class="c"><span class="lcchip ${r.pct === null ? 'lc-gray' : r.pct >= 98 ? 'lc-ok' : r.pct >= 90 ? 'lc-small' : 'lc-bad'}" style="font-size:1rem">${r.pct === null ? '\u2014' : r.pct + '%'}</span><div class="mut" style="font-size:.75rem">${r.den ? C([r.num, r.den]) : ''}</div></td>`+
+      `<td class="c"><span class="lcchip ${r.pct === null ? 'lc-gray' : r.pct >= 100 ? 'lc-ok' : r.pct >= 95 ? 'lc-small' : 'lc-bad'}" style="font-size:1rem">${r.pct === null ? '\u2014' : r.pct + '%'}</span><div class="mut" style="font-size:.75rem">${r.den ? C([r.num, r.den]) : ''}</div></td>`+
       `<td class="c">${P(r.us)}<div class="mut" style="font-size:.75rem">${C(r.us)}</div></td>`+
       `<td class="c">${P(r.ca)}<div class="mut" style="font-size:.75rem">${C(r.ca)}</div></td>`+
       `<td class="c"><button class="work" data-catsrc="${r.k}">Source</button></td>`+
@@ -8191,9 +8199,20 @@ const RV_TIERS = ['A','B','C','X','N'];
 /* Nov 12 (MJ): fields not flagged for now. Weave Type stays Flat Woven on the coir mats
    while it's used in CPT cases; Style Name can't be edited in Seller Central.
    Review_Watch.gs drops them too, so the % and the alert email agree. */
-const RV_HOLD_FIELDS = ['Weave Type'];   // Style Name flagged again Nov 12: it's the Style attribute in Seller Central
+const RV_HOLD_FIELDS = ['Weave Type', 'Style Name'];   // Nov 12 (MJ): style differs by design (farmhouse, rustic, classic, traditional, southern), so it isn't checked
+/* What isn't flagged (MJ, Nov 12: "whatever isn't helpful, don't flag"). Same rules as
+   Review_Watch.gs, so the page, the % and the email agree. */
+function rvNotUseful(p, brand){
+  const f = String(p.field || '').trim(), res = String(p.result || '');
+  if(RV_HOLD_FIELDS.indexOf(f) !== -1) return true;
+  if(f === 'Number of items' || f === 'Color' || f === 'Room Type') return true;   // see the notes in Review_Watch.gs
+  if(f === 'Material' && (brand === 'Seedboy' || res === 'Wrong')) return true;
+  if(f === 'Material Type' && res === 'Wrong') return true;
+  if(f === 'Page' && /captcha|robot|blocked/i.test(String(p.page || ''))) return true;   // the check was blocked, not a listing problem
+  return false;
+}
 function buildRv(j){ RV_ERR = ''; RV = j || {};
-  (RV.rows || []).forEach(r=>{ r.problems = (r.problems || []).filter(p=> RV_HOLD_FIELDS.indexOf(String(p.field || '').trim()) === -1); }); }
+  (RV.rows || []).forEach(r=>{ r.problems = (r.problems || []).filter(p=> !rvNotUseful(p, r.brand)); }); }
 function rvLocal(){ try { return JSON.parse(localStorage.getItem('rv_marks') || '{}'); } catch(e){ return {}; } }
 function rvMarkOf(r){
   const L = rvLocal()[RV.round || ''] || {}, k = r.mk + '|' + r.asin;
@@ -8246,9 +8265,16 @@ function stScore(mk){
     tierX: all.filter(x=> x.tier === 'X').length, oos: all.filter(x=> x.tier !== 'X' && isOos(x, mk)).length};
 }
 const rvDom = mk=> mk === 'CA' ? 'https://www.amazon.ca/dp/' : 'https://www.amazon.com/dp/';
+function rvOptOos(p, mk, r){   // Nov 12 (MJ): every sibling named as missing is out of stock
+  if(p.field === 'Page' && r && /opens/i.test(String(p.page || '')) && stockOf(r, mk) === 0) return true;   // out of stock: Amazon shows a sibling
+  if(p.field !== 'Variation options') return false;
+  if(r && stockOf(r, mk) === 0) return true;   // Nov 12 (MJ): the listing itself is out of stock, so it can't show in the options
+  const as = String(p.page || '').match(/B0[A-Z0-9]{8}/g) || [];
+  return as.length > 0 && as.every(a=> stockOf({asin: a}, mk) === 0);
+}
 function rvAll(mk){
   mk = mk || RV_F.mk || 'US';
-  return (RV.rows || []).filter(r=> (r.mk || 'US') === mk).map(r=>{
+  return (RV.rows || []).filter(r=> (r.mk || 'US') === mk).map(r=> Object.assign({}, r, {problems: (r.problems || []).filter(p=> !rvOptOos(p, mk, r))})).map(r=>{
     const isNew = r.problems.some(p=> p.st === 'new'), wk = Math.max(0, ...r.problems.map(p=> p.weeks || 1));
     return Object.assign({}, r, {isNew, wk, mk2: rvMarkOf(r), fam: r.family || 'No family'});
   });
@@ -8430,6 +8456,7 @@ try { Object.assign(ST_F, JSON.parse(localStorage.getItem('st_state') || '{}'));
 const stKeep = ()=>{ try { localStorage.setItem('st_state', JSON.stringify(ST_F)); } catch(e){} };
 function renderStrike(){
   ST_F.family = ''; ST_F.tier = ''; ST_F.brand = ''; ST_F.q = '';   // the top bar does tier, brand and search (Nov 12)
+  ST_F.mk = 'US';   // US only (MJ, Nov 12)
   document.getElementById('msg').hidden = true;
   document.getElementById('bar').innerHTML = '';
   const v = document.getElementById('cptView'), run = RV.run, smk = ST_F.mk || 'US';
@@ -8445,12 +8472,12 @@ function renderStrike(){
     (run ? `<span class="sub">Checked ${esc(shortDate(run.date.slice(0, 10)))}</span>` : '')+
     (run ? `<span class="cpt-live"><i></i>${sMiss.length ? `${act - sMiss.length} of ${act} active covered` : `\u2713 All ${act} active covered`}</span>` : '')+
     '</div><div class="cpt-tiles">'+
-      tile('Strike-through', sc && sc.n ? sc.pct + '%' : '\u2014', sc && sc.pct >= 90 ? 'good' : 'bad', '', 'all')+
+      tile('Strike-through', sc && sc.n ? sc.pct + '%' : '\u2014', pcls(sc && sc.pct), '', 'all')+
       tile('With a strike-through', shown, shown ? 'good' : '', `${lp} List Price \u00b7 ${tp} Typical price`, 'shown')+
       tile('No strike-through', none, none ? 'bad' : 'good', '', 'none')+
       tile('Strike-through history', hist.length, '', RV.strikeHist ? `${hist.filter(x=> x.kind === 'lost').length} lost \u00b7 ${hist.filter(x=> x.kind === 'gained').length} gained` : '', 'hist')+
     '</div></section>';
-  html += '<div class="cpt-tools">'+ `<div class="seg" id="stMk">${['US','CA'].map(m=> `<button data-mk="${m}" aria-pressed="${smk === m}">Amazon ${m}</button>`).join('')}</div>`+
+  html += '<div class="cpt-tools">'+
       (ST_F.hist ? '' : '<button id="stCopy">Copy list for Haris</button><button id="stDl">Download</button>') + '</div>';
   if(ST_F.hist) html += stHistHtml(smk);
   else if(!RV.rows && RV_ERR) html += '<div class="cpt-empty"><b>Strike-through feed not found yet</b>It comes with the Listing Review feed (review.json).</div>';
@@ -8723,6 +8750,7 @@ document.addEventListener('keydown', e=>{ if(e.key !== 'Enter' && e.key !== ' ')
    notes and cards. A watcher links any SKU or ASIN text that isn't a link yet. */
 function curMk(){
   const v = S.view;
+  if(v === 'cpt' || v === 'st') return 'US';   // US only (Nov 12)
   const m = ['cpt','bb','lc','lp'].indexOf(v) !== -1 ? MK2 : v === 'category' ? CG_F.mk : v === 'vr' ? VR_F.mk : v === 'ms' ? MS_F.mk :
     v === 'rv' ? RV_F.mk : v === 'st' ? ST_F.mk : v === 'bs' ? BS_F.mk : v === 'pr' ? PR_F.mk : 'US';
   return mkOf(m) === 'CA' ? 'CA' : 'US';
@@ -9389,7 +9417,7 @@ function stockKeep(rows, mk){
   ['renderCpt','renderBb','renderLc','renderLp','renderVariation','renderBsr','renderProducts','renderMeasurements',
    'renderReview','renderStrike','renderCategory','renderXc'].forEach(n=>{   /* renderXc added Nov 12: top bar filters on Cross Channel */ const f = g[n]; if(typeof f !== 'function') return;
     g[n] = function(){ const was = STOCK_ON; STOCK_ON = true; try { gfModuleBlank(); } catch(e){}
-      try { return f.apply(this, arguments); } finally { STOCK_ON = was; try { ensureClearBtn(); } catch(e){} try { ensureCoverage(); } catch(e){} try { curModPaint(); } catch(e){} } }; });
+      try { return f.apply(this, arguments); } finally { STOCK_ON = was; try { ensureClearBtn(); } catch(e){} try { ensureCoverage(); } catch(e){} try { curModPaint(); } catch(e){} try { ensureScoreTile(); } catch(e){} } }; });
   ['navPercents','modPct'].forEach(n=>{ const f = g[n]; if(typeof f !== 'function') return;
     g[n] = function(){ const was = STOCK_ON; STOCK_ON = false; try { return f.apply(this, arguments); } finally { STOCK_ON = was; } }; });
 })();
@@ -9469,6 +9497,19 @@ function curModPaint(){
   const name = h ? h.textContent.trim() : '';
   const mkV = ['catalog','pr','xc'].indexOf(S.view) === -1 ? ' \u00b7 ' + (typeof curMk === 'function' ? curMk() : '') : '';
   el.textContent = name ? name + mkV : '';
+}
+/* Nov 12 (MJ): every module's first tile is its %, the same number as the side menu,
+   colored by the one rule. CPT and BSR get the tile they were missing. */
+const SCORE_OF = {cpt:['cptBtn','CPT OK %'], bb:['bbBtn','Buy Box'], lp:['lpBtn','List Price set %'], lc:['lcBtn','Correct copy %'],
+  category:['quickCat','Category correct %'], vr:['vrBtn','Variation correct %'], ms:['msBtn','Catalog data correct %'],
+  st:['stBtn','Strike-through'], rv:['rvBtn','All correct'], bs:['bsBtn','BSR correct %']};
+function ensureScoreTile(){
+  const m = SCORE_OF[S.view], box = document.querySelector('#cptView .cpt-tiles'); if(!m || !box) return;
+  const mk = curMk(), v = modPct(m[0], mk), txt = v === null || v === undefined ? '\u2014' : v + '%';
+  let t = [...box.querySelectorAll('.cpt-tile')].find(x=>{ const e = x.querySelector('.v'); return e && /%\s*$/.test(e.textContent.trim()); });
+  if(!t){ t = document.createElement('div'); t.className = 'cpt-tile'; t.innerHTML = `<div class="k">${m[1]}</div><div class="v"></div><div class="n">&nbsp;</div>`; }
+  if(box.firstElementChild !== t) box.insertBefore(t, box.firstElementChild);
+  const e = t.querySelector('.v'); e.textContent = txt; e.classList.remove('good', 'warn', 'bad'); const c = pcls(v); if(c) e.classList.add(c);
 }
 function ensureClearBtn(){
   const bar = document.querySelector('#cptView .cpt-tools'); if(!bar) return;
