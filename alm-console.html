@@ -98,6 +98,10 @@ td.cgtdp{min-width:14rem;max-width:22rem}
    starts at the top of the screen. Wider screens never see #mSelWrap. */
 #mSelWrap{display:none}
 #hStock{display:inline-flex;gap:0;align-items:center}
+#curMod{display:inline-block;font-weight:800;font-size:.95rem;color:#fff;background:#2f5d9a;border-radius:6px;padding:.2rem .6rem;margin-right:.5rem;white-space:nowrap}
+#curMod:empty{display:none}
+.bshi{background:#fff6d6}
+.cpt-table th.bshi{background:#f5c542 !important;color:#1f2937 !important}
 #hStock .stk-l{font-size:.72rem;color:rgba(255,255,255,.6);margin-right:.4rem}
 #hStock button{border-radius:0}
 #hStock button:first-of-type{border-radius:6px 0 0 6px}
@@ -968,7 +972,7 @@ a.idl:hover{color:var(--accent);border-bottom-style:solid}
     <div class="ng"><div class="ng-l">Performance <span class="ng-t" data-ngt="perf"></span></div>
       <div class="ng-b" data-ng="perf"><button id="bsBtn">BSR</button></div></div>
     <div id="mSelWrap"><label for="mSel">Module</label><select id="mSel"><optgroup label="Today"><option value="catalogBtn">Catalog</option><option value="prBtn">Master SKU</option><option value="xcBtn">Cross Channel</option></optgroup><optgroup label="Price and Buy Box"><option value="cptBtn">CPT tracker</option><option value="bbBtn">Buy Box</option><option value="lpBtn">List Price</option><option value="stBtn">Strike-through</option></optgroup><optgroup label="Listing health"><option value="lcBtn">Listing Copy</option><option value="quickCat">Category</option><option value="vrBtn">Variation</option><option value="msBtn">Measurements</option><option value="rvBtn">Listing Review</option></optgroup><optgroup label="Performance"><option value="bsBtn">BSR</option></optgroup></select></div>
-    <div class="ng ng-tools"><div class="ng-l">View</div><div class="ng-b"><button id="toggle" aria-expanded="true">Filters</button><span id="hStock" role="group" aria-label="Stock"><span class="stk-l">Stock</span><button data-stk="all" title="Every listing">All</button><button data-stk="in" title="Only listings with FBA stock">In stock</button><button data-stk="oos" title="Only listings with 0 FBA stock">Out of stock</button></span><span class="gf-l" id="gfTierWrap">Tier <button id="gfTierBtn" type="button" aria-haspopup="true" aria-expanded="false" title="Pick one or more tiers">All ▾</button><span id="gfTierPop" hidden><label><input type="checkbox" value="A"> Tier A</label><label><input type="checkbox" value="B"> Tier B</label><label><input type="checkbox" value="C"> Tier C</label><label><input type="checkbox" value="X"> Tier X</label><label><input type="checkbox" value="N"> Tier N</label><button type="button" id="gfTierAll">All tiers</button></span></span><span class="gf-l" id="gfSupWrap">Supplier <button id="gfSupBtn" type="button" aria-haspopup="true" aria-expanded="false" title="Pick one or more suppliers">All ▾</button><span id="gfSupPop" hidden><span id="gfSupList"></span><button type="button" id="gfSupAll">All suppliers</button></span></span><label class="gf-l">Brand <select id="gfBrand"><option value="">All</option><option>Barnyard Designs</option><option>Seedboy</option></select></label><input id="gfQ" type="search" placeholder="Search SKU, ASIN, product or family" autocomplete="off"><button id="gfClr" title="Clear Tier, Brand, Search, Stock and this module’s own filters. Keeps the sort, grouping and marketplace.">Clear filters</button><button id="hRefresh" title="Reload all data now. Reads the published files only: no scripts run, no Keepa tokens.">↻ Refresh</button><button id="hReset" title="Put this module’s filters, search, sort and grouping back to their defaults. Keeps the marketplace and all saved checks and marks.">Reset view</button><button id="fs" title="Fullscreen">Full screen</button><button id="scSet" aria-label="Settings: Canada Seller Central links" title="Settings: make CA SKU links open Seller Central Canada">&#9881;</button></div></div>
+    <div class="ng ng-tools"><div class="ng-l">View</div><div class="ng-b"><span id="curMod" title="The module you are on"></span><button id="toggle" aria-expanded="true">Filters</button><span id="hStock" role="group" aria-label="Stock"><span class="stk-l">Stock</span><button data-stk="all" title="Every listing">All</button><button data-stk="in" title="Only listings with FBA stock">In stock</button><button data-stk="oos" title="Only listings with 0 FBA stock">Out of stock</button></span><span class="gf-l" id="gfTierWrap">Tier <button id="gfTierBtn" type="button" aria-haspopup="true" aria-expanded="false" title="Pick one or more tiers">All ▾</button><span id="gfTierPop" hidden><label style="border-bottom:1px solid rgba(255,255,255,.18);padding-bottom:.25rem"><input type="checkbox" id="gfTierAllCb"> <b>All</b></label><label><input type="checkbox" value="A"> Tier A</label><label><input type="checkbox" value="B"> Tier B</label><label><input type="checkbox" value="C"> Tier C</label><label><input type="checkbox" value="X"> Tier X</label><label><input type="checkbox" value="N"> Tier N</label></span></span><span class="gf-l" id="gfSupWrap">Supplier <button id="gfSupBtn" type="button" aria-haspopup="true" aria-expanded="false" title="Pick one or more suppliers">All ▾</button><span id="gfSupPop" hidden><span id="gfSupList"></span><button type="button" id="gfSupAll">All suppliers</button></span></span><label class="gf-l">Brand <select id="gfBrand"><option value="">All</option><option>Barnyard Designs</option><option>Seedboy</option></select></label><label class="gf-l">Family <select id="gfFam" style="max-width:13rem"><option value="">All</option></select></label><input id="gfQ" type="search" placeholder="Search SKU, ASIN, product or family" autocomplete="off"><button id="gfClr" title="Clear Tier, Brand, Search, Stock and this module’s own filters. Keeps the sort, grouping and marketplace.">Clear filters</button><button id="hRefresh" title="Reload all data now. Reads the published files only: no scripts run, no Keepa tokens.">↻ Refresh</button><button id="hReset" title="Put this module’s filters, search, sort and grouping back to their defaults. Keeps the marketplace and all saved checks and marks.">Reset view</button><button id="fs" title="Fullscreen">Full screen</button><button id="scSet" aria-label="Settings: Canada Seller Central links" title="Settings: make CA SKU links open Seller Central Canada">&#9881;</button></div></div>
   </nav>
 </header>
 <section id="ov" hidden></section>
@@ -6295,11 +6299,6 @@ function renderVariation(){
     '<div class="cpt-tools"><div class="seg" id="vrMk">'+
       ['US','CA'].map(m=>{ const n = vrRows(m).filter(r=> r.bad.length).length;
         return `<button data-mk="${m}" aria-pressed="${VR_F.mk === m}">${m === 'US' ? 'Amazon US' : 'Amazon CA'} ${n ? '<span class="badge" style="margin-left:.3rem">' + n + '</span>' : ''}</button>`; }).join('')+
-    '</div><div class="seg" id="vrSeg">'+
-      [['all','All ' + all.length], ['wrong','Wrong ' + wrong.length], ['blank','Blank in Master SKU ' + blank.length]]
-        .map(b=> `<button data-show="${b[0]}" aria-pressed="${VR_F.show === b[0]}">${b[1]}</button>`).join('')+
-    '</div><div class="seg" id="vrTier">'+
-      ['', 'A', 'B', 'C', 'X', 'N'].map(t=> `<button data-t="${t}" aria-pressed="${VR_F.tier === t}">${t ? 'Tier ' + t : 'All tiers'}</button>`).join('')+
     '</div>'+
     `<input id="vrQ" type="search" placeholder="Search SKU, ASIN, parent or product" value="${esc(VR_F.q)}" aria-label="Search Variation">`+
     (VR_F.sort ? '<button id="vrUnsort">Clear sort</button>' : '')+
@@ -6322,7 +6321,6 @@ function renderVariation(){
     const mk = VR_F.mk;
     html += '<table class="cpt-table bb-table lc-table cg-table"><thead><tr>'+
       H('product', 'Product') + TIER_TH +
-      H('pct', 'Correct %', 'b-cpt c', (VR_TV ? 'Family, theme and value checks' : 'The family check') + ' against the Master SKU sheet. Reviews shared is not in this number.')+
       VR_COLS.map(c=> H('f_' + c[0], c[1], 'b-gap c', c[0] === 'rev' ? 'Same review count as most siblings, as Keepa sees it. US only.' : 'Sort to bring problems to the top.')).join('')+
       H('star', 'Star rating', 'num', 'From the BSR feed (Keepa). Amber = differs from the family.')+
       H('revs', 'Ratings', 'num', 'Ratings count, from the BSR feed (Keepa). Amber = differs from the family.')+
@@ -6334,7 +6332,6 @@ function renderVariation(){
         `<td class="prod"><div class="p-name"><span class="dot" style="background:${r.nolive ? '#94a3b8' : r.fullOk ? '#1f9d55' : '#d64545'}"></span>${esc(String(r.name).slice(0, 60))}</div>`+
           `<div class="p-id"><span>SKU</span>${skuL(r.sku, mk)}${cpy(r.sku)}</div><div class="p-id"><span>ASIN</span>${asinL(r.asin, mk)}${cpy(r.asin)}</div>`+
           `${r.tier ? `<span class="p-size">Tier ${esc(r.tier)}</span>` : ''}${r.risk ? `<span class="p-size" data-tip="${esc(r.risk)}" style="background:#fff4e0;color:#8a5a00">Theme may split reviews</span>` : ''}${r.rbA.length ? `<span class="p-size" data-tip="${esc(r.rbA.map(h=> h.rule.text + ' ' + h.corr).join(' \u2022 '))}" style="background:#fde8e8;color:#9b1c1c">Breaks a variation rule</span>` : ''}</td>`+
-        `<td class="c">${r.nolive ? '<span class="mut">Not checked yet</span>' : r.pct === null ? '<span class="mut">\u2014</span>' : bbBar(r.pct)}</td>`+
         VR_COLS.map(c=> `<td class="c">${vrChip((r.c || {})[c[0]], r.nolive)}</td>`).join('')+
         vrBsTd(r, 'cur') + vrBsTd(r, 'rev') + vrBsTd(r, 'bsr')+
         `<td>${r.since ? esc(shortDate(r.since)) : '<span class="mut">No change seen</span>'}</td>`+
@@ -6754,10 +6751,6 @@ function renderBsr(){
     (mk === 'CA' && !all.some(r=> r.cur !== null) && all.length ? '<div class="why"><b>No CA ratings yet:</b> they come from CA Watch. Replace CA_Watch.gs with the new version, and they show after its next run.</div>' : '')+
     '<div class="cpt-tools"><div class="seg" id="bsMk">'+
       ['US','CA'].map(m=> `<button data-mk="${m}" aria-pressed="${mk === m}">${m === 'US' ? 'Amazon US' : 'Amazon CA'}</button>`).join('')+
-    '</div><div class="seg" id="bsSeg">'+
-      [['all','All ' + all.length], ['any','Needs a look ' + pick.any.length], ['sync','Family to check ' + pick.sync.length]].map(b=> `<button data-show="${b[0]}" aria-pressed="${BS_F.show === b[0]}">${b[1]}</button>`).join('')+
-    '</div><div class="seg" id="bsTier">'+
-      ['', 'A', 'B', 'C', 'X', 'N'].map(t=> `<button data-t="${t}" aria-pressed="${BS_F.tier === t}">${t ? 'Tier ' + t : 'All tiers'}</button>`).join('')+
     '</div>'+
     `<input id="bsQ" type="search" placeholder="Search SKU, ASIN, parent or product" value="${esc(BS_F.q)}" aria-label="Search BSR">`+
     (BS_F.sort ? '<button id="bsUnsort">Clear sort</button>' : '')+
@@ -6774,9 +6767,9 @@ function renderBsr(){
     html += '<table class="cpt-table bb-table lc-table cg-table"><thead><tr>'+
       H('product', 'Product') + TIER_TH +
       // The three MJ watches, side by side (Oct 27)
-      H('cur', 'Star rating', 'b-cpt c', 'The star rating Amazon shows, from Keepa. Amber = differs from the family.')+
-      H('rev', 'Ratings', 'b-cpt c', 'Ratings count Amazon shows. Variation families share one count when reviews are pooled. Amber = differs from the family.', 'desc')+
-      H('bsr', 'BSR', 'b-cpt c', 'Best Sellers Rank in the main category. Lower is better. Amber = far from the family.')+
+      H('cur', 'Star rating', 'b-cpt c bshi', 'The star rating Amazon shows, from Keepa. Amber = differs from the family.')+
+      H('rev', 'Ratings', 'b-cpt c bshi', 'Ratings count Amazon shows. Variation families share one count when reviews are pooled. Amber = differs from the family.', 'desc')+
+      H('bsr', 'BSR', 'b-cpt c bshi', 'Best Sellers Rank in the main category. Lower is better. Amber = far from the family.')+
       H('d30', '30-day change', 'b-gap c', 'Star rating now minus 30 days ago.')+
       H('rev30', 'New (30 days)', 'b-gap c', 'Ratings added in the last 30 days.', 'desc')+
       H('avg30', '30-day average', 'b-sim c', 'Average daily BSR over the last 30 days we have.')+
@@ -6790,9 +6783,9 @@ function renderBsr(){
         `<td class="prod"><div class="p-name"><span class="dot" style="background:${r.nolive ? '#94a3b8' : r.flags.some(f=> f !== 'sync') ? '#d64545' : r.flags.length ? '#d99a00' : '#1f9d55'}"></span>${esc(String(r.name).slice(0, 60))}</div>`+
           `<div class="p-id"><span>SKU</span>${skuL(r.sku, mk)}${cpy(r.sku)}</div><div class="p-id"><span>ASIN</span>${asinL(r.asin, mk)}${cpy(r.asin)}</div>`+
           `${r.tier ? `<span class="p-size">Tier ${esc(r.tier)}</span>` : ''}</td>`+
-        `<td class="c" style="font-size:1rem;font-weight:700${bsOff(r, 'cur')}">${bsStars(r.cur)}</td>`+
-        `<td class="c" style="font-size:1rem;font-weight:700${bsOff(r, 'rev')}">${bsInt(r.rev)}</td>`+
-        `<td class="c" style="font-size:1rem;font-weight:700${bsOff(r, 'bsr')}">${r.bsr ? '#' + bsInt(r.bsr) : '<span class="lcchip lc-bad">No BSR</span>'}${bsSpark((r.rk || {}).spark)}</td>`+
+        `<td class="c bshi" style="font-size:1.15rem;font-weight:800${bsOff(r, 'cur')}">${bsStars(r.cur)}</td>`+
+        `<td class="c bshi" style="font-size:1.15rem;font-weight:800${bsOff(r, 'rev')}">${bsInt(r.rev)}</td>`+
+        `<td class="c bshi" style="font-size:1.15rem;font-weight:800${bsOff(r, 'bsr')}">${r.bsr ? '#' + bsInt(r.bsr) : '<span class="lcchip lc-bad">No BSR</span>'}${bsSpark((r.rk || {}).spark)}</td>`+
         `<td class="c">${bsDelta(r.d30)}</td>`+
         `<td class="c">${r.rev30 === null ? '<span class="mut">\u2014</span>' : r.rev30 ? '+' + bsInt(r.rev30) : '<span class="mut">0</span>'}</td>`+
         `<td class="c">${r.avg30 ? '#' + bsInt(r.avg30) : '<span class="mut">\u2014</span>'}</td>`+
@@ -7123,10 +7116,9 @@ function renderProducts(){
     '</div></section>'+
     '<div class="cpt-tools" style="flex-wrap:wrap;gap:.4rem">'+
       '<div class="seg" id="prMk">' + ['US','CA'].map(m=> `<button data-mk="${m}" aria-pressed="${PR_F.mk === m}">Amazon ${m}</button>`).join('') + '</div>'+
-      prSel('prStatus', PR_F.mk === 'CA' ? 'CA status' : 'SKU status', prOpts(all, 'st'), PR_F.status)+
       `<label class="mut" style="font-size:.75rem">Group by <select id="prGroup">${PR_GROUPS.map(g=> `<option value="${g[0]}"${PR_F.group === g[0] ? ' selected' : ''}>${g[1]}</option>`).join('')}</select></label>`+
       `<button id="prMore" aria-expanded="${!!PR_F.more}">More filters</button>`+
-      (PR_F.more ? prSel('prFam', 'Family', prOpts(all, 'fam'), PR_F.fam) + prSel('prCat', 'Category', prOpts(all, 'cats'), PR_F.cat) +
+      (PR_F.more ? prSel('prCat', 'Category', prOpts(all, 'cats'), PR_F.cat) +
         prSel('prPtype', 'Product type', prOpts(all, 'ptype'), PR_F.ptype) + prSel('prRoom', 'Room', prOpts(all, 'room'), PR_F.room) : '')+
       '<button id="prDl">Download</button>'+
       `<span class="count">${rows.length} of ${all.length}</span>`+
@@ -7297,7 +7289,7 @@ const PCT_CLS = v=> v === null || v === undefined ? 'pc-n' : v >= 98 ? 'pc-g' : 
 const pct1 = (a, b)=> b ? Math.round(a / b * 1000) / 10 : null;
 function modPct(id, mk){
   try {
-    if(id === 'cptBtn'){ if(!CPT_US.length) return null; return withMk2(mk, ()=>{ if(mk === 'CA' && !(CPT_CA || []).some(r=> r.cpt !== null)) return null; const r = inStock(cptRows(), mk).filter(x=> x.action !== 'oos'); return pct1(r.length - r.filter(x=> x.action === 'open').length, r.length); }); }
+    if(id === 'cptBtn'){ if(!CPT_US.length) return null; return withMk2(mk, ()=>{ if(mk === 'CA' && !(CPT_CA || []).some(r=> r.cpt !== null)) return null; const r = inStock(cptRows(), mk).filter(x=> x.action !== 'oos'); return pct1(r.filter(x=> x.action === 'none').length, r.length); }); }   /* Nov 12 (MJ): any listing with a CPT issue counts against the %, case open or not */
     if(id === 'bbBtn'){ if(!BB_US.length) return null; return withMk2(mk, ()=>{ if(mk === 'CA' && !(BB_CA || []).some(r=> stockOf(r, 'CA') !== null)) return null; const r = bbRows(), st = r.filter(x=> !isOos(x, mk)); return pct1(st.filter(x=> x.has).length, st.length); }); }
     if(id === 'lpBtn'){ if(!CPT_US.length) return null; return withMk2(mk, ()=>{ const r = inStock(lpRows(), mk); return pct1(r.filter(x=> x.set).length, r.length); }); }
     if(id === 'lcBtn'){ if(!LC_US.length || (mk === 'CA' && LC_CA === null)) return null; return withMk2(mk, ()=>{ const r = lcRows().filter(x=> !x.nolive && x.pct !== null && x.pct !== undefined); return r.length ? Math.round(r.reduce((t, x)=> t + x.pct, 0) / r.length * 10) / 10 : null; }); }
@@ -8196,7 +8188,12 @@ const RV_F = Object.assign({}, RV_F_DEF);
 try { Object.assign(RV_F, JSON.parse(localStorage.getItem('rv_state') || '{}')); } catch(e){}
 const rvKeep = ()=>{ try { localStorage.setItem('rv_state', JSON.stringify(RV_F)); } catch(e){} };
 const RV_TIERS = ['A','B','C','X','N'];
-function buildRv(j){ RV_ERR = ''; RV = j || {}; }
+/* Nov 12 (MJ): fields not flagged for now. Weave Type stays Flat Woven on the coir mats
+   while it's used in CPT cases; Style Name can't be edited in Seller Central.
+   Review_Watch.gs drops them too, so the % and the alert email agree. */
+const RV_HOLD_FIELDS = ['Weave Type'];   // Style Name flagged again Nov 12: it's the Style attribute in Seller Central
+function buildRv(j){ RV_ERR = ''; RV = j || {};
+  (RV.rows || []).forEach(r=>{ r.problems = (r.problems || []).filter(p=> RV_HOLD_FIELDS.indexOf(String(p.field || '').trim()) === -1); }); }
 function rvLocal(){ try { return JSON.parse(localStorage.getItem('rv_marks') || '{}'); } catch(e){ return {}; } }
 function rvMarkOf(r){
   const L = rvLocal()[RV.round || ''] || {}, k = r.mk + '|' + r.asin;
@@ -8572,9 +8569,9 @@ function renderReview(){
     '</div></section>';
   if(RV.running) html += `<div class="why"><b>Check in progress</b> since ${esc(RV.running.date)}: ${RV.running.read || 0} listings read so far. This page shows the last finished check until it\u2019s done.</div>`;
   html += '<div class="cpt-tools rv-tools">'+ `<div class="seg" id="rvMk">${['US','CA'].map(m=> `<button data-mk="${m}" aria-pressed="${(RV_F.mk || 'US') === m}">Amazon ${m}</button>`).join('')}</div>`+'<div class="seg" id="rvSt">'+
-      [['all','All problems'],['new','New'],['open','Still open'],['fixed','Fixed'],['reviewed','Reviewed'],['flagged','Flagged'],['unchecked','Not checked']].map(([k, l])=> `<button data-st="${k}" aria-pressed="${RV_F.status === k}">${l}</button>`).join('')+'</div>'+
+      [['open','Still open'],['flagged','Flagged']].map(([k, l])=> `<button data-st="${k}" aria-pressed="${RV_F.status === k}">${l}</button>`).join('')+'</div>'+
       `<label class="mut" style="font-size:.78rem">Review by <select id="rvOrder">${[['newest','Newest problems first'],['tier','Tier (A first)'],['family','Family'],['brand','Brand']].map(([k, l])=> `<option value="${k}"${RV_F.order === k ? ' selected' : ''}>${l}</option>`).join('')}</select></label>`+
-      sel('rvTier', 'Tier', RV_TIERS, RV_F.tier) + sel('rvBrand', 'Brand', brands, RV_F.brand) + sel('rvFam', 'Family', fams, RV_F.family)+
+      
       `<input id="rvQ" type="search" placeholder="Search SKU, ASIN, product or family" value="${esc(RV_F.q)}">`+
       `<button id="rvMode" aria-pressed="${RV_F.mode === 'one'}">${RV_F.mode === 'one' ? 'Show as list' : 'Review one by one'}</button>`+
       (RV_F.mode === 'list' ? `<button id="rvGrp" aria-pressed="${RV_F.group}">Group by family</button>` : '')+
@@ -8765,7 +8762,7 @@ function autoLink(root){
 }
 (function(){
   const go = ()=>{ const v = document.getElementById('cptView'); if(!v) return;
-    let t = null; new MutationObserver(()=>{ if(ALINK_BUSY) return; clearTimeout(t); t = setTimeout(()=> autoLink(v), 30); }).observe(v, {childList: true, subtree: true}); };
+    let t = null; new MutationObserver(()=>{ if(ALINK_BUSY) return; clearTimeout(t); t = setTimeout(()=>{ autoLink(v); try { curModPaint(); } catch(e){} }, 30); }).observe(v, {childList: true, subtree: true}); };
   if(document.readyState === 'loading') document.addEventListener('DOMContentLoaded', go); else go();
 })();
 // Nov 12: the US stock and CA stock columns sort in every module
@@ -9364,22 +9361,23 @@ const gfKeep = ()=>{ try { localStorage.setItem('gf', JSON.stringify(GF)); } cat
 function gfInfo(r){
   const p = (typeof PR !== 'undefined' ? PR : []).find(x=> (r.sku && x.sku === r.sku) || (r.usSku && x.sku === r.usSku)) ||
             (typeof PR !== 'undefined' ? PR : []).find(x=> r.asin && x.asin === r.asin) || {};
-  return {tier: r.tier || p.tier || '', brand: r.brand || p.brand || '', sup: r.supplier || p.supplier || '',
+  return {tier: r.tier || p.tier || '', brand: r.brand || p.brand || '', sup: r.supplier || p.supplier || '', fam: p.pname || r.pname || r.parent || '',
     text: [r.sku, r.usSku, r.asin, r.name, r.title, r.pname, r.parent, r.family, r.fam, r.psku, p.name, p.pname, p.psku].filter(Boolean).join(' ').toLowerCase()};
 }
 function gfMatch(r){
-  if(!GF.tier.length && !GF.sup.length && !GF.brand && !GF.q) return true;
+  if(!GF.tier.length && !GF.sup.length && !GF.brand && !GF.q && !GF.fam) return true;
   const g = gfInfo(r);
   if(GF.tier.length && GF.tier.indexOf(g.tier) === -1) return false;
   if(GF.sup.length && GF.sup.indexOf(g.sup) === -1) return false;
   if(GF.brand && g.brand !== GF.brand) return false;
+  if(GF.fam && g.fam !== GF.fam) return false;
   if(GF.q && g.text.indexOf(GF.q.toLowerCase().trim()) === -1) return false;
   return true;
 }
 function stockKeep(rows, mk){
   if(!STOCK_ON || !Array.isArray(rows)) return rows;
   if(STOCK !== 'all') rows = rows.filter(r=>{ const v = stockOf(r, mk); return v === null ? false : STOCK === 'oos' ? v === 0 : v > 0; });
-  return (GF.tier.length || GF.sup.length || GF.brand || GF.q) ? rows.filter(gfMatch) : rows;
+  return (GF.tier.length || GF.sup.length || GF.brand || GF.q || GF.fam) ? rows.filter(gfMatch) : rows;
 }
 (function(){
   const g = window, mkOf = {
@@ -9391,7 +9389,7 @@ function stockKeep(rows, mk){
   ['renderCpt','renderBb','renderLc','renderLp','renderVariation','renderBsr','renderProducts','renderMeasurements',
    'renderReview','renderStrike','renderCategory','renderXc'].forEach(n=>{   /* renderXc added Nov 12: top bar filters on Cross Channel */ const f = g[n]; if(typeof f !== 'function') return;
     g[n] = function(){ const was = STOCK_ON; STOCK_ON = true; try { gfModuleBlank(); } catch(e){}
-      try { return f.apply(this, arguments); } finally { STOCK_ON = was; try { ensureClearBtn(); } catch(e){} try { ensureCoverage(); } catch(e){} } }; });
+      try { return f.apply(this, arguments); } finally { STOCK_ON = was; try { ensureClearBtn(); } catch(e){} try { ensureCoverage(); } catch(e){} try { curModPaint(); } catch(e){} } }; });
   ['navPercents','modPct'].forEach(n=>{ const f = g[n]; if(typeof f !== 'function') return;
     g[n] = function(){ const was = STOCK_ON; STOCK_ON = false; try { return f.apply(this, arguments); } finally { STOCK_ON = was; } }; });
 })();
@@ -9402,15 +9400,18 @@ function stockKeep(rows, mk){
 const CLR_KEEP = ['mk','sort','dir','group','mode','order','pos'];
 function gfPaint(){
   const t = document.getElementById('gfTierBtn'), b = document.getElementById('gfBrand'), q = document.getElementById('gfQ');
-  if(t) t.textContent = (GF.tier.length ? GF.tier.join(', ') : 'All') + ' \u25be';
+  if(t) t.textContent = (!GF.tier.length ? 'All' : GF.tier[0] === '-' ? 'None' : GF.tier.join(', ')) + ' \u25be';
   const sb = document.getElementById('gfSupBtn');
   if(sb){ sb.textContent = (GF.sup.length ? (GF.sup.length > 2 ? GF.sup.length + ' suppliers' : GF.sup.join(', ')) : 'All') + ' \u25be'; sb.title = GF.sup.length ? GF.sup.join(', ') : 'Pick one or more suppliers'; }
   [...document.querySelectorAll('#gfSupList input')].forEach(x=> x.checked = GF.sup.indexOf(x.value) !== -1);
-  [...document.querySelectorAll('#gfTierPop input')].forEach(x=> x.checked = GF.tier.indexOf(x.value) !== -1);
+  // Nov 12: no tier filter = every tier ticked, and All ticked
+  [...document.querySelectorAll('#gfTierPop input[value]')].forEach(x=> x.checked = !GF.tier.length || GF.tier.indexOf(x.value) !== -1);
+  const ta = document.getElementById('gfTierAllCb'); if(ta) ta.checked = !GF.tier.length;
+  const fm = document.getElementById('gfFam'); if(fm) fm.value = GF.fam || '';
   if(b) b.value = GF.brand; if(q && document.activeElement !== q) q.value = GF.q;
 }
 function clearFilters(){
-  GF.tier = []; GF.sup = []; GF.brand = ''; GF.q = ''; gfKeep(); gfPaint();
+  GF.tier = []; GF.sup = []; GF.brand = ''; GF.q = ''; GF.fam = ''; gfKeep(); gfPaint();
   const F = VIEW_F[S.view], D = VIEW_F_DEF[S.view];
   if(F && D) Object.keys(D).forEach(k=>{ if(CLR_KEEP.indexOf(k) === -1) F[k] = JSON.parse(JSON.stringify(D[k])); });
   STOCK = 'all'; try { localStorage.setItem('stock_view', 'all'); } catch(e){}
@@ -9458,7 +9459,16 @@ function ensureCoverage(){
 }
 function gfModuleBlank(){
   const F = typeof VIEW_F !== 'undefined' ? VIEW_F[S.view] : null; if(!F) return;
-  ['q','tier','brand'].forEach(k=>{ if(k in F && F[k]) F[k] = ''; });
+  ['q','tier','brand','family','fam'].forEach(k=>{ if(k in F && F[k]) F[k] = ''; });   // family: the top bar's Family (Nov 12)
+}
+/* Nov 12 (MJ): the module name and marketplace stay in the View bar, so it's always
+   clear which module you're on after scrolling down. */
+function curModPaint(){
+  const el = document.getElementById('curMod'); if(!el) return;
+  const h = document.querySelector('#cptView .cpt-head h2, #cptView h2');
+  const name = h ? h.textContent.trim() : '';
+  const mkV = ['catalog','pr','xc'].indexOf(S.view) === -1 ? ' \u00b7 ' + (typeof curMk === 'function' ? curMk() : '') : '';
+  el.textContent = name ? name + mkV : '';
 }
 function ensureClearBtn(){
   const bar = document.querySelector('#cptView .cpt-tools'); if(!bar) return;
@@ -9475,10 +9485,11 @@ function ensureClearBtn(){
     t.onclick = e=>{ e.stopPropagation(); pop.hidden = !pop.hidden; t.setAttribute('aria-expanded', !pop.hidden); };
     pop.addEventListener('click', e=> e.stopPropagation());
     document.addEventListener('click', ()=>{ if(!pop.hidden){ pop.hidden = true; t.setAttribute('aria-expanded', false); } });
-    [...pop.querySelectorAll('input')].forEach(x=> x.onchange = ()=>{
-      GF.tier = [...pop.querySelectorAll('input:checked')].map(i=> i.value).sort((a, z)=> order.indexOf(a) - order.indexOf(z));
+    [...pop.querySelectorAll('input[value]')].forEach(x=> x.onchange = ()=>{
+      const on = [...pop.querySelectorAll('input[value]:checked')].map(i=> i.value).sort((a, z)=> order.indexOf(a) - order.indexOf(z));
+      GF.tier = on.length === order.length ? [] : on.length ? on : ['-'];   // all ticked = no filter, none ticked = show none
       gfKeep(); gfPaint(); render(); });
-    document.getElementById('gfTierAll').onclick = ()=>{ GF.tier = []; gfKeep(); gfPaint(); render(); pop.hidden = true; };
+    document.getElementById('gfTierAllCb').onchange = e=>{ GF.tier = e.target.checked ? [] : ['-']; gfKeep(); gfPaint(); render(); };
   }
   // Supplier list: every supplier in the Master SKU data, with its active listings count
   const sbtn = document.getElementById('gfSupBtn'), spop = document.getElementById('gfSupPop'), slist = document.getElementById('gfSupList');
@@ -9499,6 +9510,16 @@ function ensureClearBtn(){
     document.getElementById('gfSupAll').onclick = ()=>{ GF.sup = []; gfKeep(); gfPaint(); render(); spop.hidden = true; };
   }
   if(b) b.onchange = ()=>{ GF.brand = b.value; gfKeep(); render(); };
+  // Family list: every parent name with active listings (Nov 12)
+  const fm = document.getElementById('gfFam');
+  if(fm){
+    window.gfFamFill = ()=>{ const n = {}; (typeof PR !== 'undefined' ? PR : []).forEach(r=>{ if((r.status === 'Active' || r.caStatus === 'Active') && r.pname) n[r.pname] = (n[r.pname] || 0) + 1; });
+      const html = '<option value="">All</option>' + Object.keys(n).sort((a, z)=> a.localeCompare(z)).map(k=> `<option value="${esc(k)}">${esc(k)} (${n[k]})</option>`).join('');
+      if(fm.dataset.h !== html){ fm.innerHTML = html; fm.dataset.h = html; } fm.value = GF.fam || ''; };
+    fm.onfocus = ()=> gfFamFill(); fm.onmousedown = ()=> gfFamFill();
+    fm.onchange = ()=>{ GF.fam = fm.value; gfKeep(); render(); };
+    setTimeout(()=>{ try { gfFamFill(); } catch(e){} }, 4000);
+  }
   if(q){ let tm = null; q.oninput = ()=>{ clearTimeout(tm); tm = setTimeout(()=>{ GF.q = q.value; gfKeep(); render(); }, 200); }; }
   if(c) c.onclick = ()=> clearFilters();
   gfPaint(); }
