@@ -7347,7 +7347,7 @@ function navPercents(){
     const mo = document.querySelector('#mSel option[value="catalogBtn"]'); if(mo) mo.textContent = 'Catalog' + (v === null ? '' : ' \u00b7 ' + v + '%'); }
   // Master SKU keeps a gray count of Plytix checks
   const pb = document.getElementById('prBtn');
-  if(pb && typeof PR !== 'undefined' && PR.length){ const n = prRows().filter(r=> r.chk.length).length; const html = 'Master SKU' + (n ? `<span class="badge pc pc-n">${n} checks</span>` : ''); if(pb.innerHTML !== html) pb.innerHTML = html; }
+  if(pb && typeof PR !== 'undefined' && PR.length){ const n = prRows().filter(r=> r.chk.length).length; const html = 'Master SKU' + (n ? `<span class="badge pc pc-n">${n} to fix</span>` : ''); if(pb.innerHTML !== html) pb.innerHTML = html; }
 }
 /* Group labels: the average % of the modules in the group (US) */
 function ngTotals(){
