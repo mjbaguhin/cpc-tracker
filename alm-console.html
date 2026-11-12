@@ -4306,7 +4306,7 @@ function renderBb(){
     const H = (k, label, cls, tip, d)=> `<th data-s="${k}" data-d="${d || 'asc'}" class="${cls || ''}">${label}${tip ? `<span class="qi" tabindex="0" data-tip="${esc(tip)}">?</span>` : ''}${sortArrow(BB_F, k)}</th>`;
     html += '<table class="cpt-table bb-table"><thead><tr>'+
       H('product', 'Product') + TIER_TH +
-      H('has', 'Buy Box?', 'b-cpt c', 'Do we have the Add to Cart button right now.')+
+      H('has', 'Buy Box', 'b-cpt c', 'Do we have the Add to Cart button right now.')+
       H('why', 'Why not', 'b-move', 'The most likely reason we don\u2019t have it: stock first, then another seller, then price.')+
       H('ours', 'Our price', 'b-gap c', 'Our live price on Amazon US.', 'desc')+
       H('bb', 'Buy Box price', 'b-gap c', 'The price on the Add to Cart button.', 'desc')+
@@ -4910,7 +4910,7 @@ function chChip(w){
             : 'Different since before tracking started' + (CH && CH.started ? ' (' + CH.started + ')' : '') + '.';
   return `<span class="lcchip ${L[1]}" data-tip="${esc(tip)}">${L[0]}${w.d && w.s !== 'old' ? ' ' + esc(shortDate(w.d)) : ''}</span>`;
 }
-const LC_COLS = [['title','Title'], ['ih','Highlight'], ['b1','Bullet 1'], ['b2','Bullet 2'], ['b3','Bullet 3'],
+const LC_COLS = [['title','Title'], ['ih','Item Highlight'], ['b1','Bullet 1'], ['b2','Bullet 2'], ['b3','Bullet 3'],
                  ['b4','Bullet 4'], ['b5','Bullet 5'], ['gk','Keywords'], ['desc','Description']];
 const LC_S = {
   match:    ['OK', 'lc-ok', 'Same as Plytix'],
@@ -5279,7 +5279,7 @@ function renderLp(){
     const H = (k, label, cls, tip, d)=> `<th data-s="${k}" data-d="${d || 'asc'}" class="${cls || ''}">${label}${tip ? `<span class="qi" tabindex="0" data-tip="${esc(tip)}">?</span>` : ''}${sortArrow(LP_F, k)}</th>`;
     html += '<table class="cpt-table bb-table lp-table"><thead><tr>'+
       H('product', 'Product') + TIER_TH +
-      H('set', 'List Price set?', 'b-cpt c', 'Does the Amazon listing have a List Price.')+
+      H('set', 'List Price set', 'b-cpt c', 'Does the Amazon listing have a List Price.')+
       H('live', 'List Price on Amazon', 'b-ours c', 'The List Price as Keepa reads it from Amazon.', 'desc')+
       H('ours', 'Our price now', 'b-gap c', 'What a shopper pays today, sale included.', 'desc')+
       H('rb', 'Rules', 'b-gap c', 'Screened every day against Amazon\u2019s List Price rules. Click the chip for details.')+
@@ -5948,7 +5948,7 @@ function grpMap(F, rows, ncols, trFn, needFn, needLabel, mk, headBtn){
       bits.push(`<span><span class="k">Parent SKU</span><span class="mono">${skuL(G.p.psku, mk)}</span>${cpy(G.p.psku)}</span>`);
       if(G.p.pasin) bits.push(`<span><span class="k">Parent ASIN</span>${asinL(G.p.pasin, mk)}${cpy(G.p.pasin)}</span>`);
     }
-    bits.push(`<span><b>${G.rows.length}</b> ${solo ? 'listing' + (G.rows.length === 1 ? '' : 's') : 'children'}</span>`);
+    bits.push(`<span><b>${G.rows.length}</b> ${'listing' + (G.rows.length === 1 ? '' : 's')}</span>`);   // Nov 12: "listings" everywhere
     bits.push(need ? `<span class="pgh-tag bad">${need} ${needLabel}</span>` : '<span class="pgh-tag ok">All OK</span>');
     if(headBtn && !solo && need) bits.push(headBtn(G.p));
     return `<tr class="gh pgh${solo ? ' solo' : ''}"><td colspan="${ncols}"><div class="pgh-name">${solo ? '\u25a0 No parent' : '\u25bc ' + esc(G.p.pname || G.p.psku)}</div><div class="pgh-meta">${bits.join('')}</div></td></tr>` +
@@ -6724,7 +6724,7 @@ function renderBsr(){
   const syncTile = (k, fl)=>{ const off = offK(k), ok = famOk(k), n = famHas(k);
     // Families showing one value for every child (MJ, Oct 24: values must be consistent)
     return tile(`${BS_SYNC[k].label}: same across the family`, n ? `${ok}<span style="font-size:1rem;color:var(--c-night-mut)"> of ${n} families</span>` : '\u2014',
-      !n ? '' : off.length ? 'warn' : 'good', !n ? 'No family with two children that have data' : off.length ? `${off.length} children differ (Keepa): ${list(off)} \u00b7 check the live page` : 'Every family shows one value', fl); };
+      !n ? '' : off.length ? 'warn' : 'good', !n ? 'No family with two children that have data' : off.length ? `${off.length} differ: ${list(off)}` : 'Every family shows one value', fl); };
   const totalRev = (()=>{ // pooled families share one count, so count each family once
     let t = 0; const seen = {};
     all.forEach(r=>{ if(r.rev === null) return; const k = r.par && r.par.pasin && r.sync.rev && r.sync.rev.s === 'ok' ? 'f' + r.par.pasin : 'a' + r.asin; if(!seen[k]){ seen[k] = 1; t += r.rev; } });
@@ -7048,7 +7048,8 @@ function renderXc(){
   const mW = r=> r.w.s === 'miss', bW = r=> r.w.s === 'bad', mS = r=> r.h.s === 'miss';
   const pick = {all: ()=> true, wmiss: mW, wbad: bW, smiss: mS, full: r=> r.full};
   let rows = stockKeep(all.filter(pick[XC_F.show] || pick.all), 'US');
-  const SORT = {tier: r=> (TIER_RANK[r.tier] !== undefined ? TIER_RANK[r.tier] : 9), product: r=> r.name, amz: r=> r.amz, wm: r=> ['miss','bad','na','ok'].indexOf(r.w.s), sh: r=> ['miss','na','warn','ok'].indexOf(r.h.s)};
+  const SORT = {usstock: r=>{ const v = stockOf(r, 'US'); return v === null ? -1 : v; }, castock: r=>{ const v = stockOf(r, 'CA'); return v === null ? -1 : v; },
+    tier: r=> (TIER_RANK[r.tier] !== undefined ? TIER_RANK[r.tier] : 9), product: r=> r.name, amz: r=> r.amz, wm: r=> ['miss','bad','na','ok'].indexOf(r.w.s), sh: r=> ['miss','na','warn','ok'].indexOf(r.h.s)};
   rows = XC_F.sort && SORT[XC_F.sort] ? sortBy(rows, SORT[XC_F.sort], XC_F.dir) : sortBy(rows, r=> (r.fam || '~') + ' ' + r.sku, 1);
   XC_VIEW = rows;
   const n = (f, l)=> (l || nx).filter(f).length, nX = f=> all.filter(r=> r.tier === 'X').filter(f).length;
@@ -7070,11 +7071,11 @@ function renderXc(){
   if(!all.length) html += '<div class="cpt-empty"><b>Loading the Master SKU sheet</b></div>';
   else {
     const tr = r=> `<tr class="row" tabindex="0" data-xc="${esc(r.sku)}"><td class="prod"><div class="p-name">${esc(String(r.name).slice(0, 60))}</div><div class="p-id"><span>SKU</span>${skuL(r.sku, 'US')}${cpy(r.sku)}</div>${r.asin ? `<div class="p-id"><span>ASIN</span>${asinL(r.asin, 'US')}${cpy(r.asin)}</div>` : ''}</td>`+
-      `<td class="c"><b>${esc(r.tier || '\u2014')}</b></td><td class="num">${r.amz ? usd(r.amz) : '\u2014'}</td>`+
+      tierTd(r) + `<td class="num">${r.amz ? usd(r.amz) : '\u2014'}</td>`+
       `<td>${chip(r.w)}<div style="margin-top:.2rem;font-size:.78rem">${r.w.s === 'miss'
         ? `<a class="xcwm" href="${WM_ADD_URL}" target="_blank" rel="noopener">Add on Walmart \u2197</a>${r.upc ? ` <span class="mut">UPC ${esc(r.upc)}</span>${cpy(r.upc)}` : ''}`
         : `<a class="xcwm" href="${wmItemUrl(r.sku)}" target="_blank" rel="noopener">Open in Walmart \u2197</a>`}</div></td><td>${chip(r.h)}</td></tr>`;
-    html += '<table class="cpt-table lc-table"><thead><tr>' + H('product', 'Product') + H('tier', 'Tier', 'c') + H('amz', 'Amazon', 'num') + H('wm', 'Walmart') + H('sh', 'Shopify') + '</tr></thead><tbody>';
+    html += '<table class="cpt-table lc-table"><thead><tr>' + H('product', 'Product') + TIER_TH + H('amz', 'Amazon', 'num') + H('wm', 'Walmart') + H('sh', 'Shopify') + '</tr></thead><tbody>';
     if(XC_F.sort) html += rows.map(tr).join('');
     else {
       const g = {}; rows.forEach(r=> (g[r.fam || '~'] = g[r.fam || '~'] || []).push(r));
@@ -7160,7 +7161,7 @@ function renderProducts(){
       `<td class="num">${r.revs !== null && r.revs !== undefined ? bsInt(r.revs) : '<span class="mut">\u2014</span>'}</td></tr>`;
     html += '<table class="cpt-table bb-table lc-table cg-table"><thead><tr>'+
       H('product','Product') + H('tier','Tier','c') + H('usstock','US stock','num') + H('castock','CA stock','num') + H('usst','US status','c') + H('cast2','CA status','c') +
-      H('fam','Variation') + H('sale', PR_F.mk === 'CA' ? 'CA price' : 'Price','num') + H('copy','Health','c') + H('star','Rating','num') + H('revs','Ratings','num') +
+      H('fam','Variation') + H('sale', PR_F.mk === 'CA' ? 'CA price' : 'Price','num') + H('copy','Health','c') + H('star','Star rating','num') + H('revs','Ratings','num') +
       '</tr></thead><tbody>';
     if(PR_F.group){
       const g = {}; rows.forEach(r=>{ const pa = PR_F.mk === 'CA' ? (r.caPasin || '') : (r.psku || ''); const k = PR_F.group === 'pasin' ? (pa ? pa : '~') : (String(r[PR_F.group] || '').split(/\s*,\s*/)[0] || '~'); (g[k] = g[k] || []).push(r); });
@@ -7405,6 +7406,11 @@ function grpApply(view){
     let n = gh.nextElementSibling;
     while(n && !n.classList.contains('gh')){ n.style.display = closed ? 'none' : ''; n = n.nextElementSibling; }
     const nm = gh.querySelector('.pgh-name');
+    if(!nm || !/^[\u25bc\u25b6]/.test(nm.textContent)){   // Nov 12: same arrow on every family header
+      let a = gh.querySelector('.gh-arrow'); const td = gh.querySelector('td');
+      if(!a && td){ a = document.createElement('span'); a.className = 'gh-arrow'; a.style.cssText = 'display:inline-block;width:1.1rem;font-weight:700'; td.insertBefore(a, td.firstChild); }
+      if(a) a.textContent = closed ? '\u25b6' : '\u25bc';
+    }
     if(nm && /^[\u25bc\u25b6]/.test(nm.textContent)){ const want = closed ? '\u25b6' : '\u25bc'; if(nm.textContent[0] !== want) nm.firstChild.nodeValue = want + nm.firstChild.nodeValue.slice(1); }
     gh.style.cursor = 'pointer'; gh.title = closed ? 'Click to show this group' : 'Click to hide this group';
   });
@@ -7863,13 +7869,11 @@ function catCounts(k, mk){
   const sum = (a, f)=> a.reduce((t, x)=> t + (f(x) || 0), 0);
   try {
     // Nov 10 (MJ): "reviewed" means MJ's own review, not the automatic check reading the page
-    if(k === 'rev'){ const sc = rvScore(mk); if(!sc) return null;
-      const marked = rvAll(mk).filter(r=> r.problems.length && !isOos(r, mk)).filter(r=>{ const m = rvMarkOf(r); return m && m.act === 'Reviewed'; }).length;
-      return [Math.min(sc.read, sc.good + marked), sc.read]; }
+    if(k === 'rev'){ const sc = rvScore(mk); if(!sc) return null; return [sc.good, sc.read]; }   // same count as the Listing Review module (Nov 12)
     if(k === 'cat'){ if(!CG.length) return null; const r = inStock(cgRows(mk).filter(x=> !x.nolive), mk); return [sum(r, x=> x.ok), sum(r, x=> x.checked)]; }
     if(k === 'var'){ if(!VR.length) return null; const r = inStock(vrRows(mk).filter(x=> !x.nolive), mk); return [sum(r, x=> x.ok), sum(r, x=> x.checked)]; }
     if(k === 'copy'){ if(!LC_US.length || (mk === 'CA' && LC_CA === null)) return null;
-      return withMk2(mk, ()=>{ const r = lcRows().filter(x=> !x.nolive && x.pct !== null && x.pct !== undefined); return [sum(r, x=> x.pct) / 100, r.length]; }); }
+      return withMk2(mk, ()=>{ const r = lcRows().filter(x=> !x.nolive && x.pct !== null && x.pct !== undefined); return [sum(r, x=> x.ok), sum(r, x=> x.checked)]; }); }   // fields correct, same as the module (Nov 12)
     if(k === 'lp'){ if(!CPT_US.length) return null; return withMk2(mk, ()=>{ const r = inStock(lpRows(), mk); return [r.filter(x=> x.set).length, r.length]; }); }
     if(k === 'bb' || k === 'only'){ if(!BB_US.length) return null;
       return withMk2(mk, ()=>{ if(mk === 'CA' && !(BB_CA || []).some(r=> stockOf(r, 'CA') !== null)) return null;
@@ -8140,7 +8144,7 @@ function parentHeader(kids, colspan, extra){
   if(solo) bits.push('<span>Not part of a variation family</span>');
   if(!solo && f.psku)  bits.push(`<span><span class="k">Parent SKU</span><span class="mono">${skuL(f.psku, S.mk)}</span>${cpy(f.psku)}</span>`);
   if(!solo && f.pasin) bits.push(`<span><span class="k">Parent ASIN</span><a href="https://www.amazon.com/dp/${esc(f.pasin)}" target="_blank" rel="noopener">${esc(f.pasin)}</a>${cpy(f.pasin)}</span>`);
-  bits.push(`<span><b>${kids.length}</b> ${solo ? (kids.length === 1 ? 'SKU' : 'SKUs') : (kids.length === 1 ? 'child' : 'children')}</span>`);
+  bits.push(`<span><b>${kids.length}</b> ${kids.length === 1 ? 'listing' : 'listings'}</span>`);   // Nov 12: "listings" everywhere
   (extra || []).forEach(x=> bits.push(x));
   return `<tr class="gh pgh${solo ? ' solo' : ''}"><td colspan="${colspan}">`+
     `<div class="pgh-name">${solo ? '\u25a0' : '\u25bc'} ${esc(name)}</div>`+
@@ -8249,9 +8253,12 @@ function rvScore(mk){
   if(!PR.length){ const read = Math.max(0, rvAct(mk) - un.length);   // Master SKU feed not loaded yet: old count
     return read ? {pct: pct1(Math.max(0, read - probs.length), read), read, good: Math.max(0, read - probs.length), oos: null} : null; }
   const act = rvActList(mk), actIn = act.filter(p=> !isOos(p, mk));
-  const read = Math.max(0, actIn.length - un.filter(x=> !isOos(x, mk)).length), bad = probs.filter(r=> !isOos(r, mk)).length;
+  const read = Math.max(0, actIn.length - un.filter(x=> !isOos(x, mk)).length), badRows = probs.filter(r=> !isOos(r, mk));
   if(!read) return null;
-  return {pct: pct1(Math.max(0, read - bad), read), read, good: Math.max(0, read - bad), oos: act.length - actIn.length};
+  // Nov 12 (MJ): one number everywhere. A listing counts as done when it's all correct, or when MJ marked it Reviewed
+  const marked = badRows.filter(r=>{ const m = rvMarkOf(r); return m && m.act === 'Reviewed'; }).length;
+  const good = Math.min(read, Math.max(0, read - badRows.length) + marked);
+  return {pct: pct1(good, read), read, good, marked, oos: act.length - actIn.length};
 }
 /* Nov 9: the strike-through feed is the weekly check's snapshot, so a listing set to
    Inactive in the Master SKU after that check is left out until the next one. */
@@ -8469,7 +8476,7 @@ function renderStrike(){
   const hist = stHistRows(smk), sc = stScore(smk);
   const tile = (k, val, cls, note, f)=> `<div class="cpt-tile bbtile${(f === 'hist' ? ST_F.hist : !ST_F.hist && ST_F.show === f) ? ' on' : ''}" role="button" tabindex="0" data-sts="${f}"><div class="k">${k}</div><div class="v ${cls || ''}">${val}</div><div class="n">${note || '&nbsp;'}</div></div>`;
   let html = '<section class="cpt-top"><div class="cpt-head"><h2>Strike-through</h2>'+
-    (run ? `<span class="sub">Checked ${esc(shortDate(run.date.slice(0, 10)))}</span>` : '')+
+    (run ? `<span class="sub">Checked ${esc(run.date)}</span>` : '')+
     (run ? `<span class="cpt-live"><i></i>${sMiss.length ? `${act - sMiss.length} of ${act} active covered` : `\u2713 All ${act} active covered`}</span>` : '')+
     '</div><div class="cpt-tiles">'+
       tile('Strike-through', sc && sc.n ? sc.pct + '%' : '\u2014', pcls(sc && sc.pct), '', 'all')+
@@ -9417,7 +9424,7 @@ function stockKeep(rows, mk){
   ['renderCpt','renderBb','renderLc','renderLp','renderVariation','renderBsr','renderProducts','renderMeasurements',
    'renderReview','renderStrike','renderCategory','renderXc'].forEach(n=>{   /* renderXc added Nov 12: top bar filters on Cross Channel */ const f = g[n]; if(typeof f !== 'function') return;
     g[n] = function(){ const was = STOCK_ON; STOCK_ON = true; try { gfModuleBlank(); } catch(e){}
-      try { return f.apply(this, arguments); } finally { STOCK_ON = was; try { ensureClearBtn(); } catch(e){} try { ensureCoverage(); } catch(e){} try { curModPaint(); } catch(e){} try { ensureScoreTile(); } catch(e){} } }; });
+      try { return f.apply(this, arguments); } finally { STOCK_ON = was; try { ensureClearBtn(); } catch(e){} try { ensureCoverage(); } catch(e){} try { curModPaint(); } catch(e){} try { ensureScoreTile(); } catch(e){} try { normalizeUi(); } catch(e){} } }; });
   ['navPercents','modPct'].forEach(n=>{ const f = g[n]; if(typeof f !== 'function') return;
     g[n] = function(){ const was = STOCK_ON; STOCK_ON = false; try { return f.apply(this, arguments); } finally { STOCK_ON = was; } }; });
 })();
@@ -9503,6 +9510,73 @@ function curModPaint(){
 const SCORE_OF = {cpt:['cptBtn','CPT OK %'], bb:['bbBtn','Buy Box'], lp:['lpBtn','List Price set %'], lc:['lcBtn','Correct copy %'],
   category:['quickCat','Category correct %'], vr:['vrBtn','Variation correct %'], ms:['msBtn','Catalog data correct %'],
   st:['stBtn','Strike-through'], rv:['rvBtn','All correct'], bs:['bsBtn','BSR correct %']};
+/* Nov 12 (MJ): one look everywhere. After every render: the same header (module name,
+   coverage, one "Checked" date), the same first tile ("<module> %" with "X of Y"),
+   the same tile names, no filler notes, and the toolbar in one order. */
+const SCORE_NAME = {xc:'Cross Channel %', cpt:'CPT %', bb:'Buy Box %', lp:'List Price %', lc:'Listing Copy %', category:'Category %', vr:'Variation %',
+  ms:'Measurements %', st:'Strike-through %', rv:'Listing Review %', bs:'BSR %'};
+const TILE_RENAME = [[/^Listings fully correct$/, 'Listings 100% correct'], [/^Blank in Master SKU$/, 'Blank in Plytix'],
+  [/^Breaks (an Amazon category|a List Price|a BSR|an Amazon pricing) rule$/, 'Breaks an Amazon rule'], [/^Priced above the CPT\s*\?$/, 'Priced above the CPT']];
+const NOTE_DROP = /^(none|none yet|all good|all ok|all pages ok|active|every value compared|stock known for every listing|nothing to send|size, weight and packaged weight all filled in)\.?$/i;
+function normalizeUi(){
+  const v = document.getElementById('cptView'); if(!v) return;
+  // header: name, coverage, one date; descriptive sentences go
+  const head = v.querySelector('.cpt-head');
+  if(head) [...head.querySelectorAll(':scope > span')].forEach(sp=>{
+    const t = sp.textContent.trim();
+    if(sp.classList.contains('cov-tag') || /active covered/.test(t)){ sp.innerHTML = sp.innerHTML.replace(/ \u00b7 \d+ have a CPT from Amazon/, ''); return; }
+    let m = t.match(/(\d{4}-\d{2}-\d{2})(?:[ T](\d{2}:\d{2}))?(?::\d{2})?(\s*ET)?/);
+    if(/^(Updated|Built|Checked|Buy Box checked)\b/i.test(t) && m){ sp.textContent = 'Checked ' + m[1] + (m[2] ? ' ' + m[2] + ' ET' : ''); sp.className = 'sub'; return; }
+    if(/^Stock from\b/i.test(t) && m){ sp.textContent = 'Stock ' + m[1]; return; }
+    if(/^(Walmart|Shopify)\b/.test(t)) return;
+    if(/^\d[\d,]* SKUs\b/.test(t)){ sp.textContent = t.replace(/ \u00b7 Amazon (US|CA)$/, ''); return; }
+    sp.remove();
+  });
+  // Listing Review: its coverage tile becomes the same header tag as every other module
+  if(head){ const ct = [...v.querySelectorAll('.cpt-tile')].find(t=> /^Covered by the last page check/.test((t.querySelector('.k') || {}).textContent || ''));
+    if(ct){ const val = (ct.querySelector('.v') || {}).textContent || '', mm = val.match(/All (\d+)/);
+      const tag = document.createElement('span'); tag.className = 'cov-tag ' + (mm ? 'ok' : 'bad'); tag.textContent = mm ? '\u2713 All ' + mm[1] + ' active covered' : val.trim();
+      head.appendChild(tag); ct.remove(); } }
+  // coverage always last in the header
+  if(head) head.querySelectorAll(':scope > .cov-tag, :scope > .cpt-live').forEach(x=>{ if(/covered/.test(x.textContent)) head.appendChild(x); });
+  // tiles
+  const box = v.querySelector('.cpt-tiles');
+  if(box){
+    [...box.querySelectorAll('.cpt-tile')].forEach(t=>{
+      const k = t.querySelector('.k'), n = t.querySelector('.n'); if(!k) return;
+      const kt = k.textContent.trim(); TILE_RENAME.forEach(([re, to])=>{ if(re.test(kt)) k.textContent = to; });
+      if(n){ const nt = n.textContent.trim().replace(/ \(Keepa\)/, '');
+        if(nt !== n.textContent.trim()) n.textContent = nt;
+        // a note is kept only when it says which listings or gives a number; explanations go
+        if(NOTE_DROP.test(nt) || (nt && !/\d/.test(nt) && !/\bclick to see\b/i.test(nt))) n.innerHTML = '&nbsp;';
+        else if(/^Not in the %, click to see$/.test(nt)) n.textContent = 'Not in the % \u00b7 click to see';
+        else if(/^None \u00b7 /.test(nt)) n.textContent = nt.replace(/^None \u00b7 /, ''); }
+    });
+    const m = SCORE_OF[S.view], first = box.firstElementChild, fv = first && first.querySelector('.v');
+    if(first && (m || (fv && /%\s*$/.test(fv.textContent.trim())))){ const k = first.querySelector('.k'), n = first.querySelector('.n');
+      if(k && SCORE_NAME[S.view]) k.textContent = SCORE_NAME[S.view];
+      if(fv && !m){ const pv = parseFloat(fv.textContent); fv.classList.remove('good','warn','bad'); const c = pcls(isNaN(pv) ? null : pv); if(c) fv.classList.add(c); }
+      if(n){ const mm = n.textContent.match(/([\d,.]+) of ([\d,.]+)/); n.textContent = mm ? mm[1] + ' of ' + mm[2] : '\u00a0'; } }
+  }
+  // family headers: the count always reads "N listings"
+  v.querySelectorAll('tr.gh').forEach(gh=>{ const w = document.createTreeWalker(gh, 4); let x;
+    while((x = w.nextNode())){ const t = x.nodeValue, u = t.replace(/(\d+) (children|child|SKUs?)(, \d+ active)?/g, (mm, n)=> n + (n === '1' ? ' listing' : ' listings')); if(u !== t) x.nodeValue = u; } });
+  // toolbar: same words, same order
+  v.querySelectorAll('.cpt-tools').forEach(bar=>{
+    bar.querySelectorAll('button').forEach(b=>{ const t = b.textContent.trim();
+      if(/^(Why does this happen\?|What do these prices mean\?)$/.test(t)) b.textContent = 'Help';
+      if(/^Group by family$/.test(t)) b.textContent = 'Group by parent';
+      if(b.closest('.seg') && /^Amazon (US|CA)/.test(t)) b.querySelectorAll('.badge').forEach(x=> x.remove()); });
+    const rank = el=>{ const t = (el.textContent || '').trim();
+      if(el.classList.contains('seg') && /Amazon (US|CA)/.test(t)) return 0;
+      if(el.classList.contains('count')) return 9;
+      if(/^Group by/.test(t)) return 2; if(/^(More filters|Column filters)/.test(t)) return 3; if(/^Download/.test(t)) return 4;
+      if(/^Help$/.test(t)) return 5; if(/^Rulebook$/.test(t)) return 6; if(/^(Expand all|Collapse all)$/.test(t)) return 7;
+      if(el.classList.contains('selbar') || /^Tick all shown/.test(t)) return 8; return 1; };
+    const kids = [...bar.children], sorted = kids.map((el, i)=> ({el, i, r: rank(el)})).sort((a, b)=> a.r - b.r || a.i - b.i);
+    if(sorted.some((x, i)=> x.el !== kids[i])) sorted.forEach(x=> bar.appendChild(x.el));
+  });
+}
 function ensureScoreTile(){
   const m = SCORE_OF[S.view], box = document.querySelector('#cptView .cpt-tiles'); if(!m || !box) return;
   const mk = curMk(), v = modPct(m[0], mk), txt = v === null || v === undefined ? '\u2014' : v + '%';
@@ -9510,6 +9584,15 @@ function ensureScoreTile(){
   if(!t){ t = document.createElement('div'); t.className = 'cpt-tile'; t.innerHTML = `<div class="k">${m[1]}</div><div class="v"></div><div class="n">&nbsp;</div>`; }
   if(box.firstElementChild !== t) box.insertBefore(t, box.firstElementChild);
   const e = t.querySelector('.v'); e.textContent = txt; e.classList.remove('good', 'warn', 'bad'); const c = pcls(v); if(c) e.classList.add(c);
+  // Nov 12: every % tile shows "X of Y" under it
+  let cnt = null;
+  try {
+    if(S.view === 'cpt') cnt = withMk2('US', ()=>{ const r = inStock(cptRows(), 'US').filter(x=> x.action !== 'oos'); return [r.filter(x=> x.action === 'none').length, r.length]; });
+    else if(S.view === 'bb') cnt = withMk2(mk, ()=>{ const r = bbRows().filter(x=> !isOos(x, mk)); return [r.filter(x=> x.has).length, r.length]; });
+    else if(S.view === 'st'){ const q = stScore('US'); if(q) cnt = [q.shown, q.n]; }
+    else if(S.view === 'bs'){ const q = bsSyncScore(mk); cnt = [q.ok, q.n]; }
+  } catch(err){}
+  const n = t.querySelector('.n'); if(cnt && n && !/ of /.test(n.textContent)) n.textContent = cnt[0] + ' of ' + cnt[1];
 }
 function ensureClearBtn(){
   const bar = document.querySelector('#cptView .cpt-tools'); if(!bar) return;
