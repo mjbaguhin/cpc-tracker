@@ -940,6 +940,13 @@ a.idl:hover{color:var(--accent);border-bottom-style:solid}
 #gfTierBtn{font-size:.78rem;background:#1d222a;color:#e8edf3;border:1px solid rgba(255,255,255,.22);border-radius:6px;padding:.2rem .45rem;cursor:pointer;white-space:nowrap}
 #gfTierPop{position:absolute;top:calc(100% + 4px);left:0;z-index:80;background:#1d222a;border:1px solid rgba(255,255,255,.25);border-radius:8px;padding:.45rem .55rem;display:flex;flex-direction:column;gap:.3rem;min-width:8rem;box-shadow:0 8px 22px rgba(0,0,0,.45)}
 #gfTierPop[hidden]{display:none}
+.gfm{position:relative}
+.gfm-btn{font-size:.78rem;background:#1d222a;color:#e8edf3;border:1px solid rgba(255,255,255,.22);border-radius:6px;padding:.2rem .45rem;cursor:pointer;white-space:nowrap;max-width:14rem;overflow:hidden;text-overflow:ellipsis}
+.gfm-pop{position:absolute;top:calc(100% + 4px);left:0;z-index:80;background:#1d222a;border:1px solid rgba(255,255,255,.25);border-radius:8px;padding:.45rem .55rem;display:flex;flex-direction:column;gap:.3rem;min-width:11rem;max-height:60vh;overflow:auto;box-shadow:0 8px 22px rgba(0,0,0,.45)}
+.gfm-pop[hidden]{display:none}
+.gfm-pop label{display:flex;gap:.4rem;align-items:center;color:#e8edf3;font-size:.8rem;cursor:pointer;white-space:nowrap}
+.gfm-pop label.all{border-bottom:1px solid rgba(255,255,255,.18);padding-bottom:.25rem}
+.gfm-pop .mut{color:#8b96a3;font-size:.72rem}
 #gfTierPop label{display:flex;gap:.4rem;align-items:center;color:#e8edf3;font-size:.8rem;cursor:pointer;white-space:nowrap}
 #gfTierPop #gfTierAll{margin-top:.2rem;font-size:.74rem;background:none;border:1px solid rgba(255,255,255,.22);color:#cfd6de;border-radius:6px;padding:.15rem .4rem;cursor:pointer}
 /* Supplier: pick one or more (MJ, Nov 3), same look as Tier */
@@ -972,7 +979,7 @@ a.idl:hover{color:var(--accent);border-bottom-style:solid}
     <div class="ng"><div class="ng-l">Performance <span class="ng-t" data-ngt="perf"></span></div>
       <div class="ng-b" data-ng="perf"><button id="bsBtn">BSR</button></div></div>
     <div id="mSelWrap"><label for="mSel">Module</label><select id="mSel"><optgroup label="Today"><option value="catalogBtn">Catalog</option><option value="prBtn">Master SKU</option><option value="xcBtn">Cross Channel</option></optgroup><optgroup label="Price and Buy Box"><option value="cptBtn">CPT tracker</option><option value="bbBtn">Buy Box</option><option value="lpBtn">List Price</option><option value="stBtn">Strike-through</option></optgroup><optgroup label="Listing health"><option value="lcBtn">Listing Copy</option><option value="quickCat">Category</option><option value="vrBtn">Variation</option><option value="msBtn">Measurements</option><option value="rvBtn">Listing Review</option></optgroup><optgroup label="Performance"><option value="bsBtn">BSR</option></optgroup></select></div>
-    <div class="ng ng-tools"><div class="ng-l">View</div><div class="ng-b"><span id="curMod" title="The module you are on"></span><button id="toggle" aria-expanded="true">Filters</button><span id="hStock" role="group" aria-label="Stock"><span class="stk-l">Stock</span><button data-stk="all" title="Every listing">All</button><button data-stk="in" title="Only listings with FBA stock">In stock</button><button data-stk="oos" title="Only listings with 0 FBA stock">Out of stock</button></span><span class="gf-l" id="gfTierWrap">Tier <button id="gfTierBtn" type="button" aria-haspopup="true" aria-expanded="false" title="Pick one or more tiers">All ▾</button><span id="gfTierPop" hidden><label style="border-bottom:1px solid rgba(255,255,255,.18);padding-bottom:.25rem"><input type="checkbox" id="gfTierAllCb"> <b>All</b></label><label><input type="checkbox" value="A"> Tier A</label><label><input type="checkbox" value="B"> Tier B</label><label><input type="checkbox" value="C"> Tier C</label><label><input type="checkbox" value="X"> Tier X</label><label><input type="checkbox" value="N"> Tier N</label></span></span><span class="gf-l" id="gfSupWrap">Supplier <button id="gfSupBtn" type="button" aria-haspopup="true" aria-expanded="false" title="Pick one or more suppliers">All ▾</button><span id="gfSupPop" hidden><span id="gfSupList"></span><button type="button" id="gfSupAll">All suppliers</button></span></span><label class="gf-l">Brand <select id="gfBrand"><option value="">All</option><option>Barnyard Designs</option><option>Seedboy</option></select></label><label class="gf-l">Family <select id="gfFam" style="max-width:13rem"><option value="">All</option></select></label><label class="gf-l" id="gfStWrap" hidden>SKU status <select id="gfSt"><option value="">All</option><option>Active</option><option>Inactive</option><option value="In Development">In development</option></select></label><input id="gfQ" type="search" placeholder="Search SKU, ASIN, product or family" autocomplete="off"><button id="gfClr" title="Clear Tier, Brand, Search, Stock and this module’s own filters. Keeps the sort, grouping and marketplace.">Clear filters</button><button id="hRefresh" title="Reload all data now. Reads the published files only: no scripts run, no Keepa tokens.">↻ Refresh</button><button id="hReset" title="Put this module’s filters, search, sort and grouping back to their defaults. Keeps the marketplace and all saved checks and marks.">Reset view</button><button id="fs" title="Fullscreen">Full screen</button><button id="scSet" aria-label="Settings: Canada Seller Central links" title="Settings: make CA SKU links open Seller Central Canada">&#9881;</button></div></div>
+    <div class="ng ng-tools"><div class="ng-l">View</div><div class="ng-b"><span id="curMod" title="The module you are on"></span><button id="toggle" aria-expanded="true">Filters</button><span id="hStock" role="group" aria-label="Stock"><span class="stk-l">Stock</span><button data-stk="all" title="Every listing">All</button><button data-stk="in" title="Only listings with FBA stock">In stock</button><button data-stk="oos" title="Only listings with 0 FBA stock">Out of stock</button></span><span class="gf-l" id="gfTierWrap">Tier <button id="gfTierBtn" type="button" aria-haspopup="true" aria-expanded="false" title="Pick one or more tiers">All ▾</button><span id="gfTierPop" hidden><label style="border-bottom:1px solid rgba(255,255,255,.18);padding-bottom:.25rem"><input type="checkbox" id="gfTierAllCb"> <b>All</b></label><label><input type="checkbox" value="A"> Tier A</label><label><input type="checkbox" value="B"> Tier B</label><label><input type="checkbox" value="C"> Tier C</label><label><input type="checkbox" value="X"> Tier X</label><label><input type="checkbox" value="N"> Tier N</label></span></span><span class="gf-l" id="gfSupWrap">Supplier <button id="gfSupBtn" type="button" aria-haspopup="true" aria-expanded="false" title="Pick one or more suppliers">All ▾</button><span id="gfSupPop" hidden><span id="gfSupList"></span></span></span><span class="gf-l gfm" data-k="brand">Brand <button type="button" class="gfm-btn" aria-haspopup="true">All ▾</button><span class="gfm-pop" hidden></span></span><span class="gf-l gfm" data-k="fam">Family <button type="button" class="gfm-btn" aria-haspopup="true">All ▾</button><span class="gfm-pop" hidden></span></span><span class="gf-l gfm" data-k="st" id="gfStWrap" hidden>SKU status <button type="button" class="gfm-btn" aria-haspopup="true">All ▾</button><span class="gfm-pop" hidden></span></span><input id="gfQ" type="search" placeholder="Search SKU, ASIN, product or family" autocomplete="off"><button id="gfClr" title="Clear Tier, Brand, Search, Stock and this module’s own filters. Keeps the sort, grouping and marketplace.">Clear filters</button><button id="hRefresh" title="Reload all data now. Reads the published files only: no scripts run, no Keepa tokens.">↻ Refresh</button><button id="hReset" title="Put this module’s filters, search, sort and grouping back to their defaults. Keeps the marketplace and all saved checks and marks.">Reset view</button><button id="fs" title="Fullscreen">Full screen</button><button id="scSet" aria-label="Settings: Canada Seller Central links" title="Settings: make CA SKU links open Seller Central Canada">&#9881;</button></div></div>
   </nav>
 </header>
 <section id="ov" hidden></section>
@@ -7098,13 +7105,14 @@ function renderXc(){
   };
 }
 let XC_VIEW = [];
+function prSt(){ const v = PR_F.status; return Array.isArray(v) ? v : (v ? [v] : []); }
 function renderProducts(){
   document.getElementById('msg').hidden = true;
   document.getElementById('bar').innerHTML = '';
   const v = document.getElementById('cptView');
   const all = prRows();
   let rows = all.filter(r=>
-    (!PR_F.brand || r.brand === PR_F.brand) && (!PR_F.status || (GF.q && !PR_F.stPicked) || r.st === PR_F.status) && (!PR_F.ca || (GF.q && !PR_F.stPicked) || r.caStatus === PR_F.ca) &&   /* Nov 13: a search looks in every status */
+    (!PR_F.brand || r.brand === PR_F.brand) && (!prSt().length || (GF.q && !PR_F.stPicked) || prSt().indexOf(r.st) !== -1) && (!PR_F.ca || (GF.q && !PR_F.stPicked) || r.caStatus === PR_F.ca) &&   /* Nov 13: a search looks in every status */
     (!PR_F.tier || r.tier === PR_F.tier) && (!PR_F.fam || r.fam === PR_F.fam) && (!PR_F.cat || String(r.cats || '').split(/\s*,\s*/).indexOf(PR_F.cat) !== -1) &&
     (!PR_F.ptype || r.ptype === PR_F.ptype) && (!PR_F.room || String(r.room || '').split(/\s*,\s*/).indexOf(PR_F.room) !== -1) && (!PR_F.chk || r.chk.length));
   if(PR_F.q){ const q = PR_F.q.toLowerCase(); rows = rows.filter(r=> [r.sku, r.asin, r.name, r.title, r.fam, r.psku, r.pasin, r.caSku, r.upc, r.fnsku, r.material, r.cats].join(' ').toLowerCase().indexOf(q) !== -1); }
@@ -7117,7 +7125,7 @@ function renderProducts(){
   const prOn = set=>{ if(!set || GF.q) return false; const want = {status:'', ca:'', tier:'', chk:''};
     String(set).split('&').forEach(kv=>{ const [k, val] = kv.split('='); if(k) want[k] = val || ''; });
     const tierNow = GF.tier.length === 1 ? GF.tier[0] : (GF.tier.length ? '?' : '');
-    return want.status === (PR_F.status || '') && want.ca === (PR_F.ca || '') && want.chk === (PR_F.chk || '') && want.tier === tierNow; };
+    return want.status === (prSt().length === 1 ? prSt()[0] : prSt().length ? '*' : '') && want.ca === (PR_F.ca || '') && want.chk === (PR_F.chk || '') && want.tier === tierNow; };
   const tile = (k, val, cls, note, set)=> `<div class="cpt-tile bbtile${prOn(set) ? ' on' : ''}" role="button" tabindex="0" data-set="${esc(set || '')}"><div class="k">${k}</div><div class="v ${cls || ''}">${val}</div><div class="n">${note || '&nbsp;'}</div></div>`;
   const fams = new Set(tAll.filter(r=> r.st === 'Active' && (PR_F.mk === 'CA' ? r.caPasin : r.pasin)).map(r=> PR_F.mk === 'CA' ? r.caPasin : r.pasin)).size;
   const chkN = tAll.filter(r=> r.chk.length).length;
@@ -9406,6 +9414,8 @@ try { Object.assign(GF, JSON.parse(localStorage.getItem('gf') || '{}')); } catch
 // Tier is a list since Nov 3 (pick several); an older saved single tier becomes a list of one
 if(!Array.isArray(GF.tier)) GF.tier = GF.tier ? [GF.tier] : [];
 if(!Array.isArray(GF.sup)) GF.sup = [];   // suppliers (Nov 3)
+// Nov 13 (MJ): every View filter is a tick-box list with an All box. Empty = all, ['-'] = none.
+['brand','fam'].forEach(k=>{ if(!Array.isArray(GF[k])) GF[k] = GF[k] ? [GF[k]] : []; });
 const gfKeep = ()=>{ try { localStorage.setItem('gf', JSON.stringify(GF)); } catch(e){} };
 function gfInfo(r){
   const p = (typeof PR !== 'undefined' ? PR : []).find(x=> (r.sku && x.sku === r.sku) || (r.usSku && x.sku === r.usSku)) ||
@@ -9414,19 +9424,19 @@ function gfInfo(r){
     text: [r.sku, r.usSku, r.asin, r.name, r.title, r.pname, r.parent, r.family, r.fam, r.psku, p.name, p.pname, p.psku].filter(Boolean).join(' ').toLowerCase()};
 }
 function gfMatch(r){
-  if(!GF.tier.length && !GF.sup.length && !GF.brand && !GF.q && !GF.fam) return true;
+  if(!GF.tier.length && !GF.sup.length && !GF.brand.length && !GF.q && !GF.fam.length) return true;
   const g = gfInfo(r);
   if(GF.tier.length && GF.tier.indexOf(g.tier) === -1) return false;
   if(GF.sup.length && GF.sup.indexOf(g.sup) === -1) return false;
-  if(GF.brand && g.brand !== GF.brand) return false;
-  if(GF.fam && g.fam !== GF.fam) return false;
+  if(GF.brand.length && GF.brand.indexOf(g.brand) === -1) return false;
+  if(GF.fam.length && GF.fam.indexOf(g.fam) === -1) return false;
   if(GF.q && g.text.indexOf(GF.q.toLowerCase().trim()) === -1) return false;
   return true;
 }
 function stockKeep(rows, mk){
   if(!STOCK_ON || !Array.isArray(rows)) return rows;
   if(STOCK !== 'all') rows = rows.filter(r=>{ const v = stockOf(r, mk); return v === null ? false : STOCK === 'oos' ? v === 0 : v > 0; });
-  return (GF.tier.length || GF.sup.length || GF.brand || GF.q || GF.fam) ? rows.filter(gfMatch) : rows;
+  return (GF.tier.length || GF.sup.length || GF.brand.length || GF.q || GF.fam.length) ? rows.filter(gfMatch) : rows;
 }
 (function(){
   const g = window, mkOf = {
@@ -9451,16 +9461,17 @@ function gfPaint(){
   const t = document.getElementById('gfTierBtn'), b = document.getElementById('gfBrand'), q = document.getElementById('gfQ');
   if(t) t.textContent = (!GF.tier.length ? 'All' : GF.tier[0] === '-' ? 'None' : GF.tier.join(', ')) + ' \u25be';
   const sb = document.getElementById('gfSupBtn');
-  if(sb){ sb.textContent = (GF.sup.length ? (GF.sup.length > 2 ? GF.sup.length + ' suppliers' : GF.sup.join(', ')) : 'All') + ' \u25be'; sb.title = GF.sup.length ? GF.sup.join(', ') : 'Pick one or more suppliers'; }
-  [...document.querySelectorAll('#gfSupList input')].forEach(x=> x.checked = GF.sup.indexOf(x.value) !== -1);
+  if(sb){ sb.textContent = (GF.sup[0] === '-' ? 'None' : GF.sup.length ? (GF.sup.length > 2 ? GF.sup.length + ' suppliers' : GF.sup.join(', ')) : 'All') + ' \u25be'; sb.title = GF.sup.length ? GF.sup.join(', ') : 'Pick one or more suppliers'; }
+  [...document.querySelectorAll('#gfSupList input[value]')].forEach(x=> x.checked = !GF.sup.length || GF.sup.indexOf(x.value) !== -1);
+  { const sa = document.getElementById('gfSupAllCb'); if(sa) sa.checked = !GF.sup.length; }
   // Nov 12: no tier filter = every tier ticked, and All ticked
   [...document.querySelectorAll('#gfTierPop input[value]')].forEach(x=> x.checked = !GF.tier.length || GF.tier.indexOf(x.value) !== -1);
   const ta = document.getElementById('gfTierAllCb'); if(ta) ta.checked = !GF.tier.length;
-  const fm = document.getElementById('gfFam'); if(fm) fm.value = GF.fam || '';
-  if(b) b.value = GF.brand; if(q && document.activeElement !== q) q.value = GF.q;
+  try { gfmPaint(); } catch(e){}
+  if(q && document.activeElement !== q) q.value = GF.q;
 }
 function clearFilters(){
-  GF.tier = []; GF.sup = []; GF.brand = ''; GF.q = ''; GF.fam = ''; gfKeep(); gfPaint();
+  GF.tier = []; GF.sup = []; GF.brand = []; GF.q = ''; GF.fam = []; gfKeep(); gfPaint();
   const F = VIEW_F[S.view], D = VIEW_F_DEF[S.view];
   if(F && D) Object.keys(D).forEach(k=>{ if(CLR_KEEP.indexOf(k) === -1) F[k] = JSON.parse(JSON.stringify(D[k])); });
   STOCK = 'all'; try { localStorage.setItem('stock_view', 'all'); } catch(e){}
@@ -9512,12 +9523,37 @@ function gfModuleBlank(){
 }
 /* Nov 12 (MJ): the module name and marketplace stay in the View bar, so it's always
    clear which module you're on after scrolling down. */
+const ST_LABEL = {'Active':'Active', 'Inactive':'Inactive', 'In Development':'In development'};
+function gfmOpts(k){
+  if(k === 'brand') return [['Barnyard Designs','Barnyard Designs'], ['Seedboy','Seedboy']];
+  if(k === 'st') return Object.keys(ST_LABEL).map(v=> [v, ST_LABEL[v]]);
+  const n = {}; (typeof PR !== 'undefined' ? PR : []).forEach(r=>{ if((r.status === 'Active' || r.caStatus === 'Active') && r.pname) n[r.pname] = (n[r.pname] || 0) + 1; });
+  return Object.keys(n).sort((a, z)=> a.localeCompare(z)).map(v=> [v, v + ' (' + n[v] + ')']);
+}
+function gfmGet(k){ if(k === 'st'){ const v = PR_F.status; return Array.isArray(v) ? v : (v ? [v] : []); } return GF[k] || []; }
+function gfmSet(k, list){
+  if(k === 'st'){ Object.assign(PR_F, {status: list.length === 1 && list[0] !== '-' ? list[0] : list, ca:'', chk:'', stPicked:true}); renderProducts(); return; }
+  GF[k] = list; gfKeep(); gfPaint(); render();
+}
+function gfmFill(k){
+  const w = document.querySelector('.gfm[data-k="' + k + '"]'); if(!w) return;
+  const pop = w.querySelector('.gfm-pop'), opts = gfmOpts(k), cur = gfmGet(k), all = !cur.length;
+  pop.innerHTML = `<label class="all"><input type="checkbox" data-all="1"${all ? ' checked' : ''}> <b>All</b></label>` +
+    opts.map(([v, lab])=> `<label><input type="checkbox" value="${esc(v)}"${all || cur.indexOf(v) !== -1 ? ' checked' : ''}> ${esc(lab)}</label>`).join('');
+  pop.querySelector('[data-all]').onchange = e=>{ gfmSet(k, e.target.checked ? [] : ['-']); gfmFill(k); };
+  pop.querySelectorAll('input[value]').forEach(x=> x.onchange = ()=>{ const on = [...pop.querySelectorAll('input[value]:checked')].map(i=> i.value);
+    gfmSet(k, on.length === opts.length ? [] : on.length ? on : ['-']); gfmFill(k); });
+}
+function gfmPaint(){
+  document.querySelectorAll('.gfm').forEach(w=>{ const k = w.dataset.k, cur = gfmGet(k), btn = w.querySelector('.gfm-btn');
+    const lab = v=> k === 'st' ? (ST_LABEL[v] || v) : v;
+    btn.textContent = (!cur.length ? 'All' : cur[0] === '-' ? 'None' : cur.length > 2 ? cur.length + ' picked' : cur.map(lab).join(', ')) + ' \u25be';
+    btn.title = cur.length && cur[0] !== '-' ? cur.map(lab).join(', ') : ''; });
+}
 function gfStPaint(){
-  const w = document.getElementById('gfStWrap'), sel = document.getElementById('gfSt'); if(!w || !sel) return;
+  const w = document.getElementById('gfStWrap'); if(!w) return;
   w.hidden = S.view !== 'pr';   // only the Master SKU lists inactive and in-development SKUs
-  sel.value = PR_F.status || '';
-  if(!sel.dataset.wired){ sel.dataset.wired = '1';
-    sel.onchange = ()=>{ Object.assign(PR_F, {status: sel.value, ca:'', chk:'', stPicked:true}); renderProducts(); }; }
+  gfmPaint();
 }
 function curModPaint(){
   try { gfStPaint(); } catch(e){}
@@ -9644,28 +9680,26 @@ function ensureClearBtn(){
       const n = {}, act = {}; (typeof PR !== 'undefined' ? PR : []).forEach(r=>{ const k = (r.supplier || '').trim(); if(!k) return; n[k] = 1;
         if(r.status === 'Active' && r.asin && ACT_BRANDS.indexOf(r.brand) !== -1) act[k] = (act[k] || 0) + 1; });
       const names = Object.keys(n).sort((a, z)=> (act[z] || 0) - (act[a] || 0) || a.localeCompare(z));
-      const html = names.length ? names.map(k=> `<label><input type="checkbox" value="${esc(k)}"> ${esc(k)} <span class="mut">${act[k] ? act[k] + ' active' : 'no active'}</span></label>`).join('')
+      const html = names.length ? '<label style="border-bottom:1px solid rgba(255,255,255,.18);padding-bottom:.25rem"><input type="checkbox" id="gfSupAllCb"> <b>All</b></label>' + names.map(k=> `<label><input type="checkbox" value="${esc(k)}"> ${esc(k)} <span class="mut">${act[k] ? act[k] + ' active' : 'no active'}</span></label>`).join('')
         : '<span class="mut" style="font-size:.75rem">No supplier data yet. It arrives with the next Master SKU refresh.</span>';
       if(slist.innerHTML !== html){ slist.innerHTML = html;
-        [...slist.querySelectorAll('input')].forEach(x=> x.onchange = ()=>{ GF.sup = [...slist.querySelectorAll('input:checked')].map(i=> i.value); gfKeep(); gfPaint(); render(); }); }
+        [...slist.querySelectorAll('input[value]')].forEach(x=> x.onchange = ()=>{ const all = slist.querySelectorAll('input[value]').length, on = [...slist.querySelectorAll('input[value]:checked')].map(i=> i.value);
+          GF.sup = on.length === all ? [] : on.length ? on : ['-']; gfKeep(); gfPaint(); render(); });
+        const sa = document.getElementById('gfSupAllCb'); if(sa) sa.onchange = ()=>{ GF.sup = sa.checked ? [] : ['-']; gfKeep(); gfPaint(); render(); }; }
       gfPaint();
     };
     sbtn.onclick = e=>{ e.stopPropagation(); gfSupFill(); spop.hidden = !spop.hidden; sbtn.setAttribute('aria-expanded', !spop.hidden); };
     spop.addEventListener('click', e=> e.stopPropagation());
     document.addEventListener('click', ()=>{ if(!spop.hidden){ spop.hidden = true; sbtn.setAttribute('aria-expanded', false); } });
-    document.getElementById('gfSupAll').onclick = ()=>{ GF.sup = []; gfKeep(); gfPaint(); render(); spop.hidden = true; };
   }
-  if(b) b.onchange = ()=>{ GF.brand = b.value; gfKeep(); render(); };
-  // Family list: every parent name with active listings (Nov 12)
-  const fm = document.getElementById('gfFam');
-  if(fm){
-    window.gfFamFill = ()=>{ const n = {}; (typeof PR !== 'undefined' ? PR : []).forEach(r=>{ if((r.status === 'Active' || r.caStatus === 'Active') && r.pname) n[r.pname] = (n[r.pname] || 0) + 1; });
-      const html = '<option value="">All</option>' + Object.keys(n).sort((a, z)=> a.localeCompare(z)).map(k=> `<option value="${esc(k)}">${esc(k)} (${n[k]})</option>`).join('');
-      if(fm.dataset.h !== html){ fm.innerHTML = html; fm.dataset.h = html; } fm.value = GF.fam || ''; };
-    fm.onfocus = ()=> gfFamFill(); fm.onmousedown = ()=> gfFamFill();
-    fm.onchange = ()=>{ GF.fam = fm.value; gfKeep(); render(); };
-    setTimeout(()=>{ try { gfFamFill(); } catch(e){} }, 4000);
-  }
+  // Brand, Family and SKU status: tick-box lists with an All box (Nov 13)
+  document.querySelectorAll('.gfm').forEach(w=>{
+    const btn = w.querySelector('.gfm-btn'), pop = w.querySelector('.gfm-pop');
+    btn.onclick = e=>{ e.stopPropagation(); document.querySelectorAll('.gfm-pop').forEach(x=>{ if(x !== pop) x.hidden = true; }); gfmFill(w.dataset.k); pop.hidden = !pop.hidden; };
+    pop.addEventListener('click', e=> e.stopPropagation());
+  });
+  document.addEventListener('click', ()=> document.querySelectorAll('.gfm-pop').forEach(x=> x.hidden = true));
+  window.gfFamFill = ()=> gfmPaint();
   if(q){ let tm = null; q.oninput = ()=>{ clearTimeout(tm); tm = setTimeout(()=>{ GF.q = q.value; gfKeep(); render(); }, 200); }; }
   if(c) c.onclick = ()=> clearFilters();
   gfPaint(); }
@@ -9675,7 +9709,7 @@ function stockPaint(){ [...document.querySelectorAll('#hStock button')].forEach(
   stockPaint(); render();
 });
 stockPaint();
-{ const r0 = hReset.onclick; hReset.onclick = ()=>{ STOCK = 'all'; try { localStorage.setItem('stock_view', 'all'); } catch(e){} GF.tier = []; GF.sup = []; GF.brand = ''; GF.q = ''; gfKeep(); gfPaint(); stockPaint(); r0(); }; }
+{ const r0 = hReset.onclick; hReset.onclick = ()=>{ STOCK = 'all'; try { localStorage.setItem('stock_view', 'all'); } catch(e){} GF.tier = []; GF.sup = []; GF.brand = []; GF.fam = []; GF.q = ''; gfKeep(); gfPaint(); stockPaint(); r0(); }; }
 
 /* The Filters panel belongs to the first version of the dashboard: its filters
    only drive the old checklist table, which no page shows any more (every page,
