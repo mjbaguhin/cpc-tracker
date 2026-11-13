@@ -4248,7 +4248,7 @@ function renderBb(){
   if(BB_F.show === 'other')  rows = no.filter(r=> ['cpt','nooffer','unknown'].indexOf(r.why) !== -1);
   if(BB_F.show === 'stranded') rows = all.filter(r=> r.stranded || r.why === 'likely');   // Nov 12: stranded even when we hold the Buy Box
   if(BB_F.show === 'amz')    rows = amzOn;
-  if(BB_F.show === 'rb')     rows = all.filter(r=> (r.rb || []).length);
+  if(BB_F.show === 'rb')     rows = all.filter(r=> (r.rb || []).some(h=> h.sev === 'amazon'));
   if(BB_F.tier) rows = rows.filter(r=> (r.tier || 'N') === BB_F.tier);
   if(BB_F.q){ const q = BB_F.q.toLowerCase(); rows = rows.filter(r=> (r.sku + ' ' + r.asin + ' ' + r.name).toLowerCase().indexOf(q) !== -1); }
   // Default: listings without the Buy Box on top, out of stock first, then by tier
@@ -4279,7 +4279,7 @@ function renderBb(){
       (()=>{ const st = all.filter(r=> r.stranded || r.why === 'likely');
              // stranded stock on SKUs that aren't active listings (Amazon's FBA report), so it can't be missed
              const off = Object.values(STR || {}).filter(x=> (x.mk || 'US') === MK2 && !all.some(r=> r.sku === x.sku)).map(x=> x.sku);
-             return tile('Stranded', st.length + off.length, (st.length + off.length) ? 'bad' : 'good',
+             return tile('Stranded', st.length, (st.length + off.length) ? 'bad' : 'good',
                [st.length ? list(st) : '', off.length ? esc(off.join(', ')) + ' (not active)' : ''].filter(Boolean).join(' \u00b7 ')); })()+
       tile('Because another seller has it', by('amazon').length + by('seller').length, (by('amazon').length + by('seller').length) ? 'bad' : 'good',
            (by('amazon').length + by('seller').length) ? list(by('amazon').concat(by('seller'))) : '')+
@@ -5046,7 +5046,7 @@ function renderLc(){
   rows = LC_F.sort && LC_SORT[LC_F.sort] ? sortBy(rows, LC_SORT[LC_F.sort], LC_F.dir)
        : sortBy(rows, r=> (r.nolive ? 2000 : 0) + (r.pct === null ? 1000 : r.pct) * 10 + (TIER_RANK[r.tier] !== undefined ? TIER_RANK[r.tier] : 5), 1);
 
-  const order = ['all', 'good', 'wrong', 'cha', 'chp', 'cho', 'chs', 'title', 'bullets', 'desc', 'gk', 'blank', 'rba', 'rbb', 'px']; let n = 0;
+  const order = ['all', 'good', 'wrong', 'cha', 'chp', 'chs', 'title', 'bullets', 'desc', 'gk', 'blank', 'rba', 'rbb', 'px']; let n = 0;   // Nov 12: 'cho' removed with its tile
   const tile = (k, val, cls, note)=>{ const f = order[n++];
     return `<div class="cpt-tile bbtile${LC_F.show === f ? ' on' : ''}" role="button" tabindex="0" data-show="${f}" title="Show these in the table"><div class="k">${k}</div><div class="v ${cls || ''}">${val}</div><div class="n">${note || '&nbsp;'}</div></div>`; };
   const list = a=> esc(a.map(r=> r.sku).slice(0,3).join(', ')) + (a.length > 3 ? '\u2026' : '');
@@ -5244,7 +5244,7 @@ function renderLp(){
   const v = document.getElementById('cptView');
   const all = lpRows(), set = all.filter(r=> r.set), empty = all.filter(r=> !r.set);
   const pct = all.length ? Math.round(set.length / all.length * 1000) / 10 : 0;
-  let rows = LP_F.show === 'set' ? set : LP_F.show === 'empty' ? empty : LP_F.show === 'rb' ? all.filter(r=> (r.rb || []).length) : all;
+  let rows = LP_F.show === 'set' ? set : LP_F.show === 'empty' ? empty : LP_F.show === 'rb' ? all.filter(r=> (r.rb || []).some(h=> h.sev === 'amazon')) : all;
   if(LP_F.tier) rows = rows.filter(r=> (r.tier || 'N') === LP_F.tier);
   if(LP_F.q){ const q = LP_F.q.toLowerCase(); rows = rows.filter(r=> (r.sku + ' ' + r.asin + ' ' + r.name).toLowerCase().indexOf(q) !== -1); }
   rows = LP_F.sort && LP_SORT[LP_F.sort] ? sortBy(rows, LP_SORT[LP_F.sort], LP_F.dir)
@@ -7056,16 +7056,16 @@ function renderXc(){
   const tile = (k, val, cls, note, show)=> `<div class="cpt-tile bbtile${XC_F.show === show ? ' on' : ''}" role="button" tabindex="0" data-xc="${show}"><div class="k">${k}</div><div class="v ${cls}">${val}</div><div class="n">${note}</div></div>`;
   const chip = o=> `<span class="lcchip ${o.s === 'ok' ? 'lc-ok' : o.s === 'warn' ? 'lc-small' : o.s === 'na' ? 'lc-gray' : 'lc-bad'}" style="white-space:normal">${esc(o.t)}</span>` + (o.p ? ` <span class="mut">${usd(o.p)}</span>` : '');
   const H = (k, label, cls)=> `<th data-s="${k}" data-d="asc" class="${cls || ''}">${label}${sortArrow(XC_F, k)}</th>`;
-  const xTip = f=> nX(f) ? ` \u00b7 +${nX(f)} Tier X` : '';
+  const xTip = f=> nX(f) ? ` \u00b7 ${nX(f)} Tier X` : '';
   let html = '<section class="cpt-top"><div class="cpt-head"><h2>Cross Channel</h2><span class="sub">Amazon US vs Walmart and Shopify</span>'+
       `<span class="cpt-live"><i></i>\u2713 All ${all.length} active covered</span>`+
       (WM_META && WM_META.read ? `<span class="sub">Walmart ${esc(WM_META.read)}</span>` : '<span class="sub">Walmart not read</span>')+
       (SH_META && SH_META.updated ? `<span class="sub">Shopify ${esc(SH_META.updated.slice(0, 10))}</span>` : '<span class="sub">Shopify not read</span>')+
     '</div><div class="cpt-tiles">'+
       tile('On every channel', sc === null ? '\u2014' : sc + '%', sc === null ? '' : pcls(sc), `${n(r=> r.full)} of ${nx.filter(r=> !r.unknown).length} \u00b7 Tier X not counted`, 'full')+
-      tile('Not on Walmart', n(mW), n(mW) ? 'bad' : 'good', (n(mW) ? list(nx.filter(mW)) : 'None') + xTip(mW), 'wmiss')+
+      tile('Not on Walmart', n(mW, all), n(mW, all) ? 'bad' : 'good', (n(mW, all) ? list(all.filter(mW)) : 'None') + xTip(mW), 'wmiss')+
       tile('Blocked on Walmart', n(bW, all), n(bW, all) ? 'bad' : 'good', n(bW, all) ? 'unpublished or error' : 'None', 'wbad')+
-      tile('Not on Shopify', n(mS), n(mS) ? 'warn' : 'good', (n(mS) ? list(nx.filter(mS)) : 'None') + xTip(mS), 'smiss')+
+      tile('Not on Shopify', n(mS, all), n(mS, all) ? 'warn' : 'good', (n(mS, all) ? list(all.filter(mS)) : 'None') + xTip(mS), 'smiss')+
     '</div></section>'+
     '<div class="cpt-tools"><button id="xcDl">Download</button>' + `<span class="count">${rows.length} of ${all.length}</span></div>`;
   if(!all.length) html += '<div class="cpt-empty"><b>Loading the Master SKU sheet</b></div>';
@@ -7110,10 +7110,12 @@ function renderProducts(){
   if(PR_F.q){ const q = PR_F.q.toLowerCase(); rows = rows.filter(r=> [r.sku, r.asin, r.name, r.title, r.fam, r.psku, r.pasin, r.caSku, r.upc, r.fnsku, r.material, r.cats].join(' ').toLowerCase().indexOf(q) !== -1); }
   rows = PR_F.sort && PR_SORT[PR_F.sort] ? sortBy(rows, PR_SORT[PR_F.sort], PR_F.dir) : sortBy(rows, r=> (r.fam || '~') + ' ' + r.sku, 1);
   PR_VIEW = rows;
-  const cnt = (k, val)=> all.filter(r=> (k === 'status' ? r.st : r[k]) === val).length;
+  // Nov 12: tiles count the whole Master SKU; the top bar filters only change the table
+  const tAll = (()=>{ const was = STOCK_ON; STOCK_ON = false; try { return prRows(); } finally { STOCK_ON = was; } })();
+  const cnt = (k, val)=> tAll.filter(r=> (k === 'status' ? r.st : r[k]) === val).length;
   const tile = (k, val, cls, note, set)=> `<div class="cpt-tile bbtile" role="button" tabindex="0" data-set="${esc(set || '')}"><div class="k">${k}</div><div class="v ${cls || ''}">${val}</div><div class="n">${note || '&nbsp;'}</div></div>`;
-  const fams = new Set(all.filter(r=> r.st === 'Active' && (PR_F.mk === 'CA' ? r.caPasin : r.pasin)).map(r=> PR_F.mk === 'CA' ? r.caPasin : r.pasin)).size;
-  const chkN = all.filter(r=> r.chk.length).length;
+  const fams = new Set(tAll.filter(r=> r.st === 'Active' && (PR_F.mk === 'CA' ? r.caPasin : r.pasin)).map(r=> PR_F.mk === 'CA' ? r.caPasin : r.pasin)).size;
+  const chkN = tAll.filter(r=> r.chk.length).length;
   let html = '<section class="cpt-top"><div class="cpt-head"><h2>Master SKU</h2>'+
     `<span class="sub">${all.length} SKUs \u00b7 Amazon ${PR_F.mk}</span>`+
     (PR_META.updated ? `<span class="cpt-live"><i></i>Built ${esc(PR_META.updated)} ET</span>` : '')+
@@ -7121,7 +7123,7 @@ function renderProducts(){
       tile('Active', cnt('status','Active'), 'good', `${fams} families`, 'status=Active')+
       tile('Inactive', cnt('status','Inactive'), '', '', 'status=Inactive')+
       tile('In development', cnt('status','In Development'), '', '', 'status=In Development')+
-      ['A','B','C','X','N'].map(t=> tile('Tier ' + t, all.filter(r=> r.tier === t && r.st === 'Active').length, '', 'active', 'tier=' + t + '&status=Active')).join('')+
+      ['A','B','C','X','N'].map(t=> tile('Tier ' + t, tAll.filter(r=> r.tier === t && r.st === 'Active').length, '', 'active', 'tier=' + t + '&status=Active')).join('')+
       tile('Data to fix', chkN, chkN ? 'warn' : 'good', chkN ? 'status vs dates' : 'none', 'chk=1&status=')+
     '</div></section>'+
     '<div class="cpt-tools" style="flex-wrap:wrap;gap:.4rem">'+
@@ -7188,7 +7190,10 @@ function renderProducts(){
   const dl = document.getElementById('prDl'); if(dl) dl.onclick = ()=> dlPr(rows);
   [...v.querySelectorAll('.bbtile[data-set]')].forEach(t=> t.onclick = ()=>{
     Object.assign(PR_F, {status:'', ca:'', tier:'', chk:''});
-    String(t.dataset.set).split('&').forEach(kv=>{ const [k, val] = kv.split('='); if(k) PR_F[k] = val || ''; });
+    if(!/(^|&)tier=/.test(String(t.dataset.set)) && GF.tier.length){ GF.tier = []; gfKeep(); gfPaint(); }   // a non-tier tile shows every tier again
+    String(t.dataset.set).split('&').forEach(kv=>{ const [k, val] = kv.split('=');
+      if(k === 'tier'){ GF.tier = val ? (GF.tier.length === 1 && GF.tier[0] === val ? [] : [val]) : []; gfKeep(); gfPaint(); }   // Nov 12: tier tiles drive the top bar Tier
+      else if(k) PR_F[k] = val || ''; });
     renderProducts();
   });
   [...v.querySelectorAll('tr.row[data-pr]')].forEach(tr=>{ const open = ()=>{ const r = rows.find(x=> x.sku === tr.dataset.pr); if(r) openPr(r); }; tr.onclick = open; tr.onkeydown = e=>{ if(e.key === 'Enter') open(); }; });
@@ -7311,10 +7316,11 @@ function modPct(id, mk){
     if(id === 'stBtn'){ if(mk === 'CA') return null; const sc = stScore(mk); return sc && sc.n ? sc.pct : null; }
     if(id === 'rvBtn'){ const sc = rvScore(mk); return sc ? sc.pct : null; }
     if(id === 'bsBtn'){ if(!BS.length) return null; return bsSyncScore(mk).pct; }
+    if(id === 'xcBtn'){ if(mk === 'CA') return null; const q = xcScore(); return q && q !== null && q !== undefined ? (typeof q === 'object' ? q.pct : q) : null; }
   } catch (e) { return null; }
   return null;
 }
-const NAV_MODS = [['cptBtn','CPT tracker'], ['bbBtn','Buy Box'], ['lpBtn','List Price'], ['stBtn','Strike-through'], ['lcBtn','Listing Copy'], ['quickCat','Category'], ['vrBtn','Variation'], ['msBtn','Measurements'], ['rvBtn','Listing Review'], ['bsBtn','BSR']];
+const NAV_MODS = [['xcBtn','Cross Channel'], ['cptBtn','CPT tracker'], ['bbBtn','Buy Box'], ['lpBtn','List Price'], ['stBtn','Strike-through'], ['lcBtn','Listing Copy'], ['quickCat','Category'], ['vrBtn','Variation'], ['msBtn','Measurements'], ['rvBtn','Listing Review'], ['bsBtn','BSR']];
 const NAV_CA = ['bbBtn','lpBtn','lcBtn','quickCat','vrBtn','msBtn','rvBtn','bsBtn'];   // Nov 12: Strike-through and CPT are US only
 // A click on a US or CA badge switches that module's marketplace before it opens
 document.addEventListener('click', e=>{
@@ -8580,7 +8586,7 @@ function renderReview(){
   document.getElementById('bar').innerHTML = '';
   const v = document.getElementById('cptView'), all = rvAll(), rows = rvRows(), run = RV.run;
   const probs = all.filter(r=> r.problems.length), nNew = probs.filter(r=> r.isNew).length;
-  const rmk = RV_F.mk || 'US', nFixed = all.filter(r=> r.fixed.length).length, read = rvAct(rmk);
+  const rmk = RV_F.mk || 'US', nFixed = all.filter(r=> r.fixed.length && !r.problems.length).length, read = rvAct(rmk);   // same rule as the Fixed cards (Nov 12)
   const rev = probs.filter(r=> r.mk2 && r.mk2.act === 'Reviewed').length;
   const fams = [...new Set(all.map(r=> r.fam))].sort(), brands = [...new Set(all.map(r=> r.brand).filter(Boolean))].sort();
   const tile = (k, val, cls, note, f)=> f === '' ? `<div class="cpt-tile"><div class="k">${k}</div><div class="v ${cls || ''}">${val}</div><div class="n">${note || '&nbsp;'}</div></div>` : `<div class="cpt-tile bbtile${RV_F.status === f ? ' on' : ''}" role="button" tabindex="0" data-rvs="${f}"><div class="k">${k}</div><div class="v ${cls || ''}">${val}</div><div class="n">${note || '&nbsp;'}</div></div>`;
@@ -9507,7 +9513,7 @@ function curModPaint(){
 }
 /* Nov 12 (MJ): every module's first tile is its %, the same number as the side menu,
    colored by the one rule. CPT and BSR get the tile they were missing. */
-const SCORE_OF = {cpt:['cptBtn','CPT OK %'], bb:['bbBtn','Buy Box'], lp:['lpBtn','List Price set %'], lc:['lcBtn','Correct copy %'],
+const SCORE_OF = {xc:['xcBtn','Cross Channel %'], cpt:['cptBtn','CPT OK %'], bb:['bbBtn','Buy Box'], lp:['lpBtn','List Price set %'], lc:['lcBtn','Correct copy %'],
   category:['quickCat','Category correct %'], vr:['vrBtn','Variation correct %'], ms:['msBtn','Catalog data correct %'],
   st:['stBtn','Strike-through'], rv:['rvBtn','All correct'], bs:['bsBtn','BSR correct %']};
 /* Nov 12 (MJ): one look everywhere. After every render: the same header (module name,
