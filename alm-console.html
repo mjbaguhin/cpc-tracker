@@ -7194,8 +7194,11 @@ function renderProducts(){
   const rs = document.getElementById('prReset'); if(rs) rs.onclick = ()=>{ Object.assign(PR_F, {q:'', brand:'', status:'', ca:'', tier:'', fam:'', cat:'', ptype:'', room:'', chk:''}); renderProducts(); };
   const dl = document.getElementById('prDl'); if(dl) dl.onclick = ()=> dlPr(rows);
   [...v.querySelectorAll('.bbtile[data-set]')].forEach(t=> t.onclick = ()=>{
+    const wasOn = t.classList.contains('on');
     Object.assign(PR_F, {status:'', ca:'', tier:'', chk:''});
     if(!/(^|&)tier=/.test(String(t.dataset.set)) && GF.tier.length){ GF.tier = []; gfKeep(); gfPaint(); }   // a non-tier tile shows every tier again
+    // Nov 13 (MJ): click the selected tile again to clear it and see every status (Active, Inactive, In development together)
+    if(wasOn){ if(/(^|&)tier=/.test(String(t.dataset.set))){ GF.tier = []; gfKeep(); gfPaint(); } renderProducts(); return; }
     String(t.dataset.set).split('&').forEach(kv=>{ const [k, val] = kv.split('=');
       if(k === 'tier'){ GF.tier = val ? (GF.tier.length === 1 && GF.tier[0] === val ? [] : [val]) : []; gfKeep(); gfPaint(); }   // Nov 12: tier tiles drive the top bar Tier
       else if(k) PR_F[k] = val || ''; });
