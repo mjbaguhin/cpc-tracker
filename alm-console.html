@@ -7104,7 +7104,7 @@ function renderProducts(){
   const v = document.getElementById('cptView');
   const all = prRows();
   let rows = all.filter(r=>
-    (!PR_F.brand || r.brand === PR_F.brand) && (!PR_F.status || r.st === PR_F.status) && (!PR_F.ca || r.caStatus === PR_F.ca) &&
+    (!PR_F.brand || r.brand === PR_F.brand) && (!PR_F.status || GF.q || r.st === PR_F.status) && (!PR_F.ca || GF.q || r.caStatus === PR_F.ca) &&   /* Nov 13: a search looks in every status */
     (!PR_F.tier || r.tier === PR_F.tier) && (!PR_F.fam || r.fam === PR_F.fam) && (!PR_F.cat || String(r.cats || '').split(/\s*,\s*/).indexOf(PR_F.cat) !== -1) &&
     (!PR_F.ptype || r.ptype === PR_F.ptype) && (!PR_F.room || String(r.room || '').split(/\s*,\s*/).indexOf(PR_F.room) !== -1) && (!PR_F.chk || r.chk.length));
   if(PR_F.q){ const q = PR_F.q.toLowerCase(); rows = rows.filter(r=> [r.sku, r.asin, r.name, r.title, r.fam, r.psku, r.pasin, r.caSku, r.upc, r.fnsku, r.material, r.cats].join(' ').toLowerCase().indexOf(q) !== -1); }
@@ -7113,7 +7113,12 @@ function renderProducts(){
   // Nov 12: tiles count the whole Master SKU; the top bar filters only change the table
   const tAll = (()=>{ const was = STOCK_ON; STOCK_ON = false; try { return prRows(); } finally { STOCK_ON = was; } })();
   const cnt = (k, val)=> tAll.filter(r=> (k === 'status' ? r.st : r[k]) === val).length;
-  const tile = (k, val, cls, note, set)=> `<div class="cpt-tile bbtile" role="button" tabindex="0" data-set="${esc(set || '')}"><div class="k">${k}</div><div class="v ${cls || ''}">${val}</div><div class="n">${note || '&nbsp;'}</div></div>`;
+  // Nov 13: the tile whose filter is in use is shown selected, so a filter is never hidden
+  const prOn = set=>{ if(!set || GF.q) return false; const want = {status:'', ca:'', tier:'', chk:''};
+    String(set).split('&').forEach(kv=>{ const [k, val] = kv.split('='); if(k) want[k] = val || ''; });
+    const tierNow = GF.tier.length === 1 ? GF.tier[0] : (GF.tier.length ? '?' : '');
+    return want.status === (PR_F.status || '') && want.ca === (PR_F.ca || '') && want.chk === (PR_F.chk || '') && want.tier === tierNow; };
+  const tile = (k, val, cls, note, set)=> `<div class="cpt-tile bbtile${prOn(set) ? ' on' : ''}" role="button" tabindex="0" data-set="${esc(set || '')}"><div class="k">${k}</div><div class="v ${cls || ''}">${val}</div><div class="n">${note || '&nbsp;'}</div></div>`;
   const fams = new Set(tAll.filter(r=> r.st === 'Active' && (PR_F.mk === 'CA' ? r.caPasin : r.pasin)).map(r=> PR_F.mk === 'CA' ? r.caPasin : r.pasin)).size;
   const chkN = tAll.filter(r=> r.chk.length).length;
   let html = '<section class="cpt-top"><div class="cpt-head"><h2>Master SKU</h2>'+
