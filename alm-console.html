@@ -944,6 +944,7 @@ a.idl:hover{color:var(--accent);border-bottom-style:solid}
 .gfm-btn{font-size:.78rem;background:#1d222a;color:#e8edf3;border:1px solid rgba(255,255,255,.22);border-radius:6px;padding:.2rem .45rem;cursor:pointer;white-space:nowrap;max-width:14rem;overflow:hidden;text-overflow:ellipsis}
 .gfm-pop{position:absolute;top:calc(100% + 4px);left:0;z-index:80;background:#1d222a;border:1px solid rgba(255,255,255,.25);border-radius:8px;padding:.45rem .55rem;display:flex;flex-direction:column;gap:.3rem;min-width:11rem;max-height:60vh;overflow:auto;box-shadow:0 8px 22px rgba(0,0,0,.45)}
 .gfm-pop[hidden]{display:none}
+.gfm[hidden], #navGroups .gf-l[hidden]{display:none !important}
 .gfm-pop label{display:flex;gap:.4rem;align-items:center;color:#e8edf3;font-size:.8rem;cursor:pointer;white-space:nowrap}
 .gfm-pop label.all{border-bottom:1px solid rgba(255,255,255,.18);padding-bottom:.25rem}
 .gfm-pop .mut{color:#8b96a3;font-size:.72rem}
@@ -8502,8 +8503,8 @@ function renderStrike(){
     (run ? `<span class="cpt-live"><i></i>${sMiss.length ? `${act - sMiss.length} of ${act} active covered` : `\u2713 All ${act} active covered`}</span>` : '')+
     '</div><div class="cpt-tiles">'+
       tile('Strike-through', sc && sc.n ? sc.pct + '%' : '\u2014', pcls(sc && sc.pct), '', 'all')+
-      tile('With a strike-through', shown, shown ? 'good' : '', `${lp} List Price \u00b7 ${tp} Typical price`, 'shown')+
-      tile('No strike-through', none, none ? 'bad' : 'good', '', 'none')+
+      tile('With a strike-through', shown, shown ? 'good' : '', `${lp} List Price \u00b7 ${tp} Typical price` + (sc ? ` \u00b7 ${sc.shown} in the %` : ''), 'shown')+
+      tile('No strike-through', none, none ? 'bad' : 'good', sc ? `${sc.n - sc.shown} in the % \u00b7 rest are Tier X or out of stock` : '', 'none')+
       tile('Strike-through history', hist.length, '', RV.strikeHist ? `${hist.filter(x=> x.kind === 'lost').length} lost \u00b7 ${hist.filter(x=> x.kind === 'gained').length} gained` : '', 'hist')+
     '</div></section>';
   html += '<div class="cpt-tools">'+
@@ -9474,6 +9475,7 @@ function clearFilters(){
   GF.tier = []; GF.sup = []; GF.brand = []; GF.q = ''; GF.fam = []; gfKeep(); gfPaint();
   const F = VIEW_F[S.view], D = VIEW_F_DEF[S.view];
   if(F && D) Object.keys(D).forEach(k=>{ if(CLR_KEEP.indexOf(k) === -1) F[k] = JSON.parse(JSON.stringify(D[k])); });
+  if(typeof PR_F !== 'undefined'){ PR_F.status = ''; PR_F.ca = ''; PR_F.stPicked = false; }   // Nov 14 (MJ): Clear filters = every SKU status
   STOCK = 'all'; try { localStorage.setItem('stock_view', 'all'); } catch(e){}
   if(S.view === 'rv') rvKeep();
   if(S.view === 'st') stKeep();
