@@ -948,6 +948,8 @@ a.idl:hover{color:var(--accent);border-bottom-style:solid}
 .gfm-pop label{display:flex;gap:.4rem;align-items:center;color:#e8edf3;font-size:.8rem;cursor:pointer;white-space:nowrap}
 .gfm-pop label.all{border-bottom:1px solid rgba(255,255,255,.18);padding-bottom:.25rem}
 .gfm-pop .mut{color:#8b96a3;font-size:.72rem}
+.gfm-q{width:100%;box-sizing:border-box;font-size:.8rem;background:#12161c;color:#e8edf3;border:1px solid rgba(255,255,255,.25);border-radius:6px;padding:.3rem .45rem;margin-bottom:.15rem}
+.gfm-none{color:#8b96a3;font-size:.75rem;padding:.2rem 0}
 #gfTierPop label{display:flex;gap:.4rem;align-items:center;color:#e8edf3;font-size:.8rem;cursor:pointer;white-space:nowrap}
 #gfTierPop #gfTierAll{margin-top:.2rem;font-size:.74rem;background:none;border:1px solid rgba(255,255,255,.22);color:#cfd6de;border-radius:6px;padding:.15rem .4rem;cursor:pointer}
 /* Supplier: pick one or more (MJ, Nov 3), same look as Tier */
@@ -980,7 +982,7 @@ a.idl:hover{color:var(--accent);border-bottom-style:solid}
     <div class="ng"><div class="ng-l">Performance <span class="ng-t" data-ngt="perf"></span></div>
       <div class="ng-b" data-ng="perf"><button id="bsBtn">BSR</button></div></div>
     <div id="mSelWrap"><label for="mSel">Module</label><select id="mSel"><optgroup label="Today"><option value="catalogBtn">Catalog</option><option value="prBtn">Master SKU</option><option value="xcBtn">Cross Channel</option></optgroup><optgroup label="Price and Buy Box"><option value="cptBtn">CPT tracker</option><option value="bbBtn">Buy Box</option><option value="lpBtn">List Price</option><option value="stBtn">Strike-through</option></optgroup><optgroup label="Listing health"><option value="lcBtn">Listing Copy</option><option value="quickCat">Category</option><option value="vrBtn">Variation</option><option value="msBtn">Measurements</option><option value="rvBtn">Listing Review</option></optgroup><optgroup label="Performance"><option value="bsBtn">BSR</option></optgroup></select></div>
-    <div class="ng ng-tools"><div class="ng-l">View</div><div class="ng-b"><span id="curMod" title="The module you are on"></span><button id="toggle" aria-expanded="true">Filters</button><span id="hStock" role="group" aria-label="Stock"><span class="stk-l">Stock</span><button data-stk="all" title="Every listing">All</button><button data-stk="in" title="Only listings with FBA stock">In stock</button><button data-stk="oos" title="Only listings with 0 FBA stock">Out of stock</button></span><span class="gf-l" id="gfTierWrap">Tier <button id="gfTierBtn" type="button" aria-haspopup="true" aria-expanded="false" title="Pick one or more tiers">All ▾</button><span id="gfTierPop" hidden><label style="border-bottom:1px solid rgba(255,255,255,.18);padding-bottom:.25rem"><input type="checkbox" id="gfTierAllCb"> <b>All</b></label><label><input type="checkbox" value="A"> Tier A</label><label><input type="checkbox" value="B"> Tier B</label><label><input type="checkbox" value="C"> Tier C</label><label><input type="checkbox" value="X"> Tier X</label><label><input type="checkbox" value="N"> Tier N</label></span></span><span class="gf-l" id="gfSupWrap">Supplier <button id="gfSupBtn" type="button" aria-haspopup="true" aria-expanded="false" title="Pick one or more suppliers">All ▾</button><span id="gfSupPop" hidden><span id="gfSupList"></span></span></span><span class="gf-l gfm" data-k="brand">Brand <button type="button" class="gfm-btn" aria-haspopup="true">All ▾</button><span class="gfm-pop" hidden></span></span><span class="gf-l gfm" data-k="fam">Family <button type="button" class="gfm-btn" aria-haspopup="true">All ▾</button><span class="gfm-pop" hidden></span></span><span class="gf-l gfm" data-k="st" id="gfStWrap" hidden>SKU status <button type="button" class="gfm-btn" aria-haspopup="true">All ▾</button><span class="gfm-pop" hidden></span></span><input id="gfQ" type="search" placeholder="Search SKU, ASIN, product or family" autocomplete="off"><button id="gfClr" title="Clear Tier, Brand, Search, Stock and this module’s own filters. Keeps the sort, grouping and marketplace.">Clear filters</button><button id="hRefresh" title="Reload all data now. Reads the published files only: no scripts run, no Keepa tokens.">↻ Refresh</button><button id="hReset" title="Put this module’s filters, search, sort and grouping back to their defaults. Keeps the marketplace and all saved checks and marks.">Reset view</button><button id="fs" title="Fullscreen">Full screen</button><button id="scSet" aria-label="Settings: Canada Seller Central links" title="Settings: make CA SKU links open Seller Central Canada">&#9881;</button></div></div>
+    <div class="ng ng-tools"><div class="ng-l">View</div><div class="ng-b"><span id="curMod" title="The module you are on"></span><button id="toggle" aria-expanded="true">Filters</button><span id="hStock" role="group" aria-label="Stock"><span class="stk-l">Stock</span><button data-stk="all" title="Every listing">All</button><button data-stk="in" title="Only listings with FBA stock">In stock</button><button data-stk="oos" title="Only listings with 0 FBA stock">Out of stock</button></span><span class="gf-l" id="gfTierWrap">Tier <button id="gfTierBtn" type="button" aria-haspopup="true" aria-expanded="false" title="Pick one or more tiers">All ▾</button><span id="gfTierPop" hidden><label style="border-bottom:1px solid rgba(255,255,255,.18);padding-bottom:.25rem"><input type="checkbox" id="gfTierAllCb"> <b>All</b></label><label><input type="checkbox" value="A"> Tier A</label><label><input type="checkbox" value="B"> Tier B</label><label><input type="checkbox" value="C"> Tier C</label><label><input type="checkbox" value="X"> Tier X</label><label><input type="checkbox" value="N"> Tier N</label></span></span><span class="gf-l" id="gfSupWrap">Supplier <button id="gfSupBtn" type="button" aria-haspopup="true" aria-expanded="false" title="Pick one or more suppliers">All ▾</button><span id="gfSupPop" hidden><input type="search" class="gfm-q" id="gfSupQ" placeholder="Search suppliers" autocomplete="off"><span id="gfSupList"></span></span></span><span class="gf-l gfm" data-k="brand">Brand <button type="button" class="gfm-btn" aria-haspopup="true">All ▾</button><span class="gfm-pop" hidden></span></span><span class="gf-l gfm" data-k="fam">Family <button type="button" class="gfm-btn" aria-haspopup="true">All ▾</button><span class="gfm-pop" hidden></span></span><span class="gf-l gfm" data-k="st" id="gfStWrap" hidden>SKU status <button type="button" class="gfm-btn" aria-haspopup="true">All ▾</button><span class="gfm-pop" hidden></span></span><input id="gfQ" type="search" placeholder="Search SKU, ASIN, product or family" autocomplete="off"><button id="gfClr" title="Clear Tier, Brand, Search, Stock and this module’s own filters. Keeps the sort, grouping and marketplace.">Clear filters</button><button id="hRefresh" title="Reload all data now. Reads the published files only: no scripts run, no Keepa tokens.">↻ Refresh</button><button id="hReset" title="Put this module’s filters, search, sort and grouping back to their defaults. Keeps the marketplace and all saved checks and marks.">Reset view</button><button id="fs" title="Fullscreen">Full screen</button><button id="scSet" aria-label="Settings: Canada Seller Central links" title="Settings: make CA SKU links open Seller Central Canada">&#9881;</button></div></div>
   </nav>
 </header>
 <section id="ov" hidden></section>
@@ -9540,9 +9542,16 @@ function gfmSet(k, list){
 function gfmFill(k){
   const w = document.querySelector('.gfm[data-k="' + k + '"]'); if(!w) return;
   const pop = w.querySelector('.gfm-pop'), opts = gfmOpts(k), cur = gfmGet(k), all = !cur.length;
-  pop.innerHTML = `<label class="all"><input type="checkbox" data-all="1"${all ? ' checked' : ''}> <b>All</b></label>` +
+  const q0 = w.dataset.q || '', long = opts.length > 6;   // Nov 14 (MJ): long lists get a search box
+  pop.innerHTML = (long ? `<input type="search" class="gfm-q" placeholder="Search ${k === 'fam' ? 'families' : 'list'}" autocomplete="off" value="${esc(q0)}">` : '') +
+    `<label class="all"><input type="checkbox" data-all="1"${all ? ' checked' : ''}> <b>All</b></label>` +
     opts.map(([v, lab])=> `<label><input type="checkbox" value="${esc(v)}"${all || cur.indexOf(v) !== -1 ? ' checked' : ''}> ${esc(lab)}</label>`).join('');
   pop.querySelector('[data-all]').onchange = e=>{ gfmSet(k, e.target.checked ? [] : ['-']); gfmFill(k); };
+  const qi = pop.querySelector('.gfm-q');
+  if(qi){ const apply = ()=>{ const t = qi.value.trim().toLowerCase(); w.dataset.q = qi.value; let shown = 0;
+      pop.querySelectorAll('label:not(.all)').forEach(l=>{ const hit = !t || l.textContent.toLowerCase().indexOf(t) !== -1; l.style.display = hit ? '' : 'none'; if(hit) shown++; });
+      let none = pop.querySelector('.gfm-none'); if(!shown && t){ if(!none){ none = document.createElement('div'); none.className = 'gfm-none'; pop.appendChild(none); } none.textContent = 'No match'; } else if(none) none.remove(); };
+    qi.oninput = apply; apply(); }
   pop.querySelectorAll('input[value]').forEach(x=> x.onchange = ()=>{ const on = [...pop.querySelectorAll('input[value]:checked')].map(i=> i.value);
     gfmSet(k, on.length === opts.length ? [] : on.length ? on : ['-']); gfmFill(k); });
 }
@@ -9690,14 +9699,21 @@ function ensureClearBtn(){
         const sa = document.getElementById('gfSupAllCb'); if(sa) sa.onchange = ()=>{ GF.sup = sa.checked ? [] : ['-']; gfKeep(); gfPaint(); render(); }; }
       gfPaint();
     };
-    sbtn.onclick = e=>{ e.stopPropagation(); gfSupFill(); spop.hidden = !spop.hidden; sbtn.setAttribute('aria-expanded', !spop.hidden); };
+    sbtn.onclick = e=>{ e.stopPropagation(); gfSupFill(); spop.hidden = !spop.hidden; sbtn.setAttribute('aria-expanded', !spop.hidden);
+      const sq = document.getElementById('gfSupQ'); if(sq){ supQ(); if(!spop.hidden) setTimeout(()=>{ try { sq.focus(); } catch(err){} }, 0); } };
+    // Nov 14 (MJ): search the supplier list
+    const supQ = ()=>{ const sq = document.getElementById('gfSupQ'), t = sq ? sq.value.trim().toLowerCase() : ''; let shown = 0;
+      document.querySelectorAll('#gfSupList label').forEach(l=>{ if(l.querySelector('#gfSupAllCb')) return; const hit = !t || l.textContent.toLowerCase().indexOf(t) !== -1; l.style.display = hit ? '' : 'none'; if(hit) shown++; });
+      let none = document.getElementById('gfSupNone'); if(!shown && t){ if(!none){ none = document.createElement('div'); none.id = 'gfSupNone'; none.className = 'gfm-none'; spop.appendChild(none); } none.textContent = 'No match'; } else if(none) none.remove(); };
+    { const sq = document.getElementById('gfSupQ'); if(sq){ sq.oninput = supQ; sq.onclick = e=> e.stopPropagation(); } }
     spop.addEventListener('click', e=> e.stopPropagation());
     document.addEventListener('click', ()=>{ if(!spop.hidden){ spop.hidden = true; sbtn.setAttribute('aria-expanded', false); } });
   }
   // Brand, Family and SKU status: tick-box lists with an All box (Nov 13)
   document.querySelectorAll('.gfm').forEach(w=>{
     const btn = w.querySelector('.gfm-btn'), pop = w.querySelector('.gfm-pop');
-    btn.onclick = e=>{ e.stopPropagation(); document.querySelectorAll('.gfm-pop').forEach(x=>{ if(x !== pop) x.hidden = true; }); gfmFill(w.dataset.k); pop.hidden = !pop.hidden; };
+    btn.onclick = e=>{ e.stopPropagation(); document.querySelectorAll('.gfm-pop').forEach(x=>{ if(x !== pop) x.hidden = true; }); gfmFill(w.dataset.k); pop.hidden = !pop.hidden;
+      const qi = pop.querySelector('.gfm-q'); if(!pop.hidden && qi) setTimeout(()=>{ try { qi.focus(); } catch(err){} }, 0); };
     pop.addEventListener('click', e=> e.stopPropagation());
   });
   document.addEventListener('click', ()=> document.querySelectorAll('.gfm-pop').forEach(x=> x.hidden = true));
