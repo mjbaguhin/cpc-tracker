@@ -7933,7 +7933,7 @@ function renderOverview(){
   let html = '<section class="cpt-top"><div class="cpt-head"><h2>Catalog</h2><span class="sub">US and CA combined</span>' + headUpd + '</div></section>'+
     '<div class="cpt-tools"><button id="catCopy">Copy summary</button></div>'+
     '<table class="cpt-table lc-table"><thead><tr><th>Metric</th><th class="c">US + CA</th><th class="c">US</th><th class="c">CA</th><th class="c">Source</th><th></th></tr></thead><tbody>'+
-    rep.map(r=> `<tr><td><b>${esc(r.label)}</b>${(()=>{ const u = updOf(r.k); return u.txt ? `<span class="cat-upd"${u.old ? ' style="color:#b45309;font-weight:700"' : ''}>Updated ${esc(u.txt)}</span>` : ''; })()}</td>`+
+    rep.map(r=> `<tr><td><b>${esc(r.label)}</b></td>`+
       `<td class="c"><span class="lcchip ${r.pct === null ? 'lc-gray' : r.pct >= 100 ? 'lc-ok' : r.pct >= 95 ? 'lc-small' : 'lc-bad'}" style="font-size:1rem">${r.pct === null ? '\u2014' : r.pct + '%'}</span><div class="mut" style="font-size:.75rem">${r.den ? C([r.num, r.den]) : ''}</div></td>`+
       `<td class="c">${P(r.us)}<div class="mut" style="font-size:.75rem">${C(r.us)}</div></td>`+
       `<td class="c">${P(r.ca)}<div class="mut" style="font-size:.75rem">${C(r.ca)}</div></td>`+
@@ -9581,8 +9581,7 @@ function curModPaint(){
   const h = document.querySelector('#cptView .cpt-head h2, #cptView h2');
   const name = h ? h.textContent.trim() : '';
   const mkV = ['catalog','pr','xc'].indexOf(S.view) === -1 ? ' \u00b7 ' + (typeof curMk === 'function' ? curMk() : '') : '';
-  const ups = [...document.querySelectorAll('#cptView .cpt-head .upd')].map(x=> x.textContent);
-  el.textContent = name ? name + mkV + (ups.length ? ' \u00b7 ' + ups.join(' \u00b7 ') : '') : '';
+  el.textContent = name ? name + mkV : '';   // Nov 17 (MJ): the update time lives in the module header only
 }
 /* Nov 12 (MJ): every module's first tile is its %, the same number as the side menu,
    colored by the one rule. CPT and BSR get the tile they were missing. */
