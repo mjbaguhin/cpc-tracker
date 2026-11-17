@@ -7940,8 +7940,10 @@ function renderOverview(){
       `<td class="c"><button class="work" data-catsrc="${r.k}">Source</button></td>`+
       `<td><button class="work" data-catgo="${r.btn}">Open \u2192</button></td></tr>`).join('')+
     '</tbody></table>'+
+    catHistHtml(rep)+
 '';
   v.innerHTML = html;
+  catHistWire(v);
   [...v.querySelectorAll('[data-catgo]')].forEach(b=> b.onclick = ()=>{ const t = document.getElementById(b.dataset.catgo); if(t) t.click(); });
   [...v.querySelectorAll('[data-catsrc]')].forEach(b=> b.onclick = ()=> openCatSrc(b.dataset.catsrc));
   const cp = document.getElementById('catCopy'); if(cp) cp.onclick = ()=>{
@@ -7949,6 +7951,67 @@ function renderOverview(){
     (navigator.clipboard ? navigator.clipboard.writeText(t) : Promise.reject()).then(()=>{ cp.textContent = 'Copied'; }).catch(()=> window.prompt('Copy:', t)); };
 }
 
+/* ---------- Catalog history (Nov 17, Sam's request) ----------
+   A quick look at the 8 Catalog numbers over time. Weekly columns, newest first: the console's
+   own daily numbers (last one of each week), then the old ALM Dashboard's weekly history. */
+let CH_MODE = 'all';   // all | us | ca
+const CAT_ORDER = ['rev','cat','var','copy','lp','bb','only','bsr'];
+function etToday(){ try { return new Intl.DateTimeFormat('en-CA', {timeZone:'America/New_York'}).format(new Date()); } catch(e){ return new Date().toISOString().slice(0, 10); } }
+function weekStart(d){ const t = new Date(d + 'T12:00:00Z'), w = (t.getUTCDay() + 6) % 7; return new Date(t.getTime() - w * 864e5).toISOString().slice(0, 10); }
+function isoWeekNo(d){ const t = new Date(d + 'T12:00:00Z'); t.setUTCDate(t.getUTCDate() + 3 - ((t.getUTCDay() + 6) % 7)); const y1 = new Date(Date.UTC(t.getUTCFullYear(), 0, 4)); return 1 + Math.round(((t - y1) / 864e5 - 3 + ((y1.getUTCDay() + 6) % 7)) / 7); }
+function catHistWeeks(){
+  const rows = (RV && RV.catHist) || [], wk = {};
+  // today's live numbers count as this week's console column even before they are saved
+  const today = etToday(), live = {};
+  try { catReport().forEach(r=>{ live[r.k] = [today, 'C', '', r.k, r.us ? r.us[0] : null, r.us ? r.us[1] : null, r.ca ? r.ca[0] : null, r.ca ? r.ca[1] : null, (r.us ? r.us[0] : 0) + (r.ca ? r.ca[0] : 0), (r.us ? r.us[1] : 0) + (r.ca ? r.ca[1] : 0)]; }); } catch(e){}
+  rows.concat(Object.values(live)).forEach(r=>{
+    const ws = weekStart(r[0]), key = ws + '|' + r[1], w = wk[key] = wk[key] || {ws, src: r[1], label: r[2], d: '', m: {}};
+    if(r[0] >= (w.m[r[3]] ? w.m[r[3]].d : '')){ w.m[r[3]] = {d: r[0], us: [r[4], r[5]], ca: [r[6], r[7]], all: [r[8], r[9]]}; if(r[0] > w.d) w.d = r[0]; }
+  });
+  // where a week has both, the console's own numbers win
+  const out = {}; Object.values(wk).forEach(w=>{ if(!out[w.ws] || w.src === 'C') out[w.ws] = w; });
+  return Object.values(out).sort((a, b)=> b.ws.localeCompare(a.ws));
+}
+function catHistHtml(rep){
+  const weeks = catHistWeeks(); if(!weeks.length) return '';
+  const lab = {}; rep.forEach(r=> lab[r.k] = r.label);
+  const pick = c=> CH_MODE === 'us' ? c.us : CH_MODE === 'ca' ? c.ca : c.all;
+  const val = c=>{ const a = c && pick(c); return a && a[1] ? pct1(a[0], a[1]) : null; };
+  const fmtWk = w=>{ const t = new Date(w.ws + 'T12:00:00Z'); return ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'][t.getUTCMonth()] + ' ' + t.getUTCDate() + (t.getUTCFullYear() !== new Date().getUTCFullYear() ? ', ' + String(t.getUTCFullYear()).slice(2) : ''); };
+  const firstOld = weeks.findIndex(w=> w.src === 'A');
+  const spark = k=>{ const pts = weeks.slice(0, 26).map(w=> val(w.m[k])).reverse(); const ok = pts.filter(x=> x !== null); if(ok.length < 2) return '';
+    const W = 110, H = 26, lo = Math.min(...ok, 80), hi = 100, x = i=> (i / (pts.length - 1)) * W, y = p=> H - 2 - ((p - lo) / Math.max(1, hi - lo)) * (H - 4);
+    const d = pts.map((p, i)=> p === null ? null : `${x(i).toFixed(1)},${y(p).toFixed(1)}`).filter(Boolean).join(' ');
+    return `<svg width="${W}" height="${H}" viewBox="0 0 ${W} ${H}" style="display:block;margin-top:.2rem" aria-hidden="true"><polyline points="${d}" fill="none" stroke="#2f5d9a" stroke-width="1.6"/></svg>`; };
+  const cell = (w, k)=>{ const c = w.m[k], p = val(c), a = c && pick(c);
+    if(p === null) return '<td class="c mut">\u2014</td>';
+    const t = `${Math.round(a[0] * 10) / 10} of ${a[1]}` + (w.src === 'A' ? ' (old ALM Dashboard)' : ' (console, ' + c.d + ')');
+    return `<td class="c" title="${esc(t)}"><span class="lcchip ${p >= 100 ? 'lc-ok' : p >= 95 ? 'lc-small' : 'lc-bad'}">${p}%</span></td>`; };
+  return '<section style="margin-top:1.4rem"><div class="cpt-head" style="background:none;padding:.2rem 0"><h2 style="color:inherit;font-size:1.1rem">History</h2></div>'+
+    `<div class="cpt-tools"><div class="seg" id="chMode">${[['all','US + CA'],['us','US'],['ca','CA']].map(([k, l])=> `<button data-ch="${k}" aria-pressed="${CH_MODE === k}">${l}</button>`).join('')}</div>`+
+    `<span class="mut" style="font-size:.78rem">Weekly, newest first. Hover a cell for the counts.${firstOld !== -1 ? ' Weeks before ' + fmtWk(weeks[Math.max(0, firstOld - 1)]) + ' are from the old ALM Dashboard (US + CA only, its own rules).' : ''}</span></div>`+
+    '<div style="overflow-x:auto"><table class="cpt-table lc-table"><thead><tr><th>Metric</th>' +
+    weeks.map((w, i)=> `<th class="c" style="white-space:nowrap${i === firstOld ? ';border-left:3px solid #f5c542' : ''}">${fmtWk(w)}<div style="font-weight:400;font-size:.7rem;opacity:.75">${w.src === 'A' ? esc((w.label || '').replace(/ \d{4}$/, '')) : 'RW ' + isoWeekNo(w.ws)}</div></th>`).join('') +
+    '</tr></thead><tbody>' +
+    CAT_ORDER.map(k=> `<tr><td style="white-space:nowrap"><b>${esc(lab[k] || k)}</b>${spark(k)}</td>` + weeks.map((w, i)=> cell(w, k).replace('<td', i === firstOld ? '<td style="border-left:3px solid #f5c542"' : '<td')).join('') + '</tr>').join('') +
+    '</tbody></table></div></section>';
+}
+function catHistWire(v){ v.querySelectorAll('#chMode [data-ch]').forEach(b=> b.onclick = ()=>{ CH_MODE = b.dataset.ch; renderOverview(); }); }
+/* Saves today's 8 numbers once a day (any viewer), after every data file has loaded */
+function catSnapshot(){
+  const today = etToday(); let tries = 0;
+  const t = setInterval(()=>{
+    tries++;
+    const ready = typeof RV !== 'undefined' && RV.webapp && (RV.rows || []).length && CG.length && VR.length && LC_US.length && CPT_US.length && BB_US.length && BS.length && ROWS.length;
+    if(!ready){ if(tries > 40) clearInterval(t); return; }
+    clearInterval(t);
+    try { if(localStorage.getItem('catsnap') === today) return; } catch(e){}
+    const m = {}; catReport().forEach(r=>{ m[r.k] = [r.us ? r.us[0] : '', r.us ? r.us[1] : '', r.ca ? r.ca[0] : '', r.ca ? r.ca[1] : '']; });
+    fetch(RV.webapp + '?' + new URLSearchParams({action:'snapshot', d: today, m: JSON.stringify(m)}).toString(), {mode:'no-cors'})
+      .then(()=>{ try { localStorage.setItem('catsnap', today); } catch(e){} }).catch(()=>{});
+  }, 3000);
+}
+setTimeout(()=>{ try { catSnapshot(); } catch(e){} }, 2000);
 function closeDetail(){ document.getElementById('veil').hidden = true; document.getElementById('detail').classList.remove('wide'); }
 
 
