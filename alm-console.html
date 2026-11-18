@@ -101,6 +101,7 @@ td.cgtdp{min-width:14rem;max-width:22rem}
 #curMod{display:inline-block;font-weight:800;font-size:.95rem;color:#fff;background:#2f5d9a;border-radius:6px;padding:.2rem .6rem;margin-right:.5rem;white-space:nowrap}
 #curMod:empty{display:none}
 .cpt-head .upd{display:inline-block;font-size:.85rem;font-weight:700;color:#fff;background:rgba(255,255,255,.14);border:1px solid rgba(255,255,255,.28);border-radius:6px;padding:.15rem .55rem;font-family:inherit}
+.cpt-head .upd.quiet{background:none;border-color:transparent;font-weight:500;color:rgba(255,255,255,.75);padding-left:0}
 .cpt-head .upd.old{background:#7a4b00;border-color:#f5c542;color:#fff}
 .chgrid{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:10px;margin:.6rem 0}
 .chcard{background:#fff;border:1px solid #e5e7eb;border-radius:12px;padding:.7rem .85rem;display:flex;flex-direction:column}
@@ -7937,7 +7938,10 @@ function renderOverview(){
     lp: ()=> CPT_META.updated, bb: ()=> BB_META.updated, only: ()=> BB_META.updated, bsr: ()=> BS_META.updated};
   const updOf = k=>{ try { return updText(CAT_UPD[k] ? CAT_UPD[k]() : ''); } catch(e){ return {txt:'', old:false, t:0}; } };
   const ups = rep.map(r=> updOf(r.k)).filter(u=> u.t), newest = ups.length ? ups.reduce((a, b)=> b.t > a.t ? b : a) : null, oldest = ups.length ? ups.reduce((a, b)=> b.t < a.t ? b : a) : null;
-  const headUpd = newest ? `<span class="upd${oldest.old ? ' old' : ''}" title="Oldest to newest data behind these numbers">Updated ${esc(oldest.txt === newest.txt ? newest.txt : oldest.txt.replace(/ ET$/, '') + ' to ' + newest.txt.replace(/^[A-Z][a-z]{2} \d+, /, oldest.txt.slice(0, oldest.txt.indexOf(',')) === newest.txt.slice(0, newest.txt.indexOf(',')) ? '' : '$&'))}</span>` : '';
+  // Nov 18 (MJ): discreet. One short line; exact times on hover; amber only when something is over a day old
+  const stale = rep.filter(r=> updOf(r.k).old).map(r=> r.label);
+  const tip = rep.map(r=>{ const u = updOf(r.k); return r.label + ': ' + (u.txt || 'not loaded'); }).join('\n');
+  const headUpd = newest ? `<span class="upd${stale.length ? ' old' : ' quiet'}" title="${esc(tip)}">${stale.length ? esc(stale.join(', ')) + ' over a day old' : 'Updated ' + esc(newest.txt.replace(/,.*$/, ''))}</span>` : '';
   let html = '<section class="cpt-top"><div class="cpt-head"><h2>Catalog</h2><span class="sub">US and CA combined</span>' + headUpd + '</div></section>'+
     '<div class="cpt-tools"><button id="catCopy">Copy summary</button></div>'+
     '<table class="cpt-table lc-table"><thead><tr><th>Metric</th><th class="c">US + CA</th><th class="c">US</th><th class="c">CA</th><th class="c">Source</th><th></th></tr></thead><tbody>'+
