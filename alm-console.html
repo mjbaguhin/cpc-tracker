@@ -7999,19 +7999,21 @@ function catReasons(){
   try { out.bsr = join(both(mk=>{ const q = bsSyncScore(mk), l = q.off.map(x=> x.sku); return l.length ? mk + ': ' + nm(l) : ''; })); } catch(e){}
   return out;
 }
-let CH_RANGE = 12, CH_TABLE = false;
+let CH_RANGE = 'y', CH_TABLE = false;   // Nov 17 (MJ): q = last quarter, y = this year (default), all
 function catHistHtml(rep){
   // Nov 17 (MJ): one trend card per metric; the count table opens with Show table
   const all = catHistWeeks().slice().reverse(); if(!all.length) return '';
-  const weeks = CH_RANGE ? all.slice(-CH_RANGE) : all;
+  const today = etToday(), from = CH_RANGE === 'q' ? new Date(Date.parse(today + 'T12:00:00Z') - 13 * 7 * 864e5).toISOString().slice(0, 10) : CH_RANGE === 'y' ? today.slice(0, 4) + '-01-01' : '';
+  let weeks = from ? all.filter(w=> w.ws >= weekStart(from)) : all; if(!weeks.length) weeks = all.slice(-1);
   const lab = {}; rep.forEach(r=> lab[r.k] = r.label);
   const pick = c=> CH_MODE === 'us' ? c.us : CH_MODE === 'ca' ? c.ca : c.all;
   const val = (w, k)=>{ const c = w && w.m[k], a = c && pick(c); return a && a[1] ? pct1(a[0], a[1]) : null; };
   const rw = w=> w.src === 'A' ? (w.label || '').replace(/ \d{4}$/, '') : 'RW ' + isoWeekNo(w.ws);
   const fmtWk = w=>{ const t = new Date(w.ws + 'T12:00:00Z'); return ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'][t.getUTCMonth()] + ' ' + t.getUTCDate() + ', ' + t.getUTCFullYear(); };
   const color = p=> p === null ? 'var(--c-night-mut, #6b7280)' : p >= 100 ? '#15803d' : p >= 95 ? '#b45309' : '#b91c1c';
-  const t0 = Date.parse(weeks[0].ws), t1 = Date.parse(weeks[weeks.length - 1].ws), span = Math.max(1, t1 - t0);
-  const W = 220, H = 64, lo = 40, X = w=> 6 + ((Date.parse(w.ws) - t0) / span) * (W - 12), Y = p=> H - 4 - ((Math.max(lo, p) - lo) / (100 - lo)) * (H - 8);
+  const t0 = Date.parse(from ? weekStart(from) : weeks[0].ws), t1 = Date.parse(weekStart(today)), span = Math.max(1, t1 - t0);   // the axis runs to this week, so gaps show as gaps
+  const vals = []; weeks.forEach(w=> CAT_ORDER.forEach(k=>{ const v = val(w, k); if(v !== null) vals.push(v); }));
+  const W = 220, H = 70, lo = Math.max(0, Math.min(80, Math.floor((Math.min(...vals, 100) - 5) / 10) * 10)), X = w=> 6 + ((Date.parse(w.ws) - t0) / span) * (W - 12), Y = p=> H - 4 - ((Math.max(lo, p) - lo) / (100 - lo)) * (H - 8);
   const card = k=>{
     const pts = weeks.map(w=> ({w, p: val(w, k)})).filter(o=> o.p !== null);
     const last = pts[pts.length - 1], prev = pts[pts.length - 2];
@@ -8030,7 +8032,7 @@ function catHistHtml(rep){
   };
   const btn = (id, items, cur)=> `<div class="seg" id="${id}">` + items.map(([v, l])=> `<button data-v="${v}" aria-pressed="${cur === v}">${l}</button>`).join('') + '</div>';
   return '<section style="margin-top:1.4rem"><div class="cpt-head" style="background:none;padding:.2rem 0"><h2 style="color:inherit;font-size:1.1rem">Historical Performance</h2></div>'+
-    '<div class="cpt-tools">' + btn('chMode', [['all','US + CA'], ['us','US'], ['ca','CA']], CH_MODE) + btn('chRange', [[12,'12 weeks'], [26,'6 months'], [0,'All']], CH_RANGE) +
+    '<div class="cpt-tools">' + btn('chMode', [['all','US + CA'], ['us','US'], ['ca','CA']], CH_MODE) + btn('chRange', [['q','Last quarter'], ['y','This year'], ['all','All']], CH_RANGE) +
     `<button id="chTable">${CH_TABLE ? 'Hide table' : 'Show table'}</button></div>`+
     '<div class="chgrid">' + CAT_ORDER.map(card).join('') + '</div>'+
     '<div class="chkey"><span><svg width="22" height="6"><line x1="0" y1="3" x2="22" y2="3" stroke="#9ca3af" stroke-width="2" stroke-dasharray="4 3"/></svg> Old ALM Dashboard</span><span><svg width="22" height="6"><line x1="0" y1="3" x2="22" y2="3" stroke="#2f5d9a" stroke-width="2"/></svg> ALM Console</span><span><span style="display:inline-block;width:14px;height:8px;background:rgba(21,128,61,.18);border-radius:2px"></span> 95 to 100%</span><span class="mut">Hover a point for the week, the counts and the reason</span></div>'+
@@ -8059,7 +8061,7 @@ function catHistTableHtml(rep, weeks){
     '</tr></thead><tbody>' + skuRow + rows + '</tbody></table></div></section>';
 }
 function catHistWire(v){ v.querySelectorAll('#chMode [data-v]').forEach(b=> b.onclick = ()=>{ CH_MODE = b.dataset.v; renderOverview(); });
-  v.querySelectorAll('#chRange [data-v]').forEach(b=> b.onclick = ()=>{ CH_RANGE = +b.dataset.v; renderOverview(); });
+  v.querySelectorAll('#chRange [data-v]').forEach(b=> b.onclick = ()=>{ CH_RANGE = b.dataset.v; renderOverview(); });
   { const t = v.querySelector('#chTable'); if(t) t.onclick = ()=>{ CH_TABLE = !CH_TABLE; renderOverview(); }; }
   const sc = v.querySelector('#chScroll'); if(sc) setTimeout(()=>{ sc.scrollLeft = sc.scrollWidth; }, 0); }   // open on the newest weeks
 /* Saves today's 8 numbers once a day (any viewer), after every data file has loaded */
