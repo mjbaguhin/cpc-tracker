@@ -63,7 +63,7 @@ header h1{
 #meta{font-size:.7rem;color:#93a0b0;letter-spacing:.02em}
 #meta b{color:#ccd6e2;font-weight:600}
 
-#toggle,#fs,#hRefresh,#hReset,#gfClr,#hStock button,#homeBtn,#quickCat,#casesBtn,#catalogBtn,#cptBtn,#bbBtn,#lcBtn,#lpBtn,#vrBtn,#bsBtn,#prBtn,#xcBtn,#msBtn,#rvBtn,#stBtn{
+#toggle,#fs,#hRefresh,#hReset,#gfClr,#hStock button,#homeBtn,#quickCat,#casesBtn,#catalogBtn,#cptBtn,#bbBtn,#lcBtn,#lpBtn,#vrBtn,#bsBtn,#prBtn,#xcBtn,#bfBtn,#msBtn,#rvBtn,#stBtn{
   font-size:.74rem;padding:.24rem .6rem;
   background:transparent;color:#fff;border:1px solid #3a4652;
 }
@@ -669,7 +669,7 @@ header h1{font-size:.95rem;letter-spacing:.02em;text-transform:none;font-weight:
 header h1::after{content:"";display:inline-block;width:.42rem;height:.42rem;border-radius:50%;
   background:#3fbf7f;margin-left:.45rem;vertical-align:middle}
 #meta{font-family:ui-monospace,"SF Mono",Menlo,Consolas,monospace;font-size:.72rem}
-#toggle,#fs,#hRefresh,#hReset,#gfClr,#hStock button,#homeBtn,#quickCat,#casesBtn,#catalogBtn,#cptBtn,#bbBtn,#lcBtn,#lpBtn,#vrBtn,#bsBtn,#prBtn,#xcBtn,#msBtn,#rvBtn,#stBtn{
+#toggle,#fs,#hRefresh,#hReset,#gfClr,#hStock button,#homeBtn,#quickCat,#casesBtn,#catalogBtn,#cptBtn,#bbBtn,#lcBtn,#lpBtn,#vrBtn,#bsBtn,#prBtn,#xcBtn,#bfBtn,#msBtn,#rvBtn,#stBtn{
   font-size:.8rem;padding:.38rem .8rem;border-radius:7px;border-color:var(--night-line);color:#dfe5ee}
 #homeBtn[aria-pressed="true"],#quickCat[aria-pressed="true"],#casesBtn[aria-pressed="true"],
 #catalogBtn[aria-pressed="true"],#cptBtn[aria-pressed="true"],#bbBtn[aria-pressed="true"],#lcBtn[aria-pressed="true"],#lpBtn[aria-pressed="true"],#vrBtn[aria-pressed="true"],#bsBtn[aria-pressed="true"],#prBtn[aria-pressed="true"],#xcBtn[aria-pressed="true"],#msBtn[aria-pressed="true"],#rvBtn[aria-pressed="true"],#stBtn[aria-pressed="true"]{background:#2c4f7c;border-color:#4a76b0;color:#fff}
@@ -986,14 +986,14 @@ a.idl:hover{color:var(--accent);border-bottom-style:solid}
   <button id="casesBtn" hidden>Cases</button>
   <!-- Modules grouped by how MJ checks them each day (Oct 26) -->
   <nav id="navGroups" aria-label="Modules">
-    <div class="ng"><div class="ng-l">Today</div><div class="ng-b"><button id="catalogBtn">Catalog</button><button id="prBtn">Master SKU</button><button id="xcBtn">Cross Channel</button><button id="tkBtn" hidden style="display:none !important">My tasks</button></div></div>
+    <div class="ng"><div class="ng-l">Today</div><div class="ng-b"><button id="catalogBtn">Catalog</button><button id="prBtn">Master SKU</button><button id="xcBtn">Cross Channel</button><button id="bfBtn">BFCM Watch</button><button id="tkBtn" hidden style="display:none !important">My tasks</button></div></div>
     <div class="ng"><div class="ng-l">Price and Buy Box <span class="ng-t" data-ngt="price"></span></div>
       <div class="ng-b" data-ng="price"><button id="cptBtn">CPT tracker</button><button id="bbBtn">Buy Box</button><button id="lpBtn">List Price</button><button id="stBtn">Strike-through</button></div></div>
     <div class="ng"><div class="ng-l">Listing health <span class="ng-t" data-ngt="listing"></span></div>
       <div class="ng-b" data-ng="listing"><button id="lcBtn">Listing Copy</button><button id="quickCat">Category</button><button id="vrBtn">Variation</button><button id="msBtn">Measurements</button><button id="rvBtn">Listing Review</button></div></div>
     <div class="ng"><div class="ng-l">Performance <span class="ng-t" data-ngt="perf"></span></div>
       <div class="ng-b" data-ng="perf"><button id="bsBtn">BSR</button></div></div>
-    <div id="mSelWrap"><label for="mSel">Module</label><select id="mSel"><optgroup label="Today"><option value="catalogBtn">Catalog</option><option value="prBtn">Master SKU</option><option value="xcBtn">Cross Channel</option></optgroup><optgroup label="Price and Buy Box"><option value="cptBtn">CPT tracker</option><option value="bbBtn">Buy Box</option><option value="lpBtn">List Price</option><option value="stBtn">Strike-through</option></optgroup><optgroup label="Listing health"><option value="lcBtn">Listing Copy</option><option value="quickCat">Category</option><option value="vrBtn">Variation</option><option value="msBtn">Measurements</option><option value="rvBtn">Listing Review</option></optgroup><optgroup label="Performance"><option value="bsBtn">BSR</option></optgroup></select></div>
+    <div id="mSelWrap"><label for="mSel">Module</label><select id="mSel"><optgroup label="Today"><option value="catalogBtn">Catalog</option><option value="prBtn">Master SKU</option><option value="bfBtn">BFCM Watch</option><option value="xcBtn">Cross Channel</option></optgroup><optgroup label="Price and Buy Box"><option value="cptBtn">CPT tracker</option><option value="bbBtn">Buy Box</option><option value="lpBtn">List Price</option><option value="stBtn">Strike-through</option></optgroup><optgroup label="Listing health"><option value="lcBtn">Listing Copy</option><option value="quickCat">Category</option><option value="vrBtn">Variation</option><option value="msBtn">Measurements</option><option value="rvBtn">Listing Review</option></optgroup><optgroup label="Performance"><option value="bsBtn">BSR</option></optgroup></select></div>
     <div class="ng ng-tools"><div class="ng-l">View</div><div class="ng-b"><span id="curMod" title="The module you are on"></span><button id="toggle" aria-expanded="true">Filters</button><span id="hStock" role="group" aria-label="Stock"><span class="stk-l">Stock</span><button data-stk="all" title="Every listing">All</button><button data-stk="in" title="Only listings with FBA stock">In stock</button><button data-stk="oos" title="Only listings with 0 FBA stock">Out of stock</button></span><span class="gf-l" id="gfTierWrap">Tier <button id="gfTierBtn" type="button" aria-haspopup="true" aria-expanded="false" title="Pick one or more tiers">All ▾</button><span id="gfTierPop" hidden><label style="border-bottom:1px solid rgba(255,255,255,.18);padding-bottom:.25rem"><input type="checkbox" id="gfTierAllCb"> <b>All</b></label><label><input type="checkbox" value="A"> Tier A</label><label><input type="checkbox" value="B"> Tier B</label><label><input type="checkbox" value="C"> Tier C</label><label><input type="checkbox" value="X"> Tier X</label><label><input type="checkbox" value="N"> Tier N</label></span></span><span class="gf-l" id="gfSupWrap">Supplier <button id="gfSupBtn" type="button" aria-haspopup="true" aria-expanded="false" title="Pick one or more suppliers">All ▾</button><span id="gfSupPop" hidden><input type="search" class="gfm-q" id="gfSupQ" placeholder="Search suppliers" autocomplete="off"><span id="gfSupList"></span></span></span><span class="gf-l gfm" data-k="brand">Brand <button type="button" class="gfm-btn" aria-haspopup="true">All ▾</button><span class="gfm-pop" hidden></span></span><span class="gf-l gfm" data-k="fam">Family <button type="button" class="gfm-btn" aria-haspopup="true">All ▾</button><span class="gfm-pop" hidden></span></span><span class="gf-l gfm" data-k="size">Size <button type="button" class="gfm-btn" aria-haspopup="true">All ▾</button><span class="gfm-pop" hidden></span></span><span class="gf-l gfm" data-k="design">Design <button type="button" class="gfm-btn" aria-haspopup="true">All ▾</button><span class="gfm-pop" hidden></span></span><span class="gf-l gfm" data-k="st" id="gfStWrap" hidden>SKU status <button type="button" class="gfm-btn" aria-haspopup="true">All ▾</button><span class="gfm-pop" hidden></span></span><input id="gfQ" type="search" placeholder="Search SKU, ASIN, product or family" autocomplete="off"><button id="gfClr" title="Clear Tier, Brand, Search, Stock and this module’s own filters. Keeps the sort, grouping and marketplace.">Clear filters</button><button id="hRefresh" title="Reload all data now. Reads the published files only: no scripts run, no Keepa tokens.">↻ Refresh</button><button id="hReset" title="Put this module’s filters, search, sort and grouping back to their defaults. Keeps the marketplace and all saved checks and marks.">Reset view</button><button id="fs" title="Fullscreen">Full screen</button><button id="scSet" aria-label="Settings: Canada Seller Central links" title="Settings: make CA SKU links open Seller Central Canada">&#9881;</button></div></div>
   </nav>
 </header>
@@ -1109,6 +1109,8 @@ function buildStr(j){ STR = {}; ((j && j.rows) || []).forEach(r=>{ if(r && r.sku
 function strandedOf(sku, mk){ return !!STR[(mkOf(mk) === 'CA' ? 'CA' : 'US') + '|' + sku]; }
 // Shopify storefront products, both stores (Nov 11)
 const SH_SRC = 'https://raw.githubusercontent.com/mjbaguhin/cpc-tracker/main/shopify.json';
+const BF_SRC = 'https://raw.githubusercontent.com/mjbaguhin/cpc-tracker/main/bfcm.json';
+let BF = null;   // BFCM Watch (Nov 19 to Dec 1, 2026)
 let SH = {}, SH_META = null;
 function buildSh(j){ SH = {}; ((j && j.rows) || []).forEach(r=>{ if(r && r.sku) SH[r.sku] = r; }); SH_META = {updated: (j && j.updated) || '', stores: (j && j.stores) || []}; }
 // Walmart Seller Center items, read by the Cowork ALM Morning Run (Nov 11)
@@ -1265,6 +1267,7 @@ async function load(fresh){
     .catch(e => { RV_ERR = e.message; if(S.view === 'rv' || S.view === 'st') render(); });
   grab(STR_SRC, 'json', fresh).then(j=>{ buildStr(j); if(S.view === 'bb') render(); }).catch(()=>{ STR = {}; STR_META = null; });
   grab(SH_SRC, 'json', fresh).then(j=>{ buildSh(j); if(S.view === 'xc') render(); }).catch(()=>{ SH = {}; SH_META = null; });
+  grab(BF_SRC, 'json', fresh).then(j=>{ BF = j; if(S.view === 'bf') render(); }).catch(()=>{ BF = null; if(S.view === 'bf') render(); });
   grab(WM_SRC, 'json', fresh)
     .then(j => { buildWm(j); if(S.view === 'st' || S.view === 'xc') render(); })
     .catch(()=> { WM = {}; WM_META = null; });
@@ -7075,6 +7078,41 @@ function xcScore(){ const c = xcRows().filter(r=> r.tier !== 'X' && !r.unknown);
    address Seller Center uses when you search a SKU), or Add Items when it's not on Walmart. */
 function wmItemUrl(sku){ return 'https://seller.walmart.com/catalog/list-items?sortField=modifiedDtm&sortOrder=desc&filters=' + encodeURIComponent(encodeURIComponent(JSON.stringify({productOfferId: sku}))); }
 const WM_ADD_URL = 'https://seller.walmart.com/catalog/add-items';
+/* BFCM Watch page (Nov 19, MJ): one row per deal listing with everything checked during BFCM */
+let BF_F = {show:'all'};
+function renderBf(){
+  document.getElementById('msg').hidden = true; document.getElementById('bar').innerHTML = '';
+  const v = document.getElementById('cptView');
+  if(!BF){ v.innerHTML = '<section class="cpt-top"><div class="cpt-head"><h2>BFCM Watch</h2></div></section><div class="cpt-empty"><b>Nothing yet</b><br>The first data comes after the first BFCM pass.</div>'; return; }
+  const T = BF.types || {}, P = {}; (typeof PR !== 'undefined' ? PR : []).forEach(p=> P[p.sku] = p);
+  const all = stockKeep(BF.rows.map(r=> Object.assign({}, r)), 'US');   // the View bar filters apply, like every page
+  const count = {}; all.forEach(r=> r.flags.forEach(f=> count[f.type] = (count[f.type] || 0) + 1));
+  const withIssue = all.filter(r=> r.flags.length), read = all.filter(r=> r.read);
+  let rows = BF_F.show === 'all' ? all : BF_F.show === 'issues' ? withIssue : all.filter(r=> r.flags.some(f=> f.type === BF_F.show));
+  const tile = (k, val, cls, note, show)=> `<div class="cpt-tile bbtile${BF_F.show === show ? ' on' : ''}" role="button" tabindex="0" data-bf="${show}"><div class="k">${k}</div><div class="v ${cls || ''}">${val}</div><div class="n">${note || '&nbsp;'}</div></div>`;
+  const usd = n=> n === null || n === undefined ? '\u2014' : '$' + Number(n).toFixed(2);
+  // Nov 19 (MJ): did today's passes read every listing?
+  const cov = (BF.coverage || []).map(c=>{ const ok = c.status === 'complete', bad = c.status === 'not run' || c.status === 'incomplete';
+    const txt = c.slot + ' ' + (c.status === 'not yet' ? 'not yet' : c.status === 'not run' ? "didn't run" : c.read + ' of ' + c.expected + (ok ? ' \u2713' : c.status === 'incomplete' ? ' (' + (c.missing.length + c.captcha.length) + ' not read)' : ''));
+    return `<span class="cov-tag ${ok ? 'ok' : bad ? 'bad' : ''}" title="${esc(c.status === 'incomplete' ? 'Not read: ' + c.missing.concat(c.captcha).join(', ') : '')}">${esc(txt)}</span>`; }).join('');
+  let html = '<section class="cpt-top"><div class="cpt-head"><h2>BFCM Watch</h2><span class="sub">Updated ' + esc(BF.updated || '') + ' ET</span>' + cov + '</div><div class="cpt-tiles">' +
+    tile('Listings with an issue', withIssue.length, withIssue.length ? 'bad' : 'good', read.length + ' of ' + all.length + ' read on the page', 'issues') +
+    Object.keys(T).filter(k=> count[k]).map(k=> tile(T[k], count[k], 'bad', '', k)).join('') + '</div></section>';
+  html += '<div class="cpt-tools"><span class="count">' + rows.length + ' of ' + all.length + '</span></div>';
+  html += '<div style="overflow-x:auto"><table class="cpt-table lc-table"><thead><tr><th>Product</th>' + TIER_TH +
+    '<th>Issues</th><th class="c">Deal badge</th><th class="num">Page price</th><th class="num">Haris sale / min</th><th>Buy Box</th><th class="c">Stock</th><th class="c">Star rating</th><th class="c">Ratings</th><th>BSR</th><th>Variation options</th><th>Breadcrumb</th><th class="c">Read</th></tr></thead><tbody>' +
+    rows.map(r=>{ const x = r.read || {}, p = r.prev || {};
+      const chg = (a, b)=> a !== null && a !== undefined && b !== null && b !== undefined && a !== b ? ` <span class="mut">(was ${b})</span>` : '';
+      return `<tr class="row"><td class="prod"><div class="p-name">${esc(String(r.name).slice(0, 60))}</div><div class="p-id"><span>SKU</span>${skuL(r.sku, 'US')}${cpy(r.sku)}</div><div class="p-id"><span>ASIN</span>${asinL(r.asin, 'US')}${cpy(r.asin)}</div></td>` + tierTd(r) +
+        `<td>${r.flags.length ? r.flags.map(f=> `<div class="bbdo bad" style="margin:.1rem 0">${esc(T[f.type] || f.type)}${f.detail ? ': ' + esc(f.detail) : ''}</div>`).join('') : '<span class="mut">\u2014</span>'}</td>` +
+        `<td class="c">${x.badge ? esc(x.badge) : '<span class="mut">not read</span>'}</td><td class="num">${usd(x.price)}</td><td class="num">${usd(r.sale)} / ${usd(r.min)}</td>` +
+        `<td style="font-size:.8rem">${esc(x.soldBy || '')}</td><td class="c" style="font-size:.8rem">${esc(x.stock || '')}</td>` +
+        `<td class="c">${x.star !== null && x.star !== undefined ? x.star + chg(x.star, p.star) : '\u2014'}</td><td class="c">${x.count !== null && x.count !== undefined ? x.count + chg(x.count, p.count) : '\u2014'}</td>` +
+        `<td style="font-size:.78rem">${esc(x.bsr || '')}</td><td style="font-size:.8rem">${esc(x.varOpt || '')}</td><td style="font-size:.75rem">${esc(x.crumb || '')}</td><td class="c mut" style="font-size:.75rem">${esc((x.t || '') + (x.pass ? ' \u00b7 ' + x.pass : ''))}</td></tr>`; }).join('') +
+    '</tbody></table></div>';
+  v.innerHTML = html;
+  v.querySelectorAll('.cpt-tile[data-bf]').forEach(t=> t.onclick = ()=>{ BF_F.show = BF_F.show === t.dataset.bf ? 'all' : t.dataset.bf; renderBf(); });
+}
 function renderXc(){
   document.getElementById('msg').hidden = true;
   document.getElementById('bar').innerHTML = '';
@@ -9020,6 +9058,7 @@ function renderView(){
   if(S.view === 'bs'){ renderBsr(); return; }
   if(S.view === 'pr'){ renderProducts(); return; }
   if(S.view === 'xc'){ renderXc(); return; }
+  if(S.view === 'bf'){ renderBf(); return; }
   if(S.view === 'ms'){ renderMeasurements(); return; }
   if(S.view === 'rv'){ renderReview(); return; }
   if(S.view === 'st'){ renderStrike(); return; }
@@ -9456,6 +9495,7 @@ const vrBtn    = document.getElementById('vrBtn');
 const bsBtn    = document.getElementById('bsBtn');
 const prBtn    = document.getElementById('prBtn');
 const xcBtn    = document.getElementById('xcBtn');
+const bfBtn    = document.getElementById('bfBtn');
 const msBtn    = document.getElementById('msBtn');
 const rvBtn    = document.getElementById('rvBtn');
 const stBtn    = document.getElementById('stBtn');
@@ -9467,7 +9507,7 @@ function go(view){
   // The CPT view has its own controls, so the filter panel folds away while
   // it is open and comes back as it was when you leave.
   // The CPT and Buy Box views both own the screen
-  const own = x=> ['cpt','bb','lc','lp','vr','bs','pr','xc','ms','rv','st','tk','category','catalog'].indexOf(x) !== -1;
+  const own = x=> ['cpt','bb','lc','lp','vr','bs','pr','xc','bf','ms','rv','st','tk','category','catalog'].indexOf(x) !== -1;
   if(own(view) && !own(S.view)){
     PANEL_BEFORE_CPT = !document.getElementById('panel').hidden;
     setPanel(false);
@@ -9488,6 +9528,7 @@ function go(view){
   bsBtn.setAttribute('aria-pressed', view === 'bs');
   prBtn.setAttribute('aria-pressed', view === 'pr');
   xcBtn.setAttribute('aria-pressed', view === 'xc');
+  if(bfBtn) bfBtn.setAttribute('aria-pressed', view === 'bf');
   msBtn.setAttribute('aria-pressed', view === 'ms');
   rvBtn.setAttribute('aria-pressed', view === 'rv');
   stBtn.setAttribute('aria-pressed', view === 'st');
@@ -9510,6 +9551,7 @@ vrBtn.onclick    = ()=> go('vr');
 bsBtn.onclick    = ()=> go('bs');
 prBtn.onclick    = ()=> go('pr');
 xcBtn.onclick    = ()=> go('xc');
+if(bfBtn) bfBtn.onclick = ()=> go('bf');
 msBtn.onclick    = ()=> go('ms');
 rvBtn.onclick    = ()=> go('rv');
 stBtn.onclick    = ()=> go('st');
@@ -9617,7 +9659,7 @@ function stockKeep(rows, mk){
   Object.keys(mkOf).forEach(n=>{ const f = g[n]; if(typeof f !== 'function') return;
     g[n] = function(){ return stockKeep(f.apply(this, arguments), mkOf[n](arguments)); }; });
   ['renderCpt','renderBb','renderLc','renderLp','renderVariation','renderBsr','renderProducts','renderMeasurements',
-   'renderReview','renderStrike','renderCategory','renderXc'].forEach(n=>{   /* renderXc added Nov 12: top bar filters on Cross Channel */ const f = g[n]; if(typeof f !== 'function') return;
+   'renderReview','renderStrike','renderCategory','renderXc','renderBf'].forEach(n=>{   /* renderXc added Nov 12: top bar filters on Cross Channel */ const f = g[n]; if(typeof f !== 'function') return;
     g[n] = function(){ const was = STOCK_ON; STOCK_ON = true; try { gfModuleBlank(); } catch(e){}
       try { return f.apply(this, arguments); } finally { STOCK_ON = was; try { ensureClearBtn(); } catch(e){} try { ensureCoverage(); } catch(e){} try { curModPaint(); } catch(e){} try { ensureScoreTile(); } catch(e){} try { normalizeUi(); } catch(e){} } }; });
   ['navPercents','modPct'].forEach(n=>{ const f = g[n]; if(typeof f !== 'function') return;
