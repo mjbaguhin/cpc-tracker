@@ -898,6 +898,8 @@ a.idl:hover{color:var(--accent);border-bottom-style:solid}
 #navGroups .gf-l select{font-size:.78rem;background:#1d222a;color:#e8edf3;border:1px solid rgba(255,255,255,.22);border-radius:6px;padding:.2rem .3rem}
 #gfQ{font-size:.8rem;width:15rem;max-width:100%;background:#1d222a;color:#e8edf3;border:1px solid rgba(255,255,255,.22);border-radius:6px;padding:.3rem .55rem}
 #gfQ::placeholder{color:rgba(255,255,255,.45)}
+.bf-table .bbdo{display:block;white-space:normal;word-break:normal;line-height:1.3}
+.bf-table td{vertical-align:top}
 .cov-tag{font-size:.7rem;border-radius:6px;padding:.12rem .5rem;border:1px solid}
 .cov-tag.ok{color:#7fd3a8;border-color:#2c5e46;background:#16301f}
 .cov-tag.bad{color:#ffb4a8;border-color:#6b2c25;background:#3a1612}
@@ -7118,8 +7120,8 @@ function renderBf(){
     tile('Listings with an issue', withIssue.length, withIssue.length ? 'bad' : 'good', read.length + ' of ' + all.length + ' read on the page', 'issues') +
     Object.keys(T).filter(k=> count[k]).map(k=> tile(T[k], count[k], 'bad', '', k)).join('') + '</div></section>';
   html += '<div class="cpt-tools"><span class="count">' + rows.length + ' of ' + all.length + '</span></div>';
-  html += '<div style="overflow-x:auto"><table class="cpt-table lc-table"><thead><tr><th>Product</th>' + TIER_TH +
-    '<th>Issues</th><th class="c">Deal badge</th><th class="num">Page price</th><th class="num">Haris sale / min</th><th>Buy Box</th><th class="c">Stock</th><th class="c">Star rating</th><th class="c">Ratings</th><th>BSR</th><th>Variation options</th><th>Breadcrumb</th><th class="c">Read</th></tr></thead><tbody>' +
+  html += '<div style="overflow-x:auto"><table class="cpt-table lc-table bf-table" style="table-layout:auto"><thead><tr><th>Product</th>' + TIER_TH +
+    '<th style="min-width:17rem">Issues</th><th class="c">Deal badge</th><th class="num">Page price</th><th class="num">Haris sale / min</th><th>Buy Box</th><th class="c">Stock</th><th class="c">Star rating</th><th class="c">Ratings</th><th>BSR</th><th>Variation options</th><th>Breadcrumb</th><th class="c">Read</th></tr></thead><tbody>' +
     rows.map(r=>{ const x = r.read || {}, p = r.prev || {};
       // Nov 19 (MJ): a reading older than 8 hours is shown faded with its age, so a fixed issue isn't mistaken for a live one
       const ageH = x.t ? Math.round((Date.now() - Date.parse(String(x.t).replace(' ', 'T') + ':00-05:00')) / 3600e3) : null, old = ageH !== null && ageH >= 8;
