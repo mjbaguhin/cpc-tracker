@@ -3834,7 +3834,7 @@ function cptHistory(){
   return out.sort((a,b)=> a.d < b.d ? 1 : -1);
 }
 function cptHistHtml(){
-  let L = cptHistory();
+  let L = cptHistory().filter(x=> typeof gfMatch !== 'function' || gfMatch(x.r));   // Nov 20 (MJ): history follows the View bar filters
   const all = L;
   if(CPT_H.dir) L = L.filter(x=> x.kind === CPT_H.dir);
   if(CPT_H.q){ const q = CPT_H.q.toLowerCase(); L = L.filter(x=> (x.r.sku + ' ' + x.r.asin + ' ' + x.r.name).toLowerCase().indexOf(q) !== -1); }
@@ -3856,7 +3856,7 @@ function cptHistHtml(){
     tile('CPT gone', n('gone'), '', 'No CPT anymore', 'gone')+
     '</div><div class="cpt-tools">'+
       '<div class="seg" id="hDays">' + [[0, 'All time'], [7, '7 days'], [30, '30 days'], [90, '90 days']].map(dd=> `<button data-days="${dd[0]}" aria-pressed="${CPT_H.days === dd[0]}">${dd[1]}</button>`).join('') + '</div>'+
-      `<button id="hBySku" aria-pressed="${CPT_H.bySku}">Group by listing</button><button id="cptLog">Our price changes</button><button id="hDl">Download</button>`+
+      `<button id="hBySku" aria-pressed="${CPT_H.bySku}">Group by listing</button>${CPT_H.bySku ? `<button id="hAll">${CPT_H.closed && CPT_H.closed.size ? 'Expand all' : 'Collapse all'}</button>` : ''}<button id="cptLog">Our price changes</button><button id="hDl">Download</button>`+
       `<span class="count">${L.length} moves</span></div>`;
   if(!L.length) html += `<div class="cpt-empty"><b>No CPT moves</b>${all.length ? 'Pick another filter.' : 'Nothing moved in this period.'}</div>`;
   else {
@@ -3865,7 +3865,7 @@ function cptHistHtml(){
       const g = {}; L.forEach(x=> (g[x.r.asin] = g[x.r.asin] || []).push(x));
       Object.keys(g).sort((a,b)=> g[b].length - g[a].length || (g[a][0].d < g[b][0].d ? 1 : -1)).forEach(a=>{
         const xs = g[a], r = xs[0].r, d = xs.filter(x=> x.kind === 'down').length, u = xs.filter(x=> x.kind === 'up').length;
-        html += `<tr class="gh"><td colspan="9"><b>${esc(r.sku)}</b> <span class="mut">${esc(String(r.name || '').slice(0, 50))} \u00b7 ${xs.length} move${xs.length > 1 ? 's' : ''}${d ? ', ' + d + ' down' : ''}${u ? ', ' + u + ' up' : ''} \u00b7 CPT now ${r.cpt === null || r.cpt === undefined ? 'none' : usd(r.cpt)}</span></td></tr>` + xs.map(line).join('');
+        html += `<tr class="gh hgh" data-hg="${esc(a)}" style="cursor:pointer" title="Click to show or hide its moves"><td colspan="9">${CPT_H.closed && CPT_H.closed.has(a) ? '\u25b8 ' : '\u25be '}<b>${esc(r.sku)}</b> <span class="mut">${esc(String(r.name || '').slice(0, 50))} \u00b7 ${xs.length} move${xs.length > 1 ? 's' : ''}${d ? ', ' + d + ' down' : ''}${u ? ', ' + u + ' up' : ''} \u00b7 CPT now ${r.cpt === null || r.cpt === undefined ? 'none' : usd(r.cpt)}</span></td></tr>` + (CPT_H.closed && CPT_H.closed.has(a) ? '' : xs.map(line).join(''));
       });
     } else html += L.map(line).join('');
     html += '</tbody></table>';
@@ -3878,6 +3878,11 @@ function cptHistWire(v){
   [...v.querySelectorAll('#hDays button')].forEach(b=> b.onclick = ()=>{ CPT_H.days = +b.dataset.days; renderCpt(); });
   const q = document.getElementById('hQ'); if(q) q.oninput = ()=>{ CPT_H.q = q.value; const p = q.selectionStart; renderCpt(); const q2 = document.getElementById('hQ'); q2.focus(); q2.setSelectionRange(p, p); };
   const g = document.getElementById('hBySku'); if(g) g.onclick = ()=>{ CPT_H.bySku = !CPT_H.bySku; renderCpt(); };
+  // Nov 20 (MJ): open or close each listing's moves, or all of them
+  if(!CPT_H.closed) CPT_H.closed = new Set();
+  v.querySelectorAll('tr.hgh').forEach(tr=> tr.onclick = ()=>{ const a = tr.dataset.hg; CPT_H.closed.has(a) ? CPT_H.closed.delete(a) : CPT_H.closed.add(a); renderCpt(); });
+  const ha = document.getElementById('hAll');
+  if(ha) ha.onclick = ()=>{ if(CPT_H.closed.size) CPT_H.closed.clear(); else v.querySelectorAll('tr.hgh').forEach(tr=> CPT_H.closed.add(tr.dataset.hg)); renderCpt(); };
   const dl = document.getElementById('hDl'); if(dl) dl.onclick = ()=> csvSave('cpt-history-' + CPT_H.days + 'd', ['When (ET)','SKU','ASIN','Product','Move','From','To','Change','Our price','CPT now'],
     cptHistory().filter(x=> !CPT_H.dir || x.kind === CPT_H.dir).map(x=> [x.d, x.r.sku, x.r.asin, x.r.name, x.kind, x.from, x.to, x.from !== null && x.to !== null ? Math.round((x.to - x.from) * 100) / 100 : '', x.ours ?? '', x.r.cpt ?? '']));
 }
@@ -7116,9 +7121,11 @@ function renderBf(){
   html += '<div style="overflow-x:auto"><table class="cpt-table lc-table"><thead><tr><th>Product</th>' + TIER_TH +
     '<th>Issues</th><th class="c">Deal badge</th><th class="num">Page price</th><th class="num">Haris sale / min</th><th>Buy Box</th><th class="c">Stock</th><th class="c">Star rating</th><th class="c">Ratings</th><th>BSR</th><th>Variation options</th><th>Breadcrumb</th><th class="c">Read</th></tr></thead><tbody>' +
     rows.map(r=>{ const x = r.read || {}, p = r.prev || {};
+      // Nov 19 (MJ): a reading older than 8 hours is shown faded with its age, so a fixed issue isn't mistaken for a live one
+      const ageH = x.t ? Math.round((Date.now() - Date.parse(String(x.t).replace(' ', 'T') + ':00-05:00')) / 3600e3) : null, old = ageH !== null && ageH >= 8;
       const chg = (a, b)=> a !== null && a !== undefined && b !== null && b !== undefined && a !== b ? ` <span class="mut">(was ${b})</span>` : '';
       return `<tr class="row"><td class="prod"><div class="p-name">${esc(String(r.name).slice(0, 60))}</div><div class="p-id"><span>SKU</span>${skuL(r.sku, 'US')}${cpy(r.sku)}</div><div class="p-id"><span>ASIN</span>${asinL(r.asin, 'US')}${cpy(r.asin)}</div></td>` + tierTd(r) +
-        `<td>${r.flags.length ? r.flags.map(f=> `<div class="bbdo bad" style="margin:.1rem 0">${esc(T[f.type] || f.type)}${f.detail ? ': ' + esc(f.detail) : ''}</div>`).join('') : '<span class="mut">\u2014</span>'}</td>` +
+        `<td>${r.flags.length ? r.flags.map(f=> `<div class="bbdo bad" style="margin:.1rem 0${old ? ';opacity:.55' : ''}">${esc(String(T[f.type] || f.type).replace(/ \(.*\)$/, ''))}${f.detail && !/^(no badge on the page)$/.test(f.detail) ? ': ' + esc(f.detail) : ''}</div>`).join('') + (old ? `<div class="mut" style="font-size:.72rem">From the ${esc(x.t || '')} read, ${ageH} h old</div>` : '') : '<span class="mut">\u2014</span>'}</td>` +
         `<td class="c">${x.badge ? esc(x.badge) : '<span class="mut">not read</span>'}</td><td class="num">${usd(x.price)}</td><td class="num">${usd(r.sale)} / ${usd(r.min)}</td>` +
         `<td style="font-size:.8rem">${esc(x.soldBy || '')}</td><td class="c" style="font-size:.8rem">${esc(x.stock || '')}</td>` +
         `<td class="c">${x.star !== null && x.star !== undefined ? x.star + chg(x.star, p.star) : '\u2014'}</td><td class="c">${x.count !== null && x.count !== undefined ? x.count + chg(x.count, p.count) : '\u2014'}</td>` +
