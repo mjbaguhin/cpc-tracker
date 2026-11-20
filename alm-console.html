@@ -4264,8 +4264,17 @@ function renderBb(){
   const by = k=> no.filter(r=> r.why === k);
   const amzOn = all.filter(r=> r.others.length);
   const fresh = BB_META.updated && BB_META.updated.slice(0,10) >= new Date(Date.now() - 2*86400000).toISOString().slice(0,10);
+  // Nov 20 (MJ): slow delivery while we have stock (from the page checks) and under 14 days of stock
+  const DLR = (typeof RV !== 'undefined' && RV.delivery) || null;
+  const dlSet = new Set((DLR || []).filter(d=> d.slow && d.mk === 'US').map(d=> d.asin));
+  const dlOf = a=> (DLR || []).find(d=> d.asin === a && d.mk === 'US');
+  const slow = all.filter(r=> dlSet.has(r.asin) && (stockOf(r, 'US') || 0) > 0);
+  const daysOf = r=>{ const row = ROWS.find(x=> x.sku === r.sku) || ROWS.find(x=> x.asin === r.asin); if(!row || !(row.usAvail > 0) || !(row.units30 > 0)) return null; return row.usAvail / (row.units30 / 30); };
+  const low = all.filter(r=>{ const d = daysOf(r); return d !== null && d < 14; });
 
   let rows = all;
+  if(BB_F.show === 'dl')     rows = slow;
+  if(BB_F.show === 'low')    rows = low;
   if(BB_F.show === 'yes')    rows = yes;
   if(BB_F.show === 'no')     rows = no;
   if(BB_F.show === 'oos')    rows = by('oos');
@@ -4280,7 +4289,7 @@ function renderBb(){
   rows = BB_F.sort && BB_SORT[BB_F.sort] ? sortBy(rows, BB_SORT[BB_F.sort], BB_F.dir)
        : sortBy(rows, r=> (r.has ? 1000 : Object.keys(BB_WHY).indexOf(r.why) * 10) + (TIER_RANK[r.tier] !== undefined ? TIER_RANK[r.tier] : 5), 1);
 
-  let tileShow = ['all', 'yes', 'no', 'oos', 'stranded', 'seller', 'other', 'amz'], tileN = 0;
+  let tileShow = ['all', 'yes', 'no', 'oos', 'stranded', 'seller', 'other', 'amz', 'dl', 'low'], tileN = 0;
   const tile = (k, val, cls, note)=>{ const f = tileShow[tileN++] || 'all';
     return `<div class="cpt-tile bbtile${BB_F.show === f ? ' on' : ''}" role="button" tabindex="0" data-show="${f}" title="Show these in the table"><div class="k">${k}</div><div class="v ${cls || ''}">${val}</div><div class="n">${note || '&nbsp;'}</div></div>`; };
   const list = a=> esc(a.map(r=> r.sku).slice(0,3).join(', ')) + (a.length > 3 ? '\u2026' : '');
@@ -4311,6 +4320,9 @@ function renderBb(){
       tile('Other reason', oth.length, oth.length ? 'warn' : 'good', oth.length ? list(oth) : '')+
       tile('Other sellers on our listing', amzOn.length, amzOn.length ? 'warn' : 'good',
            amzOn.length ? `We still have the Buy Box on ${amzOn.filter(r=> r.has).length}` : '')+
+      tile('Slow delivery while we have stock', DLR ? slow.length : '\u2014', !DLR ? '' : slow.length ? 'bad' : 'good',
+           !DLR ? 'Starts with the next page check' : slow.length ? list(slow) + ' \u00b7 e.g. \u201c' + esc(String((dlOf(slow[0].asin) || {}).page || '').slice(0, 40)) + '\u201d' : 'In Stock on every page read')+
+      tile('Under 14 days of stock', low.length, low.length ? 'warn' : 'good', low.length ? list(low) : 'At the last 30 days\u2019 sales')+
       rbTile(all, 'Breaks an Amazon pricing rule')+
     '</div></section>'+
     rbBanner()+
@@ -6711,7 +6723,7 @@ function bsRowsRaw(mk){
     // Positive trend = a higher rank number = selling slower than its 30-day average
     const trend = bsr && avg30 && (rk.days || 0) >= 7 ? Math.round((bsr - avg30) / avg30 * 100) : null;
     const o = Object.assign({}, r, {name: (row && row.name) || r.name || r.asin, tier: r.tier || (row && row.tier) || '',
-      cur, r30, r90, d30, d90, rev: bsNum(rt.rev), rev30: bsNum(rt.rev30), bsr, avg30, trend, sold: bsNum(rk.sold), days: rk.days || 0, sync: {}});
+      cur, r30, r90, d30, d90, rev: bsNum(rt.rev), rev30: bsNum(rt.rev30), rev7: bsNum(rt.rev7), bsr, avg30, trend, sold: bsNum(rk.sold), days: rk.days || 0, sync: {}});
     o.flags = [];
     if(cur !== null && cur < 4) o.flags.push('low');
     if(d30 !== null && d30 <= -0.1) o.flags.push('drop');
@@ -6769,7 +6781,8 @@ function renderBsr(){
     all.forEach(r=>{ if(r.rev === null) return; const k = r.par && r.par.pasin && r.sync.rev && r.sync.rev.s === 'ok' ? 'f' + r.par.pasin : 'a' + r.asin; if(!seen[k]){ seen[k] = 1; t += r.rev; } });
     return t; })();
   const ranked = all.filter(r=> r.bsr).map(r=> r.bsr).sort((a,b)=> a - b), medBsr = ranked.length ? ranked[Math.floor(ranked.length / 2)] : null;
-  const pick = {good, low, drop, nobsr, slow, under3, rb: all.filter(r=> (r.rb || []).length), any: all.filter(r=> r.flags.length),
+  const revDown = all.filter(r=> r.rev7 !== null && r.rev7 < 0);   // Nov 20 (MJ): fewer ratings than 7 days ago, usually a variation split or unlinked reviews
+  const pick = {good, low, drop, nobsr, slow, under3, revdown: revDown, rb: all.filter(r=> (r.rb || []).length), any: all.filter(r=> r.flags.length),
                 synccur: offK('cur'), syncrev: offK('rev'), syncbsr: offK('bsr'), sync: all.filter(r=> r.off && r.off.length)};
 
   let rows = pick[BS_F.show] || all;
@@ -6792,6 +6805,7 @@ function renderBsr(){
       // BSR vs average, new ratings, ratings count, median BSR. The columns still show them.
       syncTile('cur', 'synccur') + syncTile('rev', 'syncrev') + syncTile('bsr', 'syncbsr') +
       t1('No BSR on Amazon', nobsr, 'nobsr') +
+      tile('Rating count went down', revDown.length, revDown.length ? 'bad' : 'good', revDown.length ? list(revDown) + ' \u00b7 in the last 7 days' : 'None in the last 7 days', 'revdown') +
       rbTile(all, 'Breaks a BSR rule') +
     '</div></section>'+
     rbBanner()+
@@ -8690,6 +8704,13 @@ const ST_F = Object.assign({}, ST_F_DEF);
 const ST_COLL = new Set();   // collapsed families on the Strike-through page
 try { Object.assign(ST_F, JSON.parse(localStorage.getItem('st_state') || '{}')); } catch(e){}
 const stKeep = ()=>{ try { localStorage.setItem('st_state', JSON.stringify(ST_F)); } catch(e){} };
+/* Nov 20 (MJ): did the latest page check read every listing? "47 of 47 read" or "45 of 47 read" (hover for which) */
+function pcTag(check){
+  const c = ((typeof RV !== 'undefined' && RV.pageCoverage) || []).find(x=> x.check === check);
+  if(!c) return '';
+  const ok = !c.missing.length, short = check === 'Weekly page check' ? 'Weekly' : 'Daily';
+  return `<span class="cov-tag ${ok ? 'ok' : 'bad'}" title="${esc(ok ? check + ', run ' + c.run : 'Not read: ' + c.missing.join(', '))}">${short} ${c.read} of ${c.expected} read${ok ? ' \u2713' : ''}</span>`;
+}
 function renderStrike(){
   ST_F.family = ''; ST_F.tier = ''; ST_F.brand = ''; ST_F.q = '';   // the top bar does tier, brand and search (Nov 12)
   ST_F.mk = 'US';   // US only (MJ, Nov 12)
@@ -8704,7 +8725,7 @@ function renderStrike(){
   const sMiss = (RV.strikeMissing || []).filter(x=> (x.mk || 'US') === smk), act = rvAct(smk);
   const hist = stHistRows(smk), sc = stScore(smk);
   const tile = (k, val, cls, note, f)=> `<div class="cpt-tile bbtile${(f === 'hist' ? ST_F.hist : !ST_F.hist && ST_F.show === f) ? ' on' : ''}" role="button" tabindex="0" data-sts="${f}"><div class="k">${k}</div><div class="v ${cls || ''}">${val}</div><div class="n">${note || '&nbsp;'}</div></div>`;
-  let html = '<section class="cpt-top"><div class="cpt-head"><h2>Strike-through</h2>'+
+  let html = '<section class="cpt-top"><div class="cpt-head"><h2>Strike-through</h2>' + pcTag('Daily strike-through') +
     (run ? `<span class="sub">Checked ${esc(run.date)}</span>` : '')+
     (run ? `<span class="cpt-live"><i></i>${sMiss.length ? `${act - sMiss.length} of ${act} active covered` : `\u2713 All ${act} active covered`}</span>` : '')+
     '</div><div class="cpt-tiles">'+
@@ -8814,7 +8835,7 @@ function renderReview(){
   const fams = [...new Set(all.map(r=> r.fam))].sort(), brands = [...new Set(all.map(r=> r.brand).filter(Boolean))].sort();
   const tile = (k, val, cls, note, f)=> f === '' ? `<div class="cpt-tile"><div class="k">${k}</div><div class="v ${cls || ''}">${val}</div><div class="n">${note || '&nbsp;'}</div></div>` : `<div class="cpt-tile bbtile${RV_F.status === f ? ' on' : ''}" role="button" tabindex="0" data-rvs="${f}"><div class="k">${k}</div><div class="v ${cls || ''}">${val}</div><div class="n">${note || '&nbsp;'}</div></div>`;
   const sel = (id, label, opts, val)=> `<label class="mut" style="font-size:.78rem">${label} <select id="${id}"><option value="">All</option>${opts.map(o=> `<option value="${esc(o)}"${o === val ? ' selected' : ''}>${esc(o)}</option>`).join('')}</select></label>`;
-  let html = '<section class="cpt-top"><div class="cpt-head"><h2>Listing Review</h2>'+
+  let html = '<section class="cpt-top"><div class="cpt-head"><h2>Listing Review</h2>' + pcTag('Weekly page check') + pcTag('Daily strike-through') +
     `<span class="sub">Keepa details checked daily, product pages checked weekly by Cowork</span>`+
     (RV.updated ? `<span class="cpt-live"><i></i>Built ${esc(RV.updated)} ET</span>` : '')+
     '</div><div class="cpt-tiles">'+
