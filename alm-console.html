@@ -900,6 +900,12 @@ a.idl:hover{color:var(--accent);border-bottom-style:solid}
 #gfQ::placeholder{color:rgba(255,255,255,.45)}
 .bf-table .bbdo{display:block;white-space:normal;word-break:normal;line-height:1.3}
 .bf-table td{vertical-align:top}
+.bfg{border:1px solid #e5e7eb;border-radius:10px;margin:.5rem 0;overflow:hidden}
+.bfg-h{display:flex;align-items:center;gap:.6rem;padding:.55rem .8rem;background:#f8fafc;cursor:pointer}
+.bfg-n{font-size:.75rem;border-radius:999px;padding:.05rem .55rem;background:#eef2f7}
+.bfg-n.bad{background:#fde8e8;color:#b91c1c}.bfg-n.warn{background:#fdf3e1;color:#b45309}.bfg-n.info{background:#e8f0fd;color:#1d4ed8}
+.bf-done td{opacity:.45}
+@media (prefers-color-scheme: dark){ .bfg{border-color:rgba(255,255,255,.12)} .bfg-h{background:#1d222a} }
 .cov-tag{font-size:.7rem;border-radius:6px;padding:.12rem .5rem;border:1px solid}
 .cov-tag.ok{color:#7fd3a8;border-color:#2c5e46;background:#16301f}
 .cov-tag.bad{color:#ffb4a8;border-color:#6b2c25;background:#3a1612}
@@ -7100,7 +7106,25 @@ function xcScore(){ const c = xcRows().filter(r=> r.tier !== 'X' && !r.unknown);
 function wmItemUrl(sku){ return 'https://seller.walmart.com/catalog/list-items?sortField=modifiedDtm&sortOrder=desc&filters=' + encodeURIComponent(encodeURIComponent(JSON.stringify({productOfferId: sku}))); }
 const WM_ADD_URL = 'https://seller.walmart.com/catalog/add-items';
 /* BFCM Watch page (Nov 19, MJ): one row per deal listing with everything checked during BFCM */
-let BF_F = {show:'all'};
+let BF_F = {show:'all', view:'action', hideDone:true, open:{fix:true}};
+/* Nov 20 (MJ): organize the BFCM issues by what to do and who acts */
+const BF_GROUPS = [['fix','1. Fix now: customers affected','You','bad'], ['haris','2. Send to Haris: pricing','Haris','warn'],
+  ['stock','3. Stock','Inventory owner','warn'], ['hand','4. Already in hand','You','info'], ['watch','5. Watch only','\u2014','']];
+let BF_DONE_LOCAL = null;   // keys "SKU|type" ticked done (server list + this session's changes)
+function bfDoneSet(){ if(!BF_DONE_LOCAL){ BF_DONE_LOCAL = new Set((BF && BF.done) || []); try { JSON.parse(localStorage.getItem('bfDone') || '[]').forEach(k=> BF_DONE_LOCAL.add(k)); } catch(e){} } return BF_DONE_LOCAL; }
+function bfDoneSend(keys, done){
+  const S2 = bfDoneSet(); keys.forEach(k=> done ? S2.add(k) : S2.delete(k));
+  try { localStorage.setItem('bfDone', JSON.stringify([...S2])); } catch(e){}
+  if(typeof RV !== 'undefined' && RV.webapp) keys.forEach(k=> fetch(RV.webapp + '?' + new URLSearchParams({action:'bfdone', key:k, done: done ? '1' : '0'}).toString(), {mode:'no-cors'}).catch(()=>{}));
+}
+function bfGroupOf(f, r){
+  if(['wrongpage','mismatch','used','ship','badge','variation'].includes(f.type)) return 'fix';
+  if(f.type === 'bb') return /no Buy Box while in stock/i.test(f.detail || '') ? 'fix' : 'haris';
+  if(f.type === 'price' || f.type === 'below') return 'haris';
+  if(['oos','low','stranded'].includes(f.type)) return 'stock';
+  if(f.type === 'category'){ const n = (typeof CH !== 'undefined' && CH && CH.notes && CH.notes['US|' + r.asin]) || []; return n.length ? 'hand' : 'fix'; }
+  return 'watch';
+}
 function renderBf(){
   document.getElementById('msg').hidden = true; document.getElementById('bar').innerHTML = '';
   const v = document.getElementById('cptView');
@@ -7119,7 +7143,37 @@ function renderBf(){
   let html = '<section class="cpt-top"><div class="cpt-head"><h2>BFCM Watch</h2><span class="sub">Updated ' + esc(BF.updated || '') + ' ET</span>' + cov + '</div><div class="cpt-tiles">' +
     tile('Listings with an issue', withIssue.length, withIssue.length ? 'bad' : 'good', read.length + ' of ' + all.length + ' read on the page', 'issues') +
     Object.keys(T).filter(k=> count[k]).map(k=> tile(T[k], count[k], 'bad', '', k)).join('') + '</div></section>';
-  html += '<div class="cpt-tools"><span class="count">' + rows.length + ' of ' + all.length + '</span></div>';
+  const seg = `<div class="seg" id="bfView"><button data-v="all" aria-pressed="${BF_F.view !== 'action'}">All listings</button><button data-v="action" aria-pressed="${BF_F.view === 'action'}">Group by action</button></div>`;
+  if(BF_F.view === 'action'){
+    const D = bfDoneSet(), grp = {}; BF_GROUPS.forEach(g=> grp[g[0]] = []);
+    rows.forEach(r=>{ const by = {}; r.flags.forEach(f=>{ const g = bfGroupOf(f, r); (by[g] = by[g] || []).push(f); });
+      Object.keys(by).forEach(g=> grp[g].push({r, fl: by[g], done: by[g].every(f=> D.has(r.sku + '|' + f.type))})); });
+    const nDone = Object.values(grp).reduce((a, l)=> a + l.filter(x=> x.done).length, 0);
+    html += `<div class="cpt-tools">${seg}<label style="display:inline-flex;gap:.3rem;align-items:center;font-size:.8rem"><input type="checkbox" id="bfHide" ${BF_F.hideDone ? 'checked' : ''}> Hide done</label><span class="count">${rows.filter(r=> r.flags.length).length} listings with an issue \u00b7 ${nDone} done</span></div>`;
+    const usd2 = n=> n === null || n === undefined ? '\u2014' : '$' + Number(n).toFixed(2);
+    html += BF_GROUPS.map(([k, label, who, cls])=>{
+      const L = grp[k], left = L.filter(x=> !x.done).length, shown = BF_F.hideDone ? L.filter(x=> !x.done) : L, open = !!BF_F.open[k];
+      const head = `<div class="bfg-h" data-g="${k}" role="button" tabindex="0"><span>${open ? '\u25be' : '\u25b8'}</span><b>${label}</b><span class="bfg-n ${cls}">${left} to do${L.length - left ? ' \u00b7 ' + (L.length - left) + ' done' : ''}</span>${k === 'haris' && L.length ? '<button class="bfHaris">Copy list for Haris</button>' : ''}<span class="mut" style="margin-left:auto">Who: ${esc(who)}</span></div>`;
+      const body = !open ? '' : !shown.length ? '<div class="mut" style="padding:.5rem .8rem">Nothing to do here.</div>' :
+        '<table class="cpt-table lc-table bf-table" style="table-layout:auto"><tbody>' + shown.map(x=>{ const r = x.r, rd = r.read || {}, keys = x.fl.map(f=> r.sku + '|' + f.type).join(',');
+          return `<tr class="row${x.done ? ' bf-done' : ''}"><td style="width:2rem"><input type="checkbox" class="bfTick" data-keys="${esc(keys)}" ${x.done ? 'checked' : ''} aria-label="Done"></td>`+
+            `<td class="prod"><div class="p-name">${esc(String(r.name).slice(0, 50))}</div><div class="p-id"><span>SKU</span>${skuL(r.sku, 'US')}${cpy(r.sku)}</div><div class="p-id"><span>ASIN</span>${asinL(r.asin, 'US')}${cpy(r.asin)}</div></td>`+
+            `<td style="min-width:17rem">${x.fl.map(f=> `<div class="bbdo bad">${esc(String(T[f.type] || f.type).replace(/ \(.*\)$/, ''))}${f.detail ? ': ' + esc(f.detail) : ''}</div>`).join('')}</td>`+
+            `<td class="num" style="font-size:.8rem">Page ${usd2(rd.price)}<br><span class="mut">Haris ${usd2(r.sale)} / ${usd2(r.min)}</span></td><td class="mut" style="font-size:.75rem">${esc((rd.t || '') + (rd.pass ? ' \u00b7 ' + rd.pass : ''))}</td></tr>`; }).join('') + '</tbody></table>';
+      return `<section class="bfg">${head}${body}</section>`;
+    }).join('');
+    v.innerHTML = html;
+    v.querySelectorAll('.cpt-tile[data-bf]').forEach(t=> t.onclick = ()=>{ BF_F.show = BF_F.show === t.dataset.bf ? 'all' : t.dataset.bf; renderBf(); });
+    v.querySelectorAll('#bfView [data-v]').forEach(b=> b.onclick = ()=>{ BF_F.view = b.dataset.v; renderBf(); });
+    const hd = v.querySelector('#bfHide'); if(hd) hd.onchange = ()=>{ BF_F.hideDone = hd.checked; renderBf(); };
+    v.querySelectorAll('.bfg-h').forEach(h=> h.onclick = ev=>{ if(ev.target.closest('button')) return; BF_F.open[h.dataset.g] = !BF_F.open[h.dataset.g]; renderBf(); });
+    v.querySelectorAll('.bfTick').forEach(c=> c.onchange = ()=>{ bfDoneSend(c.dataset.keys.split(','), c.checked); renderBf(); });
+    const hb = v.querySelector('.bfHaris'); if(hb) hb.onclick = ev=>{ ev.stopPropagation();
+      const txt = 'BFCM prices that don\u2019t match your price list:\n' + grp.haris.filter(x=> !x.done).map(x=> x.r.sku + ' (' + x.r.asin + '): ' + x.fl.map(f=> (f.detail || T[f.type])).join('; ')).join('\n');
+      (navigator.clipboard ? navigator.clipboard.writeText(txt) : Promise.reject()).then(()=>{ hb.textContent = 'Copied \u2713'; setTimeout(()=> hb.textContent = 'Copy list for Haris', 1500); }).catch(()=>{ window.prompt('Copy this list:', txt); }); };
+    return;
+  }
+  html += '<div class="cpt-tools">' + seg + '<span class="count">' + rows.length + ' of ' + all.length + '</span></div>';
   html += '<div style="overflow-x:auto"><table class="cpt-table lc-table bf-table" style="table-layout:auto"><thead><tr><th>Product</th>' + TIER_TH +
     '<th style="min-width:17rem">Issues</th><th class="c">Deal badge</th><th class="num">Page price</th><th class="num">Haris sale / min</th><th>Buy Box</th><th class="c">Stock</th><th class="c">Star rating</th><th class="c">Ratings</th><th>BSR</th><th>Variation options</th><th>Breadcrumb</th><th class="c">Read</th></tr></thead><tbody>' +
     rows.map(r=>{ const x = r.read || {}, p = r.prev || {};
@@ -7135,6 +7189,7 @@ function renderBf(){
     '</tbody></table></div>';
   v.innerHTML = html;
   v.querySelectorAll('.cpt-tile[data-bf]').forEach(t=> t.onclick = ()=>{ BF_F.show = BF_F.show === t.dataset.bf ? 'all' : t.dataset.bf; renderBf(); });
+  v.querySelectorAll('#bfView [data-v]').forEach(b=> b.onclick = ()=>{ BF_F.view = b.dataset.v; renderBf(); });
 }
 function renderXc(){
   document.getElementById('msg').hidden = true;
