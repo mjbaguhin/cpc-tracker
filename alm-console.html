@@ -8685,7 +8685,7 @@ const ST_SORT = {product: x=> x.name || x.sku, tier: x=> (TIER_RANK[x.tier] !== 
    the weekly check and the daily Tier A and B check (review.json strikeHist). */
 function stHistRows(mk){
   const out = [];
-  (RV.strikeHist || []).filter(h=> (h.mk || 'US') === mk).forEach(h=>{
+  (RV.strikeHist || []).filter(h=> (h.mk || 'US') === mk).filter(h=> typeof gfMatch !== 'function' || gfMatch(h)).forEach(h=>{   // Nov 20 (MJ): follows the View bar filters
     const ev = h.ev || [];
     for(let i = 1; i < ev.length; i++){
       const a = ev[i - 1][1], b = ev[i][1], sa = !!a && !/^none$/i.test(a), sb = !!b && !/^none$/i.test(b);
