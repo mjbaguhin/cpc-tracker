@@ -7117,9 +7117,13 @@ function bfDoneSend(keys, done){
   try { localStorage.setItem('bfDone', JSON.stringify([...S2])); } catch(e){}
   if(typeof RV !== 'undefined' && RV.webapp) keys.forEach(k=> fetch(RV.webapp + '?' + new URLSearchParams({action:'bfdone', key:k, done: done ? '1' : '0'}).toString(), {mode:'no-cors'}).catch(()=>{}));
 }
+// Nov 20 (MJ): when a listing can't be bought (out of stock, stranded, no Buy Box, almost no stock),
+// Amazon shows another variation of the family instead. Then the wrong page is a symptom: it goes to Stock.
+function bfUnbuyable(r){ return r.flags.some(x=> ['oos','stranded','low'].includes(x.type) || (x.type === 'bb' && /no Buy Box/i.test(x.detail || ''))); }
 function bfGroupOf(f, r){
-  if(['wrongpage','mismatch','used','ship','badge','variation'].includes(f.type)) return 'fix';
-  if(f.type === 'bb') return /no Buy Box while in stock/i.test(f.detail || '') ? 'fix' : 'haris';
+  if(f.type === 'wrongpage' || f.type === 'used') return bfUnbuyable(r) ? 'stock' : 'fix';   // a used offer wins only because ours is out of stock
+  if(['mismatch','used','ship','badge','variation'].includes(f.type)) return 'fix';
+  if(f.type === 'bb') return /no Buy Box/i.test(f.detail || '') ? 'stock' : 'haris';
   if(f.type === 'price' || f.type === 'below') return 'haris';
   if(['oos','low','stranded'].includes(f.type)) return 'stock';
   if(f.type === 'category'){ const n = (typeof CH !== 'undefined' && CH && CH.notes && CH.notes['US|' + r.asin]) || []; return n.length ? 'hand' : 'fix'; }
@@ -7149,7 +7153,7 @@ function renderBf(){
     rows.forEach(r=>{ const by = {}; r.flags.forEach(f=>{ const g = bfGroupOf(f, r); (by[g] = by[g] || []).push(f); });
       Object.keys(by).forEach(g=> grp[g].push({r, fl: by[g], done: by[g].every(f=> D.has(r.sku + '|' + f.type))})); });
     const nDone = Object.values(grp).reduce((a, l)=> a + l.filter(x=> x.done).length, 0);
-    html += `<div class="cpt-tools">${seg}<label style="display:inline-flex;gap:.3rem;align-items:center;font-size:.8rem"><input type="checkbox" id="bfHide" ${BF_F.hideDone ? 'checked' : ''}> Hide done</label><span class="count">${rows.filter(r=> r.flags.length).length} listings with an issue \u00b7 ${nDone} done</span></div>`;
+    html += `<div class="cpt-tools">${seg}<label style="display:inline-flex;gap:.3rem;align-items:center;font-size:.8rem;white-space:nowrap;width:auto;flex:0 0 auto"><input type="checkbox" id="bfHide" style="width:auto;margin:0" ${BF_F.hideDone ? 'checked' : ''}> Hide done</label><span class="count">${rows.filter(r=> r.flags.length).length} listings with an issue \u00b7 ${nDone} done</span></div>`;
     const usd2 = n=> n === null || n === undefined ? '\u2014' : '$' + Number(n).toFixed(2);
     html += BF_GROUPS.map(([k, label, who, cls])=>{
       const L = grp[k], left = L.filter(x=> !x.done).length, shown = BF_F.hideDone ? L.filter(x=> !x.done) : L, open = !!BF_F.open[k];
@@ -7158,7 +7162,7 @@ function renderBf(){
         '<table class="cpt-table lc-table bf-table" style="table-layout:auto"><tbody>' + shown.map(x=>{ const r = x.r, rd = r.read || {}, keys = x.fl.map(f=> r.sku + '|' + f.type).join(',');
           return `<tr class="row${x.done ? ' bf-done' : ''}"><td style="width:2rem"><input type="checkbox" class="bfTick" data-keys="${esc(keys)}" ${x.done ? 'checked' : ''} aria-label="Done"></td>`+
             `<td class="prod"><div class="p-name">${esc(String(r.name).slice(0, 50))}</div><div class="p-id"><span>SKU</span>${skuL(r.sku, 'US')}${cpy(r.sku)}</div><div class="p-id"><span>ASIN</span>${asinL(r.asin, 'US')}${cpy(r.asin)}</div></td>`+
-            `<td style="min-width:17rem">${x.fl.map(f=> `<div class="bbdo bad">${esc(String(T[f.type] || f.type).replace(/ \(.*\)$/, ''))}${f.detail ? ': ' + esc(f.detail) : ''}</div>`).join('')}</td>`+
+            `<td style="min-width:17rem">${x.fl.map(f=> `<div class="bbdo bad">${esc(String(T[f.type] || f.type).replace(/ \(.*\)$/, ''))}${f.detail ? ': ' + esc(f.detail) : ''}</div>`).join('')}${x.fl.some(f=> f.type === 'wrongpage') && bfUnbuyable(r) ? '<div class="mut" style="font-size:.75rem">Amazon shows another variation because this one can\u2019t be bought. Fix the stock or Buy Box and the page comes back.</div>' : ''}</td>`+
             `<td class="num" style="font-size:.8rem">Page ${usd2(rd.price)}<br><span class="mut">Haris ${usd2(r.sale)} / ${usd2(r.min)}</span></td><td class="mut" style="font-size:.75rem">${esc((rd.t || '') + (rd.pass ? ' \u00b7 ' + rd.pass : ''))}</td></tr>`; }).join('') + '</tbody></table>';
       return `<section class="bfg">${head}${body}</section>`;
     }).join('');
