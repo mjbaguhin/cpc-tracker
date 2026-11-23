@@ -7148,7 +7148,9 @@ function renderBf(){
   const usd = n=> n === null || n === undefined ? '\u2014' : '$' + Number(n).toFixed(2);
   // Nov 19 (MJ): did today's passes read every listing?
   const cov = (BF.coverage || []).map(c=>{ const ok = c.status === 'complete', bad = c.status === 'not run' || c.status === 'incomplete';
-    const txt = c.slot + ' ' + (c.status === 'not yet' ? 'not yet' : c.status === 'not run' ? "didn't run" : c.read + ' of ' + c.expected + (ok ? ' \u2713' : c.status === 'incomplete' ? ' (' + (c.missing.length + c.captcha.length) + ' not read)' : ''));
+    // Nov 23: manual runs, so the tag says how old the newest pass is
+    const age = c.hours === null || c.hours === undefined ? '' : ' \u00b7 ' + (c.hours < 1 ? 'just now' : c.hours + ' h ago');
+    const txt = c.slot + ' ' + (c.status === 'not yet' ? 'not yet' : c.status === 'not run' ? (c.hours === null || c.hours === undefined ? 'none yet' : 'last ' + c.hours + ' h ago') : c.read + ' of ' + c.expected + (ok ? ' \u2713' : c.status === 'incomplete' ? ' (' + (c.missing.length + c.captcha.length) + ' not read)' : '') + age);
     return `<span class="cov-tag ${ok ? 'ok' : bad ? 'bad' : ''}" title="${esc(c.status === 'incomplete' ? 'Not read: ' + c.missing.concat(c.captcha).join(', ') : '')}">${esc(txt)}</span>`; }).join('');
   let html = '<section class="cpt-top"><div class="cpt-head"><h2>BFCM Watch</h2><span class="sub">Updated ' + esc(BF.updated || '') + ' ET</span>' + cov + '</div><div class="cpt-tiles">' +
     tile('Listings with an issue', withIssue.length, withIssue.length ? 'bad' : 'good', read.length + ' of ' + all.length + ' read on the page', 'issues') +
