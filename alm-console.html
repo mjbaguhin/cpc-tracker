@@ -906,6 +906,9 @@ a.idl:hover{color:var(--accent);border-bottom-style:solid}
 .bfg-n.bad{background:#fde8e8;color:#b91c1c}.bfg-n.warn{background:#fdf3e1;color:#b45309}.bfg-n.info{background:#e8f0fd;color:#1d4ed8}
 .bf-done td{opacity:.45}
 @media (prefers-color-scheme: dark){ .bfg{border-color:rgba(255,255,255,.12)} .bfg-h{background:#1d222a} }
+.lp-line .lp-what{margin-left:.4rem;font-size:.78rem;padding:.1rem .5rem}
+.lp-explain{margin-top:.4rem;font-size:.82rem;line-height:1.45}
+.lp-explain p{margin:.2rem 0}
 .cov-tag{font-size:.7rem;border-radius:6px;padding:.12rem .5rem;border:1px solid}
 .cov-tag.ok{color:#7fd3a8;border-color:#2c5e46;background:#16301f}
 .cov-tag.bad{color:#ffb4a8;border-color:#6b2c25;background:#3a1612}
@@ -5514,7 +5517,9 @@ function cgRows(mk){
     o.sig = cgSig(o);
     // Nov 12 (MJ): an incomplete breadcrumb on the page is a category problem, so it counts in the %
     if(!r.nolive && (o.sig.crumb || o.sig.crumbOk)){ o.checked = (o.checked || 0) + 1; if(o.sig.crumbOk) o.ok = (o.ok || 0) + 1; o.pct = o.checked ? Math.round(o.ok / o.checked * 1000) / 10 : null; }
-    o.cst = caseNext(r.kase, !r.nolive && !bad.length);
+    // Nov 23 (MJ): a live-plant subcategory case is not fixed while the signs still show
+    if((o.mk || mk || 'US') === 'US'){ try { const lx = lpSignals(o); o.lp = lx && lx.sig.length >= 2 ? lx : null; } catch(e){ o.lp = null; } }
+    o.cst = caseNext(r.kase, !r.nolive && !bad.length && !o.lp);
     return o;
   });
 }
@@ -5592,6 +5597,40 @@ function cgCell(x, k, nolive){
   return `<span class="mut"${tip}>${x.a ? fmt(x.a) : '\u2014'}</span>`;
 }
 
+
+/* ---------- Live-plant subcategory watch (Nov 23, MJ) ----------
+   Amazon can set a seed listing's hidden subcategory to a live-plant value ("Herb", "Vegetable") through a system
+   update. Every category value sellers can see stays correct, so the console watches the effects instead.
+   Flag: Seedboy, US, has FBA stock, and 2 or more signals at once. */
+function lpSignals(r){
+  const row = ROWS.find(x=> x.sku === r.sku) || ROWS.find(x=> x.asin === r.asin) || {};
+  if(!/seedboy/i.test(row.brand || r.brand || '')) return null;
+  const stock = stockOf({sku: r.sku, asin: r.asin}, 'US') || 0;
+  if(!(stock > 0)) return null;
+  const sig = [];
+  let bb = null; try { withMk2('US', ()=>{ bb = bbRows().find(x=> x.asin === r.asin); }); } catch(e){}
+  if(bb && !bb.has && bb.why !== 'oos') sig.push('No Buy Box (Keepa)');
+  if(typeof strandedOf === 'function' && strandedOf(r.sku, 'US')) sig.push('Stranded in FBA');
+  const dl = (typeof RV !== 'undefined' && RV.delivery || []).find(x=> x.mk === 'US' && x.asin === r.asin);
+  const bf = (typeof BF !== 'undefined' && BF && BF.rows || []).find(x=> x.asin === r.asin);
+  const pageTxt = ((dl && dl.page) || '') + ' | ' + ((bf && bf.read && bf.read.stock) || '');
+  if((dl && dl.slow) || /usually ships within|ships within \d|months|weeks/i.test(pageTxt)) sig.push('Page shows a long delivery wait');
+  else if(/currently unavailable/i.test(pageTxt)) sig.push('Page says Currently unavailable');
+  if(bf && bf.read && /wrong page|opens? (a |the )?(different|wrong)|not this listing/i.test(bf.read.note || '')) sig.push('Page opens another variation');
+  if(row.units30 === 0) sig.push('No sales in 30 days');
+  return {stock, sig, units30: row.units30};
+}
+function lpList(all){ return all.filter(r=> (r.mk || 'US') === 'US' || CG_F.mk === 'US').map(r=> ({r, x: lpSignals(r)})).filter(o=> o.x && o.x.sig.length >= 2); }
+function lpPanel(list){
+  const names = list.map(o=> esc(o.r.sku) + ' <span class="mut">(' + o.x.sig.map(esc).join(', ') + ')</span>').join(' \u00b7 ');
+  return `<div class="why lp-line"><b>Live-plant subcategory watch:</b> ${list.length ? '<span style="color:var(--c-bad, #c0392b)">' + list.length + ' Seedboy listing' + (list.length === 1 ? '' : 's') + ' can\u2019t be sold despite stock</span>: ' + names + '. Case status is in the table\u2019s Case column.' : 'all Seedboy listings clear.'}
+  <button type="button" class="lp-what">What is the live-plant subcategory?</button>
+  <div class="lp-explain" hidden>
+    <p><b>What:</b> Amazon keeps a hidden subcategory on each listing. A system update can set a seed listing to a live-plant value (for example \u201cHerb\u201d or \u201cVegetable\u201d) while every category value we can see stays correct.</p>
+    <p><b>Effect:</b> the listing can\u2019t be sold even with stock in FBA: no Buy Box, out of stock or stranded, \u201cUsually ships within 1 to 2 months,\u201d the page opens another variation, not searchable, FBA won\u2019t take replenishment.</p>
+    <p><b>Fix:</b> open a case asking Amazon to change the subcategory to <b>Seeds</b> (Amazon confirmed this in case 23565502271). Nothing to change on our side. Lost sales aren\u2019t reimbursed, so act fast.</p>
+  </div></div>`;
+}
 function renderCategory(){
   CG_F.q = ''; CG_F.tier = '';   // Nov 12: the top bar does search and tier
   document.getElementById('msg').hidden = true;
@@ -5604,7 +5643,7 @@ function renderCategory(){
   const wrong = all.filter(r=> r.bad.length), good = all.filter(r=> r.allOk), blank = all.filter(r=> r.blank.length);
   const crumbBad = all.filter(r=> r.sig && r.sig.crumb), rankBad = all.filter(r=> r.sig && r.sig.rank);
   const pick = {good, wrong, gl: has('gl'), pt: has('pt'), sd: has('sd'), path: has('path'), itk: has('itk'), node: has('node'), blank, rb: all.filter(r=> (r.rb || []).length), crumb: crumbBad, rank: rankBad,
-                casefu: all.filter(r=> r.cst && r.cst.g === 'follow')};
+                casefu: all.filter(r=> r.cst && r.cst.g === 'follow'), lp: CG_F.mk === 'US' ? lpList(all).map(o=> o.r) : []};
 
   let rows = pick[CG_F.show] || all;
   if(CG_F.tier) rows = rows.filter(r=> (r.tier || 'N') === CG_F.tier);
@@ -5613,7 +5652,8 @@ function renderCategory(){
        : sortBy(rows, r=> (r.nolive ? 2000 : 0) + (r.pct === null ? 1000 : r.pct) * 10 + (TIER_RANK[r.tier] !== undefined ? TIER_RANK[r.tier] : 5), 1);
   CG_VIEW = rows;
 
-  const order = ['all','good','wrong','gl','pt','sd','path','itk','node','blank','crumb','rank']; let n = 0;
+  const order = ['all','good','wrong','gl','pt','sd','path','itk','node','blank','crumb','rank','lp']; let n = 0;
+  const LPL = CG_F.mk === 'US' ? lpList(all) : [];
   const tile = (k, val, cls, note)=>{ const f = order[n++];
     return `<div class="cpt-tile bbtile${CG_F.show === f ? ' on' : ''}" role="button" tabindex="0" data-show="${f}" title="Show these in the table"><div class="k">${k}</div><div class="v ${cls || ''}">${val}</div><div class="n">${note || '&nbsp;'}</div></div>`; };
   const list = a=> esc(a.map(r=> r.sku).slice(0,3).join(', ')) + (a.length > 3 ? '\u2026' : '');
@@ -5630,9 +5670,10 @@ function renderCategory(){
       tile('Blank in Master SKU', blank.length, blank.length ? 'warn' : 'good', blank.length ? 'Correct value missing' : 'None')+
       tile('Breadcrumb incomplete on the page', SIG ? crumbBad.length : '\u2014', !SIG ? '' : crumbBad.length ? 'bad' : 'good', !SIG ? '' : crumbBad.length ? list(crumbBad) : '')+
       tile('Ranked in a different category', SIG ? rankBad.length : '\u2014', !SIG ? '' : rankBad.length ? 'warn' : 'good', !SIG ? '' : rankBad.length ? list(rankBad) : '')+
+      tile('Can\u2019t be sold despite stock (live-plant subcategory?)', CG_F.mk === 'US' ? LPL.length : '\u2014', CG_F.mk !== 'US' ? '' : LPL.length ? 'bad' : 'good', CG_F.mk !== 'US' ? 'US only' : LPL.length ? list(LPL.map(o=> o.r)) : 'Seedboy, US: all clear')+
       rbTile(all, 'Breaks an Amazon category rule')+
     '</div></section>'+
-    rbBanner()+ caseSumLine(caseSum(all.map(r=> r.cst)), 'cgCaseFu')+
+    rbBanner()+ caseSumLine(caseSum(all.map(r=> r.cst)), 'cgCaseFu')+ (CG_F.mk === 'US' ? lpPanel(LPL) : '')+
     '<div class="cpt-tools"><div class="seg" id="cgMk">'+
       ['US','CA'].map(m=> `<button data-mk="${m}" aria-pressed="${CG_F.mk === m}">${m === 'US' ? 'Amazon US' : 'Amazon CA'} ${cgRows(m).filter(r=> r.bad.length).length ? '<span class="badge" style="margin-left:.3rem">' + cgRows(m).filter(r=> r.bad.length).length + '</span>' : ''}</button>`).join('')+
         '</div>' + (CG_F.sort ? '<button id="cgUnsort">Clear sort</button>' : '')+
@@ -5671,6 +5712,7 @@ function renderCategory(){
       '</tbody></table>';
   }
   v.innerHTML = html;
+  v.querySelectorAll(".lp-what").forEach(b=> b.onclick = ()=>{ const ex = b.parentNode.querySelector(".lp-explain"); ex.hidden = !ex.hidden; b.textContent = ex.hidden ? "What is the live-plant subcategory?" : "Hide"; });
   ccMount(v, 'cg', cgCc(all, CG_F.mk), all, CG_F.mk);
 
   wireSort(v, CG_F, renderCategory);
