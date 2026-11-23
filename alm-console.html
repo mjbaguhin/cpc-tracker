@@ -7196,7 +7196,9 @@ function renderBf(){
         `<td>${r.flags.length ? r.flags.map(f=> `<div class="bbdo bad" style="margin:.1rem 0${old ? ';opacity:.55' : ''}">${esc(String(T[f.type] || f.type).replace(/ \(.*\)$/, ''))}${f.detail && !/^(no badge on the page)$/.test(f.detail) ? ': ' + esc(f.detail) : ''}</div>`).join('') + (old ? `<div class="mut" style="font-size:.72rem">From the ${esc(x.t || '')} read, ${ageH} h old</div>` : '') : '<span class="mut">\u2014</span>'}</td>` +
         `<td class="c">${x.badge ? esc(x.badge) : '<span class="mut">not read</span>'}</td><td class="num">${usd(x.price)}</td><td class="num">${usd(r.sale)} / ${usd(r.min)}</td>` +
         `<td style="font-size:.8rem">${esc(x.soldBy || '')}</td><td class="c" style="font-size:.8rem">${esc(x.stock || '')}</td>` +
-        `<td class="c">${x.star !== null && x.star !== undefined ? x.star + chg(x.star, p.star) : '\u2014'}</td><td class="c">${x.count !== null && x.count !== undefined ? x.count + chg(x.count, p.count) : '\u2014'}</td>` +
+        // Nov 23 (MJ): star rating and ratings from Keepa, the same numbers as the BSR module; the page reading is in the hover
+        `<td class="c" title="${esc(x.star != null ? 'Page showed ' + x.star : '')}">${r.keepa && r.keepa.star != null ? r.keepa.star : (x.star != null ? x.star : '\u2014')}</td>`+
+        `<td class="c" title="${esc(x.count != null ? 'Page showed ' + x.count : '')}">${r.keepa && r.keepa.count != null ? Number(r.keepa.count).toLocaleString() + (r.keepa.rev7 < 0 ? ' <span class="mut">(' + r.keepa.rev7 + ' in 7 days)</span>' : '') : (x.count != null ? x.count : '\u2014')}</td>` +
         `<td style="font-size:.78rem">${esc(x.bsr || '')}</td><td style="font-size:.8rem">${esc(x.varOpt || '')}</td><td style="font-size:.75rem">${esc(x.crumb || '')}</td><td class="c mut" style="font-size:.75rem">${esc((x.t || '') + (x.pass ? ' \u00b7 ' + x.pass : ''))}</td></tr>`; }).join('') +
     '</tbody></table></div>';
   v.innerHTML = html;
