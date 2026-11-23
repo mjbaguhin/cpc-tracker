@@ -7170,7 +7170,7 @@ function bfDoneSend(keys, done){
 function bfUnbuyable(r){ return r.flags.some(x=> ['oos','stranded','low'].includes(x.type) || (x.type === 'bb' && /no Buy Box/i.test(x.detail || ''))); }
 function bfGroupOf(f, r){
   if(f.type === 'wrongpage' || f.type === 'used') return bfUnbuyable(r) ? 'stock' : 'fix';   // a used offer wins only because ours is out of stock
-  if(['mismatch','used','ship','badge','variation'].includes(f.type)) return 'fix';
+  if(['liveplant','mismatch','used','ship','badge','variation'].includes(f.type)) return 'fix';
   if(f.type === 'bb') return /no Buy Box/i.test(f.detail || '') ? 'stock' : 'haris';
   if(f.type === 'price' || f.type === 'below') return 'haris';
   if(['oos','low','stranded'].includes(f.type)) return 'stock';
