@@ -984,6 +984,27 @@ a.idl:hover{color:var(--accent);border-bottom-style:solid}
 #gfSupPop label{display:flex;gap:.4rem;align-items:center;color:#e8edf3;font-size:.8rem;cursor:pointer;white-space:nowrap}
 #gfSupPop label .mut{color:#8b96a3;font-size:.72rem}
 #gfSupPop #gfSupAll{margin-top:.2rem;font-size:.74rem;background:none;border:1px solid rgba(255,255,255,.22);color:#cfd6de;border-radius:6px;padding:.15rem .4rem;cursor:pointer}
+
+/* ---------- Phone (Nov 23, MJ's OPPO): the whole page scrolls, wide tables scroll sideways on their own,
+   BFCM groups stack as cards. The computer layout is unchanged. ---------- */
+@media (max-width:700px){
+  body{height:auto;min-height:100dvh;overflow:visible;display:block}
+  #cptView,#mainWrap{overflow-x:hidden;overflow-y:visible;height:auto;max-height:none;flex:none}
+  #cptView .cpt-table,#cptView table.hist{display:block;max-width:100%;overflow-x:auto;-webkit-overflow-scrolling:touch}
+  #cptView .cpt-table thead th{position:static}
+  #fs{display:none}
+  .cpt-tools{flex-wrap:wrap;gap:.4rem}
+  .cpt-tools label{justify-content:flex-start;gap:.35rem;width:auto}
+  .cpt-tools label input[type=checkbox]{width:18px;height:18px;flex:0 0 auto}
+  .bfg .bf-table{display:block;overflow:visible}
+  .bfg .bf-table tbody,.bfg .bf-table tr.row{display:block}
+  .bfg .bf-table tr.row{padding:.5rem .7rem;border-top:1px solid #e5e7eb;position:relative}
+  .bfg .bf-table td{display:block;border:0;padding:.15rem 0 .15rem 2rem;min-width:0 !important;width:auto !important;text-align:left !important}
+  .bfg .bf-table td:first-child{position:absolute;left:.6rem;top:.6rem;padding:0}
+  .bfg-h{flex-wrap:wrap;row-gap:.3rem}
+  .lp-line .lp-what{display:block;margin:.4rem 0 0}
+  .cpt-head{gap:.5rem}
+}
 </style>
 </head>
 <body>
