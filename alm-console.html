@@ -3853,9 +3853,15 @@ function cptHistHtml(){
   const tile = (k, v, cls, note, dir)=> `<div class="cpt-tile bbtile${CPT_H.dir === dir ? ' on' : ''}" role="button" tabindex="0" data-hdir="${dir}"><div class="k">${k}</div><div class="v ${cls || ''}">${v}</div><div class="n">${note || '&nbsp;'}</div></div>`;
   const when = x=> `${esc(shortDate(x.d.slice(0,10)))}${x.d.length > 10 ? ' <span class="mut">' + esc(x.d.slice(11)) + ' ET</span>' : ''}`;
   const chg = x=> x.from !== null && x.to !== null ? `<b style="color:${x.to > x.from ? 'var(--ok)' : 'var(--bad)'}">${x.to > x.from ? '+' : '\u2212'}${usd(Math.abs(x.to - x.from))}</b> <span class="mut">${Math.round(Math.abs(x.to - x.from) / x.from * 100)}%</span>` : '';
+  const RB = {}; try { cptRows().forEach(r=> RB[r.asin] = r); } catch(e){}   // list price and target are worked out on the CPT rows
+  // List Price = Amazon's live List Price (Keepa), the same value the List Price module shows; Target = our usual sale price for the size
+  const lp = x=> (x.r.kList !== undefined && x.r.kList !== null ? x.r.kList : (RB[x.r.asin] || {}).list), tg = x=> (RB[x.r.asin] || {}).target;
   const line = x=> `<tr><td>${when(x)}</td><td class="mono">${skuL(x.r.sku, MK2)}${cpy(x.r.sku)}</td><td style="font-size:.8rem">${esc(String(x.r.name || '').slice(0, 44))}</td>`+
     `<td class="c"><span class="lcchip ${KIND[x.kind][1]}">${KIND[x.kind][0]}</span></td><td class="num">${x.from === null ? '\u2014' : usd(x.from)}</td><td class="num"><b>${x.to === null ? '\u2014' : usd(x.to)}</b></td><td class="num">${chg(x)}</td>`+
-    `<td class="num">${x.ours === null || x.ours === undefined ? '' : usd(x.ours)}</td><td class="num">${x.r.cpt === null || x.r.cpt === undefined ? '<span class="mut">none</span>' : usd(x.r.cpt)}</td></tr>`;
+    `<td class="num">${x.ours === null || x.ours === undefined ? '' : usd(x.ours)}</td>`+
+    // Nov 21 (MJ): List Price and Target price (our usual sale price for the size) next to the CPT
+    `<td class="num">${lp(x) === null || lp(x) === undefined ? '<span class="mut">\u2014</span>' : usd(lp(x))}</td><td class="num">${tg(x) === null || tg(x) === undefined ? '<span class="mut">\u2014</span>' : usd(tg(x))}</td>`+
+    `<td class="num">${x.r.cpt === null || x.r.cpt === undefined ? '<span class="mut">none</span>' : usd(x.r.cpt)}</td></tr>`;
   let html = '<section style="margin-top:.6rem"><div class="cpt-tiles">'+
     tile(CPT_H.days ? `Moves, last ${CPT_H.days} days` : 'Moves, all time', all.length, all.length ? 'warn' : 'good', `${skus} listings`, '')+
     tile('Down', n('down'), n('down') ? 'bad' : 'good', drop ? `Biggest: ${esc(drop.r.sku)} ${usd(drop.from)} \u2192 ${usd(drop.to)}` : '', 'down')+
@@ -3868,12 +3874,12 @@ function cptHistHtml(){
       `<span class="count">${L.length} moves</span></div>`;
   if(!L.length) html += `<div class="cpt-empty"><b>No CPT moves</b>${all.length ? 'Pick another filter.' : 'Nothing moved in this period.'}</div>`;
   else {
-    html += '<table class="cpt-table"><thead><tr><th>When</th><th>SKU</th><th>Product</th><th class="c">Move</th><th class="num">From</th><th class="num">To</th><th class="num">Change</th><th class="num">Our price</th><th class="num">CPT now</th></tr></thead><tbody>';
+    html += '<table class="cpt-table"><thead><tr><th>When</th><th>SKU</th><th>Product</th><th class="c">Move</th><th class="num">From</th><th class="num">To</th><th class="num">Change</th><th class="num">Our price</th><th class="num">List Price</th><th class="num" title="Our usual sale price for this size (the price we aim to sell at)">Target price</th><th class="num">CPT now</th></tr></thead><tbody>';
     if(CPT_H.bySku){
       const g = {}; L.forEach(x=> (g[x.r.asin] = g[x.r.asin] || []).push(x));
       Object.keys(g).sort((a,b)=> g[b].length - g[a].length || (g[a][0].d < g[b][0].d ? 1 : -1)).forEach(a=>{
         const xs = g[a], r = xs[0].r, d = xs.filter(x=> x.kind === 'down').length, u = xs.filter(x=> x.kind === 'up').length;
-        html += `<tr class="gh hgh" data-hg="${esc(a)}" style="cursor:pointer" title="Click to show or hide its moves"><td colspan="9">${CPT_H.closed && CPT_H.closed.has(a) ? '\u25b8 ' : '\u25be '}<b>${esc(r.sku)}</b> <span class="mut">${esc(String(r.name || '').slice(0, 50))} \u00b7 ${xs.length} move${xs.length > 1 ? 's' : ''}${d ? ', ' + d + ' down' : ''}${u ? ', ' + u + ' up' : ''} \u00b7 CPT now ${r.cpt === null || r.cpt === undefined ? 'none' : usd(r.cpt)}</span></td></tr>` + (CPT_H.closed && CPT_H.closed.has(a) ? '' : xs.map(line).join(''));
+        html += `<tr class="gh hgh" data-hg="${esc(a)}" style="cursor:pointer" title="Click to show or hide its moves"><td colspan="11">${CPT_H.closed && CPT_H.closed.has(a) ? '\u25b8 ' : '\u25be '}<b>${esc(r.sku)}</b> <span class="mut">${esc(String(r.name || '').slice(0, 50))} \u00b7 ${xs.length} move${xs.length > 1 ? 's' : ''}${d ? ', ' + d + ' down' : ''}${u ? ', ' + u + ' up' : ''} \u00b7 CPT now ${r.cpt === null || r.cpt === undefined ? 'none' : usd(r.cpt)}</span></td></tr>` + (CPT_H.closed && CPT_H.closed.has(a) ? '' : xs.map(line).join(''));
       });
     } else html += L.map(line).join('');
     html += '</tbody></table>';
@@ -9720,7 +9726,7 @@ const gfKeep = ()=>{ try { localStorage.setItem('gf', JSON.stringify(GF)); } cat
 function gfInfo(r){
   const p = (typeof PR !== 'undefined' ? PR : []).find(x=> (r.sku && x.sku === r.sku) || (r.usSku && x.sku === r.usSku)) ||
             (typeof PR !== 'undefined' ? PR : []).find(x=> r.asin && x.asin === r.asin) || {};
-  return {tier: r.tier || p.tier || '', brand: r.brand || p.brand || '', sup: r.supplier || p.supplier || '', fam: p.pname || r.pname || r.parent || '', size: sizeOf(p), design: designOf(p),
+  return {tier: r.tier || p.tier || '', brand: r.brand || p.brand || '', sup: r.supplier || p.supplier || '', fam: p.pname || r.pname || r.parent || '', size: varSizeOf(p), design: designOf(p),
     text: [r.sku, r.usSku, r.asin, r.name, r.title, r.pname, r.parent, r.family, r.fam, r.psku, p.name, p.pname, p.psku].filter(Boolean).join(' ').toLowerCase()};
 }
 function gfMatch(r){
@@ -9829,7 +9835,7 @@ function gfModuleBlank(){
 const ST_LABEL = {'Active':'Active', 'Inactive':'Inactive', 'In Development':'In development'};
 /* Nov 18 (MJ): size from the variation values, written one way ("24 x 36", smaller side first),
    so 24x36, 36x24 and 24" x 36" are the same size */
-function sizeOf(p){
+function varSizeOf(p){   // Nov 21: renamed; it had replaced the CPT tracker's sizeOf(name, sku)
   if(!p) return '';
   const vals = [p.t1 === 'Size' ? p.v1 : '', p.t2 === 'Size' ? p.v2 : '', p.v1, p.v2].filter(Boolean);
   for(const v0 of vals){
@@ -9848,14 +9854,29 @@ function designOf(p){
   if(DESIGN_THEMES.test(String(p.t2 || '').trim()) && p.v2) return String(p.v2).trim();
   return '';
 }
+/* Nov 23 (MJ): each list only offers what fits the other filters (Family = Coir Doormat -> only coir suppliers) */
+function gfPassOthers(p, skip){
+  const has = (list, v)=> !list || !list.length || list.indexOf(v) !== -1;
+  if(skip !== 'tier'   && !has(GF.tier, p.tier || '')) return false;
+  if(skip !== 'sup'    && !has(GF.sup, (p.supplier || '').trim())) return false;
+  if(skip !== 'brand'  && !has(GF.brand, p.brand || '')) return false;
+  if(skip !== 'fam'    && !has(GF.fam, p.pname || '')) return false;
+  if(skip !== 'size'   && !has(GF.size, varSizeOf(p))) return false;
+  if(skip !== 'design' && !has(GF.design, designOf(p))) return false;
+  return true;
+}
 function gfmOpts(k){
-  if(k === 'design'){ const n = {}; (typeof PR !== 'undefined' ? PR : []).forEach(r=>{ if(r.status === 'Active' || r.caStatus === 'Active'){ const z = designOf(r); if(z) n[z] = (n[z] || 0) + 1; } });
+  const keep = v=> (GF[k] || []).indexOf(v) !== -1;   // a value already picked stays in the list
+  if(k === 'design'){ const n = {}; (typeof PR !== 'undefined' ? PR : []).forEach(r=>{ if((r.status === 'Active' || r.caStatus === 'Active') && gfPassOthers(r, 'design')){ const z = designOf(r); if(z) n[z] = (n[z] || 0) + 1; } });
+    (GF.design || []).forEach(v=>{ if(v !== '-' && !n[v]) n[v] = 0; });
     return Object.keys(n).sort((a, z)=> a.localeCompare(z)).map(v=> [v, v + ' (' + n[v] + ')']); }
-  if(k === 'size'){ const n = {}; (typeof PR !== 'undefined' ? PR : []).forEach(r=>{ if(r.status === 'Active' || r.caStatus === 'Active'){ const z = sizeOf(r); if(z) n[z] = (n[z] || 0) + 1; } });
+  if(k === 'size'){ const n = {}; (typeof PR !== 'undefined' ? PR : []).forEach(r=>{ if((r.status === 'Active' || r.caStatus === 'Active') && gfPassOthers(r, 'size')){ const z = varSizeOf(r); if(z) n[z] = (n[z] || 0) + 1; } });
+    (GF.size || []).forEach(v=>{ if(v !== '-' && !n[v]) n[v] = 0; });
     return Object.keys(n).sort((a, z)=>{ const A = a.split(' x ').map(Number), Z = z.split(' x ').map(Number); return A[0] - Z[0] || A[1] - Z[1]; }).map(v=> [v, v + ' in (' + n[v] + ')']); }
   if(k === 'brand') return [['Barnyard Designs','Barnyard Designs'], ['Seedboy','Seedboy']];
   if(k === 'st') return Object.keys(ST_LABEL).map(v=> [v, ST_LABEL[v]]);
-  const n = {}; (typeof PR !== 'undefined' ? PR : []).forEach(r=>{ if((r.status === 'Active' || r.caStatus === 'Active') && r.pname) n[r.pname] = (n[r.pname] || 0) + 1; });
+  const n = {}; (typeof PR !== 'undefined' ? PR : []).forEach(r=>{ if((r.status === 'Active' || r.caStatus === 'Active') && r.pname && gfPassOthers(r, 'fam')) n[r.pname] = (n[r.pname] || 0) + 1; });
+  (GF.fam || []).forEach(v=>{ if(v !== '-' && !n[v] && keep(v)) n[v] = 0; });
   return Object.keys(n).sort((a, z)=> a.localeCompare(z)).map(v=> [v, v + ' (' + n[v] + ')']);
 }
 function gfmGet(k){ if(k === 'st'){ const v = PR_F.status; return Array.isArray(v) ? v : (v ? [v] : []); } return GF[k] || []; }
@@ -10025,8 +10046,11 @@ function ensureClearBtn(){
   const sbtn = document.getElementById('gfSupBtn'), spop = document.getElementById('gfSupPop'), slist = document.getElementById('gfSupList');
   if(sbtn && spop){
     window.gfSupFill = ()=>{
-      const n = {}, act = {}; (typeof PR !== 'undefined' ? PR : []).forEach(r=>{ const k = (r.supplier || '').trim(); if(!k) return; n[k] = 1;
+      const n = {}, act = {}; (typeof PR !== 'undefined' ? PR : []).forEach(r=>{ const k = (r.supplier || '').trim(); if(!k) return;
+        if(!gfPassOthers(r, 'sup')) return;   // Nov 23: only suppliers that fit the other filters
+        n[k] = 1;
         if(r.status === 'Active' && r.asin && ACT_BRANDS.indexOf(r.brand) !== -1) act[k] = (act[k] || 0) + 1; });
+      (GF.sup || []).forEach(k=>{ if(k !== '-') n[k] = 1; });   // a supplier already picked stays in the list
       const names = Object.keys(n).sort((a, z)=> (act[z] || 0) - (act[a] || 0) || a.localeCompare(z));
       const html = names.length ? '<label style="border-bottom:1px solid rgba(255,255,255,.18);padding-bottom:.25rem"><input type="checkbox" id="gfSupAllCb"> <b>All</b></label>' + names.map(k=> `<label><input type="checkbox" value="${esc(k)}"> ${esc(k)} <span class="mut">${act[k] ? act[k] + ' active' : 'no active'}</span></label>`).join('')
         : '<span class="mut" style="font-size:.75rem">No supplier data yet. It arrives with the next Master SKU refresh.</span>';
