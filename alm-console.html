@@ -1005,6 +1005,54 @@ a.idl:hover{color:var(--accent);border-bottom-style:solid}
   .lp-line .lp-what{display:block;margin:.4rem 0 0}
   .cpt-head{gap:.5rem}
 }
+.cpill.reg{background:rgba(91,141,239,.16);color:inherit;font-weight:600}
+.cst{display:inline-block;border-radius:6px;padding:.1rem .55rem;font-size:.78rem;font-weight:600}
+.cst-d{background:#fde8e8;color:#b91c1c}.cst-h{background:#e7f6ec;color:#15803d}
+@media (prefers-color-scheme: dark){.cst-d{background:rgba(220,38,38,.22);color:#fca5a5}.cst-h{background:rgba(22,163,74,.2);color:#86efac}}
+
+/* ---------- Nov 24 (MJ): light CPT tracker look, from the approved preview ---------- */
+#cptView.cpt-lite{background:#fff}
+#cptView.cpt-lite .cpt-top{background:#fff;color:#1f2937;border-bottom:1px solid #eceff3}
+#cptView.cpt-lite .cpt-head h2{color:#111827;font-weight:600}
+#cptView.cpt-lite .cpt-head .sub,#cptView.cpt-lite .cpt-live{color:#6b7280;background:none;border-color:#e5e7eb}
+#cptView.cpt-lite .cpt-head .upd{color:#374151;background:#f3f4f6;border-color:#e5e7eb}
+#cptView.cpt-lite .cpt-head .upd.old{background:#fdf3e1;border-color:#f5c542;color:#8a5a0b}
+#cptView.cpt-lite .cpt-tiles{gap:.65rem}
+#cptView.cpt-lite .cpt-tile{background:#f3f4f6;border:1px solid transparent;border-radius:8px;padding:.7rem .85rem;color:#1f2937;cursor:pointer}
+#cptView.cpt-lite .cpt-tile:hover{border-color:#d1d5db}
+#cptView.cpt-lite .cpt-tile.on{border-color:#3b82f6;background:#eef4ff}
+#cptView.cpt-lite .cpt-tile .k{color:#6b7280;font-size:.76rem;font-weight:500}
+#cptView.cpt-lite .cpt-tile .v{color:#111827;font-size:1.55rem;font-weight:600}
+#cptView.cpt-lite .cpt-tile .v.bad{color:#b91c1c}
+#cptView.cpt-lite .cpt-tile .v.good{color:#15803d}
+#cptView.cpt-lite .cpt-tile .v.warn{color:#b45309}
+#cptView.cpt-lite .cpt-tile .n{color:#6b7280}
+#cptView.cpt-lite .qi{background:#e5e7eb;color:#4b5563}
+#cptView.cpt-lite .cpt-table thead th{background:#fff !important;color:#6b7280 !important;font-weight:500;font-size:.74rem;border-bottom:1.5px solid #d1d5db}
+#cptView.cpt-lite .cpt-table thead th[data-s="reg"]{background:#e8f0fe !important;color:#1e40af !important}
+#cptView.cpt-lite .cpt-table td{border-bottom:1px solid #eef0f3;vertical-align:top}
+#cptView.cpt-lite .cpill{background:none;border:0;min-width:0;padding:.1rem 0;font-size:.92rem;font-weight:500;color:#111827}
+#cptView.cpt-lite .cpill.reg{background:#e8f0fe;color:#1e40af;padding:.15rem .5rem;border-radius:6px;font-weight:600}
+#cptView.cpt-lite .cst{border-radius:6px;padding:.15rem .6rem;font-size:.78rem;font-weight:600}
+#cptView.cpt-lite .cst-d{background:#fde8e8;color:#b91c1c}
+#cptView.cpt-lite .cst-h{background:#e7f6ec;color:#15803d}
+#cptView.cpt-lite .gap-badge{font-size:.8rem;padding:.15rem .55rem;font-weight:600}
+#cptView.cpt-lite .was{font-size:.72rem;color:#9ca3af}
+
+#cptView .cpt-groups{display:flex;flex-wrap:wrap;gap:.6rem 1rem;align-items:stretch}
+#cptView .cg{flex-basis:0;min-width:min(100%,12rem);display:flex;flex-direction:column}
+#cptView .cg .cpt-tiles{grid-template-columns:repeat(auto-fit,minmax(9.5rem,1fr));flex:1}
+#cptView .cg-l{font-size:.74rem;font-weight:600;margin:0 0 .35rem;padding-left:.5rem;border-left:3px solid #9ca3af;color:#4b5563}
+#cptView .cg-act .cg-l{border-color:#dc2626;color:#b91c1c}
+#cptView .cg-ok .cg-l{border-color:#16a34a;color:#15803d}
+@media (max-width:700px){ #cptView .cg{flex-basis:100%} }
+
+/* Nov 24 (MJ): tile icons and short names */
+#cptView.cpt-lite .cpt-tile .k.kk{display:flex;align-items:center;gap:.4rem;color:#111827;font-size:.86rem;font-weight:600;margin-bottom:.15rem}
+#cptView.cpt-lite .cpt-tile .k.kk .tico{flex:0 0 auto}
+#cptView.cpt-lite .cpt-tile .k.kk .qi{margin-left:.15rem}
+#cptView.cpt-lite .cpt-tile .dsc{font-size:.72rem;color:#4b5563;line-height:1.3;margin-top:.1rem}
+#cptView.cpt-lite .cpt-tile .n{margin-top:.15rem}
 </style>
 </head>
 <body>
@@ -1310,7 +1358,7 @@ async function load(fresh){
     .then(j => { GLX = j || null; if(S.view === 'category' || S.view === 'catalog') render(); })
     .catch(()=> { GLX = null; });
   grab(PR_SRC, 'json', fresh)
-    .then(j => { buildPr(j); if(S.view === 'pr') render(); else chrome(); })
+    .then(j => { buildPr(j); if(S.view === 'pr' || S.view === 'cpt') render(); else chrome(); })
     .catch(e => { PR_ERR = e.message; if(S.view === 'pr') render(); });
   grab(CH_SRC, 'json', fresh)
     .then(j => { CH = j || null; CH_ERR = ''; if(S.view === 'lc' || S.view === 'catalog') render(); })
@@ -2257,7 +2305,10 @@ function cptRows(){
     r.listGap = (r.list !== null && r.list !== undefined) ? Math.round((r.list - r.cpt) * 100) / 100 : null;
     r.listPct = r.listGap !== null && r.list ? Math.round(r.listGap / r.list * 100) : null;
     r.belowPct = r.gap > 0 && r.ours ? Math.round(r.gap / r.ours * 100) : null;   // CPT under our price
-    r.target   = saleTarget(r);
+    // Nov 23 (MJ, Haris): the regular sale price is the Sale Price in the Master SKU (Plytix).
+    // It's what Haris compares the CPT with: CPT under it = dispute, at or above it = hold.
+    r.reg      = regSale(r);
+    r.target   = r.reg !== null ? r.reg : saleTarget(r);
     r.short    = r.target !== null ? Math.round((r.target - r.cpt) * 100) / 100 : null;   // CPT under the sale price
     r.shortPct = r.short !== null && r.target ? Math.round(r.short / r.target * 100) : null;
     r.held = r.target !== null
@@ -2267,6 +2318,8 @@ function cptRows(){
     // looked up when the sale price sat above the CPT. A price cut to the CPT (sale
     // = CPT) left a held row with no similar item. Look them up for held rows too.
     if(r.held && !r.sim.length){ r.sim = simForRow(c.asin, size); r.simLow = r.sim.length ? r.sim[0] : null; r.simMatch = simMatch(r); }
+    r.status = r.target === null ? '' : r.cpt < r.target - 0.005 ? 'dispute' : 'hold';
+    r.regGap = r.target !== null ? Math.round((r.cpt - r.target) * 100) / 100 : null;   // CPT minus reg sale price
     r.verdict = caseVerdict(r);
     r.action = cptAction(r);
     r.rb = rbScreenRow('cpt', r);
@@ -2353,7 +2406,15 @@ function saleTarget(r){
   const own = MK2 === 'CA' ? (r.caSale ?? null) : r.sale;
   return own !== null && own !== undefined && own > 0 ? own : null;
 }
-function ownTarget(r){ return r.target !== null && !(r.size && targetInfo(r)); }
+function ownTarget(r){ return r.target !== null && (r.reg !== null && r.reg !== undefined || !(r.size && targetInfo(r))); }
+/* Nov 23: regular sale price = Master SKU Sale Price (US) or CA Sale Price, matched by SKU, then ASIN */
+function regSale(r){
+  if(typeof PR === 'undefined' || !PR.length) return null;
+  const p = (r.sku && PR.find(x=> x.sku === r.sku)) || PR.find(x=> x.asin === r.asin);
+  if(!p) return null;
+  const v = MK2 === 'CA' ? p.caSale : p.sale;
+  return typeof v === 'number' && v > 0 ? Math.round(v * 100) / 100 : null;
+}
 
 /* Amazon's latest email on a listing, from CPT Watch's morning Gmail check */
 const MAIL_KIND = {
@@ -3161,7 +3222,7 @@ const CPT_F = {show:'all', q:'', group:'pasin', sort:'', dir:1,   // grouped by 
 
 // Columns that take a min/max filter
 const CPT_RANGE = [
-  ['ours', 'Our price', '$'], ['sale', 'Sale price', '$'], ['list', 'List price', '$'],
+  ['ours', 'Our price', '$'], ['sale', 'Sale price', '$'], ['reg', 'Reg sale price', '$'], ['list', 'List price', '$'],
   ['cpt', 'CPT', '$'], ['gap', 'Gap', '$'], ['pct', 'Gap', '%'], ['avail', 'Stock', 'units']
 ];
 
@@ -3171,6 +3232,8 @@ const CPT_SORT = {
   product: r=> cptTitle(r),
   ours:    r=> r.ours,
   sale:    r=> r.sale,
+  reg:     r=> r.reg,
+  status:  r=> r.status === 'dispute' ? 0 : r.status === 'hold' ? 1 : 2,
   cpt:     r=> r.cpt,
   gap:     r=> r.gap,
   move:    r=> daysSince(r.moved),
@@ -3236,6 +3299,8 @@ function renderCpt0(){
   // Gap needs work (Oct 23): over the CPT, or a CPT under our sale target or list price (same test as the alerts)
   const gapBad = all.filter(r=> ['open','follow','oos'].indexOf(r.action) !== -1 || (r.ours !== null && r.cpt !== null && r.ours > r.cpt + 0.005));
   if(CPT_F.show === 'gapbad') rows = gapBad;
+  if(CPT_F.show === 'dispute') rows = all.filter(r=> r.status === 'dispute');   // Nov 23 (Haris's rule)
+  if(CPT_F.show === 'hold')    rows = all.filter(r=> r.status === 'hold');
   if(CPT_F.show === 'over')   rows = over;
   if(CPT_F.show === 'moved')  rows = recent;
   if(CPT_F.show === 'held')   rows = all.filter(r=> r.held);
@@ -3267,11 +3332,28 @@ function renderCpt0(){
   CPT_SHOWN = rows;
 
   // Click a tile to show those listings (Oct 23)
-  let tileN = 0;
-  const TILE_SHOW = ['gapbad', 'over', 'held', 'hist'];
-  const tile = (k, val, cls, note) =>{ const f = TILE_SHOW[tileN++] || 'all';
-    return `<div class="cpt-tile bbtile${(f === 'hist' ? CPT_F.hist : CPT_F.show === f && !CPT_F.hist) ? ' on' : ''}" role="button" tabindex="0" data-tshow="${f}" title="${f === 'hist' ? 'Every CPT move and price change' : 'Show these in the table'}"><div class="k">${k}</div><div class="v ${cls || ''}">${val}</div>`+
-    `<div class="n">${note || '&nbsp;'}</div></div>`; };
+  // Nov 24 (MJ): tiles grouped by color. Needs action (red), All good (green), Summary.
+  // Each tile says which table filter it opens (show key), so the order can change freely.
+  const tile = (k, val, cls, note, f) =>
+    `<div class="cpt-tile bbtile${(f === 'hist' ? CPT_F.hist : CPT_F.show === f && !CPT_F.hist) ? ' on' : ''}" role="button" tabindex="0" data-tshow="${f}" title="${f === 'hist' ? 'Every CPT move and price change' : 'Show these in the table'}"><div class="k">${k}</div><div class="v ${cls || ''}">${val}</div>`+
+    `<div class="n">${note || '&nbsp;'}</div></div>`;
+  const dispL = all.filter(r=> r.status === 'dispute'), heldL = all.filter(r=> r.held);
+  const sameAsDisp = L=> L.length && L.length === dispL.length && L.every(r=> dispL.indexOf(r) !== -1);
+  const skus = L=> L.map(r=> r.sku).slice(0, 4).join(', ') + (L.length > 4 ? '\u2026' : '');
+  // problem tiles: red in Needs action when above 0, green in All good when 0
+  const probs = [
+    ['Dispute: CPT under reg sale price', dispL.length, dispL.length ? skus(dispL) : 'None', 'dispute'],
+    ['Gap needs work', gapBad.length, (()=>{ const c = gapBad.filter(r=> r.action === 'open' || r.action === 'follow').length, o = gapBad.filter(r=> r.ours !== null && r.cpt !== null && r.ours > r.cpt + 0.005).length, sx = gapBad.filter(r=> r.action === 'oos').length;
+        return !gapBad.length ? 'None' : sameAsDisp(gapBad) ? 'Same ' + gapBad.length + ' as Dispute' : [c ? c + ' need a case' : '', o ? o + ' over the CPT' : '', sx ? sx + ' no stock' : ''].filter(Boolean).join(', '); })(), 'gapbad'],
+    ['Held at the CPT', heldL.length, !heldL.length ? 'None' : sameAsDisp(heldL) ? 'Same ' + heldL.length + ' as Dispute' : skus(heldL), 'held'],
+    ['Priced above the CPT ' + qi('buybox'), over.length, over.length ? skus(over) : 'None', 'over']];
+  const redT = probs.filter(p=> p[1] > 0).map(p=> tile(p[0], p[1], 'bad', p[2], p[3]));
+  const okT  = [tile('Hold: CPT at or above reg sale price', all.filter(r=> r.status === 'hold').length, 'good', 'No dispute needed', 'hold')]
+                .concat(probs.filter(p=> !(p[1] > 0)).map(p=> tile(p[0], 0, 'good', '', p[3])));
+  const sumT = [(()=>{ const d0 = CPT_H.days; CPT_H.days = 0; const allMoves = cptHistory(); CPT_H.days = d0;   // Nov 12: all time
+               return tile('CPT history', allMoves.length, '', `${new Set(allMoves.map(x=> x.r.asin)).size} listings \u00b7 ${recent.length} this week`, 'hist'); })()];
+  const grp = (k, label, icon, tiles, score)=> !tiles.length && !score ? '' :
+    `<div class="cg cg-${k}" style="flex-grow:${Math.max(tiles.length + (score ? 1 : 0), 1)}"><div class="cg-l">${label}</div><div class="cpt-tiles"${score ? ' data-score="1"' : ''}>${tiles.join('')}</div></div>`;
 
   let html = stockAlert() +
     '<section class="cpt-top">'+
@@ -3280,17 +3362,10 @@ function renderCpt0(){
         `<span class="sub">Amazon US, ${CPT.length} active ASINs checked</span>`+
         (CPT_META.updated ? `<span class="cpt-live${fresh ? '' : ' stale'}"><i></i>Updated ${esc(CPT_META.updated)} ET, daily</span>` : '')+
       '</div>'+
-      '<div class="cpt-tiles">'+
-        (()=>{ const c = gapBad.filter(r=> r.action === 'open' || r.action === 'follow').length, o = gapBad.filter(r=> r.ours !== null && r.cpt !== null && r.ours > r.cpt + 0.005).length, s = gapBad.filter(r=> r.action === 'oos').length;
-           return tile('Gap needs work', gapBad.length, gapBad.length ? 'bad' : 'good',
-             gapBad.length ? [c ? c + ' need a case' : '', o ? o + ' over the CPT' : '', s ? s + ' no stock' : ''].filter(Boolean).join(', ') : 'Every gap is fine'); })()+
-        // Needs a case and Do today tiles removed (MJ, Oct 23): the filter buttons still have them
-        tile('Priced above the CPT ' + qi('buybox'), over.length, over.length ? 'bad' : '',
-             '')+
-        tile('Held at the CPT', all.filter(r=> r.held).length, all.some(r=> r.held) ? 'warn' : '',
-             '')+
-        (()=>{ const d0 = CPT_H.days; CPT_H.days = 0; const allMoves = cptHistory(); CPT_H.days = d0;   // Nov 12: all time
-               return tile('CPT history', allMoves.length, '', `${new Set(allMoves.map(x=> x.r.asin)).size} listings \u00b7 ${recent.length} this week`); })()+
+      '<div class="cpt-groups">'+
+        grp('act', redT.length ? 'Needs action' : 'Needs action: nothing', '', redT)+
+        grp('ok', 'All good', '', okT)+
+        grp('sum', 'Summary', '', sumT, true)+
       '</div>'+
     '</section>'+
     rbBanner()+
@@ -3326,7 +3401,9 @@ function renderCpt0(){
       H('product', 'Product') + TIER_TH +
       H('ours', 'Our price', 'b-ours c', 'desc')+
       H('sale', 'Sale price', 'b-ours c', 'desc')+
+      H('reg', 'Reg sale price', 'b-ours c', 'desc')+
       H('cpt', 'CPT', 'b-cpt c', 'desc')+
+      H('status', 'Status', 'c')+
       H('gap', 'Gap', 'b-gap c', 'desc')+
       H('move', 'Last CPT move', 'b-move')+
       H('sim', 'Similar item', 'b-sim', 'Same size coir mat priced at the CPT, from the daily Keepa search. Not used when the data is over 3 days old.')+
@@ -3338,6 +3415,7 @@ function renderCpt0(){
   }
 
   v.innerHTML = html;
+  v.classList.add('cpt-lite');   // Nov 24 (MJ): light, easy-to-scan look for the CPT tracker
   wireCpt(v, all);
 }
 
@@ -3463,7 +3541,7 @@ function cptBody(rows){
           `<button class="work strong" data-gfresh="${a}">Draft one fresh case for these ${g.length}</button>`+
           `<button class="work strong" data-gmail="${a}">${g.some(hasJassy) ? 'Draft one Jassy follow-up for these ' : 'Draft one Jassy email for these '}${g.length}</button>`+
           `<button class="work" data-gfind="${a}">Find related emails</button></div>` : '';
-      return `<tr class="gh agh agh-${a}"><td colspan="10"><div class="agh-t">${esc(ACTIONS[a].group)} `+
+      return `<tr class="gh agh agh-${a}"><td colspan="14"><div class="agh-t">${esc(ACTIONS[a].group)} `+
              `<span class="agh-n">${g.length}</span></div><div class="agh-s">${sub}</div>${btns}</td></tr>` +
              g.map(cptRowHtml).join('');
     }).join('');
@@ -3484,7 +3562,7 @@ function cptBody(rows){
     // Same rule as the What to do column: a case to open or follow up
     const need = g.filter(r=> r.action === 'open' || r.action === 'follow').length;
     const lows = g.filter(r=> r.short > 0.005).map(r=> r.short).concat(g.filter(r=> r.gap > 0).map(r=> r.gap));
-    return parentHeader(k === SOLO ? g.map(r=> Object.assign({}, r, {parent:'', psku:'', pasin:''})) : g, 10, [
+    return parentHeader(k === SOLO ? g.map(r=> Object.assign({}, r, {parent:'', psku:'', pasin:''})) : g, 14, [
       need ? `<span class="pgh-tag bad">${need} need${need === 1 ? 's' : ''} a case</span>` : '<span class="pgh-tag ok">Nothing to do</span>',
       lows.length ? `<span><span class="k">CPT most too low by</span><b>${usd(Math.max(...lows))}</b></span>` : ''
     ].filter(Boolean)) + g.map(cptRowHtml).join('');
@@ -3519,11 +3597,14 @@ function cptRowHtml0(r){
               ? `<span class="cpill sale" data-tip="${esc(TIPS.sale)}">${usd(r.sale)}</span>` +
                 (r.list ? `<span class="was" data-tip="${esc(TIPS.list)}">List ${usd(r.list)}</span>` : '')
               : '<span class="mut">No sale</span>'}`+
-             (r.target !== null && !ownTarget(r) ? `<span class="tgt" data-tip="${esc(targetTip(r))}">Target ${usd(r.target)}</span>` : '')+'</td>'+
+             '</td>'+
+          `<td class="c">${r.target === null ? '<span class="mut">\u2014</span>' : `<span class="cpill reg" data-tip="${esc(TIPS.reg)}">${usd(r.target)}</span>` + (r.reg === null ? `<span class="was">${ownTarget(r) ? 'not in Master SKU' : 'size target'}</span>` : '')}</td>`+
           `<td class="c"><span class="cpill cpt" data-tip="${esc(TIPS.cpt)}">${usd(r.cpt)}</span></td>`+
+          `<td class="c">${!r.status ? '<span class="mut">\u2014</span>' : `<span class="cst ${r.status === 'dispute' ? 'cst-d' : 'cst-h'}" data-tip="${esc(r.status === 'dispute' ? TIPS.dispute : TIPS.hold)}">${r.status === 'dispute' ? 'Dispute' : 'Hold'}</span>` +
+             `<span class="was">${r.status === 'dispute' ? usd(Math.abs(r.regGap)) + ' under' : r.regGap > 0.005 ? usd(r.regGap) + ' over' : 'Same as reg'}</span>`}</td>`+
           `<td class="c">${r.gap === null ? '<span class="mut">\u2014</span>' :
              bad ? `<span class="gap-badge over" data-tip="${esc(TIPS.over)}">+${usd(r.gap)} &middot; ${r.pct}%</span>`
-             : r.target !== null && r.short > 0.005 ? `<span class="gap-badge over" data-tip="${esc(ownTarget(r) ? TIPS.underOwn : TIPS.under)}">CPT ${usd(r.short)} too low</span><span class="was">${r.shortPct}% under ${ownTarget(r) ? 'our sale price' : 'the target'}</span>`
+             : r.target !== null && r.short > 0.005 ? `<span class="gap-badge over" data-tip="${esc(ownTarget(r) ? TIPS.underOwn : TIPS.under)}">CPT ${usd(r.short)} too low</span><span class="was">${r.shortPct}% under ${r.reg !== null && r.reg !== undefined ? 'our reg sale price' : ownTarget(r) ? 'our sale price' : 'the target'}</span>`
              : r.held ? `<span class="gap-badge held" data-tip="${esc(TIPS.held)}">Held at CPT</span><span class="was">${r.listPct}% under list</span>`
                  : `<span class="gap-badge ok" data-tip="${esc(TIPS.ok)}">At or under</span>`}</td>`+
           `<td class="move">${r.moved
@@ -8427,6 +8508,9 @@ function wireSort(scope, state, redraw){
    for a one or two sentence explanation. Written for someone who does not
    do pricing every day. */
 const TIPS = {
+  reg:     'Regular sale price: the Sale Price in the Master SKU (Plytix). Haris compares the CPT with this.',
+  dispute: 'The CPT is under our regular sale price. Dispute it with Amazon (Haris, Nov 23).',
+  hold:    'The CPT is at or above our regular sale price. No dispute needed during BFCM (Haris, Nov 23).',
   list:   'Full price. Our normal price, no discount.',
   sale:   'Discount price. The lower price we set. Shoppers see the full price crossed out next to it.',
   ours:   'Price today. What a shopper pays right now. If there is a sale, it is the sale price.',
@@ -8450,7 +8534,7 @@ const TIPS = {
 };
 // Header text to tip, used for every table in the console
 const TIP_BY_HEAD = {
-  'our price':'ours', 'your price':'list', 'target':'target', 'buy box':'buybox', 'sale price':'sale', 'sale':'sale', 'list':'list', 'list price':'list', 'cpt':'cpt', 'gap':'gap',
+  'our price':'ours', 'your price':'list', 'target':'target', 'buy box':'buybox', 'sale price':'sale', 'sale':'sale', 'reg sale price':'reg', 'status':'dispute', 'list':'list', 'list price':'list', 'cpt':'cpt', 'gap':'gap',
   '30-day trend':'trend', 'last cpt move':'move', 'cheapest similar':'sim', 'similar at cpt price':'sim', 'what to do':'todo',
   'feat':'feat', 'available':'avail', 'inbound':'inbound', 'health':'health'
 };
@@ -9196,6 +9280,7 @@ function autoLink(root){
   m.usstock = r=>{ const v = stockOf(r, 'US'); return v === null ? -1 : v; };
   m.castock = r=>{ const v = stockOf(r, 'CA'); return v === null ? -1 : v; }; });
 function render(){
+  { const cv = document.getElementById('cptView'); if(cv) cv.classList.remove('cpt-lite'); }   // only the CPT tracker uses the light look
   TARGETS = null;      // re-read from today's data on every redraw
   renderView();
   chrome();
@@ -9823,7 +9908,7 @@ function stockKeep(rows, mk){
   ['renderCpt','renderBb','renderLc','renderLp','renderVariation','renderBsr','renderProducts','renderMeasurements',
    'renderReview','renderStrike','renderCategory','renderXc','renderBf'].forEach(n=>{   /* renderXc added Nov 12: top bar filters on Cross Channel */ const f = g[n]; if(typeof f !== 'function') return;
     g[n] = function(){ const was = STOCK_ON; STOCK_ON = true; try { gfModuleBlank(); } catch(e){}
-      try { return f.apply(this, arguments); } finally { STOCK_ON = was; try { ensureClearBtn(); } catch(e){} try { ensureCoverage(); } catch(e){} try { curModPaint(); } catch(e){} try { ensureScoreTile(); } catch(e){} try { normalizeUi(); } catch(e){} } }; });
+      try { return f.apply(this, arguments); } finally { STOCK_ON = was; try { ensureClearBtn(); } catch(e){} try { ensureCoverage(); } catch(e){} try { curModPaint(); } catch(e){} try { ensureScoreTile(); } catch(e){} try { normalizeUi(); } catch(e){} try { groupTilesAll(); } catch(e){} } }; });
   ['navPercents','modPct'].forEach(n=>{ const f = g[n]; if(typeof f !== 'function') return;
     g[n] = function(){ const was = STOCK_ON; STOCK_ON = false; try { return f.apply(this, arguments); } finally { STOCK_ON = was; } }; });
 })();
@@ -10031,9 +10116,9 @@ function normalizeUi(){
   // coverage always last in the header
   if(head) head.querySelectorAll(':scope > .cov-tag, :scope > .cpt-live').forEach(x=>{ if(/covered/.test(x.textContent)) head.appendChild(x); });
   // tiles
-  const box = v.querySelector('.cpt-tiles');
+  const box = v.querySelector('.cpt-tiles[data-score]') || v.querySelector('.cpt-tiles');
   if(box){
-    [...box.querySelectorAll('.cpt-tile')].forEach(t=>{
+    [...v.querySelectorAll('.cpt-tiles .cpt-tile')].forEach(t=>{
       const k = t.querySelector('.k'), n = t.querySelector('.n'); if(!k) return;
       const kt = k.textContent.trim(); TILE_RENAME.forEach(([re, to])=>{ if(re.test(kt)) k.textContent = to; });
       if(n){ const nt = n.textContent.trim().replace(/ \(Keepa\)/, '');
@@ -10068,8 +10153,56 @@ function normalizeUi(){
     if(sorted.some((x, i)=> x.el !== kids[i])) sorted.forEach(x=> bar.appendChild(x.el));
   });
 }
+const TILE_ICONS = {"gavel":"<path d=\"M13 10l7.383 7.418c.823 .82 .823 2.148 0 2.967a2.11 2.11 0 0 1 -2.976 0l-7.407 -7.385\" /> <path d=\"M6 9l4 4\" /> <path d=\"M13 10l-4 -4\" /> <path d=\"M3 21h7\" /> <path d=\"M6.793 15.793l-3.586 -3.586a1 1 0 0 1 0 -1.414l2.293 -2.293l.5 .5l3 -3l-.5 -.5l2.293 -2.293a1 1 0 0 1 1.414 0l3.586 3.586a1 1 0 0 1 0 1.414l-2.293 2.293l-.5 -.5l-3 3l.5 .5l-2.293 2.293a1 1 0 0 1 -1.414 0z\" />","arrows-diff":"<path d=\"M11 16h10\" /> <path d=\"M11 16l4 4\" /> <path d=\"M11 16l4 -4\" /> <path d=\"M13 8h-10\" /> <path d=\"M13 8l-4 4\" /> <path d=\"M13 8l-4 -4\" />","lock":"<path d=\"M5 13a2 2 0 0 1 2 -2h10a2 2 0 0 1 2 2v6a2 2 0 0 1 -2 2h-10a2 2 0 0 1 -2 -2v-6z\" /> <path d=\"M11 16a1 1 0 1 0 2 0a1 1 0 0 0 -2 0\" /> <path d=\"M8 11v-4a4 4 0 1 1 8 0v4\" />","circle-check":"<path d=\"M12 12m-9 0a9 9 0 1 0 18 0a9 9 0 1 0 -18 0\" /> <path d=\"M9 12l2 2l4 -4\" />","arrow-up-right":"<path d=\"M17 7l-10 10\" /> <path d=\"M8 7l9 0l0 9\" />","gauge":"<path d=\"M12 12m-9 0a9 9 0 1 0 18 0a9 9 0 1 0 -18 0\" /> <path d=\"M12 12m-1 0a1 1 0 1 0 2 0a1 1 0 1 0 -2 0\" /> <path d=\"M13.41 10.59l2.59 -2.59\" /> <path d=\"M7 12a5 5 0 0 1 5 -5\" />","history":"<path d=\"M12 8l0 4l2 2\" /> <path d=\"M3.05 11a9 9 0 1 1 .5 4m-.5 5v-5h5\" />","shopping-cart-x":"<path d=\"M4 19a2 2 0 1 0 4 0a2 2 0 0 0 -4 0\" /> <path d=\"M13 17h-7v-14h-2\" /> <path d=\"M6 5l14 1l-1 7h-13\" /> <path d=\"M22 22l-5 -5\" /> <path d=\"M17 22l5 -5\" />","package-off":"<path d=\"M8.812 4.793l3.188 -1.793l8 4.5v8.5m-2.282 1.784l-5.718 3.216l-8 -4.5v-9l2.223 -1.25\" /> <path d=\"M14.543 10.57l5.457 -3.07\" /> <path d=\"M12 12v9\" /> <path d=\"M12 12l-8 -4.5\" /> <path d=\"M16 5.25l-4.35 2.447m-2.564 1.442l-1.086 .611\" /> <path d=\"M3 3l18 18\" />","anchor":"<path d=\"M12 9v12m-8 -8a8 8 0 0 0 16 0m1 0h-2m-14 0h-2\" /> <path d=\"M12 6m-3 0a3 3 0 1 0 6 0a3 3 0 1 0 -6 0\" />","users":"<path d=\"M9 7m-4 0a4 4 0 1 0 8 0a4 4 0 1 0 -8 0\" /> <path d=\"M3 21v-2a4 4 0 0 1 4 -4h4a4 4 0 0 1 4 4v2\" /> <path d=\"M16 3.13a4 4 0 0 1 0 7.75\" /> <path d=\"M21 21v-2a4 4 0 0 0 -3 -3.85\" />","clock-hour-4":"<path d=\"M12 12m-9 0a9 9 0 1 0 18 0a9 9 0 1 0 -18 0\" /> <path d=\"M12 12l3 2\" /> <path d=\"M12 7v5\" />","alert-triangle":"<path d=\"M12 9v4\" /> <path d=\"M10.363 3.591l-8.106 13.534a1.914 1.914 0 0 0 1.636 2.871h16.214a1.914 1.914 0 0 0 1.636 -2.87l-8.106 -13.536a1.914 1.914 0 0 0 -3.274 0z\" /> <path d=\"M12 16h.01\" />","building-store":"<path d=\"M3 21l18 0\" /> <path d=\"M3 7v1a3 3 0 0 0 6 0v-1m0 1a3 3 0 0 0 6 0v-1m0 1a3 3 0 0 0 6 0v-1h-18l2 -4h14l2 4\" /> <path d=\"M5 21l0 -10.15\" /> <path d=\"M19 21l0 -10.15\" /> <path d=\"M9 21v-4a2 2 0 0 1 2 -2h2a2 2 0 0 1 2 2v4\" />","help-circle":"<path d=\"M3 12a9 9 0 1 0 18 0a9 9 0 0 0 -18 0\" /> <path d=\"M12 16v.01\" /> <path d=\"M12 13a2 2 0 0 0 .914 -3.782a1.98 1.98 0 0 0 -2.414 .483\" />","truck-delivery":"<path d=\"M7 17m-2 0a2 2 0 1 0 4 0a2 2 0 1 0 -4 0\" /> <path d=\"M17 17m-2 0a2 2 0 1 0 4 0a2 2 0 1 0 -4 0\" /> <path d=\"M5 17h-2v-4m-1 -8h11v12m-4 0h6m4 0h2v-6h-8m0 -5h5l3 5\" /> <path d=\"M3 9l4 0\" />","shopping-cart-check":"<path d=\"M4 19a2 2 0 1 0 4 0a2 2 0 0 0 -4 0\" /> <path d=\"M11.5 17h-5.5v-14h-2\" /> <path d=\"M6 5l14 1l-1 7h-13\" /> <path d=\"M15 19l2 2l4 -4\" />","tag":"<path d=\"M7.5 7.5m-1 0a1 1 0 1 0 2 0a1 1 0 1 0 -2 0\" /> <path d=\"M3 6v5.172a2 2 0 0 0 .586 1.414l7.71 7.71a2.41 2.41 0 0 0 3.408 0l5.592 -5.592a2.41 2.41 0 0 0 0 -3.408l-7.71 -7.71a2 2 0 0 0 -1.414 -.586h-5.172a3 3 0 0 0 -3 3z\" />","tag-off":"<path d=\"M7.149 7.144a.498 .498 0 0 0 .351 .856a.498 .498 0 0 0 .341 -.135\" /> <path d=\"M3.883 3.875a2.99 2.99 0 0 0 -.883 2.125v5.172a2 2 0 0 0 .586 1.414l7.71 7.71a2.41 2.41 0 0 0 3.408 0l2.796 -2.796m2.005 -2.005l.79 -.79a2.41 2.41 0 0 0 0 -3.41l-7.71 -7.71a2 2 0 0 0 -1.412 -.585h-4.173\" /> <path d=\"M3 3l18 18\" />","strikethrough":"<path d=\"M5 12l14 0\" /> <path d=\"M16 6.5a4 2 0 0 0 -4 -1.5h-1a3.5 3.5 0 0 0 0 7h2a3.5 3.5 0 0 1 0 7h-1.5a4 2 0 0 1 -4 -1.5\" />","file-alert":"<path d=\"M14 3v4a1 1 0 0 0 1 1h4\" /> <path d=\"M17 21h-10a2 2 0 0 1 -2 -2v-14a2 2 0 0 1 2 -2h7l5 5v11a2 2 0 0 1 -2 2z\" /> <path d=\"M12 17l.01 0\" /> <path d=\"M12 11l0 3\" />","letter-t":"<path d=\"M6 4l12 0\" /> <path d=\"M12 4l0 16\" />","list":"<path d=\"M9 6l11 0\" /> <path d=\"M9 12l11 0\" /> <path d=\"M9 18l11 0\" /> <path d=\"M5 6l0 .01\" /> <path d=\"M5 12l0 .01\" /> <path d=\"M5 18l0 .01\" />","file-text":"<path d=\"M14 3v4a1 1 0 0 0 1 1h4\" /> <path d=\"M17 21h-10a2 2 0 0 1 -2 -2v-14a2 2 0 0 1 2 -2h7l5 5v11a2 2 0 0 1 -2 2z\" /> <path d=\"M9 9l1 0\" /> <path d=\"M9 13l6 0\" /> <path d=\"M9 17l6 0\" />","key":"<path d=\"M16.555 3.843l3.602 3.602a2.877 2.877 0 0 1 0 4.069l-2.643 2.643a2.877 2.877 0 0 1 -4.069 0l-.301 -.301l-6.558 6.558a2 2 0 0 1 -1.239 .578l-.175 .008h-1.172a1 1 0 0 1 -.993 -.883l-.007 -.117v-1.172a2 2 0 0 1 .467 -1.284l.119 -.13l.414 -.414h2v-2h2v-2l2.144 -2.144l-.301 -.301a2.877 2.877 0 0 1 0 -4.069l2.643 -2.643a2.877 2.877 0 0 1 4.069 0z\" /> <path d=\"M15 9h.01\" />","book":"<path d=\"M3 19a9 9 0 0 1 9 0a9 9 0 0 1 9 0\" /> <path d=\"M3 6a9 9 0 0 1 9 0a9 9 0 0 1 9 0\" /> <path d=\"M3 6l0 13\" /> <path d=\"M12 6l0 13\" /> <path d=\"M21 6l0 13\" />","database":"<path d=\"M12 6m-8 0a8 3 0 1 0 16 0a8 3 0 1 0 -16 0\" /> <path d=\"M4 6v6a8 3 0 0 0 16 0v-6\" /> <path d=\"M4 12v6a8 3 0 0 0 16 0v-6\" />","rosette":"<path d=\"M5 7.2a2.2 2.2 0 0 1 2.2 -2.2h1a2.2 2.2 0 0 0 1.55 -.64l.7 -.7a2.2 2.2 0 0 1 3.12 0l.7 .7c.412 .41 .97 .64 1.55 .64h1a2.2 2.2 0 0 1 2.2 2.2v1c0 .58 .23 1.138 .64 1.55l.7 .7a2.2 2.2 0 0 1 0 3.12l-.7 .7a2.2 2.2 0 0 0 -.64 1.55v1a2.2 2.2 0 0 1 -2.2 2.2h-1a2.2 2.2 0 0 0 -1.55 .64l-.7 .7a2.2 2.2 0 0 1 -3.12 0l-.7 -.7a2.2 2.2 0 0 0 -1.55 -.64h-1a2.2 2.2 0 0 1 -2.2 -2.2v-1a2.2 2.2 0 0 0 -.64 -1.55l-.7 -.7a2.2 2.2 0 0 1 0 -3.12l.7 -.7a2.2 2.2 0 0 0 .64 -1.55v-1\" />","eye-off":"<path d=\"M10.585 10.587a2 2 0 0 0 2.829 2.828\" /> <path d=\"M16.681 16.673a8.717 8.717 0 0 1 -4.681 1.327c-3.6 0 -6.6 -2 -9 -6c1.272 -2.12 2.712 -3.678 4.32 -4.674m2.86 -1.146a9.055 9.055 0 0 1 1.82 -.18c3.6 0 6.6 2 9 6c-.666 1.11 -1.379 2.067 -2.138 2.87\" /> <path d=\"M3 3l18 18\" />","refresh":"<path d=\"M20 11a8.1 8.1 0 0 0 -15.5 -2m-.5 -4v4h4\" /> <path d=\"M4 13a8.1 8.1 0 0 0 15.5 2m.5 4v-4h-4\" />","upload":"<path d=\"M4 17v2a2 2 0 0 0 2 2h12a2 2 0 0 0 2 -2v-2\" /> <path d=\"M7 9l5 -5l5 5\" /> <path d=\"M12 4l0 12\" />","brand-slack":"<path d=\"M12 12v-6a2 2 0 0 1 4 0v6m0 -2a2 2 0 1 1 2 2h-6\" /> <path d=\"M12 12h6a2 2 0 0 1 0 4h-6m2 0a2 2 0 1 1 -2 2v-6\" /> <path d=\"M12 12v6a2 2 0 0 1 -4 0v-6m0 2a2 2 0 1 1 -2 -2h6\" /> <path d=\"M12 12h-6a2 2 0 0 1 0 -4h6m-2 0a2 2 0 1 1 2 -2v6\" />","database-off":"<path d=\"M12.983 8.978c3.955 -.182 7.017 -1.446 7.017 -2.978c0 -1.657 -3.582 -3 -8 -3c-1.661 0 -3.204 .19 -4.483 .515m-2.783 1.228c-.471 .382 -.734 .808 -.734 1.257c0 1.22 1.944 2.271 4.734 2.74\" /> <path d=\"M4 6v6c0 1.657 3.582 3 8 3c.986 0 1.93 -.067 2.802 -.19m3.187 -.82c1.251 -.53 2.011 -1.228 2.011 -1.99v-6\" /> <path d=\"M4 12v6c0 1.657 3.582 3 8 3c3.217 0 5.991 -.712 7.261 -1.74m.739 -3.26v-4\" /> <path d=\"M3 3l18 18\" />","question-mark":"<path d=\"M8 8a3.5 3 0 0 1 3.5 -3h1a3.5 3 0 0 1 3.5 3a3 3 0 0 1 -2 3a3 4 0 0 0 -2 4\" /> <path d=\"M12 19l0 .01\" />","folder-x":"<path d=\"M13.5 19h-8.5a2 2 0 0 1 -2 -2v-11a2 2 0 0 1 2 -2h4l3 3h7a2 2 0 0 1 2 2v4\" /> <path d=\"M22 22l-5 -5\" /> <path d=\"M17 22l5 -5\" />","search":"<path d=\"M10 10m-7 0a7 7 0 1 0 14 0a7 7 0 1 0 -14 0\" /> <path d=\"M21 21l-6 -6\" />","plant":"<path d=\"M7 15h10v4a2 2 0 0 1 -2 2h-6a2 2 0 0 1 -2 -2v-4z\" /> <path d=\"M12 9a6 6 0 0 0 -6 -6h-3v2a6 6 0 0 0 6 6h3\" /> <path d=\"M12 11a6 6 0 0 1 6 -6h3v1a6 6 0 0 1 -6 6h-3\" /> <path d=\"M12 15l0 -6\" />","folder":"<path d=\"M5 4h4l3 3h7a2 2 0 0 1 2 2v8a2 2 0 0 1 -2 2h-14a2 2 0 0 1 -2 -2v-11a2 2 0 0 1 2 -2\" />","category":"<path d=\"M4 4h6v6h-6z\" /> <path d=\"M14 4h6v6h-6z\" /> <path d=\"M4 14h6v6h-6z\" /> <path d=\"M17 17m-3 0a3 3 0 1 0 6 0a3 3 0 1 0 -6 0\" />","route":"<path d=\"M3 19a2 2 0 1 0 4 0a2 2 0 0 0 -4 0\" /> <path d=\"M19 7a2 2 0 1 0 0 -4a2 2 0 0 0 0 4z\" /> <path d=\"M11 19h5.5a3.5 3.5 0 0 0 0 -7h-8a3.5 3.5 0 0 1 0 -7h4.5\" />","tags":"<path d=\"M3 8v4.172a2 2 0 0 0 .586 1.414l5.71 5.71a2.41 2.41 0 0 0 3.408 0l3.592 -3.592a2.41 2.41 0 0 0 0 -3.408l-5.71 -5.71a2 2 0 0 0 -1.414 -.586h-4.172a2 2 0 0 0 -2 2z\" /> <path d=\"M18 19l1.592 -1.592a4.82 4.82 0 0 0 0 -6.816l-4.592 -4.592\" /> <path d=\"M7 10h-.01\" />","hierarchy":"<path d=\"M12 5m-2 0a2 2 0 1 0 4 0a2 2 0 1 0 -4 0\" /> <path d=\"M5 19m-2 0a2 2 0 1 0 4 0a2 2 0 1 0 -4 0\" /> <path d=\"M19 19m-2 0a2 2 0 1 0 4 0a2 2 0 1 0 -4 0\" /> <path d=\"M6.5 17.5l5.5 -4.5l5.5 4.5\" /> <path d=\"M12 7l0 6\" />","chevrons-right":"<path d=\"M7 7l5 5l-5 5\" /> <path d=\"M13 7l5 5l-5 5\" />","trophy":"<path d=\"M8 21l8 0\" /> <path d=\"M12 17l0 4\" /> <path d=\"M7 4l10 0\" /> <path d=\"M17 4v8a5 5 0 0 1 -10 0v-8\" /> <path d=\"M5 9m-2 0a2 2 0 1 0 4 0a2 2 0 1 0 -4 0\" /> <path d=\"M19 9m-2 0a2 2 0 1 0 4 0a2 2 0 1 0 -4 0\" />","message-2-off":"<path d=\"M8 9h1m4 0h3\" /> <path d=\"M8 13h5\" /> <path d=\"M8 4h10a3 3 0 0 1 3 3v8c0 .57 -.16 1.104 -.436 1.558m-2.564 1.442h-3l-3 3l-3 -3h-3a3 3 0 0 1 -3 -3v-8c0 -1.084 .575 -2.034 1.437 -2.561\" /> <path d=\"M3 3l18 18\" />","git-fork":"<path d=\"M12 18m-2 0a2 2 0 1 0 4 0a2 2 0 1 0 -4 0\" /> <path d=\"M7 6m-2 0a2 2 0 1 0 4 0a2 2 0 1 0 -4 0\" /> <path d=\"M17 6m-2 0a2 2 0 1 0 4 0a2 2 0 1 0 -4 0\" /> <path d=\"M7 8v2a2 2 0 0 0 2 2h6a2 2 0 0 0 2 -2v-2\" /> <path d=\"M12 12l0 4\" />","unlink":"<path d=\"M17 22v-2\" /> <path d=\"M9 15l6 -6\" /> <path d=\"M11 6l.463 -.536a5 5 0 0 1 7.071 7.072l-.534 .464\" /> <path d=\"M13 18l-.397 .534a5.068 5.068 0 0 1 -7.127 0a4.972 4.972 0 0 1 0 -7.071l.524 -.463\" /> <path d=\"M20 17h2\" /> <path d=\"M2 7h2\" /> <path d=\"M7 2v2\" />","sitemap":"<path d=\"M3 15m0 2a2 2 0 0 1 2 -2h2a2 2 0 0 1 2 2v2a2 2 0 0 1 -2 2h-2a2 2 0 0 1 -2 -2z\" /> <path d=\"M15 15m0 2a2 2 0 0 1 2 -2h2a2 2 0 0 1 2 2v2a2 2 0 0 1 -2 2h-2a2 2 0 0 1 -2 -2z\" /> <path d=\"M9 3m0 2a2 2 0 0 1 2 -2h2a2 2 0 0 1 2 2v2a2 2 0 0 1 -2 2h-2a2 2 0 0 1 -2 -2z\" /> <path d=\"M6 15v-1a2 2 0 0 1 2 -2h8a2 2 0 0 1 2 2v1\" /> <path d=\"M12 9l0 3\" />","ruler-measure":"<path d=\"M19.875 12c.621 0 1.125 .512 1.125 1.143v5.714c0 .631 -.504 1.143 -1.125 1.143h-15.875a1 1 0 0 1 -1 -1v-5.857c0 -.631 .504 -1.143 1.125 -1.143h15.75z\" /> <path d=\"M9 12v2\" /> <path d=\"M6 12v3\" /> <path d=\"M12 12v3\" /> <path d=\"M18 12v3\" /> <path d=\"M15 12v2\" /> <path d=\"M3 3v4\" /> <path d=\"M3 5h18\" /> <path d=\"M21 3v4\" />","ruler-2":"<path d=\"M17 3l4 4l-14 14l-4 -4z\" /> <path d=\"M16 7l-1.5 -1.5\" /> <path d=\"M13 10l-1.5 -1.5\" /> <path d=\"M10 13l-1.5 -1.5\" /> <path d=\"M7 16l-1.5 -1.5\" />","weight":"<path d=\"M12 6m-3 0a3 3 0 1 0 6 0a3 3 0 1 0 -6 0\" /> <path d=\"M6.835 9h10.33a1 1 0 0 1 .984 .821l1.637 9a1 1 0 0 1 -.984 1.179h-13.604a1 1 0 0 1 -.984 -1.179l1.637 -9a1 1 0 0 1 .984 -.821z\" />","truck":"<path d=\"M7 17m-2 0a2 2 0 1 0 4 0a2 2 0 1 0 -4 0\" /> <path d=\"M17 17m-2 0a2 2 0 1 0 4 0a2 2 0 1 0 -4 0\" /> <path d=\"M5 17h-2v-11a1 1 0 0 1 1 -1h9v12m-4 0h6m4 0h2v-6h-8m0 -5h5l3 5\" />","ruler-off":"<path d=\"M8 4h11a1 1 0 0 1 1 1v5a1 1 0 0 1 -1 1h-4m-3.713 .299a1 1 0 0 0 -.287 .701v7a1 1 0 0 1 -1 1h-5a1 1 0 0 1 -1 -1v-14c0 -.284 .118 -.54 .308 -.722\" /> <path d=\"M4 8h2\" /> <path d=\"M4 12h3\" /> <path d=\"M4 16h2\" /> <path d=\"M12 4v3\" /> <path d=\"M16 4v2\" /> <path d=\"M3 3l18 18\" />","alert-circle":"<path d=\"M3 12a9 9 0 1 0 18 0a9 9 0 0 0 -18 0\" /> <path d=\"M12 8v4\" /> <path d=\"M12 16h.01\" />","sparkles":"<path d=\"M16 18a2 2 0 0 1 2 2a2 2 0 0 1 2 -2a2 2 0 0 1 -2 -2a2 2 0 0 1 -2 2zm0 -12a2 2 0 0 1 2 2a2 2 0 0 1 2 -2a2 2 0 0 1 -2 -2a2 2 0 0 1 -2 2zm-7 12a6 6 0 0 1 6 -6a6 6 0 0 1 -6 -6a6 6 0 0 1 -6 6a6 6 0 0 1 6 6z\" />","eye-check":"<path d=\"M10 12a2 2 0 1 0 4 0a2 2 0 0 0 -4 0\" /> <path d=\"M11.102 17.957c-3.204 -.307 -5.904 -2.294 -8.102 -5.957c2.4 -4 5.4 -6 9 -6c3.6 0 6.6 2 9 6a19.5 19.5 0 0 1 -.663 1.032\" /> <path d=\"M15 19l2 2l4 -4\" />","star":"<path d=\"M12 17.75l-6.172 3.245l1.179 -6.873l-5 -4.867l6.9 -1l3.086 -6.253l3.086 6.253l6.9 1l-5 4.867l1.179 6.873z\" />","message-2":"<path d=\"M8 9h8\" /> <path d=\"M8 13h6\" /> <path d=\"M9 18h-3a3 3 0 0 1 -3 -3v-8a3 3 0 0 1 3 -3h12a3 3 0 0 1 3 3v8a3 3 0 0 1 -3 3h-3l-3 3l-3 -3z\" />","trending-down":"<path d=\"M3 7l6 6l4 -4l8 8\" /> <path d=\"M21 10l0 7l-7 0\" />","ban":"<path d=\"M12 12m-9 0a9 9 0 1 0 18 0a9 9 0 1 0 -18 0\" /> <path d=\"M5.7 5.7l12.6 12.6\" />","shopping-bag":"<path d=\"M6.331 8h11.339a2 2 0 0 1 1.977 2.304l-1.255 8.152a3 3 0 0 1 -2.966 2.544h-6.852a3 3 0 0 1 -2.965 -2.544l-1.255 -8.152a2 2 0 0 1 1.977 -2.304z\" /> <path d=\"M9 11v-5a3 3 0 0 1 6 0v5\" />","discount":"<path d=\"M9 15l6 -6\" /> <circle cx=\"9.5\" cy=\"9.5\" r=\".5\" fill=\"currentColor\" /> <circle cx=\"14.5\" cy=\"14.5\" r=\".5\" fill=\"currentColor\" /> <path d=\"M12 12m-9 0a9 9 0 1 0 18 0a9 9 0 1 0 -18 0\" />","arrow-down":"<path d=\"M12 5l0 14\" /> <path d=\"M18 13l-6 6\" /> <path d=\"M6 13l6 6\" />","recycle":"<path d=\"M12 17l-2 2l2 2\" /> <path d=\"M10 19h9a2 2 0 0 0 1.75 -2.75l-.55 -1\" /> <path d=\"M8.536 11l-.732 -2.732l-2.732 .732\" /> <path d=\"M7.804 8.268l-4.5 7.794a2 2 0 0 0 1.506 2.89l1.141 .024\" /> <path d=\"M15.464 11l2.732 .732l.732 -2.732\" /> <path d=\"M18.196 11.732l-4.5 -7.794a2 2 0 0 0 -3.256 -.14l-.591 .976\" />","arrows-exchange":"<path d=\"M7 10h14l-4 -4\" /> <path d=\"M17 14h-14l4 4\" />","tool":"<path d=\"M7 10h3v-3l-3.5 -3.5a6 6 0 0 1 8 8l6 6a2 2 0 0 1 -3 3l-6 -6a6 6 0 0 1 -8 -8l3.5 3.5\" />","circle-off":"<path d=\"M20.042 16.045a9 9 0 0 0 -12.087 -12.087m-2.318 1.677a9 9 0 1 0 12.725 12.73\" /> <path d=\"M3 3l18 18\" />","flask":"<path d=\"M9 3l6 0\" /> <path d=\"M10 9l4 0\" /> <path d=\"M10 3v6l-4 11a.7 .7 0 0 0 .5 1h11a.7 .7 0 0 0 .5 -1l-4 -11v-6\" />","stack-2":"<path d=\"M12 4l-8 4l8 4l8 -4l-8 -4\" /> <path d=\"M4 12l8 4l8 -4\" /> <path d=\"M4 16l8 4l8 -4\" />"};
+const TILE_MAP = [["^Dispute", "gavel", "#c0392b", "Dispute", "CPT under reg sale price"], ["^Gap needs work", "arrows-diff", "#c2710c", "Gap", "Gap needs work"], ["^Held at the CPT", "lock", "#6d5fd3", "Held", "Held at the CPT"], ["^Hold:", "circle-check", "#3f8f2a", "Hold", "CPT at or above reg sale price"], ["^Priced above the CPT", "arrow-up-right", "#c2710c", "Above CPT", "Priced above the CPT"], ["^We don.t have it", "shopping-cart-x", "#c0392b", "No Buy Box", "We don’t have the Buy Box"], ["^Because out of stock", "package-off", "#c2710c", "Out of Stock", "No Buy Box because of stock"], ["^Stranded", "anchor", "#2f6fd1", "Stranded", "Stuck in FBA, can’t sell"], ["^Other sellers on our listing", "users", "#6b7280", "Other Sellers", "Other sellers on our listing"], ["^Under 14 days of stock", "clock-hour-4", "#c2710c", "Low Stock", "Under 14 days of stock"], ["^Because another seller has it", "building-store", "#c0392b", "Seller Has It", "Another seller has the Buy Box"], ["^Other reason", "help-circle", "#6b7280", "Other Reason", "No Buy Box, other reason"], ["^Slow delivery", "truck-delivery", "#c2710c", "Slow Delivery", "Slow delivery while we have stock"], ["^We have the Buy Box", "shopping-cart-check", "#3f8f2a", "Have Buy Box", "We have the Buy Box"], ["^List Price set", "tag", "#2f6fd1", "List Price Set", "List Price filled in"], ["^List Price empty", "tag-off", "#c0392b", "List Price Empty", "No List Price"], ["^No strike-through", "strikethrough", "#c0392b", "No Strike", "No strike-through price"], ["^With a strike-through", "strikethrough", "#3f8f2a", "Strike Shown", "With a strike-through price"], ["^Listings with a mismatch", "file-alert", "#c0392b", "Mismatch", "Listings with a mismatch"], ["^Title mismatch", "letter-t", "#2f6fd1", "Title", "Title mismatch"], ["^Bullets mismatch", "list", "#2f6fd1", "Bullets", "Bullets mismatch"], ["^Description mismatch", "file-text", "#2f6fd1", "Description", "Description mismatch"], ["^Keyword rule issues", "key", "#2f6fd1", "Keywords", "Keyword rule issues"], ["^Brand guide issues", "book", "#6d5fd3", "Brand Guide", "Brand guide issues"], ["^Plytix looks off", "database", "#6b7280", "Plytix", "Plytix looks off"], ["^Brand missing from page title", "rosette", "#c0392b", "Brand in Title", "Brand missing from page title"], ["^Amazon changed it", "refresh", "#c2710c", "Amazon Changed", "Amazon changed it"], ["^Waiting to push", "upload", "#2f6fd1", "Waiting to Push", "Waiting to push"], ["^Explained in Slack", "brand-slack", "#6d5fd3", "In Slack", "Explained in Slack"], ["^Listings with a wrong category", "folder-x", "#c0392b", "Wrong Category", "Listings with a wrong category"], ["^Search dept wrong", "search", "#2f6fd1", "Search Dept", "Search department wrong"], ["^Can.t be sold despite stock", "plant", "#3f8f2a", "Live Plant", "Can’t be sold despite stock"], ["^GL wrong", "folder", "#2f6fd1", "GL", "GL wrong"], ["^Product Type wrong", "category", "#2f6fd1", "Product Type", "Product Type wrong"], ["^Browse path wrong", "route", "#2f6fd1", "Browse Path", "Browse path wrong"], ["^ITK wrong", "tags", "#2f6fd1", "ITK", "Item type keyword wrong"], ["^Browse node wrong", "hierarchy", "#2f6fd1", "Browse Node", "Browse node wrong"], ["^Breadcrumb incomplete", "chevrons-right", "#2f6fd1", "Breadcrumb", "Breadcrumb incomplete on the page"], ["^Ranked in a different category", "trophy", "#c2710c", "Ranked Elsewhere", "Ranked in a different category"], ["^Reviews not shared", "message-2-off", "#c0392b", "Reviews Not Shared", "Reviews not shared in the family"], ["^Theme may split reviews", "git-fork", "#c2710c", "Theme Split", "Theme may split reviews"], ["^Split off from family", "unlink", "#c0392b", "Split Off", "Split off from family"], ["^In the wrong family", "sitemap", "#c0392b", "Wrong Family", "In the wrong family"], ["^Plytix in/cm", "ruler-measure", "#6b7280", "Plytix Units", "Plytix in/cm, lb/kg differs"], ["^Size differs", "ruler-2", "#2f6fd1", "Size", "Size differs"], ["^Weight differs", "weight", "#2f6fd1", "Weight", "Weight differs"], ["^Size in the copy differs", "file-text", "#2f6fd1", "Size in Copy", "Size in the copy differs"], ["^For supply chain", "truck", "#6b7280", "Supply Chain", "For supply chain"], ["^No Amazon size yet", "ruler-off", "#6b7280", "No Amazon Size", "No Amazon size yet"], ["^Problems$", "alert-circle", "#c0392b", "Problems", "Problems on the page"], ["^New$", "sparkles", "#c2710c", "New", "New this week"], ["^Fixed since last check", "circle-check", "#3f8f2a", "Fixed", "Fixed since last check"], ["^Reviewed this round", "eye-check", "#2f6fd1", "Reviewed", "Reviewed this round"], ["^Star rating", "star", "#d99412", "Rating", "Star rating same across the family"], ["^Ratings count", "message-2", "#2f6fd1", "Rating Count", "Rating count same across the family"], ["^Rating count went down", "trending-down", "#2f6fd1", "Rating Count Down", "Rating count went down"], ["^No BSR", "trophy", "#c2710c", "No BSR", "No Best Sellers Rank"], ["^BSR: same", "trophy", "#c2710c", "BSR", "BSR same across the family"], ["^Not on Walmart", "building-store", "#2f6fd1", "Walmart", "Not on Walmart"], ["^Blocked on Walmart", "ban", "#c0392b", "Walmart Blocked", "Blocked on Walmart"], ["^Not on Shopify", "shopping-bag", "#3f8f2a", "Shopify", "Not on Shopify"], ["^Listings with an issue", "alert-circle", "#c0392b", "Issues", "Listings with an issue"], ["live-plant", "plant", "#3f8f2a", "Live Plant", "Possible live-plant subcategory"], ["^Sale price doesn.t match", "tag", "#2f6fd1", "Price vs Haris", "Sale price doesn’t match Haris’s file"], ["below .*Min Price", "arrow-down", "#c0392b", "Below Min", "Below Haris’s Min Price"], ["^Out of stock", "package-off", "#c2710c", "Out of Stock", "Out of stock"], ["^Under 3 days of stock", "clock-hour-4", "#c2710c", "Low Stock", "Under 3 days of stock"], ["^Category value wrong", "folder-x", "#c0392b", "Category", "Category value wrong"], ["^No deal badge", "discount", "#c0392b", "Deal Badge", "No deal badge (deal expected)"], ["^Buy Box not ours", "shopping-cart-x", "#c0392b", "No Buy Box", "Buy Box not ours"], ["wrong product page", "arrows-exchange", "#c0392b", "Wrong Page", "Opens the wrong product page"], ["doesn.t match the listing", "file-alert", "#c0392b", "Page Mismatch", "Page doesn’t match the listing"], ["used offer", "recycle", "#c2710c", "Used Offer", "A used offer holds the Buy Box"], ["^Variation options", "sitemap", "#c0392b", "Variation", "Variation options problem"], ["^Star rating dropped", "star", "#d99412", "Rating", "Star rating dropped"], ["^Data to fix", "tool", "#c2710c", "Data to Fix", "Data to fix in Plytix"], ["^Active$", "circle-check", "#3f8f2a", "Active", "Active listings"], ["^Inactive$", "circle-off", "#6b7280", "Inactive", "Inactive listings"], ["^In development", "flask", "#6d5fd3", "In Dev", "In development"], ["^Tier [A-Z]$", "stack-2", "#6b7280", "", ""], ["^Breaks an Amazon rule", "alert-triangle", "#c0392b", "Amazon Rule", "Breaks an Amazon rule"], ["^Can.t check", "eye-off", "#6b7280", "Can’t Check", "Can’t check, not in the %"], ["^Blank in Plytix", "database-off", "#6b7280", "Blank in Plytix", "Blank in Plytix"], ["^Stock unknown", "question-mark", "#6b7280", "Stock Unknown", "Stock unknown"], ["^Listings 100% correct", "circle-check", "#3f8f2a", "100% Correct", "Listings 100% correct"], ["history$", "history", "#6b7280", "History", ""], ["%\\s*$", "gauge", "#6b7280", "", ""]];
+/* Nov 24 (MJ): every module gets the light look, tiles grouped (Needs action, All good, Summary)
+   and each tile an icon, a short Title Case name and one line saying what it means.
+   Master SKU and BFCM Watch get the look and icons but keep their own tile order. */
+const TILE_NOGROUP = ['pr', 'bf'];
+const TILE_SUMMARY = /^(Other sellers on our listing|Can.t check|For supply chain|Stock unknown)/;   // facts, not things to fix
+function tileIcon(name, color){ const p = TILE_ICONS[name]; return p ? `<svg class="tico" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="${color}" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${p}</svg>` : ''; }
+function tileDress(t){
+  const k = t.querySelector('.k'); if(!k || k.querySelector('.tico')) return;
+  t.querySelectorAll('.dsc').forEach(x=> x.remove());
+  const qi = k.querySelector('.qi'), label = k.textContent.replace(/\?\s*$/, '').trim();
+  const m = TILE_MAP.find(x=> new RegExp(x[0], 'i').test(label)); if(!m) return;
+  t.dataset.dressed = '1';
+  const short = m[3] || label, desc = m[4];
+  k.innerHTML = tileIcon(m[1], m[2]) + '<span>' + esc(short) + '</span>'; if(qi) k.appendChild(qi);
+  k.classList.add('kk');
+  if(desc && desc.toLowerCase() !== short.toLowerCase()){ const d = document.createElement('div'); d.className = 'dsc'; d.textContent = desc; const v = t.querySelector('.v'); (v || k).after(d); }
+}
+function groupTilesAll(){
+  const v = document.getElementById('cptView'); if(!v || v.hidden) return;
+  v.classList.add('cpt-lite');
+  const view = typeof S !== 'undefined' ? S.view : '';
+  if(!v.querySelector('.cpt-groups') && TILE_NOGROUP.indexOf(view) === -1){
+    const box = v.querySelector('.cpt-top .cpt-tiles') || v.querySelector('.cpt-tiles');
+    const tiles = box ? [...box.children].filter(t=> t.classList.contains('cpt-tile')) : [];
+    if(tiles.length >= 2){
+      const G = {act:[], ok:[], sum:[]};
+      tiles.forEach((t, i)=>{ const e = t.querySelector('.v'), txt = e ? e.textContent.trim() : '', num = parseFloat(txt.replace(/,/g, ''));
+        const label = ((t.querySelector('.k') || {}).textContent || '').trim();
+        if(/%\s*$/.test(txt) && i === 0){ G.sum.push(t); return; }
+        if(/\bof\s+[\d,]+\s*$/.test(txt) || /history$/i.test(label)){ if(e) e.classList.remove('bad','warn'); G.sum.push(t); return; }
+        if(TILE_SUMMARY.test(label) && !(num === 0)){ if(e) e.classList.remove('bad','warn','good'); G.sum.push(t); return; }
+        if(e && (e.classList.contains('bad') || e.classList.contains('warn')) && num > 0){ G.act.push(t); return; }
+        if(e && (e.classList.contains('good') || num === 0)){ G.ok.push(t); if(num === 0){ e.classList.remove('bad','warn'); e.classList.add('good'); } return; }
+        G.sum.push(t); });
+      const wrap = document.createElement('div'); wrap.className = 'cpt-groups';
+      [['act','Needs action'],['ok','All good'],['sum','Summary']].forEach(([k, label])=>{
+        if(!G[k].length) return;
+        const cg = document.createElement('div'); cg.className = 'cg cg-' + k; cg.style.flexGrow = G[k].length;
+        cg.innerHTML = `<div class="cg-l">${label}</div>`;
+        const tb = document.createElement('div'); tb.className = 'cpt-tiles'; if(k === 'sum') tb.dataset.score = '1';
+        G[k].forEach(t=> tb.appendChild(t)); cg.appendChild(tb); wrap.appendChild(cg); });
+      box.replaceWith(wrap);
+    }
+  }
+  v.querySelectorAll('.cpt-tile').forEach(tileDress);
+}
 function ensureScoreTile(){
-  const m = SCORE_OF[S.view], box = document.querySelector('#cptView .cpt-tiles'); if(!m || !box) return;
+  const m = SCORE_OF[S.view], box = document.querySelector('#cptView .cpt-tiles[data-score]') || document.querySelector('#cptView .cpt-tiles'); if(!m || !box) return;
   const mk = curMk(), v = modPct(m[0], mk), txt = v === null || v === undefined ? '\u2014' : v + '%';
   let t = [...box.querySelectorAll('.cpt-tile')].find(x=>{ const e = x.querySelector('.v'); return e && /%\s*$/.test(e.textContent.trim()); });
   if(!t){ t = document.createElement('div'); t.className = 'cpt-tile'; t.innerHTML = `<div class="k">${m[1]}</div><div class="v"></div><div class="n">&nbsp;</div>`; }
