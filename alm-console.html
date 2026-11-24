@@ -1053,6 +1053,13 @@ a.idl:hover{color:var(--accent);border-bottom-style:solid}
 #cptView.cpt-lite .cpt-tile .k.kk .qi{margin-left:.15rem}
 #cptView.cpt-lite .cpt-tile .dsc{font-size:.72rem;color:#4b5563;line-height:1.3;margin-top:.1rem}
 #cptView.cpt-lite .cpt-tile .n{margin-top:.15rem}
+
+.wpbox{margin:.6rem 0 1rem;padding:.8rem .9rem;border:1px solid #e5e7eb;border-radius:10px;background:#fff}
+.wph{font-weight:600;font-size:.95rem;color:#111827;margin-bottom:.55rem}.wph span{font-weight:400;color:#6b7280;font-size:.8rem;margin-left:.4rem}
+.wpgrid{display:grid;grid-template-columns:repeat(auto-fit,minmax(9.5rem,1fr));gap:.55rem}
+.wpt{background:#f3f4f6;border-radius:8px;padding:.55rem .7rem}.wpk{font-size:.76rem;color:#4b5563;font-weight:500}
+.wpv{font-size:1.15rem;font-weight:600;display:flex;align-items:baseline;gap:.3rem;margin-top:.15rem}.wps{color:#6b7280;font-weight:500;font-size:.95rem}.wpa{color:#9ca3af;font-size:.85rem}
+.wpd{font-size:.76rem;font-weight:600;margin-top:.1rem}
 </style>
 </head>
 <body>
@@ -8300,6 +8307,29 @@ function catReasons(){
   return out;
 }
 let CH_RANGE = 'y', CH_TABLE = false;   // Nov 17 (MJ): q = last quarter, y = this year (default), all
+
+/* Nov 24 (MJ): this week's progress for Sam: each metric at the start of the
+   report week (first saved day) next to now, with the change. */
+function weekProgressHtml(lab, pick){
+  const today = etToday(), ws = repWeek(today), rows = ((RV && RV.catHist) || []).filter(r=> r[1] === 'C' && repWeek(r[0]) === ws);
+  if(!rows.length) return '';
+  const cur = catHistWeeks().find(w=> w.ws === ws && w.src === 'C'); if(!cur) return '';
+  const first = {}; rows.slice().sort((a, b)=> a[0].localeCompare(b[0])).forEach(r=>{ if(!first[r[3]]) first[r[3]] = r; });
+  const pctOf = a=> a && a[1] ? pct1(a[0], a[1]) : null;
+  const startOf = r=> pctOf(CH_MODE === 'us' ? [r[4], r[5]] : CH_MODE === 'ca' ? [r[6], r[7]] : [r[8], r[9]]);
+  const d0 = Object.values(first).map(r=> r[0]).sort()[0] || '';
+  const fmt = d=>{ const t = new Date(d + 'T12:00:00Z'); return ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'][t.getUTCMonth()] + ' ' + t.getUTCDate(); };
+  const col = p=> p === null ? '#6b7280' : p >= 100 ? '#15803d' : p >= 95 ? '#b45309' : '#b91c1c';
+  const tiles = CAT_ORDER.map(k=>{
+    const s0 = first[k] ? startOf(first[k]) : null, n = cur.m[k] ? pctOf(pick(cur.m[k])) : null;
+    if(n === null) return '';
+    const dl = s0 === null ? null : Math.round((n - s0) * 10) / 10;
+    return `<div class="wpt"><div class="wpk">${esc(lab[k] || k)}</div>`+
+      `<div class="wpv"><span class="wps">${s0 === null ? '\u2014' : s0 + '%'}</span><span class="wpa">\u2192</span><span style="color:${col(n)}">${n}%</span></div>`+
+      `<div class="wpd" style="color:${dl === null || dl === 0 ? '#6b7280' : dl > 0 ? '#15803d' : '#b91c1c'}">${dl === null ? '' : dl === 0 ? 'No change' : (dl > 0 ? '\u25b2 +' : '\u25bc ') + dl + ' pts'}</div></div>`;
+  }).join('');
+  return `<div class="wpbox"><div class="wph">This week's progress <span>RW ${isoWeekNo(ws)} \u00b7 ${fmt(d0)} to ${fmt(today)}</span></div><div class="wpgrid">${tiles}</div></div>`;
+}
 function catHistHtml(rep){
   // Nov 17 (MJ): one trend card per metric; the count table opens with Show table
   const all = catHistWeeks().slice().reverse(); if(!all.length) return '';
@@ -8334,6 +8364,7 @@ function catHistHtml(rep){
   return '<section style="margin-top:1.4rem"><div class="cpt-head" style="background:none;padding:.2rem 0"><h2 style="color:inherit;font-size:1.1rem">Historical Performance</h2></div>'+
     '<div class="cpt-tools">' + btn('chMode', [['all','US + CA'], ['us','US'], ['ca','CA']], CH_MODE) + btn('chRange', [['q','Last quarter'], ['y','This year'], ['all','All']], CH_RANGE) +
     `<button id="chTable">${CH_TABLE ? 'Hide table' : 'Show table'}</button></div>`+
+    weekProgressHtml(lab, pick)+
     '<div class="chgrid">' + CAT_ORDER.map(card).join('') + '</div>'+
     '<div class="chkey"><span><svg width="22" height="6"><line x1="0" y1="3" x2="22" y2="3" stroke="#9ca3af" stroke-width="2" stroke-dasharray="4 3"/></svg> Old ALM Dashboard</span><span><svg width="22" height="6"><line x1="0" y1="3" x2="22" y2="3" stroke="#2f5d9a" stroke-width="2"/></svg> ALM Console</span><span><span style="display:inline-block;width:14px;height:8px;background:rgba(21,128,61,.18);border-radius:2px"></span> 95 to 100%</span><span class="mut">Hover a point for the week, the counts and the reason</span></div>'+
     (CH_TABLE ? catHistTableHtml(rep, weeks) : '') + '</section>';
@@ -8671,7 +8702,8 @@ const RV_TIERS = ['A','B','C','X','N'];
 /* Nov 12 (MJ): fields not flagged for now. Weave Type stays Flat Woven on the coir mats
    while it's used in CPT cases; Style Name can't be edited in Seller Central.
    Review_Watch.gs drops them too, so the % and the alert email agree. */
-const RV_HOLD_FIELDS = ['Weave Type', 'Style Name'];   // Nov 12 (MJ): style differs by design (farmhouse, rustic, classic, traditional, southern), so it isn't checked
+const RV_HOLD_FIELDS = ['Weave Type', 'Style Name', 'Water Resistance Level'];   // Nov 24 (MJ): Water Resistance Level isn't in our template or backend (Amazon's own data), so it isn't flagged
+// earlier note:   // Nov 12 (MJ): style differs by design (farmhouse, rustic, classic, traditional, southern), so it isn't checked
 /* What isn't flagged (MJ, Nov 12: "whatever isn't helpful, don't flag"). Same rules as
    Review_Watch.gs, so the page, the % and the email agree. */
 function rvNotUseful(p, brand){
